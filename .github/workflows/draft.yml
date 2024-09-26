@@ -1,0 +1,32 @@
+name: Draft
+on:
+  push:
+    # Sequence of patterns matched against refs/heads
+    branches:
+      - dev
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  test:
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+  draft:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@master
+        with:
+          name: output
+      - name: Publish Draft
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: .github/RELEASE-TEMPLATE.md
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            dist/*.js
+            modules/*
+          draft: true
