@@ -1,4 +1,6 @@
 {
+	"name": "weatherkit",
+	"homepage": "https://github.com/NSRingo/WeatherKit/wiki",
 	"type": "module",
 	"repository": {
 		"type": "git",
