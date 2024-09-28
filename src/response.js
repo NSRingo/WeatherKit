@@ -1,5 +1,5 @@
 import { $platform, _, Storage, fetch, notification, log, logError, wait, done, getScript, runScript } from "./utils/utils.mjs";
-import Database from "./function/database.mjs";
+import database from "./function/database.mjs";
 import setENV from "./function/setENV.mjs";
 import providerNameToLogo from "./function/providerNameToLogo.mjs";
 import WeatherKit2 from "./class/WeatherKit2.mjs";
@@ -8,7 +8,7 @@ import ColorfulClouds from "./class/ColorfulClouds.mjs";
 import QWeather from "./class/QWeather.mjs";
 import AirQuality from "./class/AirQuality.mjs";
 import * as flatbuffers from 'flatbuffers';
-log("v1.8.65(4172)");
+log("v1.8.7(4173)");
 /***************** Processing *****************/
 // 解构URL
 const url = new URL($request.url);
@@ -20,7 +20,7 @@ log(`⚠ METHOD: ${METHOD}, HOST: ${HOST}, PATH: ${PATH}, PATHs: ${PATHs}`, "");
 const FORMAT = ($response.headers?.["Content-Type"] ?? $response.headers?.["content-type"])?.split(";")?.[0];
 log(`⚠ FORMAT: ${FORMAT}`, "");
 !(async () => {
-	const { Settings, Caches, Configs } = setENV("iRingo", "WeatherKit", Database);
+	const { Settings, Caches, Configs } = setENV("iRingo", "WeatherKit", database);
 	log(`⚠ Settings.Switch: ${Settings?.Switch}`, "");
 	switch (Settings.Switch) {
 		case true:
