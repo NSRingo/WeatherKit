@@ -4,18 +4,17 @@ on:
     # Sequence of patterns matched against refs/heads
     branches:
       - main
-      - dev
 
 permissions:
   actions: read
   contents: write
 
 jobs:
-  test:
+  build:
     uses: ./.github/workflows/build.yml
     secrets: inherit
   draft:
-    needs: test
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
