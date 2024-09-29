@@ -1,0 +1,31 @@
+name: Deploy
+on:
+  push:
+    # Sequence of patterns matched against refs/heads
+    branches:
+      - dev
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  debug:
+    uses: ./.github/workflows/debug.yml
+    secrets: inherit
+  deploy:
+    needs: debug
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@master
+        with:
+          name: dist
+          path: dist
+      - name: Deploy
+        uses: exuanbo/actions-deploy-gist@main
+        with:
+          token: ${{ secrets.GIST_TOKEN }}
+          gist_id: 862db28df04be7523476d10b61b128f2
+          gist_description: " iRingo: 🌤 WeatherKit β"
+          file_path: dist/response.js

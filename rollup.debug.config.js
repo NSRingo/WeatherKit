@@ -6,7 +6,7 @@ export default [
 	{
 		input: 'src/response.debug.js',
 		output: {
-			file: 'test/response.js',
+			file: 'dist/response.js',
 			//format: 'es',
 			banner: "/* README: https://github.com/NSRingo/iRingo */\nconsole.log(' iRingo: 🌤 WeatherKit β Response')",
 		},
