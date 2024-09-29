@@ -6,9 +6,9 @@ desc: |-
   3.添加下一小时降水数据
 openUrl: "http://boxjs.com/#/app/iRingo.WeatherKit"
 author: "Virgil Clyne & Wordless Echo"
-homepage: "https://github.com/NSRingo/WeatherKit/wiki"
-manual: "https://github.com/NSRingo/WeatherKit/wiki/🌤-天气服务"
-icon: "https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-96x96_2x.png"
+homepage: "https://github.com/NSRingo"
+manual: "https://github.com/NSRingo/WeatherKit/wiki"
+icon: "https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png"
 category: " iRingo"
 
 rules:
