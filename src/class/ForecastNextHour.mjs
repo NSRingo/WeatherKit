@@ -1,7 +1,7 @@
 import { log } from "../utils/utils.mjs";
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
-	Version = "v1.2.10";
+	Version = "v1.3.1";
 	Author = "iRingo";
 
 	static #Configs = {
@@ -328,28 +328,30 @@ export default class ForecastNextHour {
 									Condition.parameters = [{ "date": Condition.endTime, "type": "FIRST_AT" }];
 									break;
 								case "START": // ✅当前CLEAR
-									// ✅START_STOP
-									Condition.endCondition = previousMinute.condition; // ✅更新结束条件
-									Condition.forecastToken = "START_STOP";
-									Condition.parameters.push({ "date": minute.startTime, "type": "SECOND_AT" });
-									Conditions.push({ ...Condition });
-									// ✅STOP
-									Condition.beginCondition = previousMinute.condition;
-									Condition.endCondition = previousMinute.condition;
-									Condition.forecastToken = "STOP"; // ✅不推送，可能变为STOP_START
-									Condition.startTime = Condition.endTime;
-									Condition.endTime = minute.startTime; // ✅更新结束时间
-									Condition.parameters = [{ "date": Condition.endTime, "type": "FIRST_AT" }];
-									break;
 								case "STOP": // ✅当前RAIN
-									// ✅STOP_START
-									Condition.forecastToken = "STOP_START";
+									// ✅确定上一个条件
+									switch (Condition.forecastToken) {
+										case "START":
+											Condition.endCondition = previousMinute.condition; // ✅更新结束条件
+											Condition.forecastToken = "START_STOP"; // ✅START_STOP
+											break;
+										case "STOP":
+											Condition.endCondition = minute.condition; // ✅更新结束条件
+											Condition.forecastToken = "STOP_START"; // ✅STOP_START
+											break;
+									};
 									Condition.parameters.push({ "date": minute.startTime, "type": "SECOND_AT" });
 									Conditions.push({ ...Condition });
-									// ✅START
-									Condition.beginCondition = minute.condition;
-									Condition.endCondition = minute.condition;
-									Condition.forecastToken = "START"; // ✅不推送，可能变为START_STOP
+									// ✅初始化当前条件
+									Condition.beginCondition = Condition.endCondition;
+									switch (Condition.forecastToken) {
+										case "START_STOP": // ✅STOP
+											Condition.forecastToken = "STOP"; // ✅不推送，可能变为STOP_START
+											break;
+										case "STOP_START": // ✅START
+											Condition.forecastToken = "START"; // ✅不推送，可能变为START_STOP
+											break;
+									};
 									Condition.startTime = Condition.endTime;
 									Condition.endTime = minute.startTime; // ✅更新结束时间
 									Condition.parameters = [{ "date": Condition.endTime, "type": "FIRST_AT" }];
@@ -367,43 +369,37 @@ export default class ForecastNextHour {
 				case Length - 1:
 					switch (Condition.forecastToken) {
 						case "CLEAR": // ✅当前CLEAR
-							// ✅确定CLEAR
-							Condition.beginCondition = "CLEAR";
-							Condition.endCondition = "CLEAR";
-							Condition.forecastToken = "CLEAR";
-							Condition.endTime = 0; // ⚠️空值必须写零！
-							Condition.parameters = [];
-							Conditions.push({ ...Condition });
-							break;
 						case "CONSTANT": // ✅当前RAIN
-							// ✅确定CONSTANT
-							Condition.beginCondition = Condition.endCondition;
-							Condition.endTime = 0; // ⚠️空值必须写零！
-							Condition.parameters = [];
-							Conditions.push({ ...Condition });
+							switch (Condition.forecastToken) {
+								case "CLEAR": // ✅确定CLEAR
+									Condition.beginCondition = "CLEAR";
+									Condition.endCondition = "CLEAR";
+									Condition.forecastToken = "CLEAR";
+									break;
+								case "CONSTANT": // ✅确定CONSTANT
+									Condition.beginCondition = Condition.endCondition;
+									break;
+							};
 							break;
 						case "START": // ✅当前RAIN
-							// ✅确定START
-							Conditions.push({ ...Condition });
-							// ✅补充CONSTANT
-							Condition.beginCondition = Condition.endCondition;
-							Condition.forecastToken = "CONSTANT";
-							Condition.startTime = Condition.endTime;
-							Condition.endTime = 0; // ⚠️空值必须写零！
-							Condition.parameters = [];
-							Conditions.push({ ...Condition });
-							break;
 						case "STOP": // ✅当前CLEAR
-							// ✅确定STOP
+							// ✅确定
+							Condition.parameters = [{ "date": Condition.endTime, "type": "FIRST_AT" }];
 							Conditions.push({ ...Condition });
-							// ✅补充CLEAR
-							Condition.beginCondition = "CLEAR";
-							Condition.endCondition = "CLEAR";
-							Condition.forecastToken = "CLEAR";
+							switch (Condition.forecastToken) {
+								case "START":
+									// ✅补充CONSTANT
+									Condition.beginCondition = Condition.endCondition;
+									Condition.forecastToken = "CONSTANT";
+									break;
+								case "STOP":
+									// ✅补充CLEAR
+									Condition.beginCondition = "CLEAR";
+									Condition.endCondition = "CLEAR";
+									Condition.forecastToken = "CLEAR";
+									break;
+							};
 							Condition.startTime = Condition.endTime;
-							Condition.endTime = 0;// ⚠️空值必须写零！
-							Condition.parameters = [];
-							Conditions.push({ ...Condition });
 							break;
 						case "START_STOP": // ✅当前CLEAR
 							log(`⚠️ START_STOP\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
@@ -412,6 +408,9 @@ export default class ForecastNextHour {
 							log(`⚠️ STOP_START\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 							break;
 					};
+					Condition.endTime = 0; // ⚠️空值必须写零！
+					Condition.parameters = [];
+					Conditions.push({ ...Condition });
 					break;
 			};
 			//log(`⚠️ ${i}, after, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`, "");
