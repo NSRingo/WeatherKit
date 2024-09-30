@@ -1,7 +1,7 @@
 import { log } from "../utils/utils.mjs";
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
-	Version = "v1.2.6";
+	Version = "v1.2.7";
 	Author = "iRingo";
 
 	static #Configs = {
@@ -297,7 +297,7 @@ export default class ForecastNextHour {
 													Condition.parameters = [{ "date": Condition.endTime, "type": "FIRST_AT" }];
 													Conditions.push({ ...Condition });
 													// ✅CONSTANT
-													Condition.beginCondition = minute.condition;
+													Condition.beginCondition = previousMinute.condition;
 													break;
 											};
 											Condition.endCondition = minute.condition;
