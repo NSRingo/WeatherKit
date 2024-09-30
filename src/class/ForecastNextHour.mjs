@@ -1,7 +1,7 @@
 import { log } from "../utils/utils.mjs";
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
-	Version = "v1.2.7";
+	Version = "v1.2.10";
 	Author = "iRingo";
 
 	static #Configs = {
@@ -377,7 +377,7 @@ export default class ForecastNextHour {
 							break;
 						case "CONSTANT": // ✅当前RAIN
 							// ✅确定CONSTANT
-							Condition.endCondition = minute.condition;
+							Condition.beginCondition = Condition.endCondition;
 							Condition.endTime = 0; // ⚠️空值必须写零！
 							Condition.parameters = [];
 							Conditions.push({ ...Condition });
@@ -386,7 +386,7 @@ export default class ForecastNextHour {
 							// ✅确定START
 							Conditions.push({ ...Condition });
 							// ✅补充CONSTANT
-							Condition.endCondition = previousMinute.condition;
+							Condition.beginCondition = Condition.endCondition;
 							Condition.forecastToken = "CONSTANT";
 							Condition.startTime = Condition.endTime;
 							Condition.endTime = 0; // ⚠️空值必须写零！
