@@ -11,7 +11,9 @@
 	},
 	"scripts": {
 		"build": "rollup -c",
-		"build:debug": "rollup --config --configDebug"
+		"build:debug": "rollup --config --configDebug",
+		"build:args": "arguments-builder build",
+		"dts": "arguments-builder dts"
 	},
 	"browserslist": [
 		"iOS >= 15"
@@ -20,6 +22,7 @@
 	"author": "VirgilClyne",
 	"license": "Apache-2.0",
 	"devDependencies": {
+		"@iringo/arguments-builder": "^1.0.2",
 		"@rollup/plugin-commonjs": "^25.0.7",
 		"@rollup/plugin-json": "^6.1.0",
 		"@rollup/plugin-node-resolve": "^15.2.3",

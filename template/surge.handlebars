@@ -1,0 +1,20 @@
+#!name= iRingo: 🌤 WeatherKit
+#!desc=iOS 18 & macOS 15 & watchOS 11\n1.解锁全部天气功能\n2.替换空气质量数据\n3.添加下一小时降水数据
+#!openUrl=http://boxjs.com/#/app/iRingo.WeatherKit
+#!author=VirgilClyne[https://github.com/VirgilClyne], WordlessEcho[https://github.com/WordlessEcho]
+#!homepage=https://github.com/NSRingo
+#!manual=https://github.com/NSRingo/WeatherKit/wiki
+#!icon=https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
+#!category= iRingo
+#!arguments={{{arguments}}}
+#!arguments-desc={{{argumentsDesc}}}
+
+[Rule]
+DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
+
+[Script]
+🌤 WeatherKit.api.v1.availability.response = type=http-response, pattern=^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/, requires-body=1, engine=webview, script-path=https://github.com/NSRingo/WeatherKit/releases/latest/download/response.js, argument=
+🌤 WeatherKit.api.v2.weather.response = type=http-response, pattern=^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/, requires-body=1, binary-body-mode=1, engine=webview, script-path=https://github.com/NSRingo/WeatherKit/releases/latest/download/response.js, argument={{{scriptParams}}}
+
+[MITM]
+hostname = %APPEND% weatherkit.apple.com
