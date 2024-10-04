@@ -1,7 +1,7 @@
 import { log } from "../utils/utils.mjs";
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
-	Version = "v1.3.1";
+	Version = "v1.3.2";
 	Author = "iRingo";
 
 	static #Configs = {
@@ -104,8 +104,8 @@ export default class ForecastNextHour {
 		//log(`☑️ ConditionType, precipitationIntensity: ${precipitationIntensity}, precipitationChance: ${precipitationChance}, precipitationType: ${precipitationType}`, "");
 		const Range = this.#Configs.Precipitation.Range[units];
 		let condition = "CLEAR";
-		if (precipitationIntensity >= Range.NO[0] && precipitationIntensity <= 0.001) condition = "CLEAR"
-		else if (precipitationIntensity > 0.001 && precipitationIntensity <= Range.NO[1]) {
+		if (precipitationIntensity === 0) condition = "CLEAR"
+		else if (precipitationIntensity > Range.NO[0] && precipitationIntensity <= Range.NO[1]) {
 			switch (precipitationType) {
 				case "RAIN":
 					condition = "POSSIBLE_DRIZZLE";
@@ -165,8 +165,7 @@ export default class ForecastNextHour {
 			//minute.precipitationIntensity = Math.round(minute.precipitationIntensity * 1000000) / 1000000; // 六位小数
 			minute.condition = this.ConditionType(minute.precipitationIntensity, PrecipitationType, units);
 			minute.perceivedPrecipitationIntensity = this.ConvertPrecipitationIntensity(minute.precipitationIntensity, minute.condition, units);
-			if (minute.perceivedPrecipitationIntensity >= 0.001) minute.precipitationType = PrecipitationType;
-			else minute.precipitationType = "CLEAR";
+			minute.precipitationType = (minute.perceivedPrecipitationIntensity) ? PrecipitationType : "CLEAR";
 			return minute;
 		});
 		log(`✅ Minute`, "");
@@ -428,12 +427,12 @@ export default class ForecastNextHour {
 		switch (condition) {
 			case "CLEAR":
 				level = 0;
-				range = [Range.NO[0], 0.001];
+				range = Range.NO;
 				break;
 			case "POSSIBLE_DRIZZLE":
 			case "POSSIBLE_FLURRIES":
 				level = 0;
-				range = [0.001, Range.NO[1]];
+				range = Range.LIGHT;
 				break;
 			case "DRIZZLE":
 			case "FLURRIES":
@@ -452,6 +451,8 @@ export default class ForecastNextHour {
 				break;
 		};
 		perceivedPrecipitationIntensity = level + (precipitationIntensity - range[0]) / (range[1] - range[0]);
+		perceivedPrecipitationIntensity = Math.round(perceivedPrecipitationIntensity * 1000) / 1000;
+		perceivedPrecipitationIntensity = Math.max(0, perceivedPrecipitationIntensity);
 		perceivedPrecipitationIntensity = Math.min(3, perceivedPrecipitationIntensity);
 		//log(`✅ ConvertPrecipitationIntensity: ${perceivedPrecipitationIntensity}`, "");
 		return perceivedPrecipitationIntensity;
