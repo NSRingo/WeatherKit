@@ -8,7 +8,6 @@ import ColorfulClouds from "./class/ColorfulClouds.mjs";
 import QWeather from "./class/QWeather.mjs";
 import AirQuality from "./class/AirQuality.mjs";
 import * as flatbuffers from 'flatbuffers';
-log("v1.8.7(4173)");
 /***************** Processing *****************/
 // 解构URL
 const url = new URL($request.url);
