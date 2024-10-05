@@ -9,7 +9,7 @@ export default [
 		output: {
 			file: 'dist/response.js',
 			//format: 'es',
-			banner: `/* README: https://github.com/NSRingo/iRingo */\nconsole.log(' iRingo: 🌤 WeatherKit Response')\nconsole.log('${new Date().toLocaleString('zh-CN', {timeZone: 'PRC'})}')`,
+			banner: `/* README: https://github.com/NSRingo */\nconsole.log(' iRingo: 🌤 WeatherKit Response')\nconsole.log('${new Date().toLocaleString('zh-CN', {timeZone: 'PRC'})}')`,
 		},
 		plugins: [json(), commonjs(), nodeResolve(), terser()]
 	}
