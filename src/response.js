@@ -144,6 +144,11 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 	.catch((e) => logError(e))
 	.finally(() => done($response))
 
+/**
+ * @param {string} url 
+ * @param {any} body 
+ * @param {import('./settings').Settings} Settings 
+ */
 async function InjectAirQuality(url, body, Settings) {
 	log(`☑️ InjectAirQuality`, "");
 	let airQuality;
@@ -182,6 +187,11 @@ async function InjectAirQuality(url, body, Settings) {
 	return body;
 };
 
+/**
+ * @param {string} url 
+ * @param {any} body 
+ * @param {import('./settings').Settings} Settings 
+ */
 async function CompareAirQuality(url, body, Settings) {
 	log(`☑️ CompareAirQuality`, "");
 	switch (body?.airQuality?.metadata?.providerName?.split("\n")?.[0]) {
@@ -217,6 +227,10 @@ async function CompareAirQuality(url, body, Settings) {
 	return body;
 };
 
+/**
+ * @param {any} body 
+ * @param {import('./settings').Settings} Settings 
+ */
 function ConvertAirQuality(body, Settings) {
 	log(`☑️ ConvertAirQuality`, "");
 	let airQuality;
@@ -238,6 +252,11 @@ function ConvertAirQuality(body, Settings) {
 	return body;
 };
 
+/**
+ * @param {string} url 
+ * @param {any} body 
+ * @param {import('./settings').Settings} Settings 
+ */
 async function InjectForecastNextHour(url, body, Settings) {
 	log(`☑️ InjectForecastNextHour`, "");
 	let forecastNextHour;
