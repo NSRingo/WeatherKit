@@ -11,6 +11,10 @@ export default defineConfig({
     dts: {
       isExported: true,
       path: './src/settings.ts'
+    },
+    boxjsSettings: {
+      path: './template/boxjs.settings.json',
+      scope: '@iRingo.WeatherKit.Settings',
     }
   },
   args: [
