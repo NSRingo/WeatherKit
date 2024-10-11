@@ -3,11 +3,21 @@ import { defineConfig } from '@iringo/arguments-builder';
 export default defineConfig({
   output: {
     surge: {
-      path: './modules/WeatherKit.sgmodule',
+      path: './dist/WeatherKit.sgmodule',
     },
     loon: {
-      path: './modules/WeatherKit.plugin',
+      path: './dist/WeatherKit.plugin',
     },
+    customItems: [
+      {
+        path: './dist/WeatherKit.snippet',
+        template: './template/quantumultx.handlebars'
+      },
+      {
+        path: './dist/WeatherKit.stoverride',
+        template: './template/stash.handlebars'
+      }
+    ],
     dts: {
       isExported: true,
       path: './src/settings.ts'

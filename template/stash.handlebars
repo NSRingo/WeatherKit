@@ -12,6 +12,7 @@ homepage: "https://github.com/NSRingo"
 manual: "https://github.com/NSRingo/WeatherKit/wiki"
 icon: "https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png"
 category: " iRingo"
+date: "{{now "yyyy-MM-dd HH:mm:ss"}}"
 
 rules:
   - DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
@@ -33,8 +34,8 @@ http:
 
 script-providers:
   WeatherKit.api.v1.availability.response:
-    url: https://github.com/NSRingo/WeatherKit/releases/latest/download/response.js
+    url: https://github.com/NSRingo/WeatherKit/releases/v{{version}}/download/response.js
     interval: 86400
   WeatherKit.api.v2.weather.response:
-    url: https://github.com/NSRingo/WeatherKit/releases/latest/download/response.js
+    url: https://github.com/NSRingo/WeatherKit/releases/v{{version}}/download/response.js
     interval: 86400

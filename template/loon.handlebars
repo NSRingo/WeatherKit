@@ -17,8 +17,8 @@
 DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
 
 [Script]
-http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ requires-body=1, script-path=https://github.com/NSRingo/WeatherKit/releases/latest/download/response.js, tag=🌤 WeatherKit.api.v1.availability.response, argument=
-http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ requires-body=1, binary-body-mode=1, script-path=https://github.com/NSRingo/WeatherKit/releases/latest/download/response.js, tag=🌤 WeatherKit.api.v2.weather.response, argument={{{scriptParams}}}
+http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ requires-body=1, script-path=https://github.com/NSRingo/WeatherKit/releases/v{{version}}/download/response.js, tag=🌤 WeatherKit.api.v1.availability.response, argument={{{scriptParams}}}
+http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ requires-body=1, binary-body-mode=1, script-path=https://github.com/NSRingo/WeatherKit/releases/v{{version}}/download/response.js, tag=🌤 WeatherKit.api.v2.weather.response, argument={{{scriptParams}}}
 
 [MITM]
 hostname = weatherkit.apple.com
