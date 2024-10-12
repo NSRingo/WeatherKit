@@ -20,7 +20,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@master
         with:
-          name: dist
+          name: artifact
           path: dist
       - name: Deploy
         uses: exuanbo/actions-deploy-gist@main
