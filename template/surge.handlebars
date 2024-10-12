@@ -9,13 +9,14 @@
 #!arguments = {{{arguments}}}
 #!arguments-desc = {{{argumentsDesc}}}
 #!date = {{now "yyyy-MM-dd HH:mm:ss"}}
+#!version = {{version}}
 
 [Rule]
 DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
 
 [Script]
-🌤 WeatherKit.api.v1.availability.response = type=http-response, pattern=^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/, requires-body=1, engine=webview, script-path=https://github.com/NSRingo/WeatherKit/releases/v{{version}}/download/response.js, argument={{{scriptParams}}}
-🌤 WeatherKit.api.v2.weather.response = type=http-response, pattern=^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/, requires-body=1, binary-body-mode=1, engine=webview, script-path=https://github.com/NSRingo/WeatherKit/releases/v{{version}}/download/response.js, argument={{{scriptParams}}}
+🌤 WeatherKit.api.v1.availability.response = type=http-response, pattern=^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/, requires-body=1, engine=webview, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{version}}/response.js, argument={{{scriptParams}}}
+🌤 WeatherKit.api.v2.weather.response = type=http-response, pattern=^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/, requires-body=1, binary-body-mode=1, engine=webview, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{version}}/response.js, argument={{{scriptParams}}}
 
 [MITM]
 hostname = %APPEND% weatherkit.apple.com
