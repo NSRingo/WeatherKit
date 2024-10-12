@@ -1,15 +1,14 @@
 #!name = {{@package 'displayName'}}
 #!desc = {{inline (@package 'description')}}
-#!openUrl = http://boxjs.com/#/app/iRingo.WeatherKit
-#!author = VirgilClyne[https://github.com/VirgilClyne], WordlessEcho[https://github.com/WordlessEcho]
-#!homepage = https://github.com/NSRingo
-#!manual = {{@package 'homepage'}}
-#!icon = https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
-#!tag =  iRingo
-#!system = iOS, iPadOS, tvOS, macOS
-#!system_version = 18
+#!openUrl = {{@package 'openUrl'}}
+#!author = {{@package 'contributors'}}
+#!homepage = {{@package 'homepage'}}
+#!icon = {{@package 'icon'}}
+#!tag = {{@package 'organizationName'}}
+#!system = {{@package 'system'}}
 #!date = {{now "yyyy-MM-dd HH:mm:ss"}}
-#!version = {{version}}
+#!version = {{@package 'version'}}
+#!system_version = {{ @package 'systemVersion'}}
 
 [Argument]
 {{{arguments}}}
@@ -18,8 +17,8 @@
 DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
 
 [Script]
-http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ requires-body=1, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{version}}/response.js, tag=🌤 WeatherKit.api.v1.availability.response, argument={{{scriptParams}}}
-http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ requires-body=1, binary-body-mode=1, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{version}}/response.js, tag=🌤 WeatherKit.api.v2.weather.response, argument={{{scriptParams}}}
+http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ requires-body=1, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.js, tag=🌤 WeatherKit.api.v1.availability.response, argument={{{scriptParams}}}
+http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ requires-body=1, binary-body-mode=1, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.js, tag=🌤 WeatherKit.api.v2.weather.response, argument={{{scriptParams}}}
 
 [MITM]
 hostname = weatherkit.apple.com

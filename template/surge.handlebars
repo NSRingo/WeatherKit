@@ -1,22 +1,21 @@
 #!name = {{@package 'displayName'}}
 #!desc = {{inline (@package 'description')}}
-#!openUrl = http://boxjs.com/#/app/iRingo.WeatherKit
-#!author = VirgilClyne[https://github.com/VirgilClyne], WordlessEcho[https://github.com/WordlessEcho]
-#!homepage = https://github.com/NSRingo
-#!manual = {{@package 'homepage'}}
-#!icon = https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
-#!category =  iRingo
+#!openUrl = {{@package 'openUrl'}}
+#!author = {{@package 'contributors'}}
+#!homepage = {{@package 'homepage'}}
+#!icon = {{@package 'icon'}}
+#!tag = {{@package 'organizationName'}}
+#!date = {{now "yyyy-MM-dd HH:mm:ss"}}
+#!version = {{@package 'version'}}
 #!arguments = {{{arguments}}}
 #!arguments-desc = {{{argumentsDesc}}}
-#!date = {{now "yyyy-MM-dd HH:mm:ss"}}
-#!version = {{version}}
 
 [Rule]
 DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
 
 [Script]
-🌤 WeatherKit.api.v1.availability.response = type=http-response, pattern=^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/, requires-body=1, engine=webview, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{version}}/response.js, argument={{{scriptParams}}}
-🌤 WeatherKit.api.v2.weather.response = type=http-response, pattern=^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/, requires-body=1, binary-body-mode=1, engine=webview, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{version}}/response.js, argument={{{scriptParams}}}
+🌤 WeatherKit.api.v1.availability.response = type=http-response, pattern=^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/, requires-body=1, engine=webview, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.js, argument={{{scriptParams}}}
+🌤 WeatherKit.api.v2.weather.response = type=http-response, pattern=^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/, requires-body=1, binary-body-mode=1, engine=webview, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.js, argument={{{scriptParams}}}
 
 [MITM]
 hostname = %APPEND% weatherkit.apple.com

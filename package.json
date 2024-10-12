@@ -1,9 +1,26 @@
 {
 	"name": "weatherkit",
-	"version": "1.8.12",
+	"version": "1.8.13",
+	"organizationName": " iRingo",
 	"displayName": " iRingo: 🌤 WeatherKit",
 	"description": "iOS 18 & macOS 15 & watchOS 11\n1.解锁全部天气功能\n2.替换空气质量数据\n3.添加下一小时降水数据",
 	"homepage": "https://github.com/NSRingo/WeatherKit/wiki",
+	"openUrl": "http://boxjs.com/#/app/iRingo.WeatherKit",
+	"icon": "https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png",
+	"keywords": [],
+	"contributors": [
+		"VirgilClyne[https://github.com/VirgilClyne]",
+		"WordlessEcho[https://github.com/WordlessEcho]"
+	],
+	"system": [
+		"iOS",
+		"iPadOS",
+		"tvOS",
+		"macOS",
+		"watchOS"
+	],
+	"systemVersion": 18,
+	"license": "Apache-2.0",
 	"type": "module",
 	"repository": {
 		"type": "git",
@@ -21,11 +38,8 @@
 	"browserslist": [
 		"iOS >= 15"
 	],
-	"keywords": [],
-	"author": "VirgilClyne",
-	"license": "Apache-2.0",
 	"devDependencies": {
-		"@iringo/arguments-builder": "^1.6.0",
+		"@iringo/arguments-builder": "^1.7.0",
 		"@rollup/plugin-commonjs": "^25.0.7",
 		"@rollup/plugin-json": "^6.1.0",
 		"@rollup/plugin-node-resolve": "^15.2.3",

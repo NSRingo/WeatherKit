@@ -1,19 +1,18 @@
 #!name = {{@package 'displayName'}}
 #!desc = {{inline (@package 'description')}}
-#!openUrl = http://boxjs.com/#/app/iRingo.WeatherKit
-#!author = VirgilClyne[https://github.com/VirgilClyne], WordlessEcho[https://github.com/WordlessEcho]
-#!homepage = https://github.com/NSRingo
-#!manual = https://github.com/NSRingo/WeatherKit/wiki
-#!icon = https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
-#!category =  iRingo
+#!openUrl = {{@package 'openUrl'}}
+#!author = {{@package 'contributors'}}
+#!homepage = {{@package 'homepage'}}
+#!icon = {{@package 'icon'}}
+#!tag = {{@package 'organizationName'}}
 #!date = {{now "yyyy-MM-dd HH:mm:ss"}}
-#!version = {{version}}
+#!version = {{@package 'version'}}
 
 #[rewrite_local]
 # 🌤 WeatherKit.api.v1.availability.response
-^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{version}}/response.js
+^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.js
 # 🌤 WeatherKit.api.v2.weather.response
-^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{version}}/response.js
+^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.js
 # 🌤 Weather Analytics
 ^https?:\/\/weather-analytics-events\.apple\.com\/ url reject
 

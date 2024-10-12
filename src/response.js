@@ -19,6 +19,9 @@ log(`⚠ METHOD: ${METHOD}, HOST: ${HOST}, PATH: ${PATH}, PATHs: ${PATHs}`, "");
 const FORMAT = ($response.headers?.["Content-Type"] ?? $response.headers?.["content-type"])?.split(";")?.[0];
 log(`⚠ FORMAT: ${FORMAT}`, "");
 !(async () => {
+	/**
+	 * @typedef {import('./settings').Settings} Settings
+	 */
 	const { Settings, Caches, Configs } = setENV("iRingo", "WeatherKit", database);
 	log(`⚠ Settings.Switch: ${Settings?.Switch}`, "");
 	switch (Settings.Switch) {

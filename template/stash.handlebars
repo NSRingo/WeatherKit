@@ -1,18 +1,18 @@
 name: "{{@package 'displayName'}}"
 desc: |-
-  {{#each (splitLines (@package 'description'))}}
+  {{#each (split (@package 'description'))}}
   {{this}}
   {{/each}}
-openUrl: "http://boxjs.com/#/app/iRingo.WeatherKit"
+openUrl: "{{@package 'openUrl'}}"
 author: |-
-  VirgilClyne[https://github.com/VirgilClyne]
-  WordlessEcho[https://github.com/WordlessEcho]
-homepage: "https://github.com/NSRingo"
-manual: "{{@package 'homepage'}}"
-icon: "https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png"
-category: " iRingo"
+  {{#each (@package 'contributors')}}
+  {{this}}
+  {{/each}}
+homepage: "{{@package 'homepage'}}"
+icon: "{{@package 'icon'}}"
+category: "{{@package 'organizationName'}}"
 date: "{{now "yyyy-MM-dd HH:mm:ss"}}"
-version: "{{version}}"
+version: "{{@package 'version'}}"
 
 rules:
   - DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
@@ -34,8 +34,8 @@ http:
 
 script-providers:
   WeatherKit.api.v1.availability.response:
-    url: https://github.com/NSRingo/WeatherKit/releases/download/v{{version}}/response.js
+    url: https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.js
     interval: 86400
   WeatherKit.api.v2.weather.response:
-    url: https://github.com/NSRingo/WeatherKit/releases/download/v{{version}}/response.js
+    url: https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.js
     interval: 86400
