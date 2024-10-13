@@ -1,7 +1,7 @@
 name: "{{@package 'displayName'}}"
 desc: |-
-  {{#each (split (@package 'description'))}}
-  {{this}}
+  {{#each (split (@package 'description') "\n")}}
+  {{{this}}}
   {{/each}}
 openUrl: "{{@package 'openUrl'}}"
 author: |-
