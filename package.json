@@ -30,7 +30,10 @@
 		"example": "example"
 	},
 	"scripts": {
+		"dev": "npm-run-all --parallel build:watch sgmoudle:dev",
 		"build": "rollup -c",
+		"build:watch": "rollup -c --watch",
+		"sgmoudle:dev": "sgmoudle dev",
 		"build:debug": "rollup --config --configDebug",
 		"build:args": "arguments-builder build",
 		"dts": "arguments-builder dts"
@@ -39,12 +42,14 @@
 		"iOS >= 15"
 	],
 	"devDependencies": {
-		"@iringo/arguments-builder": "^1.7.0",
+		"@iringo/arguments-builder": "^1.7.2",
+		"@iringo/sgmoudle-tools": "^1.1.1",
 		"@rollup/plugin-commonjs": "^25.0.7",
 		"@rollup/plugin-json": "^6.1.0",
 		"@rollup/plugin-node-resolve": "^15.2.3",
 		"@rollup/plugin-terser": "^0.4.4",
 		"flatbuffers": "^24.3.25",
+		"npm-run-all": "^4.1.5",
 		"rollup": "^4.9.6",
 		"typescript": "^5.5.4"
 	}
