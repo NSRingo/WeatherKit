@@ -43,7 +43,7 @@
 	],
 	"devDependencies": {
 		"@iringo/arguments-builder": "^1.7.3",
-		"@iringo/sgmoudle-tools": "^1.2.0",
+		"@iringo/sgmoudle-tools": "^1.2.1",
 		"@rollup/plugin-commonjs": "^25.0.7",
 		"@rollup/plugin-json": "^6.1.0",
 		"@rollup/plugin-node-resolve": "^15.2.3",
