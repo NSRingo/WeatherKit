@@ -20,7 +20,7 @@ const FORMAT = ($response.headers?.["Content-Type"] ?? $response.headers?.["cont
 log(`⚠ FORMAT: ${FORMAT}`, "");
 !(async () => {
 	/**
-	 * @typedef {import('./settings').Settings} Settings
+	 * @type {{Settings: import('./interface').Settings}}
 	 */
 	const { Settings, Caches, Configs } = setENV("iRingo", "WeatherKit", database);
 	log(`⚠ Settings.Switch: ${Settings?.Switch}`, "");
@@ -150,7 +150,7 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 /**
  * @param {string} url 
  * @param {any} body 
- * @param {import('./settings').Settings} Settings 
+ * @param {import('./interface').Settings} Settings 
  */
 async function InjectAirQuality(url, body, Settings) {
 	log(`☑️ InjectAirQuality`, "");
@@ -193,7 +193,7 @@ async function InjectAirQuality(url, body, Settings) {
 /**
  * @param {string} url 
  * @param {any} body 
- * @param {import('./settings').Settings} Settings 
+ * @param {import('./interface').Settings} Settings 
  */
 async function CompareAirQuality(url, body, Settings) {
 	log(`☑️ CompareAirQuality`, "");
@@ -232,7 +232,7 @@ async function CompareAirQuality(url, body, Settings) {
 
 /**
  * @param {any} body 
- * @param {import('./settings').Settings} Settings 
+ * @param {import('./interface').Settings} Settings 
  */
 function ConvertAirQuality(body, Settings) {
 	log(`☑️ ConvertAirQuality`, "");
@@ -258,7 +258,7 @@ function ConvertAirQuality(body, Settings) {
 /**
  * @param {string} url 
  * @param {any} body 
- * @param {import('./settings').Settings} Settings 
+ * @param {import('./interface').Settings} Settings 
  */
 async function InjectForecastNextHour(url, body, Settings) {
 	log(`☑️ InjectForecastNextHour`, "");
