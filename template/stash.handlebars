@@ -16,6 +16,7 @@ version: "{{@package 'version'}}"
 
 rules:
   - DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
+  - DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
 
 http:
   mitm:
