@@ -10,9 +10,9 @@
 
 #[rewrite_local]
 # 🌤 WeatherKit.api.v1.availability.response
-^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.js
+^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
 # 🌤 WeatherKit.api.v2.weather.response
-^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.js
+^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
 # 🌤 Weather Analytics
 ^https?:\/\/weather-analytics-events\.apple\.com\/ url reject
 

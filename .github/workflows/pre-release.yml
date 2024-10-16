@@ -27,5 +27,7 @@ jobs:
         with:
           body_path: CHANGELOG.md
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: dist/*
+          files: |
+            rulesets/*
+            dist/*
           prerelease: true

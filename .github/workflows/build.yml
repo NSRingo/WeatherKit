@@ -40,4 +40,5 @@ jobs:
           name: artifact
           path: |
             CHANGELOG.md
+            rulesets
             dist

@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   debug:
-    uses: ./.github/workflows/debug.yml
+    uses: ./.github/workflows/dev.yml
     secrets: inherit
   deploy:
     needs: debug
@@ -21,11 +21,10 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: artifact
-          path: dist
       - name: Deploy
         uses: exuanbo/actions-deploy-gist@main
         with:
           token: ${{ secrets.GIST_TOKEN }}
           gist_id: 862db28df04be7523476d10b61b128f2
           gist_description: " iRingo: 🌤 WeatherKit β"
-          file_path: dist/response.js
+          file_path: dist/response.bundle.js

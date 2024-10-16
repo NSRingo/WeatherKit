@@ -1,4 +1,4 @@
-name: Debug
+name: Dev
 on:
   workflow_call:
   workflow_dispatch:
@@ -25,9 +25,12 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Build
-        run: npm run build:debug
+        run: npm run build:dev
       - name: Upload artifact
         uses: actions/upload-artifact@master
         with:
           name: artifact
-          path: dist
+          path: |
+            CHANGELOG.md
+            rulesets
+            dist
