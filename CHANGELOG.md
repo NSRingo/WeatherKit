@@ -1,5 +1,3 @@
 ### 🛠️ Bug Fixes
-  * 增加阻断并丢弃 `*.tthr.apple.com` 的内置规则
-
-### 🔄 Other Changes
-  * 打包器由 `rollup` 更改为 `rspack`
+  * 修复 `Surge` 模块内置`参数面板`默认值为空的问题
+  * 修复 `Loon` 插件内置`设置面板`默认值为空的问题
