@@ -4,6 +4,10 @@ export default defineConfig({
   output: {
     surge: {
       path: './dist/WeatherKit.sgmodule',
+      transformEgern: {
+        enable: true,
+        path: './dist/WeatherKit.yaml',
+      }
     },
     loon: {
       path: './dist/WeatherKit.plugin',
