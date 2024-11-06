@@ -1,4 +1,4 @@
-import { log } from "../utils/utils.mjs";
+import { log } from "@nsnanocat/util";
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
 	Version = "v1.3.2";

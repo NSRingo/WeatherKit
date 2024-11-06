@@ -1,6 +1,3 @@
-[submodule "src/utils"]
-	path = src/utils
-	url = https://github.com/NanoCat-Me/utils.git
 [submodule "src/proto"]
 	path = src/proto
 	url = https://github.com/NSRingo/proto.git

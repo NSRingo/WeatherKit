@@ -1,4 +1,4 @@
-import { fetch, log, logError } from "../utils/utils.mjs";
+import { fetch, log, logError } from "@nsnanocat/util";
 import AirQuality from "../class/AirQuality.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";

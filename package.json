@@ -1,6 +1,6 @@
 {
 	"name": "weatherkit",
-	"version": "1.8.17",
+	"version": "1.9.0",
 	"organizationName": " iRingo",
 	"displayName": " iRingo: 🌤 WeatherKit",
 	"description": "iOS 18 & macOS 15 & watchOS 11\n1.解锁全部天气功能\n2.替换空气质量数据\n3.添加下一小时降水数据",
@@ -33,9 +33,8 @@
 		"dev": "npm-run-all --parallel build:dev sgmoudle:dev",
 		"serve": "webpack serve",
 		"build": "rspack build",
-		"build:dev": "rspack build -c rspack.debug.config.js --mode=development",
+		"build:dev": "rspack build -c rspack.dev.config.js --mode=development",
 		"sgmoudle:dev": "sgmoudle dev",
-		"build:debug": "rollup --config --configDebug",
 		"build:args": "arguments-builder build",
 		"dts": "arguments-builder dts"
 	},
@@ -43,8 +42,9 @@
 		"iOS >= 15"
 	],
 	"devDependencies": {
-		"@iringo/arguments-builder": "^1.8.1",
+		"@iringo/arguments-builder": "^1.8.2",
 		"@iringo/sgmoudle-tools": "^1.2.1",
+		"@nsnanocat/util": "^1.3.6",
 		"@rspack/cli": "^1.0.11",
 		"@rspack/core": "^1.0.11",
 		"flatbuffers": "^24.3.25",

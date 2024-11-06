@@ -36,11 +36,15 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 		case "application/x-www-form-urlencoded":
 		case "text/plain":
 		default:
+			//log(`🚧 body: ${body}`, "");
 			break;
 		case "application/x-mpegURL":
 		case "application/x-mpegurl":
 		case "application/vnd.apple.mpegurl":
 		case "audio/mpegurl":
+			//body = M3U8.parse($response.body);
+			//log(`🚧 body: ${JSON.stringify(body)}`, "");
+			//$response.body = M3U8.stringify(body);
 			break;
 		case "text/xml":
 		case "text/html":
@@ -48,9 +52,15 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 		case "application/xml":
 		case "application/plist":
 		case "application/x-plist":
+			//body = XML.parse($response.body);
+			//log(`🚧 body: ${JSON.stringify(body)}`, "");
+			//$response.body = XML.stringify(body);
 			break;
 		case "text/vtt":
 		case "application/vtt":
+			//body = VTT.parse($response.body);
+			//log(`🚧 body: ${JSON.stringify(body)}`, "");
+			//$response.body = VTT.stringify(body);
 			break;
 		case "text/json":
 		case "application/json":
@@ -73,7 +83,9 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 		case "application/grpc":
 		case "application/grpc+proto":
 		case "application/octet-stream": {
+			//log(`🚧 $response: ${JSON.stringify($response, null, 2)}`, "");
 			let rawBody = $platform === "Quantumult X" ? new Uint8Array($response.bodyBytes ?? []) : ($response.body ?? new Uint8Array());
+			//log(`🚧 isBuffer? ${ArrayBuffer.isView(rawBody)}: ${JSON.stringify(rawBody)}`, "");
 			switch (FORMAT) {
 				case "application/vnd.apple.flatbuffer": {
 					// 解析FlatBuffer
@@ -86,6 +98,7 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 							if (PATH.startsWith("/api/v2/weather/")) {
 								body = WeatherKit2.decode(ByteBuffer, "all");
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
+									log(`🚧 body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`, "");
 									// InjectAirQuality
 									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body = await InjectAirQuality(url, body, Settings);
 									// CompareAirQuality
@@ -114,9 +127,30 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 									// ProviderLogo
 									if (body?.airQuality?.metadata?.providerName && !body?.airQuality?.metadata?.providerLogo) body.airQuality.metadata.providerLogo = providerNameToLogo(body?.airQuality?.metadata?.providerName, "v2");
 								}
+								if (url.searchParams.get("dataSets").includes("currentWeather")) {
+									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
+									//log(`🚧 body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`, "");
+								}
 								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
+									log(`🚧 body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`, "");
 									if (!body?.forecastNextHour) body = await InjectForecastNextHour(url, body, Settings);
 									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
+								}
+								if (url.searchParams.get("dataSets").includes("weatherAlerts")) {
+									if (body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
+									log(`🚧 body.weatherAlerts: ${JSON.stringify(body?.weatherAlerts, null, 2)}`, "");
+								}
+								if (url.searchParams.get("dataSets").includes("WeatherChange")) {
+									if (body?.WeatherChanges?.metadata?.providerName && !body?.WeatherChanges?.metadata?.providerLogo) body.WeatherChanges.metadata.providerLogo = providerNameToLogo(body?.WeatherChanges?.metadata?.providerName, "v2");
+									log(`🚧 body.WeatherChanges: ${JSON.stringify(body?.WeatherChanges, null, 2)}`, "");
+								}
+								if (url.searchParams.get("dataSets").includes("trendComparison")) {
+									if (body?.historicalComparisons?.metadata?.providerName && !body?.historicalComparisons?.metadata?.providerLogo) body.historicalComparisons.metadata.providerLogo = providerNameToLogo(body?.historicalComparisons?.metadata?.providerName, "v2");
+									log(`🚧 body.historicalComparisons: ${JSON.stringify(body?.historicalComparisons, null, 2)}`, "");
+								}
+								if (url.searchParams.get("dataSets").includes("locationInfo")) {
+									if (body?.locationInfo?.metadata?.providerName && !body?.locationInfo?.metadata?.providerLogo) body.locationInfo.metadata.providerLogo = providerNameToLogo(body?.locationInfo?.metadata?.providerName, "v2");
+									log(`🚧 body.locationInfo: ${JSON.stringify(body?.locationInfo, null, 2)}`, "");
 								}
 								const WeatherData = WeatherKit2.encode(Builder, "all", body);
 								Builder.finish(WeatherData);
@@ -160,6 +194,7 @@ async function InjectAirQuality(url, body, Settings) {
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
 			airQuality = await qWeather.AirNow();
+			//airQuality = await qWeather.AirQualityCurrent();
 			break;
 		}
 		case "ColorfulClouds":
@@ -187,6 +222,7 @@ async function InjectAirQuality(url, body, Settings) {
 		airQuality.metadata = { ...body?.airQuality?.metadata, ...airQuality.metadata };
 		body.airQuality = { ...body?.airQuality, ...airQuality };
 		if (!body?.airQuality?.pollutants) body.airQuality.pollutants = [];
+		log(`🚧 body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`, "");
 	}
 	log("✅ InjectAirQuality", "");
 	return body;
@@ -255,6 +291,7 @@ function ConvertAirQuality(body, Settings) {
 	if (airQuality.index) {
 		body.airQuality = { ...body.airQuality, ...airQuality };
 		body.airQuality.metadata.providerName += `\nConverted using ${Settings?.AQI?.Local?.Scale}`;
+		log(`🚧 body.airQuality: ${JSON.stringify(body.airQuality, null, 2)}`, "");
 	}
 	log("✅ ConvertAirQuality", "");
 	return body;
@@ -286,6 +323,7 @@ async function InjectForecastNextHour(url, body, Settings) {
 	if (forecastNextHour?.metadata) {
 		forecastNextHour.metadata = { ...body?.forecastNextHour?.metadata, ...forecastNextHour.metadata };
 		body.forecastNextHour = { ...body?.forecastNextHour, ...forecastNextHour };
+		log(`🚧 body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`, "");
 	}
 	log("✅ InjectForecastNextHour", "");
 	return body;

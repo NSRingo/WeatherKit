@@ -5,17 +5,25 @@ import pkg from "./package.json" with { type: "json" };
 
 export default defineConfig({
 	entry: {
-		"response": "./src/response.debug.js",
+		//"request": "./src/request.dev.js",
+		"response": "./src/response.dev.js",
 	},
 	output: {
 		filename: "[name].bundle.js",
+	},
+	optimization: {
+		minimize: false,
 	},
 	plugins: [
 		new NodePolyfillPlugin({
 			//additionalAliases: ['console'],
 		}),
 		new rspack.BannerPlugin({
-			banner: `console.log('version: ${pkg.version}');`,
+			banner: `console.log('Date: ${new Date().toLocaleString('zh-CN', {timeZone: 'PRC'})}');`,
+			raw: true,
+		}),
+		new rspack.BannerPlugin({
+			banner: `console.log('Version: ${pkg.version}');`,
 			raw: true,
 		}),
 		new rspack.BannerPlugin({
@@ -23,12 +31,13 @@ export default defineConfig({
 			raw: true,
 		}),
 		new rspack.BannerPlugin({
-			banner: "console.log(' iRingo: 🌤 WeatherKit');",
+			banner: `console.log('${pkg.displayName} β');`,
 			raw: true,
 		}),
 		new rspack.BannerPlugin({
-			banner: "https://NSRingo.github.io",
+			banner: pkg.homepage,
 		}),
 	],
+	devtool: false,
 	performance: false,
 });

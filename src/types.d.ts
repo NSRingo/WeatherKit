@@ -1,15 +1,7 @@
 export interface Settings {
-    /**
-     * 总功能开关
-     *
-     * 是否启用此APP修改
-     *
-     * @defaultValue true
-     */
-    Switch?: boolean;
     NextHour?: {
     /**
-         * [未来一小时降水强度]数据源
+         * [未来一小时降水强度] 数据源
          *
          * 始终会使用选定的数据源，填补无降水监测地区的数据。
          *
@@ -26,7 +18,7 @@ export interface Settings {
 };
     AQI?: {
     /**
-         * [空气质量]数据源
+         * [空气质量] 数据源
          *
          * 始终会使用选定的数据源，填补无空气质量监测地区的数据。
          *
@@ -42,7 +34,7 @@ export interface Settings {
          */
         Provider?: 'WeatherKit' | 'ColorfulClouds' | 'QWeather' | 'WAQI';
     /**
-         * [空气质量]需要替换的供应商
+         * [空气质量] 需要替换的供应商
          *
          * 选中的空气质量数据源会被替换。
          *
@@ -53,12 +45,12 @@ export interface Settings {
          * - `'BreezoMeter'` - BreezoMeter
          * - `'TWC'` - The Weather Channel
          *
-         * @defaultValue []
+         * @defaultValue ["QWeather"]
          */
         ReplaceProviders?: ('QWeather' | 'BreezoMeter' | 'TWC')[];
     Local?: {
         /**
-         * [空气质量]本地替换算法
+         * [空气质量] 本地替换算法
          *
          * 本地替换时使用的算法
          *
@@ -72,7 +64,7 @@ export interface Settings {
          */
         Scale?: 'NONE' | 'WAQI_InstantCast';
         /**
-         * [空气质量]需要修改的标准
+         * [空气质量] 需要修改的标准
          *
          * 选中的空气质量标准会被替换。请注意各国监测的污染物种类可能有所不同，转换算法或API未必适合当地。
          *
@@ -85,9 +77,9 @@ export interface Settings {
          */
         ReplaceScales?: ('HJ6332012')[];
         /**
-         * [空气质量]转换污染物计量单位
+         * [空气质量] 转换污染物计量单位
          *
-         * （不推荐。不同单位互转可能会损失精度，导致数值偏大）将污染物数据替换为转换单位后的数据，方便对照转换后的标准。
+         * 将污染物数据替换为转换单位后的数据，方便对照转换后的标准。（不推荐。不同单位互转可能会损失精度，导致数值偏大）
          *
          * @defaultValue false
          */
@@ -97,7 +89,7 @@ export interface Settings {
     API?: {
     ColorfulClouds?: {
             /**
-         * [API]彩云天气 API 令牌
+         * [API] 彩云天气令牌
          *
          * 彩云天气 API 令牌
          *
@@ -107,7 +99,7 @@ export interface Settings {
 };
     QWeather?: {
         /**
-         * [API]和风天气 API 主机
+         * [API] 和风天气主机
          *
          * 和风天气 API 使用的主机名
          *
@@ -121,7 +113,7 @@ export interface Settings {
          */
         Host?: 'devapi.qweather.com' | 'api.qweather.com';
         /**
-         * [API]和风天气 API 令牌
+         * [API] 和风天气令牌
          *
          * 和风天气 API 令牌
          *
@@ -131,7 +123,7 @@ export interface Settings {
 };
     WAQI?: {
         /**
-         * [API]WAQI API 令牌
+         * [API] WAQI 令牌
          *
          * WAQI API 令牌，填写此字段将自动使用WAQI高级API
          *

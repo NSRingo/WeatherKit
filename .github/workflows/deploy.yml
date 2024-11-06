@@ -21,7 +21,7 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: artifact
-      - name: Deploy
+      - name: Deploy Response
         uses: exuanbo/actions-deploy-gist@main
         with:
           token: ${{ secrets.GIST_TOKEN }}

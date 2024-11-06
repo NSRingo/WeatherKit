@@ -1,4 +1,4 @@
-import { _, fetch, log, logError } from "../utils/utils.mjs";
+import { Lodash as _, fetch, log, logError } from "@nsnanocat/util";
 import AirQuality from "./AirQuality.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";

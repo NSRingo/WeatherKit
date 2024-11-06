@@ -1,4 +1,4 @@
-import { log } from "../utils/utils.mjs";
+import { log } from "@nsnanocat/util";
 import * as WK2 from "../proto/apple/wk2.js";
 
 export default class WeatherKit2 {

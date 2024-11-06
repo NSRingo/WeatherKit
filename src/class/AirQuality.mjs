@@ -1,4 +1,5 @@
-import { log } from "../utils/utils.mjs";
+import { log } from "@nsnanocat/util";
+
 export default class AirQuality {
 	static Name = "AirQuality";
 	static Version = "2.3.4";
