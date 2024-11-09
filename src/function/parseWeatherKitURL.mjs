@@ -1,11 +1,11 @@
 import { log } from "@nsnanocat/util";
 
 export default function parseWeatherKitURL(url = new URL($request.url)) {
-    log(`☑️ parseWeatherKitURL`, "");
-    const RegExp = /^\/api\/(?<version>v1|v2|v3)\/(availability|weather)\/(?<language>\w+)(?:-\w+)?(-(?<country>[A-Z]{2}))?\/(?<latitude>-?\d+\.?\d*)\/(?<longitude>-?\d+\.?\d*)$/i;
+    log("☑️ parseWeatherKitURL", "");
+    const WeatherKitRegExp = /^\/api\/(?<version>v1|v2|v3)\/(availability|weather)\/(?<language>\w+)(?:-\w+)?(-(?<country>[A-Z]{2}))?\/(?<latitude>-?\d+\.?\d*)\/(?<longitude>-?\d+\.?\d*)$/i;
     //const LanguageRegExp = /^(?<language>\w+(-\w+)?)-(?<country>[A-Z]{2})$/i;
-    const Parameters = url?.pathname.match(RegExp)?.groups;
-    let result = {
+    const Parameters = url?.pathname.match(WeatherKitRegExp)?.groups;
+    const result = {
         "version": Parameters?.version,
         "language": Parameters?.language,
         "latitude": Parameters?.latitude,

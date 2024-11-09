@@ -1,4 +1,4 @@
-import { $platform, Lodash as _, Storage, fetch, notification, log, logError, wait, done } from "@nsnanocat/util";
+import { $app, Lodash as _, Storage, fetch, notification, log, logError, wait, done } from "@nsnanocat/util";
 import database from "./function/database.mjs";
 import setENV from "./function/setENV.mjs";
 import providerNameToLogo from "./function/providerNameToLogo.mjs";
@@ -84,7 +84,7 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 		case "application/grpc+proto":
 		case "application/octet-stream": {
 			//log(`🚧 $response: ${JSON.stringify($response, null, 2)}`, "");
-			let rawBody = $platform === "Quantumult X" ? new Uint8Array($response.bodyBytes ?? []) : ($response.body ?? new Uint8Array());
+			let rawBody = $app === "Quantumult X" ? new Uint8Array($response.bodyBytes ?? []) : ($response.body ?? new Uint8Array());
 			//log(`🚧 isBuffer? ${ArrayBuffer.isView(rawBody)}: ${JSON.stringify(rawBody)}`, "");
 			switch (FORMAT) {
 				case "application/vnd.apple.flatbuffer": {

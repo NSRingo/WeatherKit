@@ -34,6 +34,6 @@ export default function setENV(name, platforms, database) {
 	/***************** Configs *****************/
 	//Configs.Storefront = new Map(Configs.Storefront);
 	if (Configs.Locale) Configs.Locale = new Map(Configs.Locale);
-	if (Configs.i18n) for (let type in Configs.i18n) Configs.i18n[type] = new Map(Configs.i18n[type]);
+	if (Configs.i18n) for (const type in Configs.i18n) Configs.i18n[type] = new Map(Configs.i18n[type]);
 	return { Settings, Caches, Configs };
 };

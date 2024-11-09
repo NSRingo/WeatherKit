@@ -1,7 +1,6 @@
 export default {
 	WeatherKit: {
 		Settings: {
-			Switch: true,
 			NextHour: {
 				Provider: "ColorfulClouds",
 			},

@@ -1,10 +1,10 @@
 {
 	"name": "weatherkit",
-	"version": "1.9.0",
+	"version": "1.9.1",
 	"organizationName": " iRingo",
 	"displayName": " iRingo: 🌤 WeatherKit",
 	"description": "iOS 18 & macOS 15 & watchOS 11\n1.解锁全部天气功能\n2.替换空气质量数据\n3.添加下一小时降水数据",
-	"homepage": "https://github.com/NSRingo/WeatherKit/wiki",
+	"homepage": "https://NSRingo.github.io/guide/Weather/weather-kit",
 	"openUrl": "http://boxjs.com/#/app/iRingo.WeatherKit",
 	"icon": "https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png",
 	"keywords": [],
@@ -15,7 +15,6 @@
 	"system": [
 		"iOS",
 		"iPadOS",
-		"tvOS",
 		"macOS",
 		"watchOS"
 	],
@@ -39,17 +38,19 @@
 		"dts": "arguments-builder dts"
 	},
 	"browserslist": [
-		"iOS >= 15"
+		"iOS >= 18"
 	],
 	"devDependencies": {
-		"@iringo/arguments-builder": "^1.8.2",
+		"@iringo/arguments-builder": "^1.8.5",
 		"@iringo/sgmoudle-tools": "^1.2.1",
-		"@nsnanocat/util": "^1.3.6",
 		"@rspack/cli": "^1.0.11",
 		"@rspack/core": "^1.0.11",
-		"flatbuffers": "^24.3.25",
-		"node-polyfill-webpack-plugin": "^4.0.0",
 		"npm-run-all": "^4.1.5",
 		"typescript": "^5.5.4"
+	},
+	"dependencies": {
+		"@nsnanocat/util": "^1.4.8",
+		"flatbuffers": "^24.3.25",
+		"node-polyfill-webpack-plugin": "^4.0.0"
 	}
 }

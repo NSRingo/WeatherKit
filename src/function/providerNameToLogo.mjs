@@ -36,6 +36,6 @@ export default function providerNameToLogo(providerName, version) {
         default:
             break;
     };
-    log(`✅ providerNameToLogo`, "");
+    log("✅ providerNameToLogo", "");
     return providerLogo;
 };
