@@ -1,4 +1,4 @@
-import { $app, Lodash as _, Storage, fetch, notification, log, logError, wait, done } from "@nsnanocat/util";
+import { $app, Console, done, fetch, Lodash as _, notification, Storage, wait } from "@nsnanocat/util";
 import database from "./function/database.mjs";
 import setENV from "./function/setENV.mjs";
 import providerNameToLogo from "./function/providerNameToLogo.mjs";
@@ -8,19 +8,17 @@ import ColorfulClouds from "./class/ColorfulClouds.mjs";
 import QWeather from "./class/QWeather.mjs";
 import AirQuality from "./class/AirQuality.mjs";
 import * as flatbuffers from "flatbuffers";
+Console.debug = () => {};
 /***************** Processing *****************/
 // 解构URL
 const url = new URL($request.url);
-log(`⚠ url: ${url.toJSON()}`, "");
+Console.info(`url: ${url.toJSON()}`);
 // 获取连接参数
-const METHOD = $request.method,
-	HOST = url.hostname,
-	PATH = url.pathname,
-	PATHs = url.pathname.split("/").filter(Boolean);
-log(`⚠ METHOD: ${METHOD}, HOST: ${HOST}, PATH: ${PATH}, PATHs: ${PATHs}`, "");
+const PATHs = url.pathname.split("/").filter(Boolean);
+Console.info(`PATHs: ${PATHs}`);
 // 解析格式
 const FORMAT = ($response.headers?.["Content-Type"] ?? $response.headers?.["content-type"])?.split(";")?.[0];
-log(`⚠ FORMAT: ${FORMAT}`, "");
+Console.info(`FORMAT: ${FORMAT}`);
 !(async () => {
 	/**
 	 * 设置
@@ -55,11 +53,11 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 		case "text/json":
 		case "application/json":
 			body = JSON.parse($response.body ?? "{}");
-			switch (HOST) {
+			switch (url.hostname) {
 				case "weatherkit.apple.com":
 					// 路径判断
-					if (PATH.startsWith("/api/v1/availability/")) {
-						log(`🚧 body: ${JSON.stringify(body)}`, "");
+					if (url.pathname.startsWith("/api/v1/availability/")) {
+						Console.debug(`body: ${JSON.stringify(body)}`);
 						body = Configs?.Availability?.v2;
 					}
 					break;
@@ -80,10 +78,10 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 					const ByteBuffer = new flatbuffers.ByteBuffer(rawBody);
 					const Builder = new flatbuffers.Builder();
 					// 主机判断
-					switch (HOST) {
+					switch (url.hostname) {
 						case "weatherkit.apple.com":
 							// 路径判断
-							if (PATH.startsWith("/api/v2/weather/")) {
+							if (url.pathname.startsWith("/api/v2/weather/")) {
 								body = WeatherKit2.decode(ByteBuffer, "all");
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
 									// InjectAirQuality
@@ -143,7 +141,7 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 		}
 	}
 })()
-	.catch(e => logError(e))
+	.catch(e => Console.error(e))
 	.finally(() => done($response));
 
 /**
@@ -152,7 +150,7 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
  * @param {import('./types').Settings} Settings
  */
 async function InjectAirQuality(url, body, Settings) {
-	log("☑️ InjectAirQuality", "");
+	Console.log("☑️ InjectAirQuality");
 	let airQuality;
 	switch (Settings?.AQI?.Provider) {
 		case "WeatherKit":
@@ -188,7 +186,7 @@ async function InjectAirQuality(url, body, Settings) {
 		body.airQuality = { ...body?.airQuality, ...airQuality };
 		if (!body?.airQuality?.pollutants) body.airQuality.pollutants = [];
 	}
-	log("✅ InjectAirQuality", "");
+	Console.log("✅ InjectAirQuality");
 	return body;
 }
 
@@ -198,7 +196,7 @@ async function InjectAirQuality(url, body, Settings) {
  * @param {import('./types').Settings} Settings
  */
 async function CompareAirQuality(url, body, Settings) {
-	log("☑️ CompareAirQuality", "");
+	Console.log("☑️ CompareAirQuality");
 	switch (body?.airQuality?.metadata?.providerName?.split("\n")?.[0]) {
 		case null:
 		case undefined:
@@ -231,7 +229,7 @@ async function CompareAirQuality(url, body, Settings) {
 			break;
 		}
 	}
-	log("✅ CompareAirQuality", "");
+	Console.log("✅ CompareAirQuality");
 	return body;
 }
 
@@ -240,7 +238,7 @@ async function CompareAirQuality(url, body, Settings) {
  * @param {import('./types').Settings} Settings
  */
 function ConvertAirQuality(body, Settings) {
-	log("☑️ ConvertAirQuality", "");
+	Console.log("☑️ ConvertAirQuality");
 	let airQuality;
 	switch (Settings?.AQI?.Local?.Scale) {
 		case "NONE":
@@ -256,7 +254,7 @@ function ConvertAirQuality(body, Settings) {
 		body.airQuality = { ...body.airQuality, ...airQuality };
 		body.airQuality.metadata.providerName += `\nConverted using ${Settings?.AQI?.Local?.Scale}`;
 	}
-	log("✅ ConvertAirQuality", "");
+	Console.log("✅ ConvertAirQuality");
 	return body;
 }
 
@@ -266,7 +264,7 @@ function ConvertAirQuality(body, Settings) {
  * @param {import('./types').Settings} Settings
  */
 async function InjectForecastNextHour(url, body, Settings) {
-	log("☑️ InjectForecastNextHour", "");
+	Console.log("☑️ InjectForecastNextHour");
 	let forecastNextHour;
 	switch (Settings?.NextHour?.Provider) {
 		case "WeatherKit":
@@ -287,6 +285,6 @@ async function InjectForecastNextHour(url, body, Settings) {
 		forecastNextHour.metadata = { ...body?.forecastNextHour?.metadata, ...forecastNextHour.metadata };
 		body.forecastNextHour = { ...body?.forecastNextHour, ...forecastNextHour };
 	}
-	log("✅ InjectForecastNextHour", "");
+	Console.log("✅ InjectForecastNextHour");
 	return body;
 }

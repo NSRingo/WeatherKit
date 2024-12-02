@@ -1,4 +1,4 @@
-import { fetch, log, logError } from "@nsnanocat/util";
+import { Console, fetch } from "@nsnanocat/util";
 import AirQuality from "../class/AirQuality.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
@@ -7,7 +7,7 @@ export default class WAQI {
     constructor(options) {
         this.Name = "WAQI";
         this.Version = "1.3.9";
-        log(`\n🟧 ${this.Name} v${this.Version}\n`, "");
+        Console.log(`🟧 ${this.Name} v${this.Version}`);
         this.url = new URL($request.url);
         this.header = { "Content-Type": "application/json" };
         const Parameters = parseWeatherKitURL(this.url);
@@ -29,7 +29,7 @@ export default class WAQI {
     };
 
     async Nearest(mapqVersion = "mapq") {
-        log(`☑️ Nearest, mapqVersion: ${mapqVersion}`, "");
+        Console.log("☑️ Nearest", `mapqVersion: ${mapqVersion}`);
         const request = {
             "url": `https://api.waqi.info/${mapqVersion}/nearest?n=1&geo=1/${this.latitude}/${this.longitude}`,
             //"url": `https://mapq.waqi.info/${mapqVersion}/nearest/station/${stationId}?n=1`,
@@ -57,11 +57,11 @@ export default class WAQI {
                                     "reportedTime": body?.d?.[0]?.t,
                                     "temporarilyUnavailable": false,
                                     "sourceType": "STATION",
-                                    "stationId": parseInt(body?.d?.[0]?.x, 10),
+                                    "stationId": Number.parseInt(body?.d?.[0]?.x, 10),
                                     "stationKey": body?.d?.[0]?.k,
                                 },
                                 "categoryIndex": AirQuality.CategoryIndex(body?.d?.[0]?.v, "WAQI_InstantCast"),
-                                "index": parseInt(body?.d?.[0]?.v, 10),
+                                "index": Number.parseInt(body?.d?.[0]?.v, 10),
                                 //"previousDayComparison": "UNKNOWN",
                                 "primaryPollutant": this.#Configs.Pollutants[body?.d?.[0]?.pol] || "NOT_AVAILABLE",
                                 "scale": "EPA_NowCast"
@@ -88,10 +88,10 @@ export default class WAQI {
                                     "reportedTime": Math.round(new Date(body?.data?.stations?.[0]?.utime).getTime() / 1000),
                                     "temporarilyUnavailable": false,
                                     "sourceType": "STATION",
-                                    "stationId": parseInt(body?.data?.stations?.[0]?.idx, 10),
+                                    "stationId": Number.parseInt(body?.data?.stations?.[0]?.idx, 10),
                                 },
                                 "categoryIndex": AirQuality.CategoryIndex(body?.data?.stations?.[0]?.aqi, "WAQI_InstantCast"),
-                                "index": parseInt(body?.data?.stations?.[0]?.aqi, 10),
+                                "index": Number.parseInt(body?.data?.stations?.[0]?.aqi, 10),
                                 //"previousDayComparison": "UNKNOWN",
                                 "primaryPollutant": "NOT_AVAILABLE",
                                 "scale": "EPA_NowCast"
@@ -107,16 +107,16 @@ export default class WAQI {
                     break;
             };
         } catch (error) {
-            logError(error);
+            Console.error(error);
         } finally {
-            //log(`🚧 airQuality: ${JSON.stringify(airQuality, null, 2)}`, "");
-            log(`✅ Nearest`, "");
+            //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+            Console.log("✅ Nearest");
             return airQuality;
         };
     };
 
     async Token(stationId = Number()) {
-        log(`☑️ Token, stationId: ${stationId}`, "");
+        Console.log("☑️ Token", `stationId: ${stationId}`);
         const request = {
             "url": `https://api.waqi.info/api/token/${stationId}`,
             "header": this.header,
@@ -147,16 +147,16 @@ export default class WAQI {
                     break;
             };
         } catch (error) {
-            logError(error);
+            Console.error(error);
         } finally {
-            //log(`🚧 token: ${token}`, "");
-            log(`✅ Token`, "");
+            //Console.debug(`token: ${token}`);
+            Console.log("✅ Token");
             return token;
         };
     };
 
     async AQI(stationId = Number(), token = this.token) {
-        log(`☑️ AQI, stationId: ${stationId}, token: ${token}`, "");
+        Console.log("☑️ AQI", `stationId: ${stationId}`, `token: ${token}`);
         const request = {
             "url": `https://api.waqi.info/api/feed/@${stationId}/aqi.json`,
             "header": this.header,
@@ -191,7 +191,7 @@ export default class WAQI {
                                             "stationId": stationId,
                                         },
                                         "categoryIndex": AirQuality.CategoryIndex(body?.rxs?.obs?.[0]?.msg?.aqi, "WAQI_InstantCast"),
-                                        "index": parseInt(body?.rxs?.obs?.[0]?.msg?.aqi, 10),
+                                        "index": Number.parseInt(body?.rxs?.obs?.[0]?.msg?.aqi, 10),
                                         //"previousDayComparison": "UNKNOWN",
                                         "primaryPollutant": this.#Configs.Pollutants[body?.rxs?.obs?.[0]?.msg?.dominentpol] || "NOT_AVAILABLE",
                                         "scale": "EPA_NowCast"
@@ -210,16 +210,16 @@ export default class WAQI {
                     break;
             };
         } catch (error) {
-            logError(error);
+            Console.error(error);
         } finally {
-            //log(`🚧 airQuality: ${JSON.stringify(airQuality, null, 2)}`, "");
-            log(`✅ AQI`, "");
+            //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+            Console.log("✅ AQI");
             return airQuality;
         };
     };
 
     async AQI2(stationId = Number(), token = this.token) {
-        log(`☑️ AQI2, stationId: ${stationId}`, "");
+        Console.log("☑️ AQI2", `stationId: ${stationId}`);
         const request = {
             "url": `https://api2.waqi.info/feed/geo:${this.latitude};${this.longitude}/?token=${token}`,
             "header": this.header,
@@ -244,10 +244,10 @@ export default class WAQI {
                             "reportedTime": body?.data?.time?.v,
                             "temporarilyUnavailable": false,
                             "sourceType": "STATION",
-                            "stationId": stationId || parseInt(body?.data?.idx, 10),
+                            "stationId": stationId || Number.parseInt(body?.data?.idx, 10),
                         },
                         "categoryIndex": AirQuality.CategoryIndex(body?.data?.aqi, "WAQI_InstantCast"),
-                        "index": parseInt(body?.data?.aqi, 10),
+                        "index": Number.parseInt(body?.data?.aqi, 10),
                         //"previousDayComparison": "UNKNOWN",
                         "primaryPollutant": this.#Configs.Pollutants[body?.data?.dominentpol] || "NOT_AVAILABLE",
                         "scale": "EPA_NowCast"
@@ -259,10 +259,10 @@ export default class WAQI {
                     throw JSON.stringify({ "status": body?.status, "reason": body?.data });
             };
         } catch (error) {
-            logError(error);
+            Console.error(error);
         } finally {
-            //log(`🚧 airQuality: ${JSON.stringify(airQuality, null, 2)}`, "");
-            log(`✅ AQI2`, "");
+            //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+            Console.log("✅ AQI2");
             return airQuality;
         };
     };

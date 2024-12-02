@@ -1,4 +1,5 @@
-import { log } from "@nsnanocat/util";
+import { Console } from "@nsnanocat/util";
+
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
 	Version = "v1.3.2";
@@ -79,30 +80,30 @@ export default class ForecastNextHour {
 	};
 
 	static WeatherCondition(sentence) {
-		log(`☑️ WeatherCondition, sentence: ${sentence}`, "");
+		Console.log("☑️ WeatherCondition", `sentence: ${sentence}`);
 		let weatherCondition = "CLEAR";
-		Object.keys(this.#Configs.WeatherCondition).forEach(key => {
-			if (sentence.includes(key)) weatherCondition = this.#Configs.WeatherCondition[key];
+		Object.keys(ForecastNextHour.#Configs.WeatherCondition).forEach(key => {
+			if (sentence.includes(key)) weatherCondition = ForecastNextHour.#Configs.WeatherCondition[key];
 		});
-		log(`✅ WeatherCondition: ${weatherCondition}`, "");
+		Console.log(`✅ WeatherCondition: ${weatherCondition}`);
 		return weatherCondition;
 	};
 
 	static PrecipitationType(sentence) {
-		log(`☑️ PrecipitationType, sentence: ${sentence}`, "");
+		Console.log("☑️ PrecipitationType", `sentence: ${sentence}`);
 		let precipitationType = "CLEAR";
-		Object.keys(this.#Configs.PrecipitationType).forEach(key => {
-			if (sentence.includes(key)) precipitationType = this.#Configs.PrecipitationType[key];
+		Object.keys(ForecastNextHour.#Configs.PrecipitationType).forEach(key => {
+			if (sentence.includes(key)) precipitationType = ForecastNextHour.#Configs.PrecipitationType[key];
 		});
-		log(`✅ PrecipitationType: ${precipitationType}`, "");
+		Console.log(`✅ PrecipitationType: ${precipitationType}`);
 		return precipitationType;
 	};
 
 	static ConditionType(precipitationIntensity, precipitationType, units = "mmph") {
 		// refer: https://docs.caiyunapp.com/weather-api/v2/v2.6/tables/precip.html
-		//log(`☑️ ConditionType`, "");
-		//log(`☑️ ConditionType, precipitationIntensity: ${precipitationIntensity}, precipitationChance: ${precipitationChance}, precipitationType: ${precipitationType}`, "");
-		const Range = this.#Configs.Precipitation.Range[units];
+		//Console.log("☑️ ConditionType");
+		//Console.debug(`precipitationIntensity: ${precipitationIntensity}`, `precipitationChance: ${precipitationChance}`, `precipitationType: ${precipitationType}`);
+		const Range = ForecastNextHour.#Configs.Precipitation.Range[units];
 		let condition = "CLEAR";
 		if (precipitationIntensity === 0) condition = "CLEAR"
 		else if (precipitationIntensity > Range.NO[0] && precipitationIntensity <= Range.NO[1]) {
@@ -154,26 +155,26 @@ export default class ForecastNextHour {
 					break;
 			};
 		};
-		//log(`✅ #ConditionType: ${condition}`, "");
+		//Console.log(`✅ #ConditionType: ${condition}`);
 		return condition;
 	};
 
 	static Minute(minutes = [], description = "", units = "mmph") {
-		log(`☑️ Minute`, "");
-		const PrecipitationType = this.PrecipitationType(description);
+		Console.log("☑️ Minute");
+		const PrecipitationType = ForecastNextHour.PrecipitationType(description);
 		minutes = minutes.map(minute => {
 			//minute.precipitationIntensity = Math.round(minute.precipitationIntensity * 1000000) / 1000000; // 六位小数
-			minute.condition = this.ConditionType(minute.precipitationIntensity, PrecipitationType, units);
-			minute.perceivedPrecipitationIntensity = this.ConvertPrecipitationIntensity(minute.precipitationIntensity, minute.condition, units);
+			minute.condition = ForecastNextHour.ConditionType(minute.precipitationIntensity, PrecipitationType, units);
+			minute.perceivedPrecipitationIntensity = ForecastNextHour.ConvertPrecipitationIntensity(minute.precipitationIntensity, minute.condition, units);
 			minute.precipitationType = (minute.perceivedPrecipitationIntensity) ? PrecipitationType : "CLEAR";
 			return minute;
 		});
-		log(`✅ Minute`, "");
+		Console.log("✅ Minute");
 		return minutes;
 	};
 
 	static Summary(minutes = []) {
-		log(`☑️ Summary`, "");
+		Console.log("☑️ Summary");
 		const Summaries = [];
 		const Summary = {
 			"condition": "CLEAR",
@@ -240,12 +241,12 @@ export default class ForecastNextHour {
 					break;
 			};
 		};
-		log(`✅ Summary`, "");
+		Console.log("✅ Summary");
 		return Summaries;
 	};
 
 	static Condition(minutes = []) {
-		log(`☑️ Condition`, "");
+		Console.log("☑️ Condition");
 		const Conditions = [];
 		const Condition = {
 			"beginCondition": "CLEAR",
@@ -258,10 +259,10 @@ export default class ForecastNextHour {
 		for (let i = 0; i < Length; i++) {
 			const minute = minutes[i];
 			const previousMinute = minutes[i - 1];
-			//log(`⚠️ ${i}, before, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`, "");
+			//Console.debug(`⚠️ ${i}, before, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 			switch (i) {
 				case 0:
-					//log(`⚠️ ${i}, before, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`, "");
+					//Console.debug(`⚠️ ${i}, before, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 					Condition.beginCondition = minute.condition;
 					Condition.endCondition = minute.condition;
 					Condition.startTime = minute.startTime;
@@ -274,7 +275,7 @@ export default class ForecastNextHour {
 							break;
 					};
 					Condition.parameters = [];
-					//log(`⚠️ ${i}, after, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`, "");
+					//Console.debug(`⚠️ ${i}, after, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 					break;
 				default:
 					switch (minute?.precipitationType) {
@@ -356,10 +357,10 @@ export default class ForecastNextHour {
 									Condition.parameters = [{ "date": Condition.endTime, "type": "FIRST_AT" }];
 									break;
 								case "START_STOP": // ✅当前RAIN
-									log(`⚠️ START_STOP\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`, "");
+									Console.error(`⚠️ START_STOP\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 									break;
 								case "STOP_START": // ✅当前CLEAR
-									log(`⚠️ STOP_START\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`, "");
+									Console.error(`⚠️ STOP_START\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 									break;
 							};
 							break;
@@ -401,10 +402,10 @@ export default class ForecastNextHour {
 							Condition.startTime = Condition.endTime;
 							break;
 						case "START_STOP": // ✅当前CLEAR
-							log(`⚠️ START_STOP\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
+							Console.error(`⚠️ START_STOP\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 							break;
 						case "STOP_START": // ✅当前RAIN
-							log(`⚠️ STOP_START\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
+							Console.error(`⚠️ STOP_START\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 							break;
 					};
 					Condition.endTime = 0; // ⚠️空值必须写零！
@@ -412,16 +413,16 @@ export default class ForecastNextHour {
 					Conditions.push({ ...Condition });
 					break;
 			};
-			//log(`⚠️ ${i}, after, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`, "");
+			//Console.debug(`⚠️ ${i}, after, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 		};
-		log(`✅ Condition`, "");
+		Console.log("✅ Condition");
 		return Conditions;
 	};
 
 	static ConvertPrecipitationIntensity(precipitationIntensity, condition, units = "mmph") {
-		//log(`☑️ ConvertPrecipitationIntensity`, "");
+		//Console.log("☑️ ConvertPrecipitationIntensity");
 		let perceivedPrecipitationIntensity = 0;
-		const Range = this.#Configs.Precipitation.Range[units];
+		const Range = ForecastNextHour.#Configs.Precipitation.Range[units];
 		let level = 0;
 		let range = [];
 		switch (condition) {
@@ -454,7 +455,7 @@ export default class ForecastNextHour {
 		perceivedPrecipitationIntensity = Math.round(perceivedPrecipitationIntensity * 1000) / 1000;
 		perceivedPrecipitationIntensity = Math.max(0, perceivedPrecipitationIntensity);
 		perceivedPrecipitationIntensity = Math.min(3, perceivedPrecipitationIntensity);
-		//log(`✅ ConvertPrecipitationIntensity: ${perceivedPrecipitationIntensity}`, "");
+		//Console.log(`✅ ConvertPrecipitationIntensity: ${perceivedPrecipitationIntensity}`);
 		return perceivedPrecipitationIntensity;
 	};
 };

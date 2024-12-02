@@ -1,7 +1,7 @@
-import { log } from "@nsnanocat/util";
+import { Console } from "@nsnanocat/util";
 
 export default function providerNameToLogo(providerName, version) {
-    log(`☑️ providerNameToLogo, providerName: ${providerName}, version: ${version}`, "");
+    Console.log("☑️ providerNameToLogo", `providerName: ${providerName}`, `version: ${version}`);
     let providerLogo;
     switch (providerName?.split("\n")?.[0]) {
         case "WAQI":
@@ -36,6 +36,6 @@ export default function providerNameToLogo(providerName, version) {
         default:
             break;
     };
-    log("✅ providerNameToLogo", "");
+    Console.log("✅ providerNameToLogo");
     return providerLogo;
 };

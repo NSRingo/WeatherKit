@@ -1,4 +1,4 @@
-import { Lodash as _, fetch, log, logError } from "@nsnanocat/util";
+import { Console, fetch, Lodash as _ } from "@nsnanocat/util";
 import AirQuality from "./AirQuality.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
@@ -8,7 +8,7 @@ export default class ColorfulClouds {
     constructor(options) {
         this.Name = "ColorfulClouds";
         this.Version = "3.0.5";
-        log(`\n🟧 ${this.Name} v${this.Version}\n`, "");
+        Console.log(`🟧 ${this.Name} v${this.Version}`);
         this.url = new URL($request.url);
         this.header = { "Content-Type": "application/json" };
         const Parameters = parseWeatherKitURL(this.url);
@@ -30,7 +30,7 @@ export default class ColorfulClouds {
     };
 
     async RealTime(token = this.token) {
-        log(`☑️ RealTime`, "");
+        Console.log("☑️ RealTime");
         const request = {
             "url": `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/realtime`,
             "header": this.header,
@@ -58,7 +58,7 @@ export default class ColorfulClouds {
                                     "sourceType": "STATION",
                                 },
                                 "categoryIndex": AirQuality.CategoryIndex(body?.result?.realtime?.air_quality?.aqi.chn, "HJ_633"),
-                                "index": parseInt(body?.result?.realtime?.air_quality?.aqi.chn, 10),
+                                "index": Number.parseInt(body?.result?.realtime?.air_quality?.aqi.chn, 10),
                                 "isSignificant": true,
                                 "pollutants": this.#CreatePollutants(body?.result?.realtime?.air_quality),
                                 "previousDayComparison": "UNKNOWN",
@@ -79,14 +79,14 @@ export default class ColorfulClouds {
         } catch (error) {
             this.logErr(error);
         } finally {
-            //log(`🚧 RealTime airQuality: ${JSON.stringify(airQuality, null, 2)}`, "");
-            log(`✅ RealTime`, "");
+            //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+            Console.log("✅ RealTime");
             return airQuality;
         };
     };
 
     async Minutely(token = this.token) {
-        log(`☑️ Minutely`, "");
+        Console.log("☑️ Minutely");
         const request = {
             "url": `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/minutely?unit=metric:v2`,
             "header": this.header,
@@ -152,16 +152,16 @@ export default class ColorfulClouds {
                     throw Error(JSON.stringify(body ?? {}));
             };
         } catch (error) {
-            logError(error);
+            Console.error(error);
         } finally {
-            //log(`🚧 forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`, "");
-            log(`✅ Minutely`, "");
+            //Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
+            Console.log("✅ Minutely");
             return forecastNextHour;
         };
     };
 
     async Hourly(token = this.token, hourlysteps = 1, begin = Date.now()) {
-        log(`☑️ Hourly`, "");
+        Console.log("☑️ Hourly");
         const request = {
             "url": `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/hourly?hourlysteps=${hourlysteps}&begin=${parseInt(begin / 1000, 10)}`,
             "header": this.header,
@@ -189,7 +189,7 @@ export default class ColorfulClouds {
                                     "sourceType": "STATION",
                                 },
                                 "categoryIndex": AirQuality.CategoryIndex(body?.result?.hourly?.air_quality?.aqi?.[0]?.value?.chn, "HJ_633"),
-                                "index": parseInt(body?.result?.hourly?.air_quality?.aqi?.[0]?.value?.chn, 10),
+                                "index": Number.parseInt(body?.result?.hourly?.air_quality?.aqi?.[0]?.value?.chn, 10),
                                 "isSignificant": true,
                                 "pollutants": [],
                                 "previousDayComparison": "UNKNOWN",
@@ -210,14 +210,14 @@ export default class ColorfulClouds {
         } catch (error) {
             this.logErr(error);
         } finally {
-            //log(`🚧 Hourly airQuality: ${JSON.stringify(airQuality, null, 2)}`, "");
-            log(`✅ Hourly`, "");
+            //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+            Console.log("✅ Hourly");
             return airQuality;
         };
     };
 
     #CreatePollutants(pollutantsObj = {}) {
-        console.log(`☑️ CreatePollutants`, "");
+        Console.log("☑️ CreatePollutants");
         let pollutants = [];
         for (const [key, value] of Object.entries(pollutantsObj)) {
             switch (key) {
@@ -243,8 +243,8 @@ export default class ColorfulClouds {
                     break;
             };
         };
-        //console.log(`🚧 CreatePollutants, pollutants: ${JSON.stringify(pollutants, null, 2)}`, "");
-        console.log(`✅ CreatePollutants`, "");
+        //Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
+        Console.log("✅ CreatePollutants");
         return pollutants;
     };
 };

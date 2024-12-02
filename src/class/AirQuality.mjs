@@ -1,4 +1,4 @@
-import { log } from "@nsnanocat/util";
+import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
@@ -429,58 +429,58 @@ export default class AirQuality {
 	};
 
 	static Pollutants(pollutants = [], scale = "WAQI_InstantCast") {
-		log(`☑️ Pollutants, scale: ${scale}`, "");
+		Console.log("☑️ Pollutants", `scale: ${scale}`);
 		pollutants = pollutants.map(pollutant => {
 			// Convert unit based on standard
-			const PollutantStandard = this.#Config.Scales[scale].pollutants[pollutant.pollutantType];
-			pollutant.convertedAmount = this.ConvertUnit(pollutant.amount, pollutant.units, PollutantStandard.units, PollutantStandard.ppxToXGM3);
+			const PollutantStandard = AirQuality.#Config.Scales[scale].pollutants[pollutant.pollutantType];
+			pollutant.convertedAmount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, PollutantStandard.units, PollutantStandard.ppxToXGM3);
 			pollutant.convertedUnits = PollutantStandard.units;
 			pollutant = { ...PollutantStandard, ...pollutant };
 			// Calculate AQI for each pollutant
 			let categoryIndexKey;
 			for (const [key, value] of Object.entries(pollutant.ranges)) {
-				categoryIndexKey = parseInt(key, 10);
+				categoryIndexKey = Number.parseInt(key, 10);
 				if (pollutant.convertedAmount >= value[0] && pollutant.convertedAmount <= value[1]) break;
 			};
 			pollutant.range = pollutant.ranges[categoryIndexKey];
-			pollutant.categoryIndex = parseInt(categoryIndexKey, 10);
-			pollutant.category = this.#Config.Scales[scale].categoryIndex[categoryIndexKey];
+			pollutant.categoryIndex = Number.parseInt(categoryIndexKey, 10);
+			pollutant.category = AirQuality.#Config.Scales[scale].categoryIndex[categoryIndexKey];
 			pollutant.AQI = Math.round(
 				((pollutant.category[1] - pollutant.category[0]) * (pollutant.convertedAmount - pollutant.range[0])) / (pollutant.range[1] - pollutant.range[0])
 				+ pollutant.category[0],
 			);
 			return pollutant;
 		});
-		//log(`🚧 Pollutants, pollutants: ${JSON.stringify(pollutants, null, 2)}`, "");
-		log(`✅ Pollutants`, "");
+		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
+		Console.log("✅ Pollutants");
 		return pollutants;
 	};
 
 	static ConvertScale(pollutants = [], scale = "WAQI_InstantCast", convertUnits = false) {
-		log(`☑️ ConvertScale`, "");
-		pollutants = this.Pollutants(pollutants, scale);
+		Console.log("☑️ ConvertScale");
+		pollutants = AirQuality.Pollutants(pollutants, scale);
 		const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => previous.AQI > current.AQI ? previous : current);
-		let airQuality = {
+		const airQuality = {
 			"index": index,
 			"pollutants": pollutants,
-			"scale": this.#Config.Scales[scale].scale,
+			"scale": AirQuality.#Config.Scales[scale].scale,
 			"primaryPollutant": primaryPollutant,
-			"categoryIndex": this.CategoryIndex(index, scale),
+			"categoryIndex": AirQuality.CategoryIndex(index, scale),
 		};
-		airQuality.isSignificant = airQuality.categoryIndex >= this.#Config.Scales[scale].significant;
+		airQuality.isSignificant = airQuality.categoryIndex >= AirQuality.#Config.Scales[scale].significant;
 		if (convertUnits) airQuality.pollutants = airQuality.pollutants.map(pollutant => {
 			pollutant.amount = pollutant.convertedAmount;
 			pollutant.units = pollutant.convertedUnits;
 			return pollutant;
 		});
-		//log(`🚧 ConvertScale, airQuality: ${JSON.stringify(airQuality, null, 2)}`, "");
-		log(`✅ ConvertScale`, "");
+		//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+		Console.log("✅ ConvertScale");
 		return airQuality;
 	};
 
-	static ConvertUnit(amount = Number(), unitFrom, unitTo, ppxToXGM3Value = -1) {
-		//log(`☑️ ConvertUnit`, "");
-		//log(`☑️ ConvertUnit\namount: ${amount}   ppxToXGM3Value: ${ppxToXGM3Value}\nunitFrom: ${unitFrom}   unitTo: ${unitTo}`, "");
+	static ConvertUnit(amount, unitFrom, unitTo, ppxToXGM3Value = -1) {
+		Console.log("☑️ ConvertUnit");
+		Console.debug(`amount: ${amount}`, `ppxToXGM3Value: ${ppxToXGM3Value}`, `unitFrom: ${unitFrom}`, `unitTo: ${unitTo}`);
 		if (amount < 0) amount = -1;
 		else switch (unitFrom) {
 			case 'PARTS_PER_MILLION':
@@ -494,10 +494,10 @@ export default class AirQuality {
 						amount = amount * ppxToXGM3Value;
 						break;
 					case 'MICROGRAMS_PER_CUBIC_METER': {
-						const inPpb = this.ConvertUnit(amount, unitFrom, 'PARTS_PER_BILLION', ppxToXGM3Value);
+						const inPpb = AirQuality.ConvertUnit(amount, unitFrom, 'PARTS_PER_BILLION', ppxToXGM3Value);
 						amount = inPpb * ppxToXGM3Value;
 						break;
-					};
+					}
 					default:
 						amount = -1;
 						break;
@@ -511,10 +511,10 @@ export default class AirQuality {
 						amount = amount * 0.001;
 						break;
 					case 'MILLIGRAMS_PER_CUBIC_METER': {
-						const inPpm = this.ConvertUnit(amount, unitFrom, 'PARTS_PER_MILLION', ppxToXGM3Value);
+						const inPpm = AirQuality.ConvertUnit(amount, unitFrom, 'PARTS_PER_MILLION', ppxToXGM3Value);
 						amount = inPpm * ppxToXGM3Value;
 						break;
-					};
+					}
 					case 'MICROGRAMS_PER_CUBIC_METER':
 						amount = amount * ppxToXGM3Value;
 						break;
@@ -534,10 +534,10 @@ export default class AirQuality {
 						amount = amount / ppxToXGM3Value;
 						break;
 					case 'PARTS_PER_BILLION': {
-						const inUgM3 = this.ConvertUnit(amount, unitFrom, 'MICROGRAMS_PER_CUBIC_METER', ppxToXGM3Value);
+						const inUgM3 = AirQuality.ConvertUnit(amount, unitFrom, 'MICROGRAMS_PER_CUBIC_METER', ppxToXGM3Value);
 						amount = inUgM3 / ppxToXGM3Value;
 						break;
-					};
+					}
 					default:
 						amount = -1;
 						break;
@@ -551,10 +551,10 @@ export default class AirQuality {
 						amount = amount * 0.001;
 						break;
 					case 'PARTS_PER_MILLION': {
-						const inMgM3 = this.ConvertUnit(amount, unitFrom, 'MILLIGRAMS_PER_CUBIC_METER', ppxToXGM3Value);
+						const inMgM3 = AirQuality.ConvertUnit(amount, unitFrom, 'MILLIGRAMS_PER_CUBIC_METER', ppxToXGM3Value);
 						amount = inMgM3 / ppxToXGM3Value;
 						break;
-					};
+					}
 					case 'PARTS_PER_BILLION':
 						amount = amount / ppxToXGM3Value;
 						break;
@@ -567,7 +567,7 @@ export default class AirQuality {
 				amount = -1;
 				break;
 		};
-		//log(`✅ ConvertUnit, amount: ${amount}`, "");
+		//Console.log("✅ ConvertUnit", `amount: ${amount}`);
 		return amount;
 	};
 
@@ -576,21 +576,21 @@ export default class AirQuality {
 			case "number":
 				break;
 			case "string":
-				aqi = parseInt(aqi, 10);
+				aqi = Number.parseInt(aqi, 10);
 				break;
 		};
-		log(`☑️ CategoryIndex, aqi: ${aqi}`, "");
+		Console.log("☑️ CategoryIndex", `aqi: ${aqi}`);
 		let categoryIndex;
-		for (const [key, value] of Object.entries(this.#Config.Scales[scale].categoryIndex)) {
-			categoryIndex = parseInt(key, 10);
+		for (const [key, value] of Object.entries(AirQuality.#Config.Scales[scale].categoryIndex)) {
+			categoryIndex = Number.parseInt(key, 10);
 			if (aqi >= value[0] && aqi <= value[1]) break;
 		};
-		log(`✅ CategoryIndex, categoryIndex: ${categoryIndex}`, "");
+		Console.log("✅ CategoryIndex", `categoryIndex: ${categoryIndex}`);
 		return categoryIndex;
 	};
 
 	static ComparisonTrend(todayAQI, yesterdayAQI) {
-		log(`☑️ ComparisonTrend, todayAQI: ${todayAQI}, yesterdayAQI: ${yesterdayAQI}`, "");
+		Console.log("☑️ ComparisonTrend", `todayAQI: ${todayAQI}`, `yesterdayAQI: ${yesterdayAQI}`);
 		let trend = "UNKNOWN";
 		if (isNaN(todayAQI - yesterdayAQI)) trend = "UNKNOWN";
 		else switch (todayAQI - yesterdayAQI) {
@@ -636,12 +636,12 @@ export default class AirQuality {
 				};
 				break;
 		};
-		log(`✅ ComparisonTrend, trend: ${trend}`, "");
+		Console.log("✅ ComparisonTrend", `trend: ${trend}`);
 		return trend;
 	};
 
 	static FixUnits(pollutants = []) {
-		log(`☑️ FixUnits`, "");
+		Console.log("☑️ FixUnits");
 		pollutants = pollutants.map(pollutant => {
 			switch (pollutant.units) {
 				case "PARTS_PER_MILLION":
@@ -657,8 +657,8 @@ export default class AirQuality {
 			};
 			return pollutant;
 		});
-		//log(`🚧 FixUnits, pollutants: ${JSON.stringify(pollutants, null, 2)}`, "");
-		log(`✅ FixUnits`, "");
+		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
+		Console.log("✅ FixUnits");
 		return pollutants;
 	};
 };

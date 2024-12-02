@@ -1,4 +1,4 @@
-import { fetch, log, logError, time } from "@nsnanocat/util";
+import { Console, fetch, Lodash as _, time } from "@nsnanocat/util";
 import AirQuality from "../class/AirQuality.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
@@ -8,7 +8,7 @@ export default class QWeather {
     constructor(options) {
         this.Name = "QWeather";
         this.Version = "4.1.4";
-        log(`\n🟧 ${this.Name} v${this.Version}\n`, "");
+        Console.log(`🟧 ${this.Name} v${this.Version}`);
         this.url = new URL($request.url);
         this.host = "devapi.qweather.com";
         this.header = { "Content-Type": "application/json" };
@@ -41,7 +41,7 @@ export default class QWeather {
     };
 
     async GeoAPI(token = this.token, path = "city/lookup") {
-        log(`☑️ GeoAPI`, "");
+        Console.log("☑️ GeoAPI");
         const request = {
             "url": `https://geoapi.qweather.com/v2/${path}?location=${this.longitude},${this.latitude}&key=${token}`,
             "header": this.header,
@@ -63,16 +63,16 @@ export default class QWeather {
                     throw Error(body?.code);
             };
         } catch (error) {
-            logError(error);
+            Console.error(error);
         } finally {
-            log(`🚧 GeoAPI metadata: ${JSON.stringify(metadata, null, 2)}`, "");
-            log(`✅ GeoAPI`, "");
+            Console.debug(`metadata: ${JSON.stringify(metadata, null, 2)}`);
+            Console.log("✅ GeoAPI");
             return metadata;
         };
     };
 
     async AirNow(token = this.token) {
-        log(`☑️ AirNow`, "");
+        Console.log("☑️ AirNow");
         const request = {
             "url": `https://${this.host}/v7/air/now?location=${this.longitude},${this.latitude}&key=${token}`,
             "header": this.header,
@@ -97,8 +97,8 @@ export default class QWeather {
                             "temporarilyUnavailable": false,
                             "sourceType": "STATION",
                         },
-                        "categoryIndex": parseInt(body?.now?.level, 10),
-                        "index": parseInt(body?.now?.aqi, 10),
+                        "categoryIndex": Number.parseInt(body?.now?.level, 10),
+                        "index": Number.parseInt(body?.now?.aqi, 10),
                         "isSignificant": true,
                         "pollutants": this.#CreatePollutants(body?.now),
                         "previousDayComparison": "UNKNOWN",
@@ -119,16 +119,16 @@ export default class QWeather {
                     throw Error(body?.code);
             };
         } catch (error) {
-            logError(error);
+            Console.error(error);
         } finally {
-            //log(`🚧 AirNow airQuality: ${JSON.stringify(airQuality, null, 2)}`, "");
-            log(`✅ AirNow`, "");
+            //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+            Console.log("✅ AirNow");
             return airQuality;
         };
     };
 
     async AirQualityCurrent(token = this.token) {
-        log(`☑️ AirQualityCurrent`, "");
+        Console.log("☑️ AirQualityCurrent");
         const request = {
             "url": `https://${this.host}/airquality/v1/current/${this.latitude}/${this.longitude}?key=${token}`,
             "header": this.header,
@@ -154,7 +154,7 @@ export default class QWeather {
                             "sourceType": "STATION",
                             "stationID": body?.stations?.[0]?.id,
                         },
-                        "categoryIndex": parseInt(body?.indexes?.[0]?.level, 10),
+                        "categoryIndex": Number.parseInt(body?.indexes?.[0]?.level, 10),
                         "index": body?.indexes?.[0]?.aqi,
                         "isSignificant": true,
                         "pollutants": body?.pollutants?.map(pollutant => {
@@ -173,16 +173,16 @@ export default class QWeather {
                     throw Error(JSON.stringify(body?.error, null, 2));
             };
         } catch (error) {
-            logError(error);
+            Console.error(error);
         } finally {
-            //log(`🚧 AirQualityCurrent airQuality: ${JSON.stringify(airQuality, null, 2)}`, "");
-            log(`✅ AirQualityCurrent`, "");
+            //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+            Console.log("✅ AirQualityCurrent");
             return airQuality;
         };
     };
 
     async Minutely(token = this.token) {
-        log(`☑️ Minutely, host: ${this.host}`, "");
+        Console.log("☑️ Minutely", `host: ${this.host}`);
         const request = {
             "url": `https://${this.host}/v7/minutely/5m?location=${this.longitude},${this.latitude}&key=${token}`,
             "header": this.header,
@@ -216,7 +216,7 @@ export default class QWeather {
                             const minute = {
                                 "perceivedPrecipitationIntensity": 0,
                                 "precipitationChance": 0,
-                                "precipitationIntensity": parseFloat(minutely.precip),
+                                "precipitationIntensity": Number.parseFloat(minutely.precip),
                                 "startTime": new Date(minutely.fxTime) / 1000,
                             };
                             let minutes = [{ ...minute }, { ...minute }, { ...minute }, { ...minute }, { ...minute }];
@@ -225,7 +225,7 @@ export default class QWeather {
                                 return minute;
                             });
                             return minutes;
-                        }).flat(Infinity),
+                        }).flat(Number.POSITIVE_INFINITY),
                         "summary": []
                     };
                     forecastNextHour.minutes.length = Math.min(85, forecastNextHour.minutes.length);
@@ -246,16 +246,16 @@ export default class QWeather {
                     throw Error(body?.code);
             };
         } catch (error) {
-            logError(error);
+            Console.error(error);
         } finally {
-            //log(`🚧 forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`, "");
-            log(`✅ Minutely`, "");
+            //Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
+            Console.log("✅ Minutely");
             return forecastNextHour;
         };
     };
 
     async HistoricalAir(token = this.token, locationID = new Number, date = time("yyyyMMdd", Date.now() - 24 * 60 * 60 * 1000)) {
-        log(`☑️ HistoricalAir, locationID:${locationID}, date: ${date}`, "");
+        Console.log("☑️ HistoricalAir", `locationID:${locationID}`, `date: ${date}`);
         const request = {
             "url": `https://${this.host}/v7/historical/air/?location=${locationID}&date=${date}&key=${token}`,
             "header": this.header,
@@ -273,8 +273,8 @@ export default class QWeather {
                             "providerName": "和风天气",
                             "sourceType": "STATION",
                         },
-                        "categoryIndex": parseInt(body?.airHourly?.[Hour]?.level, 10),
-                        "index": parseInt(body?.airHourly?.[Hour]?.aqi, 10),
+                        "categoryIndex": Number.parseInt(body?.airHourly?.[Hour]?.level, 10),
+                        "index": Number.parseInt(body?.airHourly?.[Hour]?.aqi, 10),
                         "pollutants": this.#CreatePollutants(body?.airHourly?.[Hour]),
                         "primaryPollutant": this.#Config.Pollutants[body?.airHourly?.[Hour]?.primary] || "NOT_AVAILABLE",
                         "scale": "HJ6332012"
@@ -292,16 +292,16 @@ export default class QWeather {
                     throw Error(body?.code);
             };
         } catch (error) {
-            logError(error);
+            Console.error(error);
         } finally {
-            log(`🚧 HistoricalAir airQuality: ${JSON.stringify(airQuality, null, 2)}`, "");
-            log(`✅ HistoricalAir`, "");
+            Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+            Console.log("✅ HistoricalAir");
             return airQuality;
         };
     };
 
     #CreatePollutants(pollutantsObj = {}) {
-        log(`☑️ CreatePollutants`, "");
+        Console.log("☑️ CreatePollutants");
         let pollutants = [];
         for (const [key, value] of Object.entries(pollutantsObj)) {
             switch (key) {
@@ -315,15 +315,15 @@ export default class QWeather {
                 case "pm2p5":
                 case "pm10":
                     pollutants.push({
-                        "amount": parseFloat(value ?? -1),
+                        "amount": Number.parseFloat(value ?? -1),
                         "pollutantType": this.#Config.Pollutants[key],
                         "units": "MICROGRAMS_PER_CUBIC_METER",
                     });
                     break;
             };
         };
-        //log(`🚧 CreatePollutants, pollutants: ${JSON.stringify(pollutants, null, 2)}`, "");
-        log(`✅ CreatePollutants`, "");
+        //Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
+        Console.log("✅ CreatePollutants");
         return pollutants;
     };
 };

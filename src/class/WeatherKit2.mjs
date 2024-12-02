@@ -1,11 +1,11 @@
-import { log } from "@nsnanocat/util";
+import { Console } from "@nsnanocat/util";
 import * as WK2 from "../proto/apple/wk2.js";
 
 export default class WeatherKit2 {
 	static Name = "WeatherKit2";
 	static Version = "1.2.0";
 	static encode(builder, dataSet = "all", data = {}) {
-		log(`☑️ WeatherKit2.encode, dataSet: ${dataSet}`, "");
+		Console.log("☑️ WeatherKit2.encode", `dataSet: ${dataSet}`);
 		let offset;
 		let metadataOffset;
 		if (data?.metadata) metadataOffset = WK2.Metadata.createMetadata(builder, builder.createString(data?.metadata?.attributionUrl), data?.metadata?.expireTime, builder.createString(data?.metadata?.language), data?.metadata?.latitude, data?.metadata?.longitude, builder.createString(data?.metadata?.providerLogo), builder.createString(data?.metadata?.providerName), data?.metadata?.readTime, data?.metadata?.reportedTime, data?.metadata?.temporarilyUnavailable, WK2.SourceType[data?.metadata?.sourceType], data?.metadata?.unknown11, data?.metadata?.unknown12, data?.metadata?.unknown13, data?.metadata?.unknown14, data?.metadata?.unknown15);
@@ -174,12 +174,12 @@ export default class WeatherKit2 {
 				offset = WK2.LocationInfo.createLocationInfo(builder, metadataOffset, builder.createString(data?.preciseName), builder.createString(data?.countryCode), builder.createString(data?.timeZone), builder.createString(data?.primaryName));
 				break;
 		};
-		log(`✅ WeatherKit2.encode, dataSet: ${dataSet}`, "");
+		Console.log("✅ WeatherKit2.encode", `dataSet: ${dataSet}`);
 		return offset;
 	};
 
 	static decode(byteBuffer, dataSet = "all", data = {}) {
-		log(`☑️ WeatherKit2.decode, dataSet: ${dataSet}`, "");
+		Console.log("☑️ WeatherKit2.decode", `dataSet: ${dataSet}`);
 		const Weather = WK2.Weather.getRootAsWeather(byteBuffer);
 		const AirQualityData = Weather?.airQuality();
 		const CurrentWeatherData = Weather?.currentWeather();
@@ -663,7 +663,7 @@ export default class WeatherKit2 {
 					"timeZone": LocationInfoData?.timeZone(),
 				};
 		};
-		log(`✅ WeatherKit2.decode, dataSet: ${dataSet}`, "");
+		Console.log("✅ WeatherKit2.decode", `dataSet: ${dataSet}`);
 		return data;
 	};
 

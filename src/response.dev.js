@@ -1,4 +1,4 @@
-import { $app, Lodash as _, Storage, fetch, notification, log, logError, wait, done } from "@nsnanocat/util";
+import { $app, Console, done, fetch, Lodash as _, notification, Storage, wait } from "@nsnanocat/util";
 import database from "./function/database.mjs";
 import setENV from "./function/setENV.mjs";
 import providerNameToLogo from "./function/providerNameToLogo.mjs";
@@ -11,16 +11,13 @@ import * as flatbuffers from "flatbuffers";
 /***************** Processing *****************/
 // 解构URL
 const url = new URL($request.url);
-log(`⚠ url: ${url.toJSON()}`, "");
+Console.info(`url: ${url.toJSON()}`);
 // 获取连接参数
-const METHOD = $request.method,
-	HOST = url.hostname,
-	PATH = url.pathname,
-	PATHs = url.pathname.split("/").filter(Boolean);
-log(`⚠ METHOD: ${METHOD}, HOST: ${HOST}, PATH: ${PATH}, PATHs: ${PATHs}`, "");
+const PATHs = url.pathname.split("/").filter(Boolean);
+Console.info(`PATHs: ${PATHs}`);
 // 解析格式
 const FORMAT = ($response.headers?.["Content-Type"] ?? $response.headers?.["content-type"])?.split(";")?.[0];
-log(`⚠ FORMAT: ${FORMAT}`, "");
+Console.info(`FORMAT: ${FORMAT}`);
 !(async () => {
 	/**
 	 * 设置
@@ -36,14 +33,14 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 		case "application/x-www-form-urlencoded":
 		case "text/plain":
 		default:
-			//log(`🚧 body: ${body}`, "");
+			//Console.debug(`body: ${body}`);
 			break;
 		case "application/x-mpegURL":
 		case "application/x-mpegurl":
 		case "application/vnd.apple.mpegurl":
 		case "audio/mpegurl":
 			//body = M3U8.parse($response.body);
-			//log(`🚧 body: ${JSON.stringify(body)}`, "");
+			//Console.debug(`body: ${JSON.stringify(body)}`);
 			//$response.body = M3U8.stringify(body);
 			break;
 		case "text/xml":
@@ -53,23 +50,23 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 		case "application/plist":
 		case "application/x-plist":
 			//body = XML.parse($response.body);
-			//log(`🚧 body: ${JSON.stringify(body)}`, "");
+			//Console.debug(`body: ${JSON.stringify(body)}`);
 			//$response.body = XML.stringify(body);
 			break;
 		case "text/vtt":
 		case "application/vtt":
 			//body = VTT.parse($response.body);
-			//log(`🚧 body: ${JSON.stringify(body)}`, "");
+			//Console.debug(`body: ${JSON.stringify(body)}`);
 			//$response.body = VTT.stringify(body);
 			break;
 		case "text/json":
 		case "application/json":
 			body = JSON.parse($response.body ?? "{}");
-			switch (HOST) {
+			switch (url.hostname) {
 				case "weatherkit.apple.com":
 					// 路径判断
-					if (PATH.startsWith("/api/v1/availability/")) {
-						log(`🚧 body: ${JSON.stringify(body)}`, "");
+					if (url.pathname.startsWith("/api/v1/availability/")) {
+						Console.debug(`body: ${JSON.stringify(body)}`);
 						body = Configs?.Availability?.v2;
 					}
 					break;
@@ -83,22 +80,22 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 		case "application/grpc":
 		case "application/grpc+proto":
 		case "application/octet-stream": {
-			//log(`🚧 $response: ${JSON.stringify($response, null, 2)}`, "");
+			//Console.debug(`$response: ${JSON.stringify($response, null, 2)}`);
 			let rawBody = $app === "Quantumult X" ? new Uint8Array($response.bodyBytes ?? []) : ($response.body ?? new Uint8Array());
-			//log(`🚧 isBuffer? ${ArrayBuffer.isView(rawBody)}: ${JSON.stringify(rawBody)}`, "");
+			//Console.debug(`isBuffer? ${ArrayBuffer.isView(rawBody)}: ${JSON.stringify(rawBody)}`);
 			switch (FORMAT) {
 				case "application/vnd.apple.flatbuffer": {
 					// 解析FlatBuffer
 					const ByteBuffer = new flatbuffers.ByteBuffer(rawBody);
 					const Builder = new flatbuffers.Builder();
 					// 主机判断
-					switch (HOST) {
+					switch (url.hostname) {
 						case "weatherkit.apple.com":
 							// 路径判断
-							if (PATH.startsWith("/api/v2/weather/")) {
+							if (url.pathname.startsWith("/api/v2/weather/")) {
 								body = WeatherKit2.decode(ByteBuffer, "all");
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
-									log(`🚧 body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`, "");
+									Console.debug(`body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`);
 									// InjectAirQuality
 									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body = await InjectAirQuality(url, body, Settings);
 									// CompareAirQuality
@@ -129,28 +126,28 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 								}
 								if (url.searchParams.get("dataSets").includes("currentWeather")) {
 									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
-									//log(`🚧 body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`, "");
+									//Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
 								}
 								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
-									log(`🚧 body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`, "");
+									Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
 									if (!body?.forecastNextHour) body = await InjectForecastNextHour(url, body, Settings);
 									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("weatherAlerts")) {
 									if (body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
-									log(`🚧 body.weatherAlerts: ${JSON.stringify(body?.weatherAlerts, null, 2)}`, "");
+									Console.debug(`body.weatherAlerts: ${JSON.stringify(body?.weatherAlerts, null, 2)}`);
 								}
 								if (url.searchParams.get("dataSets").includes("WeatherChange")) {
 									if (body?.WeatherChanges?.metadata?.providerName && !body?.WeatherChanges?.metadata?.providerLogo) body.WeatherChanges.metadata.providerLogo = providerNameToLogo(body?.WeatherChanges?.metadata?.providerName, "v2");
-									log(`🚧 body.WeatherChanges: ${JSON.stringify(body?.WeatherChanges, null, 2)}`, "");
+									Console.debug(`body.WeatherChanges: ${JSON.stringify(body?.WeatherChanges, null, 2)}`);
 								}
 								if (url.searchParams.get("dataSets").includes("trendComparison")) {
 									if (body?.historicalComparisons?.metadata?.providerName && !body?.historicalComparisons?.metadata?.providerLogo) body.historicalComparisons.metadata.providerLogo = providerNameToLogo(body?.historicalComparisons?.metadata?.providerName, "v2");
-									log(`🚧 body.historicalComparisons: ${JSON.stringify(body?.historicalComparisons, null, 2)}`, "");
+									Console.debug(`body.historicalComparisons: ${JSON.stringify(body?.historicalComparisons, null, 2)}`);
 								}
 								if (url.searchParams.get("dataSets").includes("locationInfo")) {
 									if (body?.locationInfo?.metadata?.providerName && !body?.locationInfo?.metadata?.providerLogo) body.locationInfo.metadata.providerLogo = providerNameToLogo(body?.locationInfo?.metadata?.providerName, "v2");
-									log(`🚧 body.locationInfo: ${JSON.stringify(body?.locationInfo, null, 2)}`, "");
+									Console.debug(`body.locationInfo: ${JSON.stringify(body?.locationInfo, null, 2)}`);
 								}
 								const WeatherData = WeatherKit2.encode(Builder, "all", body);
 								Builder.finish(WeatherData);
@@ -177,7 +174,7 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
 		}
 	}
 })()
-	.catch(e => logError(e))
+	.catch(e => Console.error(e))
 	.finally(() => done($response));
 
 /**
@@ -186,7 +183,7 @@ log(`⚠ FORMAT: ${FORMAT}`, "");
  * @param {import('./types').Settings} Settings
  */
 async function InjectAirQuality(url, body, Settings) {
-	log("☑️ InjectAirQuality", "");
+	Console.log("☑️ InjectAirQuality");
 	let airQuality;
 	switch (Settings?.AQI?.Provider) {
 		case "WeatherKit":
@@ -222,9 +219,9 @@ async function InjectAirQuality(url, body, Settings) {
 		airQuality.metadata = { ...body?.airQuality?.metadata, ...airQuality.metadata };
 		body.airQuality = { ...body?.airQuality, ...airQuality };
 		if (!body?.airQuality?.pollutants) body.airQuality.pollutants = [];
-		log(`🚧 body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`, "");
+		Console.debug(`body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`);
 	}
-	log("✅ InjectAirQuality", "");
+	Console.log("✅ InjectAirQuality");
 	return body;
 }
 
@@ -234,7 +231,7 @@ async function InjectAirQuality(url, body, Settings) {
  * @param {import('./types').Settings} Settings
  */
 async function CompareAirQuality(url, body, Settings) {
-	log("☑️ CompareAirQuality", "");
+	Console.log("☑️ CompareAirQuality");
 	switch (body?.airQuality?.metadata?.providerName?.split("\n")?.[0]) {
 		case null:
 		case undefined:
@@ -267,7 +264,7 @@ async function CompareAirQuality(url, body, Settings) {
 			break;
 		}
 	}
-	log("✅ CompareAirQuality", "");
+	Console.log("✅ CompareAirQuality");
 	return body;
 }
 
@@ -276,7 +273,7 @@ async function CompareAirQuality(url, body, Settings) {
  * @param {import('./types').Settings} Settings
  */
 function ConvertAirQuality(body, Settings) {
-	log("☑️ ConvertAirQuality", "");
+	Console.log("☑️ ConvertAirQuality");
 	let airQuality;
 	switch (Settings?.AQI?.Local?.Scale) {
 		case "NONE":
@@ -291,9 +288,9 @@ function ConvertAirQuality(body, Settings) {
 	if (airQuality.index) {
 		body.airQuality = { ...body.airQuality, ...airQuality };
 		body.airQuality.metadata.providerName += `\nConverted using ${Settings?.AQI?.Local?.Scale}`;
-		log(`🚧 body.airQuality: ${JSON.stringify(body.airQuality, null, 2)}`, "");
+		Console.debug(`body.airQuality: ${JSON.stringify(body.airQuality, null, 2)}`);
 	}
-	log("✅ ConvertAirQuality", "");
+	Console.log("✅ ConvertAirQuality");
 	return body;
 }
 
@@ -303,7 +300,7 @@ function ConvertAirQuality(body, Settings) {
  * @param {import('./types').Settings} Settings
  */
 async function InjectForecastNextHour(url, body, Settings) {
-	log("☑️ InjectForecastNextHour", "");
+	Console.log("☑️ InjectForecastNextHour");
 	let forecastNextHour;
 	switch (Settings?.NextHour?.Provider) {
 		case "WeatherKit":
@@ -323,8 +320,8 @@ async function InjectForecastNextHour(url, body, Settings) {
 	if (forecastNextHour?.metadata) {
 		forecastNextHour.metadata = { ...body?.forecastNextHour?.metadata, ...forecastNextHour.metadata };
 		body.forecastNextHour = { ...body?.forecastNextHour, ...forecastNextHour };
-		log(`🚧 body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`, "");
+		Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
 	}
-	log("✅ InjectForecastNextHour", "");
+	Console.log("✅ InjectForecastNextHour");
 	return body;
 }
