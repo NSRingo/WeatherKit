@@ -3,22 +3,22 @@ import { defineConfig } from "@iringo/arguments-builder";
 export default defineConfig({
 	output: {
 		surge: {
-			path: "./dist/WeatherKit.sgmodule",
+			path: "./dist/iRingo.WeatherKit.sgmodule",
 			transformEgern: {
 				enable: true,
-				path: "./dist/WeatherKit.yaml",
+				path: "./dist/iRingo.WeatherKit.yaml",
 			},
 		},
 		loon: {
-			path: "./dist/WeatherKit.plugin",
+			path: "./dist/iRingo.WeatherKit.plugin",
 		},
 		customItems: [
 			{
-				path: "./dist/WeatherKit.snippet",
+				path: "./dist/iRingo.WeatherKit.snippet",
 				template: "./template/quantumultx.handlebars",
 			},
 			{
-				path: "./dist/WeatherKit.stoverride",
+				path: "./dist/iRingo.WeatherKit.stoverride",
 				template: "./template/stash.handlebars",
 			},
 		],

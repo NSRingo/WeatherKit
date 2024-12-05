@@ -48,8 +48,8 @@
 		"typescript": "^5.5.4"
 	},
 	"dependencies": {
-		"@nsnanocat/util": "^1.6.4",
+		"@nsnanocat/util": "^1.7.5",
 		"flatbuffers": "^24.3.25",
-		"node-polyfill-webpack-plugin": "^4.0.0"
+		"node-polyfill-webpack-plugin": "^4.1.0"
 	}
 }
