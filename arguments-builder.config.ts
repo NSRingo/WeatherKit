@@ -130,5 +130,20 @@ export default defineConfig({
 			placeholder: "123456789123456789abcdefghijklmnopqrstuv",
 			description: "WAQI API 令牌，填写此字段将自动使用WAQI高级API",
 		},
+		{
+			key: "LogLevel",
+			name: "[调试] 日志等级",
+			type: "string",
+			defaultValue: "WARN",
+			description: "选择脚本日志的输出等级，低于所选等级的日志将全部输出。",
+			options: [
+				{ key: "OFF", label: "关闭" },
+				{ key: "ERROR", label: "❌ 错误" },
+				{ key: "WARN", label: "⚠️ 警告" },
+				{ key: "INFO", label: "ℹ️ 信息" },
+				{ key: "DEBUG", label: "🅱️ 调试" },
+				{ key: "ALL", label: "全部" },
+			],
+		},
 	],
 });

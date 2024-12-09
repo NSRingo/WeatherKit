@@ -34,6 +34,13 @@ export default {
 				v1: ["currentWeather", "dailyForecast", "hourlyForecast", "minuteForecast", "weatherAlerts"],
 				v2: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastPeriodic", "historicalComparisons", "weatherChanges", "forecastNextHour", "weatherAlerts", "weatherAlertNotifications", "news"],
 			},
+		},
+	},
+	Default: {
+		Settings: {
+			LogLevel: "WARN",
+		},
+		Configs: {
 			Storefront: {
 				AE: "143481",
 				AF: "143610",
