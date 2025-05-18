@@ -25,7 +25,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           body_path: CHANGELOG.md
-          token: ${{ secrets.TOKEN }}
+          token: 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
           files: |
             rulesets/*
             dist/*
