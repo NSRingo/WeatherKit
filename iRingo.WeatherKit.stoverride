@@ -35,8 +35,8 @@ http:
 
 script-providers:
   WeatherKit.api.v1.availability.response:
-    url: https://raw.githubusercontent.com/wqhqq1/WeatherKit/refs/heads/main/response.bundle.jsWeatherKit/releases/download/v1.9.4/response.bundle.js
+    url: https://raw.githubusercontent.com/wqhqq1/WeatherKit/refs/heads/main/response.bundle.js
     interval: 86400
   WeatherKit.api.v2.weather.response:
-    url: https://raw.githubusercontent.com/wqhqq1/WeatherKit/refs/heads/main/response.bundle.jsWeatherKit/releases/download/v1.9.4/response.bundle.js
+    url: https://raw.githubusercontent.com/wqhqq1/WeatherKit/refs/heads/main/response.bundle.js
     interval: 86400
