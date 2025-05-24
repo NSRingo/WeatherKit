@@ -216,11 +216,7 @@ export default class QWeather {
                             const minute = {
                                 "perceivedPrecipitationIntensity": 0,
                                 "precipitationChance": 0,
-<<<<<<< HEAD
                                 "precipitationIntensity": Number.parseFloat(minutely.precip) * 12,
-=======
-                                "precipitationIntensity": Number.parseFloat(minutely.precip) * 20,
->>>>>>> 2c9c5c9d618e84ad8e431ae356451f0c74341855
                                 "startTime": new Date(minutely.fxTime) / 1000,
                             };
                             let minutes = [{ ...minute }, { ...minute }, { ...minute }, { ...minute }, { ...minute }];
