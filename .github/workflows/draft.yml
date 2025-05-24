@@ -21,12 +21,3 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: artifact
-      - name: Publish Draft
-        uses: softprops/action-gh-release@v2
-        with:
-          body_path: CHANGELOG.md
-          token: ${{ secrets.GITHUB_TOKEN }}
-          files: |
-            rulesets/*
-            dist/*
-          draft: true

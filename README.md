@@ -1,1 +1,0 @@
-#  iRingo: 🌤 WeatherKit
