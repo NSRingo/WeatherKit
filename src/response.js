@@ -242,7 +242,8 @@ function ConvertAirQuality(body, Settings) {
 	let airQuality;
 	switch (Settings?.AQI?.Local?.Scale) {
 		case "NONE":
-			break;
+			Console.log("✅ ConvertAirQuality: Scale is NONE, not converting.");
+			return body;
 		case "HJ_633":
 		case "EPA_NowCast":
 		case "WAQI_InstantCast":
