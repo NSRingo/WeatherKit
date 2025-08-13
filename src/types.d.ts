@@ -1,4 +1,25 @@
 export interface Settings {
+    /**
+     * [数据集] 需要包含的数据集
+     *
+     * 选中的数据集会被包含在请求中。
+     *
+     * @remarks
+     *
+     * Possible values:
+     * - `'airQuality'` - 空气质量
+     * - `'currentWeather'` - 当前天气
+     * - `'forecastDaily'` - 每日预报
+     * - `'forecastHourly'` - 每小时预报
+     * - `'forecastNextHour'` - 未来一小时降水强度
+     * - `'news'` - 新闻
+     * - `'trendComparison'` - 趋势对比
+     * - `'weatherAlerts'` - 天气预警
+     * - `'weatherChanges'` - 天气变化
+     *
+     * @defaultValue ["airQuality","currentWeather","forecastDaily","forecastHourly","forecastNextHour","news","trendComparison","weatherAlerts","weatherChanges"]
+     */
+    DataSets?: ('airQuality' | 'currentWeather' | 'forecastDaily' | 'forecastHourly' | 'forecastNextHour' | 'news' | 'trendComparison' | 'weatherAlerts' | 'weatherChanges')[];
     NextHour?: {
     /**
          * [未来一小时降水强度] 数据源
