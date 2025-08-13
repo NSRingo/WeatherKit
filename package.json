@@ -40,6 +40,7 @@
 		"iOS >= 18"
 	],
 	"devDependencies": {
+		"@biomejs/biome": "2.1.4",
 		"@iringo/arguments-builder": "^1.8.5",
 		"@iringo/sgmoudle-tools": "^1.2.1",
 		"@rspack/cli": "^1.0.11",
