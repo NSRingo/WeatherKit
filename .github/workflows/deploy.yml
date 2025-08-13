@@ -21,6 +21,13 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: artifact
+      - name: Deploy Request
+        uses: exuanbo/actions-deploy-gist@main
+        with:
+          token: ${{ secrets.GIST_TOKEN }}
+          gist_id: 862db28df04be7523476d10b61b128f2
+          gist_description: " iRingo: 🌤 WeatherKit β"
+          file_path: dist/request.bundle.js
       - name: Deploy Response
         uses: exuanbo/actions-deploy-gist@main
         with:
