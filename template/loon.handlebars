@@ -19,6 +19,7 @@ DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
 
 [Script]
 http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ requires-body=1, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js, tag=🌤 WeatherKit.api.v1.availability.response, argument={{{scriptParams}}}
+http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/request.bundle.js, tag=🌤 WeatherKit.api.v1.weather.request, argument={{{scriptParams}}}
 http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ requires-body=1, binary-body-mode=1, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js, tag=🌤 WeatherKit.api.v2.weather.response, argument={{{scriptParams}}}
 
 [MITM]
