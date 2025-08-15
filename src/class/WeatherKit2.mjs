@@ -172,6 +172,13 @@ export default class WeatherKit2 {
 							day?.daytimeForecast?.windGustSpeedMax,
 							day?.daytimeForecast?.windSpeed,
 							day?.daytimeForecast?.windSpeedMax,
+							day?.daytimeForecast?.precipitationIntensityMax,
+							day?.daytimeForecast?.perceivedPrecipitationIntensityMax,
+							day?.daytimeForecast?.uvIndexMin,
+							day?.daytimeForecast?.uvIndexMax,
+							day?.daytimeForecast?.temperatureApparentMin,
+							day?.daytimeForecast?.temperatureApparentMax,
+							day?.daytimeForecast?.daylight,
 						);
 					}
 					if (day?.overnightForecast) {
@@ -204,6 +211,13 @@ export default class WeatherKit2 {
 							day?.overnightForecast?.windGustSpeedMax,
 							day?.overnightForecast?.windSpeed,
 							day?.overnightForecast?.windSpeedMax,
+							day?.overnightForecast?.precipitationIntensityMax,
+							day?.overnightForecast?.perceivedPrecipitationIntensityMax,
+							day?.overnightForecast?.uvIndexMin,
+							day?.overnightForecast?.uvIndexMax,
+							day?.overnightForecast?.temperatureApparentMin,
+							day?.overnightForecast?.temperatureApparentMax,
+							day?.overnightForecast?.daylight,
 						);
 					}
 					if (day?.restOfDayForecast) {
@@ -236,6 +250,13 @@ export default class WeatherKit2 {
 							day?.restOfDayForecast?.windGustSpeedMax,
 							day?.restOfDayForecast?.windSpeed,
 							day?.restOfDayForecast?.windSpeedMax,
+							day?.restOfDayForecast?.precipitationIntensityMax,
+							day?.restOfDayForecast?.perceivedPrecipitationIntensityMax,
+							day?.restOfDayForecast?.uvIndexMin,
+							day?.restOfDayForecast?.uvIndexMax,
+							day?.restOfDayForecast?.temperatureApparentMin,
+							day?.restOfDayForecast?.temperatureApparentMax,
+							day?.restOfDayForecast?.daylight,
 						);
 					}
 					WK2.DayWeatherConditions.startDayWeatherConditions(builder);
@@ -646,6 +667,13 @@ export default class WeatherKit2 {
 							windGustSpeedMax: DailyForecastData?.days(i)?.daytimeForecast()?.windGustSpeedMax(),
 							windSpeed: DailyForecastData?.days(i)?.daytimeForecast()?.windSpeed(),
 							windSpeedMax: DailyForecastData?.days(i)?.daytimeForecast()?.windSpeedMax(),
+							precipitationIntensityMax: DailyForecastData?.days(i)?.daytimeForecast()?.precipitationIntensityMax(),
+							perceivedPrecipitationIntensityMax: DailyForecastData?.days(i)?.daytimeForecast()?.perceivedPrecipitationIntensityMax(),
+							uvIndexMin: DailyForecastData?.days(i)?.daytimeForecast()?.uvIndexMin(),
+							uvIndexMax: DailyForecastData?.days(i)?.daytimeForecast()?.uvIndexMax(),
+							temperatureApparentMin: DailyForecastData?.days(i)?.daytimeForecast()?.temperatureApparentMin(),
+							temperatureApparentMax: DailyForecastData?.days(i)?.daytimeForecast()?.temperatureApparentMax(),
+							daylight: DailyForecastData?.days(i)?.daytimeForecast()?.daylight(),
 						};
 						for (let j = 0; j < DailyForecastData?.days(i)?.daytimeForecast()?.precipitationAmountByTypeLength(); j++)
 							day.daytimeForecast.precipitationAmountByType.push({
@@ -681,6 +709,13 @@ export default class WeatherKit2 {
 							windGustSpeedMax: DailyForecastData?.days(i)?.overnightForecast()?.windGustSpeedMax(),
 							windSpeed: DailyForecastData?.days(i)?.overnightForecast()?.windSpeed(),
 							windSpeedMax: DailyForecastData?.days(i)?.overnightForecast()?.windSpeedMax(),
+							precipitationIntensityMax: DailyForecastData?.days(i)?.overnightForecast()?.precipitationIntensityMax(),
+							perceivedPrecipitationIntensityMax: DailyForecastData?.days(i)?.overnightForecast()?.perceivedPrecipitationIntensityMax(),
+							uvIndexMin: DailyForecastData?.days(i)?.overnightForecast()?.uvIndexMin(),
+							uvIndexMax: DailyForecastData?.days(i)?.overnightForecast()?.uvIndexMax(),
+							temperatureApparentMin: DailyForecastData?.days(i)?.overnightForecast()?.temperatureApparentMin(),
+							temperatureApparentMax: DailyForecastData?.days(i)?.overnightForecast()?.temperatureApparentMax(),
+							daylight: DailyForecastData?.days(i)?.overnightForecast()?.daylight(),
 						};
 						for (let j = 0; j < DailyForecastData?.days(i)?.overnightForecast()?.precipitationAmountByTypeLength(); j++)
 							day.overnightForecast.precipitationAmountByType.push({
@@ -716,6 +751,13 @@ export default class WeatherKit2 {
 							windGustSpeedMax: DailyForecastData?.days(i)?.restOfDayForecast()?.windGustSpeedMax(),
 							windSpeed: DailyForecastData?.days(i)?.restOfDayForecast()?.windSpeed(),
 							windSpeedMax: DailyForecastData?.days(i)?.restOfDayForecast()?.windSpeedMax(),
+							precipitationIntensityMax: DailyForecastData?.days(i)?.restOfDayForecast()?.precipitationIntensityMax(),
+							perceivedPrecipitationIntensityMax: DailyForecastData?.days(i)?.restOfDayForecast()?.perceivedPrecipitationIntensityMax(),
+							uvIndexMin: DailyForecastData?.days(i)?.restOfDayForecast()?.uvIndexMin(),
+							uvIndexMax: DailyForecastData?.days(i)?.restOfDayForecast()?.uvIndexMax(),
+							temperatureApparentMin: DailyForecastData?.days(i)?.restOfDayForecast()?.temperatureApparentMin(),
+							temperatureApparentMax: DailyForecastData?.days(i)?.restOfDayForecast()?.temperatureApparentMax(),
+							daylight: DailyForecastData?.days(i)?.restOfDayForecast()?.daylight(),
 						};
 						for (let j = 0; j < DailyForecastData?.days(i)?.restOfDayForecast()?.precipitationAmountByTypeLength(); j++)
 							day.restOfDayForecast.precipitationAmountByType.push({
