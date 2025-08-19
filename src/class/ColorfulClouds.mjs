@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(options) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.0.5";
+		this.Version = "3.1.0";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.url = new URL($request.url);
 		this.header = { "Content-Type": "application/json" };
@@ -36,6 +36,7 @@ export default class ColorfulClouds {
 			header: this.header,
 		};
 		let airQuality;
+		let currentWeather;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			const timeStamp = Math.round(Date.now() / 1000);
@@ -65,6 +66,26 @@ export default class ColorfulClouds {
 								primaryPollutant: "NOT_AVAILABLE",
 								scale: "HJ6332012",
 							};
+							currentWeather = {
+								metadata: {
+									attributionUrl: "https://www.caiyunapp.com/h5",
+									expireTime: timeStamp + 60 * 60,
+									language: `${this.language}-${this.country}`,
+									latitude: body?.location?.[0],
+									longitude: body?.location?.[1],
+									providerLogo: providerNameToLogo("彩云天气", this.version),
+									providerName: "彩云天气",
+									readTime: timeStamp,
+									reportedTime: body?.server_time,
+									temporarilyUnavailable: false,
+									sourceType: "STATION",
+								},
+								cloudCover: Math.round(body?.result?.realtime?.cloudrate * 100),
+								conditionCode: this.#ConvertWeatherCode(body?.result?.realtime?.skycon),
+								humidity: Math.round(body?.result?.realtime?.humidity * 100),
+								//pressure: body?.result?.realtime?.pressure,
+								//temperature: body?.result?.realtime?.temperature,
+							};
 							break;
 						case "error":
 						case undefined:
@@ -81,7 +102,7 @@ export default class ColorfulClouds {
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ RealTime");
-			return airQuality;
+			return { airQuality, currentWeather };
 		}
 	}
 
@@ -246,5 +267,58 @@ export default class ColorfulClouds {
 		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
 		Console.log("✅ CreatePollutants");
 		return pollutants;
+	}
+
+	#ConvertWeatherCode(skycon) {
+		Console.debug(`skycon: ${skycon}`);
+		switch (skycon) {
+			case "CLEAR_DAY":
+			case "CLEAR_NIGHT":
+				return "CLEAR";
+
+			case "PARTLY_CLOUDY_DAY":
+				return "PARTLY_CLOUDY";
+			case "PARTLY_CLOUDY_NIGHT":
+				return "PARTLY_CLOUDY";
+
+			case "CLOUDY":
+				return "CLOUDY";
+
+			case "LIGHT_HAZE":
+			case "MODERATE_HAZE":
+			case "HEAVY_HAZE":
+				return "HAZE";
+
+			case "LIGHT_RAIN":
+				return "DRIZZLE";
+			case "MODERATE_RAIN":
+				return "RAIN";
+			case "HEAVY_RAIN":
+				return "HEAVY_RAIN";
+			case "STORM_RAIN":
+				return "THUNDERSTORMS";
+
+			case "FOG":
+				return "FOGGY";
+
+			case "LIGHT_SNOW":
+				return "FLURRIES";
+			case "MODERATE_SNOW":
+				return "SNOW";
+			case "HEAVY_SNOW":
+				return "HEAVY_SNOW";
+			case "STORM_SNOW":
+				return "HEAVY_SNOW";
+
+			case "DUST":
+			case "SAND":
+				return "HAZE"; // Apple 没单独 DUST/SAND，用 HAZE 替代
+
+			case "WIND":
+				return "WINDY";
+
+			default:
+				return null;
+		}
 	}
 }
