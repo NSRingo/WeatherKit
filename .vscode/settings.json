@@ -1,0 +1,12 @@
+{
+  "editor.formatOnSave": true,
+  "[javascript]": {
+    "editor.defaultFormatter": "biome-biome"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "biome-biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biome-biome"
+  }
+}

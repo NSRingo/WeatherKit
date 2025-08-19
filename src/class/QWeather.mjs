@@ -106,6 +106,32 @@ export default class QWeather {
 						scale: "HJ6332012",
 					};
 					if (body?.refer?.sources?.[0]) airQuality.metadata.providerName += `\n数据源: ${body?.refer?.sources?.[0]}`;
+					currentWeather = {
+						metadata: {
+							attributionUrl: body?.fxLink,
+							expireTime: timeStamp + 60 * 60,
+							language: `${this.language}-${this.country}`,
+							latitude: this.latitude,
+							longitude: this.longitude,
+							providerLogo: providerNameToLogo("和风天气", this.version),
+							providerName: "和风天气",
+							readTime: timeStamp,
+							reportedTime: Math.round(new Date(body?.now?.pubTime).valueOf() / 1000),
+							temporarilyUnavailable: false,
+							sourceType: "STATION",
+						},
+						cloudCover: body?.now?.cloud,
+						// conditionCode: this.#ConvertWeatherCode(body?.now?.icon),
+						humidity: body?.now?.humidity,
+						perceivedPrecipitationIntensity: body?.now?.precip,
+						pressure: body?.now?.pressure,
+						temperature: body?.now?.temp,
+						temperatureApparent: body?.now?.feelsLike,
+						temperatureDewPoint: body?.now.dew,
+						visibility: body?.now?.vis * 1000,
+						windDirection: body?.now?.wind360,
+						windSpeed: body?.now?.windSpeed,
+					};
 					break;
 				case "204":
 				case "400":
@@ -327,5 +353,56 @@ export default class QWeather {
 		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
 		Console.log("✅ CreatePollutants");
 		return pollutants;
+	}
+
+	#ConvertWeatherCode(iconIndex) {
+		Console.debug(`iconIndex: ${iconIndex}`);
+		switch (iconIndex) {
+			// case "CLEAR_DAY":
+			// case "CLEAR_NIGHT":
+			// 	return "CLEAR";
+
+			case "多云":
+				return "PARTLY_CLOUDY";
+
+			// case "CLOUDY":
+			// 	return "CLOUDY";
+
+			// case "LIGHT_HAZE":
+			// case "MODERATE_HAZE":
+			// case "HEAVY_HAZE":
+			// 	return "HAZE";
+
+			case "小雨":
+				return "DRIZZLE";
+			// case "MODERATE_RAIN":
+			// 	return "RAIN";
+			// case "HEAVY_RAIN":
+			// 	return "HEAVY_RAIN";
+			// case "STORM_RAIN":
+			// 	return "THUNDERSTORMS";
+
+			// case "FOG":
+			// 	return "FOGGY";
+
+			// case "LIGHT_SNOW":
+			// 	return "FLURRIES";
+			// case "MODERATE_SNOW":
+			// 	return "SNOW";
+			// case "HEAVY_SNOW":
+			// 	return "HEAVY_SNOW";
+			// case "STORM_SNOW":
+			// 	return "HEAVY_SNOW";
+
+			// case "DUST":
+			// case "SAND":
+			// 	return "HAZE"; // Apple 没单独 DUST/SAND，用 HAZE 替代
+
+			// case "WIND":
+			// 	return "WINDY";
+
+			default:
+				return null;
+		}
 	}
 }

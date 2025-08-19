@@ -83,8 +83,14 @@ export default class ColorfulClouds {
 								cloudCover: Math.round(body?.result?.realtime?.cloudrate * 100),
 								conditionCode: this.#ConvertWeatherCode(body?.result?.realtime?.skycon),
 								humidity: Math.round(body?.result?.realtime?.humidity * 100),
-								//pressure: body?.result?.realtime?.pressure,
-								//temperature: body?.result?.realtime?.temperature,
+								uvIndex: dswrfToUVIndex(body?.result?.realtime?.dswrf),
+								perceivedPrecipitationIntensity: body?.result?.realtime?.precipitation?.local?.intensity,
+								pressure: body?.result?.realtime?.pressure,
+								temperature: body?.result?.realtime?.temperature,
+								temperatureApparent: body?.result?.realtime?.apparent_temperature,
+								visibility: body?.result?.realtime?.visibility * 1000,
+								windDirection: body?.result?.realtime?.wind?.direction,
+								windSpeed: body?.result?.realtime?.wind?.speed,
 							};
 							break;
 						case "error":
@@ -321,4 +327,17 @@ export default class ColorfulClouds {
 				return null;
 		}
 	}
+}
+
+/**
+ * 将 DSWRF（W/m²）估算为 UV Index（整数）
+ * @param {number} dswrf - 向下短波辐射通量
+ * @param {number} k - UV 占比系数，可选，默认 0.04
+ * @returns {number} UV Index（四舍五入为整数）
+ */
+function dswrfToUVIndex(dswrf, k = 0.04) {
+    if (dswrf <= 0) return 0;
+    const uvIndex = dswrf * k / 0.025; // 估算 UV Index
+    // 限制结果在 0~11，并四舍五入为整数
+    return Math.min(Math.max(Math.round(uvIndex), 0), 11);
 }
