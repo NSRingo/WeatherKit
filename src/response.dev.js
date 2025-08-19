@@ -200,7 +200,7 @@ async function InjectAirQuality(url, body, Settings) {
 		case "ColorfulClouds":
 		default: {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
-			airQuality = await colorfulClouds.RealTime();
+			airQuality = (await colorfulClouds.RealTime()).airQuality;
 			break;
 		}
 		case "WAQI": {
@@ -336,98 +336,27 @@ async function InjectForecastNextHour(url, body, Settings) {
  */
 async function InjectCurrentWeather(url, body, Settings) {
     Console.log("☑️ InjectCurrentWeather");
-    let currentWeather;
-    switch (Settings?.NextHour?.Provider) {
+	let currentWeather;
+    switch (Settings?.CurrentWeather?.Provider) {
         case "WeatherKit":
-            //body.currentWeather = { ...body?.currentWeather, ...currentWeather };
             break;
         case "QWeather": {
             //const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
             //currentWeather = await qWeather.RealTime();
-            //body.currentWeather = { ...body?.currentWeather, ...currentWeather };
             break;
         }
         case "ColorfulClouds":
         default: {
             const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
-            const result = await colorfulClouds.RealTime();
-            body.currentWeather = ColorfulCloudsToAppleWeather(result, body.currentWeather);
+            currentWeather = (await colorfulClouds.RealTime()).currentWeather;
             break;
         }
     }
+	if (currentWeather?.metadata) {
+		currentWeather.metadata = { ...body?.currentWeather?.metadata, ...currentWeather.metadata };
+		body.currentWeather = { ...body?.currentWeather, ...currentWeather };
+		Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
+	}
     Console.log("✅ InjectCurrentWeather");
     return body;
-}
-
-/**
- * @param {any} colorfulData 彩云天气原始数据
- * @param {any} appleWeatherData Apple天气原始数据
- */
-function ColorfulCloudsToAppleWeather(colorfulData, appleWeatherData) {
-    Console.debug(`colorfulData: ${JSON.stringify(colorfulData, null, 2)}`);
-    Console.debug(`appleWeatherData: ${JSON.stringify(appleWeatherData, null, 2)}`);
-    appleWeatherData =  {
-        ...appleWeatherData,
-        cloudCover: Math.round(colorfulData.cloudrate * 100), // 云量
-        humidity: Math.round(colorfulData.humidity * 100), // 湿度
-        conditionCode: ConvertToAppleWeatherCode(colorfulData.skycon) || appleWeatherData.conditionCode,
-    };
-    Console.debug(`colorfulData: ${JSON.stringify(appleWeatherData, null, 2)}`);
-    return appleWeatherData;
-}
-
-/**
- * @param {string} skycon 彩云天气原始数据
- * @return {string | null} Apple天气原始数据
- */
-function ConvertToAppleWeatherCode(skycon) {
-    switch (skycon) {
-        case "CLEAR_DAY":
-        case "CLEAR_NIGHT":
-            return "CLEAR";
-
-        case "PARTLY_CLOUDY_DAY":
-            return "PARTLY_CLOUDY";
-        case "PARTLY_CLOUDY_NIGHT":
-            return "PARTLY_CLOUDY";
-
-        case "CLOUDY":
-            return "CLOUDY";
-
-        case "LIGHT_HAZE":
-        case "MODERATE_HAZE":
-        case "HEAVY_HAZE":
-            return "HAZE";
-
-        case "LIGHT_RAIN":
-            return "DRIZZLE";
-        case "MODERATE_RAIN":
-            return "RAIN";
-        case "HEAVY_RAIN":
-            return "HEAVY_RAIN";
-        case "STORM_RAIN":
-            return "THUNDERSTORMS";
-
-        case "FOG":
-            return "FOGGY";
-
-        case "LIGHT_SNOW":
-            return "FLURRIES";
-        case "MODERATE_SNOW":
-            return "SNOW";
-        case "HEAVY_SNOW":
-            return "HEAVY_SNOW";
-        case "STORM_SNOW":
-            return "HEAVY_SNOW";
-
-        case "DUST":
-        case "SAND":
-            return "HAZE"; // Apple 没单独 DUST/SAND，用 HAZE 替代
-
-        case "WIND":
-            return "WINDY";
-
-        default:
-            return null;
-    }
 }
