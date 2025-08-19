@@ -102,8 +102,8 @@ export default class ColorfulClouds {
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ RealTime");
-			return { airQuality, currentWeather };
 		}
+		return { airQuality, currentWeather };
 	}
 
 	async Minutely(token = this.token) {
@@ -177,8 +177,8 @@ export default class ColorfulClouds {
 		} finally {
 			//Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
 			Console.log("✅ Minutely");
-			return forecastNextHour;
 		}
+		return forecastNextHour;
 	}
 
 	async Hourly(token = this.token, hourlysteps = 1, begin = Date.now()) {
@@ -233,8 +233,8 @@ export default class ColorfulClouds {
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ Hourly");
-			return airQuality;
 		}
+		return airQuality;
 	}
 
 	#CreatePollutants(pollutantsObj = {}) {
