@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(options) {
 		this.Name = "QWeather";
-		this.Version = "4.1.4";
+		this.Version = "4.1.5";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.url = new URL($request.url);
 		this.host = "devapi.qweather.com";
@@ -67,8 +67,8 @@ export default class QWeather {
 		} finally {
 			Console.debug(`metadata: ${JSON.stringify(metadata, null, 2)}`);
 			Console.log("✅ GeoAPI");
-			return metadata;
 		}
+		return metadata;
 	}
 
 	async AirNow(token = this.token) {
@@ -149,8 +149,8 @@ export default class QWeather {
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ AirNow");
-			return airQuality;
 		}
+		return airQuality;
 	}
 
 	async AirQualityCurrent(token = this.token) {
@@ -203,8 +203,8 @@ export default class QWeather {
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ AirQualityCurrent");
-			return airQuality;
 		}
+		return airQuality;
 	}
 
 	async Minutely(token = this.token) {
@@ -278,8 +278,8 @@ export default class QWeather {
 		} finally {
 			//Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
 			Console.log("✅ Minutely");
-			return forecastNextHour;
 		}
+		return forecastNextHour;
 	}
 
 	async HistoricalAir(token = this.token, locationID = new Number(), date = time("yyyyMMdd", Date.now() - 24 * 60 * 60 * 1000)) {
@@ -324,8 +324,8 @@ export default class QWeather {
 		} finally {
 			Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ HistoricalAir");
-			return airQuality;
 		}
+		return airQuality;
 	}
 
 	#CreatePollutants(pollutantsObj = {}) {
