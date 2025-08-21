@@ -193,7 +193,7 @@ async function InjectAirQuality(url, body, Settings) {
 			break;
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
-			airQuality = (await qWeather.AirNow()).airQuality;
+			airQuality = await qWeather.AirNow();
 			//airQuality = await qWeather.AirQualityCurrent();
 			break;
 		}
@@ -342,7 +342,7 @@ async function InjectCurrentWeather(url, body, Settings) {
 			break;
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
-			currentWeather = (await qWeather.AirNow()).currentWeather;
+			currentWeather = await qWeather.WeatherNow();
 			break;
 		}
 		case "ColorfulClouds":

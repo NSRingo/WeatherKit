@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(options) {
 		this.Name = "QWeather";
-		this.Version = "4.1.5";
+		this.Version = "4.2.0";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.url = new URL($request.url);
 		this.host = "devapi.qweather.com";
@@ -71,6 +71,65 @@ export default class QWeather {
 		return metadata;
 	}
 
+	async WeatherNow(token = this.token) {
+		Console.log("☑️ Now");
+		const request = {
+			url: `https://${this.host}/v7/weather/now?location=${this.longitude},${this.latitude}&key=${token}`,
+			header: this.header,
+		};
+		let currentWeather;
+		try {
+			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+			const timeStamp = Math.round(Date.now() / 1000);
+			switch (body?.code) {
+				case "200":
+					currentWeather = {
+						metadata: {
+							attributionUrl: body?.fxLink,
+							expireTime: timeStamp + 60 * 60,
+							language: `${this.language}-${this.country}`,
+							latitude: this.latitude,
+							longitude: this.longitude,
+							providerLogo: providerNameToLogo("和风天气", this.version),
+							providerName: "和风天气",
+							readTime: timeStamp,
+							reportedTime: Math.round(new Date(body?.now?.pubTime).valueOf() / 1000),
+							temporarilyUnavailable: false,
+							sourceType: "STATION",
+						},
+						cloudCover: body?.now?.cloud,
+						conditionCode: this.#ConvertWeatherCode(body?.now?.text),
+						humidity: body?.now?.humidity,
+						perceivedPrecipitationIntensity: body?.now?.precip,
+						pressure: body?.now?.pressure,
+						temperature: body?.now?.temp,
+						temperatureApparent: body?.now?.feelsLike,
+						temperatureDewPoint: body?.now.dew,
+						visibility: body?.now?.vis * 1000,
+						windDirection: body?.now?.wind360,
+						windSpeed: body?.now?.windSpeed,
+					};
+					break;
+				case "204":
+				case "400":
+				case "401":
+				case "402":
+				case "403":
+				case "404":
+				case "429":
+				case "500":
+				case undefined:
+					throw Error(body?.code);
+			}
+		} catch (error) {
+			Console.error(error);
+		} finally {
+			//Console.debug(`currentWeather: ${JSON.stringify(currentWeather, null, 2)}`);
+			Console.log("✅ WeatherNow");
+		}
+		return currentWeather;
+	}
+
 	async AirNow(token = this.token) {
 		Console.log("☑️ AirNow");
 		const request = {
@@ -78,7 +137,6 @@ export default class QWeather {
 			header: this.header,
 		};
 		let airQuality;
-		let currentWeather;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			const timeStamp = Math.round(Date.now() / 1000);
@@ -107,32 +165,6 @@ export default class QWeather {
 						scale: "HJ6332012",
 					};
 					if (body?.refer?.sources?.[0]) airQuality.metadata.providerName += `\n数据源: ${body?.refer?.sources?.[0]}`;
-					currentWeather = {
-						metadata: {
-							attributionUrl: body?.fxLink,
-							expireTime: timeStamp + 60 * 60,
-							language: `${this.language}-${this.country}`,
-							latitude: this.latitude,
-							longitude: this.longitude,
-							providerLogo: providerNameToLogo("和风天气", this.version),
-							providerName: "和风天气",
-							readTime: timeStamp,
-							reportedTime: Math.round(new Date(body?.now?.pubTime).valueOf() / 1000),
-							temporarilyUnavailable: false,
-							sourceType: "STATION",
-						},
-						cloudCover: body?.now?.cloud,
-						// conditionCode: this.#ConvertWeatherCode(body?.now?.icon),
-						humidity: body?.now?.humidity,
-						perceivedPrecipitationIntensity: body?.now?.precip,
-						pressure: body?.now?.pressure,
-						temperature: body?.now?.temp,
-						temperatureApparent: body?.now?.feelsLike,
-						temperatureDewPoint: body?.now.dew,
-						visibility: body?.now?.vis * 1000,
-						windDirection: body?.now?.wind360,
-						windSpeed: body?.now?.windSpeed,
-					};
 					break;
 				case "204":
 				case "400":
@@ -151,7 +183,7 @@ export default class QWeather {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ AirNow");
 		}
-		return { airQuality, currentWeather };
+		return airQuality;
 	}
 
 	async AirQualityCurrent(token = this.token) {
@@ -356,52 +388,109 @@ export default class QWeather {
 		return pollutants;
 	}
 
-	#ConvertWeatherCode(iconIndex) {
-		Console.debug(`iconIndex: ${iconIndex}`);
-		switch (iconIndex) {
-			// case "CLEAR_DAY":
-			// case "CLEAR_NIGHT":
-			// 	return "CLEAR";
+	#ConvertWeatherCode(textDescription) {
+		Console.debug(`textDescription: ${textDescription}`);
+		switch (textDescription) {
+			// 晴天
+			case "晴":
+				return "CLEAR";
 
+			// 多云相关
 			case "多云":
 				return "PARTLY_CLOUDY";
+			case "少云":
+				return "MOSTLY_CLEAR";
+			case "晴间多云":
+				return "PARTLY_CLOUDY";
+			case "阴":
+				return "CLOUDY";
 
-			// case "CLOUDY":
-			// 	return "CLOUDY";
+			// 雾霾相关
+			case "薄雾":
+			case "雾":
+			case "浓雾":
+			case "强浓雾":
+			case "大雾":
+			case "特强浓雾":
+				return "FOGGY";
+			case "霾":
+			case "中度霾":
+			case "重度霾":
+			case "严重霾":
+				return "HAZE";
 
-			// case "LIGHT_HAZE":
-			// case "MODERATE_HAZE":
-			// case "HEAVY_HAZE":
-			// 	return "HAZE";
+			// 沙尘相关
+			case "扬沙":
+			case "浮尘":
+			case "沙尘暴":
+			case "强沙尘暴":
+				return "BLOWING_DUST";
 
+			// 降雨相关
+			case "毛毛雨/细雨":
+				return "DRIZZLE";
 			case "小雨":
 				return "DRIZZLE";
-			// case "MODERATE_RAIN":
-			// 	return "RAIN";
-			// case "HEAVY_RAIN":
-			// 	return "HEAVY_RAIN";
-			// case "STORM_RAIN":
-			// 	return "THUNDERSTORMS";
+			case "中雨":
+			case "小到中雨":
+				return "RAIN";
+			case "大雨":
+			case "中到大雨":
+				return "HEAVY_RAIN";
+			case "暴雨":
+			case "大暴雨":
+			case "特大暴雨":
+			case "大到暴雨":
+			case "暴雨到大暴雨":
+			case "大暴雨到特大暴雨":
+			case "极端降雨":
+				return "HEAVY_RAIN";
+			case "阵雨":
+			case "强阵雨":
+				return "SUN_SHOWERS";
+			case "雨":
+				return "RAIN";
 
-			// case "FOG":
-			// 	return "FOGGY";
+			// 雷雨相关
+			case "雷阵雨":
+			case "强雷阵雨":
+				return "THUNDERSTORMS";
+			case "雷阵雨伴有冰雹":
+				return "HAIL";
 
-			// case "LIGHT_SNOW":
-			// 	return "FLURRIES";
-			// case "MODERATE_SNOW":
-			// 	return "SNOW";
-			// case "HEAVY_SNOW":
-			// 	return "HEAVY_SNOW";
-			// case "STORM_SNOW":
-			// 	return "HEAVY_SNOW";
+			// 降雪相关
+			case "小雪":
+				return "FLURRIES";
+			case "中雪":
+			case "小到中雪":
+				return "SNOW";
+			case "大雪":
+			case "中到大雪":
+				return "HEAVY_SNOW";
+			case "暴雪":
+			case "大到暴雪":
+				return "HEAVY_SNOW";
+			case "阵雪":
+				return "SUN_FLURRIES";
+			case "雪":
+				return "SNOW";
 
-			// case "DUST":
-			// case "SAND":
-			// 	return "HAZE"; // Apple 没单独 DUST/SAND，用 HAZE 替代
+			// 雨雪混合
+			case "雨夹雪":
+			case "雨雪天气":
+			case "阵雨夹雪":
+				return "WINTRY_MIX";
+			case "冻雨":
+				return "FREEZING_RAIN";
 
-			// case "WIND":
-			// 	return "WINDY";
+			// 温度相关
+			case "热":
+				return "HOT";
+			case "冷":
+				return "FRIGID";
 
+			// 未知
+			case "未知":
 			default:
 				return null;
 		}
