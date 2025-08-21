@@ -35,7 +35,7 @@ export default defineConfig({
 		{
 			key: "DataSets",
 			name: "[数据集] 需要包含的数据集",
-			defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "news", "trendComparison", "weatherAlerts", "weatherChanges"],
+			defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
 			type: "array",
 			description: "选中的数据集会被包含在请求中。",
 			options: [
@@ -45,7 +45,7 @@ export default defineConfig({
 				{ key: "forecastHourly", label: "每小时预报" },
 				{ key: "forecastNextHour", label: "未来一小时降水强度" },
 				{ key: "news", label: "新闻" },
-				{ key: "trendComparison", label: "趋势对比" },
+				{ key: "historicalComparisons", label: "历史对比" },
 				{ key: "weatherAlerts", label: "天气预警" },
 				{ key: "weatherChanges", label: "天气变化" },
 			],

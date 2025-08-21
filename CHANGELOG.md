@@ -1,2 +1,3 @@
-### 🔣 Dependencies
-  * 更新 flatbuffers 数据模型，新增 26 api 部分定义 by @WordlessEcho
+### 🛠️ Bug Fixes
+  * 修复 v1.9.6 版 `DataSets` (数据集) 设置功能导致的 `历史趋势对比数据` 丢失问题
+    * 此问题导致天气 app 中的 `平均气温` 数据丢失

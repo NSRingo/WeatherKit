@@ -13,13 +13,13 @@ export interface Settings {
      * - `'forecastHourly'` - 每小时预报
      * - `'forecastNextHour'` - 未来一小时降水强度
      * - `'news'` - 新闻
-     * - `'trendComparison'` - 趋势对比
+     * - `'historicalComparisons'` - 历史对比
      * - `'weatherAlerts'` - 天气预警
      * - `'weatherChanges'` - 天气变化
      *
-     * @defaultValue ["airQuality","currentWeather","forecastDaily","forecastHourly","forecastNextHour","news","trendComparison","weatherAlerts","weatherChanges"]
+     * @defaultValue ["airQuality","currentWeather","forecastDaily","forecastHourly","forecastNextHour","news","historicalComparisons","weatherAlerts","weatherChanges"]
      */
-    DataSets?: ('airQuality' | 'currentWeather' | 'forecastDaily' | 'forecastHourly' | 'forecastNextHour' | 'news' | 'trendComparison' | 'weatherAlerts' | 'weatherChanges')[];
+    DataSets?: ('airQuality' | 'currentWeather' | 'forecastDaily' | 'forecastHourly' | 'forecastNextHour' | 'news' | 'historicalComparisons' | 'weatherAlerts' | 'weatherChanges')[];
     CurrentWeather?: {
     /**
          * [当前天气] 数据源
