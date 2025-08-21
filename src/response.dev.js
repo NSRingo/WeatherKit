@@ -129,43 +129,41 @@ Console.info(`FORMAT: ${FORMAT}`);
 								if (url.searchParams.get("dataSets").includes("currentWeather")) {
 									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
 									// Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
+									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+										// 自动存储新的天气类型
+										Console.debug("// --- Start Store --- //");
+										$request.headers.accept = "application/json";
+										const jsonBody = await fetch($request).then(res => JSON.parse(res?.body ?? "{}"));
+										// 时间判断
+										const jsonTime = jsonBody.currentWeather.metadata.reportedTime;
+										const protoTime = body.currentWeather.metadata.reportedTime;
 
-									// 自动存储新的天气类型
-									console.log("// --- Start Store --- //");
-									$request.headers.accept = "application/json";
-									const jsonBody = await fetch($request).then(res => JSON.parse(res?.body ?? "{}"));
-									// 时间判断
-									const jsonTime = jsonBody.currentWeather.metadata.reportedTime;
-									const protoTime = body.currentWeather.metadata.reportedTime;
-
-									// console.log(jsonTime);
-									// console.log(protoTime);
-									// console.log("\n");
-
-									if (protoTime === jsonTime) {
+										Console.debug(`jsonTime: ${jsonTime}`);
+										Console.debug(`protoTime: ${protoTime}`);
+										Console.debug("\n");
 										const jsonCode = jsonBody?.currentWeather?.conditionCode;
 										const protoCode = body?.currentWeather?.conditionCode;
 
-										console.log(jsonCode);
-										console.log(protoCode);
+										Console.debug(`jsonCode: ${jsonCode}`);
+										Console.debug(`protoCode: ${protoCode}`);
 
 										const protoID = WK2.WeatherCondition[protoCode];
-										console.log(protoID);
-
-										// 存储
-										const debugKey = "WK2Debug";
-										const dataSet = JSON.parse($persistentStore.read(debugKey) || "[]");
-										// console.log(dataSet);
-										if (!dataSet.some(item => item[jsonCode] === protoCode)) {
-											const newType = { [jsonCode]: protoCode };
-											dataSet.push(newType);
-											console.log(newType);
-											$notification.post("新的天气类型", "", "Code: " + jsonCode + "\n" + "ID: " + protoCode);
-											$persistentStore.write(JSON.stringify(dataSet), debugKey);
+										Console.debug(`protoID: ${protoID}`);
+										$notification.post("WeatherCondition", "", `time: ${jsonTime} json: ${jsonCode}\ntime: ${protoTime} proto: ${protoID}-${protoCode}`);
+										if (protoTime === jsonTime) {
+											// 存储
+											const debugKey = "WK2Debug";
+											const dataSet = JSON.parse($persistentStore.read(debugKey) || "[]");
+											// Console.log(dataSet);
+											if (!dataSet.some(item => item[jsonCode] === protoCode)) {
+												const newType = { [jsonCode]: protoCode };
+												dataSet.push(newType);
+												Console.debug(newType);
+												$persistentStore.write(JSON.stringify(dataSet), debugKey);
+											}
 										}
+										Console.debug("// --- Done --- //");
 									}
-									console.log("// --- Done --- //");
-
 									body = await InjectCurrentWeather(url, body, Settings);
 								}
 								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
