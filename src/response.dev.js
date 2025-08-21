@@ -129,7 +129,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
 									//Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
 
-                                    body = await InjectCurrentWeather(url, body, Settings);
+									body = await InjectCurrentWeather(url, body, Settings);
 								}
 								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
 									Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
@@ -193,7 +193,7 @@ async function InjectAirQuality(url, body, Settings) {
 			break;
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
-			airQuality = await qWeather.AirNow();
+			airQuality = (await qWeather.AirNow()).airQuality;
 			//airQuality = await qWeather.AirQualityCurrent();
 			break;
 		}
@@ -335,28 +335,28 @@ async function InjectForecastNextHour(url, body, Settings) {
  * @param {import('./types').Settings} Settings
  */
 async function InjectCurrentWeather(url, body, Settings) {
-    Console.log("☑️ InjectCurrentWeather");
+	Console.log("☑️ InjectCurrentWeather");
 	let currentWeather;
-    switch (Settings?.CurrentWeather?.Provider) {
-        case "WeatherKit":
-            break;
-        case "QWeather": {
-            const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
-            currentWeather = (await qWeather.AirNow()).currentWeather;
-            break;
-        }
-        case "ColorfulClouds":
-        default: {
-            const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
-            currentWeather = (await colorfulClouds.RealTime()).currentWeather;
-            break;
-        }
-    }
+	switch (Settings?.CurrentWeather?.Provider) {
+		case "WeatherKit":
+			break;
+		case "QWeather": {
+			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
+			currentWeather = (await qWeather.AirNow()).currentWeather;
+			break;
+		}
+		case "ColorfulClouds":
+		default: {
+			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
+			currentWeather = (await colorfulClouds.RealTime()).currentWeather;
+			break;
+		}
+	}
 	if (currentWeather?.metadata) {
 		currentWeather.metadata = { ...body?.currentWeather?.metadata, ...currentWeather.metadata };
 		body.currentWeather = { ...body?.currentWeather, ...currentWeather };
 		Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
 	}
-    Console.log("✅ InjectCurrentWeather");
-    return body;
+	Console.log("✅ InjectCurrentWeather");
+	return body;
 }

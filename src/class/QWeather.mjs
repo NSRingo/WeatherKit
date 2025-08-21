@@ -78,6 +78,7 @@ export default class QWeather {
 			header: this.header,
 		};
 		let airQuality;
+		let currentWeather;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			const timeStamp = Math.round(Date.now() / 1000);
@@ -150,7 +151,7 @@ export default class QWeather {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ AirNow");
 		}
-		return airQuality;
+		return { airQuality, currentWeather };
 	}
 
 	async AirQualityCurrent(token = this.token) {
