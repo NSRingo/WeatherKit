@@ -502,6 +502,7 @@ export default class WeatherKit2 {
 					});
 				break;
 			case "currentWeather":
+				Console.debug(`conditionCode: ${WK2.WeatherCondition[CurrentWeatherData?.conditionCode()]}`);
 				data = {
 					metadata: WeatherKit2.decode(byteBuffer, "metadata", CurrentWeatherData?.metadata()),
 					asOf: CurrentWeatherData?.asOf(),
@@ -599,6 +600,7 @@ export default class WeatherKit2 {
 					days: [],
 				};
 				for (let i = 0; i < DailyForecastData?.daysLength(); i++) {
+					Console.debug(`conditionCode: ${WK2.WeatherCondition[DailyForecastData?.days(i)?.conditionCode()]}`);
 					const day = {
 						conditionCode: WK2.WeatherCondition[DailyForecastData?.days(i)?.conditionCode()],
 						forecastEnd: DailyForecastData?.days(i)?.forecastEnd(),
@@ -643,6 +645,7 @@ export default class WeatherKit2 {
 							precipitationType: WK2.PrecipitationType[DailyForecastData?.days(i)?.precipitationAmountByType(j)?.precipitationType()],
 						});
 					if (DailyForecastData?.days(i)?.daytimeForecast()) {
+						Console.debug(`conditionCode: ${WK2.WeatherCondition[DailyForecastData?.days(i)?.daytimeForecast()?.conditionCode()]}`);
 						day.daytimeForecast = {
 							cloudCover: DailyForecastData?.days(i)?.daytimeForecast()?.cloudCover(),
 							cloudCoverHighAltPct: DailyForecastData?.days(i)?.daytimeForecast()?.cloudCoverHighAltPct(),
@@ -685,6 +688,7 @@ export default class WeatherKit2 {
 							});
 					}
 					if (DailyForecastData?.days(i)?.overnightForecast()) {
+						Console.debug(`conditionCode: ${WK2.WeatherCondition[DailyForecastData?.days(i)?.overnightForecast()?.conditionCode()]}`);
 						day.overnightForecast = {
 							cloudCover: DailyForecastData?.days(i)?.overnightForecast()?.cloudCover(),
 							cloudCoverHighAltPct: DailyForecastData?.days(i)?.overnightForecast()?.cloudCoverHighAltPct(),
@@ -727,6 +731,7 @@ export default class WeatherKit2 {
 							});
 					}
 					if (DailyForecastData?.days(i)?.restOfDayForecast()) {
+						Console.debug(`conditionCode: ${WK2.WeatherCondition[DailyForecastData?.days(i)?.restOfDayForecast()?.conditionCode()]}`);
 						day.restOfDayForecast = {
 							cloudCover: DailyForecastData?.days(i)?.restOfDayForecast()?.cloudCover(),
 							cloudCoverHighAltPct: DailyForecastData?.days(i)?.restOfDayForecast()?.cloudCoverHighAltPct(),
