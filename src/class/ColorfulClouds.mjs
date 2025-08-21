@@ -316,9 +316,10 @@ export default class ColorfulClouds {
 			case "STORM_SNOW":
 				return "HEAVY_SNOW";
 
+			// Apple 缺失 DUST/SAND 定义，用 HAZE 替代
 			case "DUST":
 			case "SAND":
-				return "HAZE"; // Apple 没单独 DUST/SAND，用 HAZE 替代
+				return "HAZE";
 
 			case "WIND":
 				return "WINDY";
@@ -336,8 +337,8 @@ export default class ColorfulClouds {
  * @returns {number} UV Index（四舍五入为整数）
  */
 function dswrfToUVIndex(dswrf, k = 0.04) {
-    if (dswrf <= 0) return 0;
-    const uvIndex = dswrf * k / 0.025; // 估算 UV Index
-    // 限制结果在 0~11，并四舍五入为整数
-    return Math.min(Math.max(Math.round(uvIndex), 0), 11);
+	if (dswrf <= 0) return 0;
+	const uvIndex = (dswrf * k) / 0.025; // 估算 UV Index
+	// 限制结果在 0~11，并四舍五入为整数
+	return Math.min(Math.max(Math.round(uvIndex), 0), 11);
 }
