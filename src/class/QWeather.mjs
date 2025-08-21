@@ -419,12 +419,12 @@ export default class QWeather {
 			case "严重霾":
 				return "HAZE";
 
-			// 沙尘相关
+			// 沙尘相关(暂用 HAZE 代替)
 			case "扬沙":
 			case "浮尘":
 			case "沙尘暴":
 			case "强沙尘暴":
-				return "BLOWING_DUST";
+				return "HAZE";
 
 			// 降雨相关
 			case "毛毛雨/细雨":
@@ -446,8 +446,9 @@ export default class QWeather {
 			case "极端降雨":
 				return "HEAVY_RAIN";
 			case "阵雨":
+				return "RAIN";
 			case "强阵雨":
-				return "SUN_SHOWERS";
+				return "HEAVY_RAIN";
 			case "雨":
 				return "RAIN";
 
@@ -456,7 +457,7 @@ export default class QWeather {
 			case "强雷阵雨":
 				return "THUNDERSTORMS";
 			case "雷阵雨伴有冰雹":
-				return "HAIL";
+				return "THUNDERSTORMS";
 
 			// 降雪相关
 			case "小雪":
@@ -471,7 +472,6 @@ export default class QWeather {
 			case "大到暴雪":
 				return "HEAVY_SNOW";
 			case "阵雪":
-				return "SUN_FLURRIES";
 			case "雪":
 				return "SNOW";
 
@@ -479,15 +479,13 @@ export default class QWeather {
 			case "雨夹雪":
 			case "雨雪天气":
 			case "阵雨夹雪":
-				return "WINTRY_MIX";
 			case "冻雨":
-				return "FREEZING_RAIN";
+				return "FREEZING_DRIZZLE";
 
 			// 温度相关
 			case "热":
-				return "HOT";
+			// return "TEMPERATURE_MAX";
 			case "冷":
-				return "FRIGID";
 
 			// 未知
 			case "未知":
