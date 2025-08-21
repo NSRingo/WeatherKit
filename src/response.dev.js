@@ -8,6 +8,7 @@ import ColorfulClouds from "./class/ColorfulClouds.mjs";
 import QWeather from "./class/QWeather.mjs";
 import AirQuality from "./class/AirQuality.mjs";
 import * as flatbuffers from "flatbuffers";
+import * as WK2 from "./proto/apple/wk2.js";
 /***************** Processing *****************/
 // 解构URL
 const url = new URL($request.url);
@@ -133,22 +134,35 @@ Console.info(`FORMAT: ${FORMAT}`);
 									console.log("// --- Start Store --- //");
 									$request.headers.accept = "application/json";
 									const jsonBody = await fetch($request).then(res => JSON.parse(res?.body ?? "{}"));
-									const newConditionCode = jsonBody.currentWeather.conditionCode;
-									const newConditionID = body.currentWeather.conditionCode;
+									// 时间判断
+									const jsonTime = jsonBody.currentWeather.metadata.reportedTime;
+									const protoTime = body.currentWeather.metadata.reportedTime;
 
-									console.log(newConditionCode);
-									console.log(newConditionID);
+									// console.log(jsonTime);
+									// console.log(protoTime);
+									// console.log("\n");
 
-									// 存储
-									const debugKey = "WK2Debug";
-									const dataSet = JSON.parse($persistentStore.read(debugKey) || "[]");
-									// console.log(dataSet);
-									if (!dataSet.some(item => item[newConditionCode] === newConditionID)) {
-										const newType = { [newConditionCode]: newConditionID };
-										dataSet.push(newType);
-										console.log(newType);
-										$notification.post("新的天气类型", "", "Code: " + newConditionCode + "\n" + "ID: " + newConditionID);
-										$persistentStore.write(JSON.stringify(dataSet), debugKey);
+									if (protoTime === jsonTime) {
+										const jsonCode = jsonBody?.currentWeather?.conditionCode;
+										const protoCode = body?.currentWeather?.conditionCode;
+
+										console.log(jsonCode);
+										console.log(protoCode);
+
+										const protoID = WK2.WeatherCondition[protoCode];
+										console.log(protoID);
+
+										// 存储
+										const debugKey = "WK2Debug";
+										const dataSet = JSON.parse($persistentStore.read(debugKey) || "[]");
+										// console.log(dataSet);
+										if (!dataSet.some(item => item[jsonCode] === protoCode)) {
+											const newType = { [jsonCode]: protoCode };
+											dataSet.push(newType);
+											console.log(newType);
+											$notification.post("新的天气类型", "", "Code: " + jsonCode + "\n" + "ID: " + protoCode);
+											$persistentStore.write(JSON.stringify(dataSet), debugKey);
+										}
 									}
 									console.log("// --- Done --- //");
 
