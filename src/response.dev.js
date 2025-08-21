@@ -1,4 +1,4 @@
-import { $app, Console, done, Lodash as _ } from "@nsnanocat/util";
+import { $app, Console, fetch, done, Lodash as _ } from "@nsnanocat/util";
 import database from "./function/database.mjs";
 import setENV from "./function/setENV.mjs";
 import providerNameToLogo from "./function/providerNameToLogo.mjs";
@@ -127,7 +127,30 @@ Console.info(`FORMAT: ${FORMAT}`);
 								}
 								if (url.searchParams.get("dataSets").includes("currentWeather")) {
 									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
-									//Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
+									// Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
+
+									// 自动存储新的天气类型
+									console.log("// --- Start Store --- //");
+									$request.headers.accept = "application/json";
+									const jsonBody = await fetch($request).then(res => JSON.parse(res?.body ?? "{}"));
+									const newConditionCode = jsonBody.currentWeather.conditionCode;
+									const newConditionID = body.currentWeather.conditionCode;
+
+									console.log(newConditionCode);
+									console.log(newConditionID);
+
+									// 存储
+									const debugKey = "WK2Debug";
+									const dataSet = JSON.parse($persistentStore.read(debugKey) || "[]");
+									// console.log(dataSet);
+									if (!dataSet.some(item => item[newConditionCode] === newConditionID)) {
+										const newType = { [newConditionCode]: newConditionID };
+										dataSet.push(newType);
+										console.log(newType);
+										$notification.post("新的天气类型", "", "Code: " + newConditionCode + "\n" + "ID: " + newConditionID);
+										$persistentStore.write(JSON.stringify(dataSet), debugKey);
+									}
+									console.log("// --- Done --- //");
 
 									body = await InjectCurrentWeather(url, body, Settings);
 								}
