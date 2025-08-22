@@ -87,6 +87,22 @@ export interface Settings {
          * @defaultValue ["QWeather"]
          */
         ReplaceProviders?: ('QWeather' | 'BreezoMeter' | 'TWC')[];
+    /**
+         * [历史空气质量] 数据源
+         *
+         * 始终会使用选定的数据源，填补无空气质量对比地区的数据。                                                                                                                   
+         *
+         * @remarks
+         *
+         * Possible values:
+         * - `'WeatherKit'` - WeatherKit (不进行替换)
+         * - `'QWeather'` - 和风天气
+         * - `'WAQI'` - The World Air Quality Project
+         *
+         * @defaultValue "QWeather"
+         */
+        // ComparisonProvider?: 'WeatherKit' | 'QWeather' | 'WAQI';
+        ComparisonProvider?: 'WeatherKit' | 'QWeather';
     Local?: {
         /**
          * [空气质量] 本地替换算法

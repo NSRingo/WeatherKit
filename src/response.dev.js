@@ -254,15 +254,11 @@ async function InjectAirQuality(url, body, Settings) {
  */
 async function CompareAirQuality(url, body, Settings) {
 	Console.log("☑️ CompareAirQuality");
-	switch (body?.airQuality?.metadata?.providerName?.split("\n")?.[0]) {
-		case null:
-		case undefined:
-		case "BreezoMeter":
-		case "The Weather Channel":
-		default:
+	switch (Settings.AQI.ComparisonProvider) {
+		case "WeatherKit":
 			break;
-		case "和风天气":
-		case "QWeather": {
+		case "QWeather":
+		default: {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
 			if (!body?.airQuality?.metadata?.locationID) {
 				const metadata = await qWeather.GeoAPI();
@@ -273,15 +269,13 @@ async function CompareAirQuality(url, body, Settings) {
 			body.airQuality.previousDayComparison = AirQuality.ComparisonTrend(body.airQuality?.index, HistoricalAirQuality?.index);
 			break;
 		}
-		case "彩云天气":
 		case "ColorfulClouds": {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
 			const Hourly = await colorfulClouds.Hourly(undefined, 1, Date.now() - 24 * 60 * 60 * 1000);
 			body.airQuality.previousDayComparison = AirQuality.ComparisonTrend(body.airQuality.index, Hourly.index);
 			break;
 		}
-		case "WAQI":
-		case "World Air Quality Index Project": {
+		case "WAQI": {
 			const waqi = new WAQI({ url: url, header: Settings?.API?.WAQI?.Header, token: Settings?.API?.WAQI?.Token });
 			break;
 		}

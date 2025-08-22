@@ -101,6 +101,18 @@ export default defineConfig({
 			],
 		},
 		{
+			key: "AQI.ComparisonProvider",
+			name: "[历史空气质量] 数据源",
+			defaultValue: "QWeather",
+			type: "string",
+			options: [
+				{ key: "WeatherKit", label: "WeatherKit (不进行替换)" },
+				{ key: "QWeather", label: "和风天气" },
+				// { key: "WAQI", label: "The World Air Quality Project" },
+			],
+			description: "始终会使用选定的数据源，填补无空气质量对比地区的数据。",
+		},
+		{
 			key: "AQI.Local.Scale",
 			type: "string",
 			name: "[空气质量] 本地替换算法",
