@@ -1,4 +1,4 @@
-import { $app, Console, fetch, done, Lodash as _ } from "@nsnanocat/util";
+import { $app, Console, done, Lodash as _ } from "@nsnanocat/util";
 import database from "./function/database.mjs";
 import setENV from "./function/setENV.mjs";
 import providerNameToLogo from "./function/providerNameToLogo.mjs";
@@ -8,7 +8,7 @@ import ColorfulClouds from "./class/ColorfulClouds.mjs";
 import QWeather from "./class/QWeather.mjs";
 import AirQuality from "./class/AirQuality.mjs";
 import * as flatbuffers from "flatbuffers";
-import * as WK2 from "./proto/apple/wk2.js";
+import MatchEnum from "./class/MatchEnum.mjs";
 /***************** Processing *****************/
 // 解构URL
 const url = new URL($request.url);
@@ -96,8 +96,15 @@ Console.info(`FORMAT: ${FORMAT}`);
 							// 路径判断
 							if (url.pathname.startsWith("/api/v2/weather/")) {
 								body = WeatherKit2.decode(ByteBuffer, "all");
+								const matchEnum = new MatchEnum(body);
+								if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+									await matchEnum.init();
+								}
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
-									Console.debug(`body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`);
+									//Console.debug(`body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`);
+									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+										matchEnum.airQuality();
+									}
 									// InjectAirQuality
 									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body = await InjectAirQuality(url, body, Settings);
 									// CompareAirQuality
@@ -129,40 +136,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 								if (url.searchParams.get("dataSets").includes("currentWeather")) {
 									// Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
 									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
-										// 自动存储新的天气类型
-										Console.debug("// --- Start Store --- //");
-										if ($request.headers.Accept) $request.headers.Accept = "application/json";
-										if ($request.headers.accept) $request.headers.accept = "application/json";
-										const jsonBody = await fetch($request).then(res => JSON.parse(res?.body ?? "{}"));
-										// 时间判断
-										const jsonTime = jsonBody.currentWeather.metadata.reportedTime;
-										const protoTime = body.currentWeather.metadata.reportedTime;
-
-										Console.debug(`jsonTime: ${jsonTime}`);
-										Console.debug(`protoTime: ${protoTime}`);
-										Console.debug("\n");
-										const jsonCode = jsonBody?.currentWeather?.conditionCode;
-										const protoCode = body?.currentWeather?.conditionCode;
-
-										Console.debug(`jsonCode: ${jsonCode}`);
-										Console.debug(`protoCode: ${protoCode}`);
-
-										const protoID = WK2.WeatherCondition[protoCode];
-										Console.debug(`protoID: ${protoID}`);
-										$notification.post("WeatherCondition", "", `time: ${jsonTime} json: ${jsonCode}\ntime: ${protoTime} proto: ${protoID}-${protoCode}`);
-										if (protoTime === jsonTime) {
-											// 存储
-											const debugKey = "WK2Debug";
-											const dataSet = JSON.parse($persistentStore.read(debugKey) || "[]");
-											// Console.log(dataSet);
-											if (!dataSet.some(item => item[jsonCode] === protoCode)) {
-												const newType = { [jsonCode]: protoCode };
-												dataSet.push(newType);
-												Console.debug(newType);
-												$persistentStore.write(JSON.stringify(dataSet), debugKey);
-											}
-										}
-										Console.debug("// --- Done --- //");
+										matchEnum.weatherCondition();
+										matchEnum.pressureTrend();
 									}
 									body = await InjectCurrentWeather(url, body, Settings);
 									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
@@ -173,6 +148,14 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("weatherAlerts")) {
+									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+										matchEnum.severity();
+										matchEnum.significanceType();
+										matchEnum.urgency();
+										matchEnum.certainty();
+										matchEnum.importanceType();
+										matchEnum.responseType();
+									}
 									if (body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
 									Console.debug(`body.weatherAlerts: ${JSON.stringify(body?.weatherAlerts, null, 2)}`);
 								}
