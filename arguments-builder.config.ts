@@ -129,7 +129,10 @@ export default defineConfig({
 			name: "[空气质量] 需要修改的标准",
 			description: "选中的空气质量标准会被替换。请注意各国监测的污染物种类可能有所不同，转换算法或API未必适合当地。",
 			defaultValue: ["HJ6332012"],
-			options: [{ key: "HJ6332012", label: "中国 (HJ 633—2012)" }],
+			options: [
+				{ key: "HJ6332012", label: "中国 (HJ 633—2012)" },
+				{ key: "EPA_NowCast", label: "美国 (EPA NowCast)" },
+			],
 		},
 		{
 			key: "AQI.Local.ConvertUnits",
