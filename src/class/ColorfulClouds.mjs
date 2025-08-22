@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(options) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.1.0";
+		this.Version = "3.1.1";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.url = new URL($request.url);
 		this.header = { "Content-Type": "application/json" };
@@ -314,7 +314,7 @@ export default class ColorfulClouds {
 			case "HEAVY_SNOW":
 				return "HEAVY_SNOW";
 			case "STORM_SNOW":
-				return "HEAVY_SNOW";
+				return "BLIZZARD";
 
 			// Apple 缺失 DUST/SAND 定义，用 HAZE 替代
 			case "DUST":
