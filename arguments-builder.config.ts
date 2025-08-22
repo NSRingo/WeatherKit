@@ -102,7 +102,7 @@ export default defineConfig({
 		},
 		{
 			key: "AQI.ComparisonProvider",
-			name: "[历史空气质量] 数据源",
+			name: "[空气质量] 对比昨日数据源",
 			defaultValue: "QWeather",
 			type: "string",
 			options: [
@@ -110,7 +110,7 @@ export default defineConfig({
 				{ key: "QWeather", label: "和风天气" },
 				// { key: "WAQI", label: "The World Air Quality Project" },
 			],
-			description: "始终会使用选定的数据源，填补无空气质量对比地区的数据。",
+			description: "始终会使用选定的数据源，填补无对比昨日地区的数据。",
 		},
 		{
 			key: "AQI.Local.Scale",
