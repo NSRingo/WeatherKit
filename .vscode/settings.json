@@ -7,6 +7,6 @@
     "editor.defaultFormatter": "biome-biome"
   },
   "[json]": {
-    "editor.defaultFormatter": "biome-biome"
+    "editor.defaultFormatter": "biomejs.biome"
   }
 }
