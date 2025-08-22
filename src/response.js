@@ -201,7 +201,7 @@ async function InjectAirQuality(url, body, Settings) {
  */
 async function CompareAirQuality(url, body, Settings) {
 	Console.log("☑️ CompareAirQuality");
-	switch (Settings.AQI.ComparisonProvider) {
+	switch (Settings?.AQI?.ComparisonProvider) {
 		case "WeatherKit":
 			break;
 		case "QWeather":
