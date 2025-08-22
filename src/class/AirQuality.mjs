@@ -158,7 +158,7 @@ export default class AirQuality {
 			EPA_NowCast: {
 				/**
 				 * US AQI standard, not equal to NowCast.
-				 * [EPA 454/B-18-007]{@link https://www.airnow.gov/sites/default/files/2020-05/aqi-technical-assistance-document-sept2018.pdf}
+				 * [Technical Assistance Document for the Reporting of Daily Air Quality – the Air Quality Index (AQI) (EPA 454/B-24-002, May 2024)]{@link https://document.airnow.gov/technical-assistance-document-for-the-reporting-of-daily-air-quailty.pdf}
 				 * @type aqiStandard
 				 */
 				scale: "EPA_NowCast",
