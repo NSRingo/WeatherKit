@@ -315,30 +315,54 @@ export default class QWeather {
 		return forecastNextHour;
 	}
 
-	async HistoricalAir(token = this.token, locationID = new Number(), date = time("yyyyMMdd", Date.now() - 24 * 60 * 60 * 1000)) {
-		Console.log("☑️ HistoricalAir", `locationID:${locationID}`, `date: ${date}`);
+	async Hourly(token = this.token, hours = 24) {
+		Console.log("☑️ Daily", `host: ${this.host}`);
 		const request = {
-			url: `https://${this.host}/v7/historical/air/?location=${locationID}&date=${date}&key=${token}`,
+			url: `https://${this.host}/v7/weather/${hours.toString()}h?location=${this.longitude},${this.latitude}&key=${token}`,
 			header: this.header,
 		};
-		let airQuality;
+		let forecastHourly;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const Hour = new Date().getHours();
+			const timeStamp = parseInt(Date.parse(body?.daily?.[0]?.fxTime) / 1000, 10);
 			switch (body?.code) {
 				case "200":
-					airQuality = {
+					forecastHourly = {
 						metadata: {
 							attributionUrl: body?.fxLink,
 							providerLogo: providerNameToLogo("和风天气", this.version),
 							providerName: "和风天气",
 							sourceType: "STATION",
 						},
-						categoryIndex: Number.parseInt(body?.airHourly?.[Hour]?.level, 10),
-						index: Number.parseInt(body?.airHourly?.[Hour]?.aqi, 10),
-						pollutants: this.#CreatePollutants(body?.airHourly?.[Hour]),
-						primaryPollutant: this.#Config.Pollutants[body?.airHourly?.[Hour]?.primary] || "NOT_AVAILABLE",
-						scale: "HJ6332012",
+						hours: Array.from({ length: hours }, (_, i) => {
+							return {
+								cloudCover: body?.hourly?.[i]?.cloud,
+								// cloudCoverHighAltPct: 0, // Not given
+								// cloudCoverLowAltPct: 0, // Not given
+								// cloudCoverMidAltPct: 0, // Not given
+								conditionCode: this.#ConvertWeatherCode(body?.hourly?.[i]?.text),
+								// daylight: false, // Not given
+								forecastStart: timeStamp + i * 3600,
+								humidity: body?.hourly?.[i]?.humidity,
+								// perceivedPrecipitationIntensity: "", // Not given
+								precipitationAmount: body?.hourly?.[i]?.precip,
+								precipitationChance: body?.hourly?.[i]?.pop,
+								precipitationIntensity: body?.hourly?.[i]?.precip,
+								// precipitationType: "", // Not given
+								pressure: body?.hourly?.[i]?.pressure,
+								// pressureTrend: "", // Not given
+								// snowfallAmount: 0, // Not given
+								// snowfallIntensity: 0, // Not given
+								temperature: body?.hourly?.[i]?.temp,
+								// temperatureApparent: 0, // Not given
+								temperatureDewPoint: body?.hourly?.[i]?.dew,
+								// uvIndex: 0, // Not given
+								// visibility: 0, // Not given
+								windDirection: body?.hourly?.[i]?.wind360,
+								// windGust: 0, // Not given
+								windSpeed: body?.hourly?.[i]?.windSpeed,
+							};
+						}),
 					};
 					break;
 				case "204":
@@ -355,16 +379,16 @@ export default class QWeather {
 		} catch (error) {
 			Console.error(error);
 		} finally {
-			Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
-			Console.log("✅ HistoricalAir");
+			Console.debug(`airQuality: ${JSON.stringify(forecastHourly, null, 2)}`);
+			Console.log("✅ Daily");
 		}
-		return airQuality;
+		return forecastHourly;
 	}
 
-	async Daily(token = this.token, locationID = new Number(), days = 10) {
-		Console.log("☑️ HistoricalAir", `locationID:${locationID}`, `date: ${days}`);
+	async Daily(token = this.token, days = 10) {
+		Console.log("☑️ Daily", `host: ${this.host}`);
 		const request = {
-			url: `https://${this.host}/v7/weather/${days.toString()}d?location=${locationID}&key=${token}`,
+			url: `https://${this.host}/v7/weather/${days.toString()}d?location=${this.longitude},${this.latitude}&key=${token}`,
 			header: this.header,
 		};
 		let forecastDaily;
@@ -495,9 +519,55 @@ export default class QWeather {
 			Console.error(error);
 		} finally {
 			Console.debug(`airQuality: ${JSON.stringify(forecastDaily, null, 2)}`);
-			Console.log("✅ HistoricalAir");
+			Console.log("✅ Daily");
 		}
 		return forecastDaily;
+	}
+
+	async HistoricalAir(token = this.token, locationID = new Number(), date = time("yyyyMMdd", Date.now() - 24 * 60 * 60 * 1000)) {
+		Console.log("☑️ HistoricalAir", `locationID:${locationID}`, `date: ${date}`);
+		const request = {
+			url: `https://${this.host}/v7/historical/air/?location=${locationID}&date=${date}&key=${token}`,
+			header: this.header,
+		};
+		let airQuality;
+		try {
+			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+			const Hour = new Date().getHours();
+			switch (body?.code) {
+				case "200":
+					airQuality = {
+						metadata: {
+							attributionUrl: body?.fxLink,
+							providerLogo: providerNameToLogo("和风天气", this.version),
+							providerName: "和风天气",
+							sourceType: "STATION",
+						},
+						categoryIndex: Number.parseInt(body?.airHourly?.[Hour]?.level, 10),
+						index: Number.parseInt(body?.airHourly?.[Hour]?.aqi, 10),
+						pollutants: this.#CreatePollutants(body?.airHourly?.[Hour]),
+						primaryPollutant: this.#Config.Pollutants[body?.airHourly?.[Hour]?.primary] || "NOT_AVAILABLE",
+						scale: "HJ6332012",
+					};
+					break;
+				case "204":
+				case "400":
+				case "401":
+				case "402":
+				case "403":
+				case "404":
+				case "429":
+				case "500":
+				case undefined:
+					throw Error(body?.code);
+			}
+		} catch (error) {
+			Console.error(error);
+		} finally {
+			Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+			Console.log("✅ HistoricalAir");
+		}
+		return airQuality;
 	}
 
 	#CreatePollutants(pollutantsObj = {}) {

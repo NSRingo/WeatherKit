@@ -224,7 +224,50 @@ export default class ColorfulClouds {
 								primaryPollutant: "NOT_AVAILABLE",
 								scale: "HJ6332012",
 							};
-							forecastHourly = {};
+							forecastHourly = {
+								metadata: {
+									attributionUrl: "https://www.caiyunapp.com/h5",
+									expireTime: timeStamp + 60 * 60,
+									language: `${this.language}-${this.country}`,
+									latitude: body?.location?.[0],
+									longitude: body?.location?.[1],
+									providerLogo: providerNameToLogo("彩云天气", this.version),
+									providerName: "彩云天气",
+									readTime: timeStamp,
+									reportedTime: body?.server_time,
+									temporarilyUnavailable: false,
+									sourceType: "STATION",
+								},
+								hours: Array.from({ length: hours }, (_, i) => {
+									return {
+										cloudCover: body?.result?.hourly?.cloudrate?.[i]?.value,
+										// cloudCoverHighAltPct: 0, // Not given
+										// cloudCoverLowAltPct: 0, // Not given
+										// cloudCoverMidAltPct: 0, // Not given
+										conditionCode: this.#ConvertWeatherCode(body?.result?.hourly?.skycon?.[i]?.value),
+										// daylight: false, // Not given
+										forecastStart: Math.round(Date.parse(body?.result?.hourly?.skycon?.[i]?.datetime) / 1000),
+										humidity: body?.result?.hourly?.humidity?.[i]?.value,
+										// perceivedPrecipitationIntensity: "", // Not given
+										precipitationAmount: body?.result?.hourly?.precipitation?.[i]?.value,
+										precipitationChance: body?.result?.hourly?.precipitation?.[i]?.probability,
+										// precipitationIntensity: 0, // Not given
+										// precipitationType: "", // Not given
+										pressure: body?.result?.hourly?.pressure?.[i]?.value / 10,
+										// pressureTrend: "", // Not given
+										// snowfallAmount: 0, // Not given
+										// snowfallIntensity: 0, // Not given
+										temperature: body?.result?.hourly?.temperature?.[i]?.value,
+										temperatureApparent: body?.result?.hourly?.apparent_temperature?.[i]?.value,
+										// temperatureDewPoint: 0, // Not given
+										// uvIndex: 0, // Not given
+										visibility: body?.result?.hourly?.visibility?.[i]?.value,
+										windDirection: body?.result?.hourly?.wind?.[i]?.direction,
+										// windGust: 0, // Not given
+										windSpeed: body?.result?.hourly?.wind?.[i]?.speed,
+									};
+								}),
+							};
 							break;
 						case "error":
 						case undefined:

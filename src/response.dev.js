@@ -415,7 +415,7 @@ async function InjectForecastHourly(url, body, Settings) {
 			break;
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
-			forecastHourly = await qWeather.Minutely();
+			forecastHourly = await qWeather.Hourly();
 			break;
 		}
 		case "ColorfulClouds":
