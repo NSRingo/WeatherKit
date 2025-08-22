@@ -112,6 +112,10 @@ Console.info(`FORMAT: ${FORMAT}`);
 									// ProviderLogo
 									if (body?.airQuality?.metadata?.providerName && !body?.airQuality?.metadata?.providerLogo) body.airQuality.metadata.providerLogo = providerNameToLogo(body?.airQuality?.metadata?.providerName, "v2");
 								}
+								if (url.searchParams.get("dataSets").includes("currentWeather")) {
+									body = await InjectCurrentWeather(url, body, Settings);
+									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
+								}
 								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
 									if (!body?.forecastNextHour) body = await InjectForecastNextHour(url, body, Settings);
 									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
@@ -242,8 +246,7 @@ function ConvertAirQuality(body, Settings) {
 	let airQuality;
 	switch (Settings?.AQI?.Local?.Scale) {
 		case "NONE":
-			Console.log("✅ ConvertAirQuality: Scale is NONE, not converting.");
-			return body;
+			break;
 		case "HJ_633":
 		case "EPA_NowCast":
 		case "WAQI_InstantCast":
@@ -251,7 +254,7 @@ function ConvertAirQuality(body, Settings) {
 			airQuality = AirQuality.ConvertScale(body?.airQuality?.pollutants, Settings?.AQI?.Local?.Scale, Settings?.AQI?.Local?.ConvertUnits);
 			break;
 	}
-	if (airQuality.index) {
+	if (airQuality?.index) {
 		body.airQuality = { ...body.airQuality, ...airQuality };
 		body.airQuality.metadata.providerName += `\nConverted using ${Settings?.AQI?.Local?.Scale}`;
 	}
@@ -287,5 +290,37 @@ async function InjectForecastNextHour(url, body, Settings) {
 		body.forecastNextHour = { ...body?.forecastNextHour, ...forecastNextHour };
 	}
 	Console.log("✅ InjectForecastNextHour");
+	return body;
+}
+
+/**
+ * @param {string} url
+ * @param {any} body
+ * @param {import('./types').Settings} Settings
+ */
+async function InjectCurrentWeather(url, body, Settings) {
+	Console.log("☑️ InjectCurrentWeather");
+	let currentWeather;
+	switch (Settings?.CurrentWeather?.Provider) {
+		case "WeatherKit":
+			break;
+		case "QWeather": {
+			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
+			currentWeather = await qWeather.WeatherNow();
+			break;
+		}
+		case "ColorfulClouds":
+		default: {
+			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
+			currentWeather = (await colorfulClouds.RealTime()).currentWeather;
+			break;
+		}
+	}
+	if (currentWeather?.metadata) {
+		currentWeather.metadata = { ...body?.currentWeather?.metadata, ...currentWeather.metadata };
+		body.currentWeather = { ...body?.currentWeather, ...currentWeather };
+		Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
+	}
+	Console.log("✅ InjectCurrentWeather");
 	return body;
 }

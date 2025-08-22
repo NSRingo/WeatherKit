@@ -127,7 +127,6 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (body?.airQuality?.metadata?.providerName && !body?.airQuality?.metadata?.providerLogo) body.airQuality.metadata.providerLogo = providerNameToLogo(body?.airQuality?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("currentWeather")) {
-									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
 									// Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
 									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
 										// 自动存储新的天气类型
@@ -165,6 +164,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 										Console.debug("// --- Done --- //");
 									}
 									body = await InjectCurrentWeather(url, body, Settings);
+									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
 									Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
@@ -323,7 +323,7 @@ function ConvertAirQuality(body, Settings) {
 			airQuality = AirQuality.ConvertScale(body?.airQuality?.pollutants, Settings?.AQI?.Local?.Scale, Settings?.AQI?.Local?.ConvertUnits);
 			break;
 	}
-	if (airQuality.index) {
+	if (airQuality?.index) {
 		body.airQuality = { ...body.airQuality, ...airQuality };
 		body.airQuality.metadata.providerName += `\nConverted using ${Settings?.AQI?.Local?.Scale}`;
 		Console.debug(`body.airQuality: ${JSON.stringify(body.airQuality, null, 2)}`);
