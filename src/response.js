@@ -86,6 +86,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
 									// InjectAirQuality
 									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body = await InjectAirQuality(url, body, Settings);
+									// ConvertAirQuality
+									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body = ConvertAirQuality(body, Settings);
 									// CompareAirQuality
 									body = await CompareAirQuality(url, body, Settings);
 									// PollutantUnitConverter
@@ -105,8 +107,6 @@ Console.info(`FORMAT: ${FORMAT}`);
 												});
 											break;
 									}
-									// ConvertAirQuality
-									if (Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body = ConvertAirQuality(body, Settings);
 									// Fix Convert units that does not supported in Apple Weather
 									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.FixUnits(body.airQuality.pollutants);
 									// ProviderLogo
@@ -212,8 +212,18 @@ async function CompareAirQuality(url, body, Settings) {
 				if (!body?.airQuality?.metadata?.attributionUrl) body.airQuality.metadata.attributionUrl = metadata.attributionUrl;
 				body.airQuality.metadata.locationID = metadata?.locationID;
 			}
-			const HistoricalAirQuality = await qWeather.HistoricalAir(undefined, body.airQuality?.metadata?.locationID);
-			body.airQuality.previousDayComparison = AirQuality.ComparisonTrend(body.airQuality?.index, HistoricalAirQuality?.index);
+			const historicalAirQuality = await qWeather.HistoricalAir(undefined, body.airQuality?.metadata?.locationID);
+			let ConvertedAirQualtiy;
+			Console.log(`body.airQuality.scale: ${body?.airQuality?.scale}`, `historicalAirQuality.scale: ${historicalAirQuality.scale}`);
+			if (body?.airQuality?.scale === historicalAirQuality.scale) {
+				ConvertedAirQualtiy = historicalAirQuality;
+			} else {
+				ConvertedAirQualtiy = ConvertAirQuality({ airQuality: historicalAirQuality }, Settings).airQuality;
+				if (body?.airQuality?.scale !== ConvertedAirQualtiy?.scale) {
+					ConvertedAirQualtiy = null;
+				}
+			}
+			body.airQuality.previousDayComparison = AirQuality.ComparisonTrend(body.airQuality?.index, ConvertedAirQualtiy?.index);
 			break;
 		}
 		case "ColorfulClouds": {
