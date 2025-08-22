@@ -85,7 +85,7 @@ export default class ColorfulClouds {
 								humidity: Math.round(body?.result?.realtime?.humidity * 100),
 								uvIndex: dswrfToUVIndex(body?.result?.realtime?.dswrf),
 								perceivedPrecipitationIntensity: body?.result?.realtime?.precipitation?.local?.intensity,
-								pressure: body?.result?.realtime?.pressure,
+								pressure: body?.result?.realtime?.pressure / 100,
 								temperature: body?.result?.realtime?.temperature,
 								temperatureApparent: body?.result?.realtime?.apparent_temperature,
 								visibility: body?.result?.realtime?.visibility * 1000,
