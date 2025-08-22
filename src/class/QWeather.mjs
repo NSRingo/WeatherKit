@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(options) {
 		this.Name = "QWeather";
-		this.Version = "4.2.0";
+		this.Version = "4.2.1";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.url = new URL($request.url);
 		this.host = "devapi.qweather.com";
@@ -470,7 +470,7 @@ export default class QWeather {
 				return "HEAVY_SNOW";
 			case "暴雪":
 			case "大到暴雪":
-				return "HEAVY_SNOW";
+				return "BLIZZARD";
 			case "阵雪":
 			case "雪":
 				return "SNOW";
@@ -484,7 +484,6 @@ export default class QWeather {
 
 			// 温度相关
 			case "热":
-			// return "TEMPERATURE_MAX";
 			case "冷":
 
 			// 未知
