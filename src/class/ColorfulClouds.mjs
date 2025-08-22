@@ -85,7 +85,7 @@ export default class ColorfulClouds {
 								humidity: Math.round(body?.result?.realtime?.humidity * 100),
 								uvIndex: dswrfToUVIndex(body?.result?.realtime?.dswrf),
 								perceivedPrecipitationIntensity: body?.result?.realtime?.precipitation?.local?.intensity,
-								pressure: body?.result?.realtime?.pressure,
+								pressure: body?.result?.realtime?.pressure / 100,
 								temperature: body?.result?.realtime?.temperature,
 								temperatureApparent: body?.result?.realtime?.apparent_temperature,
 								visibility: body?.result?.realtime?.visibility * 1000,
@@ -253,7 +253,7 @@ export default class ColorfulClouds {
 										precipitationChance: body?.result?.hourly?.precipitation?.[i]?.probability,
 										// precipitationIntensity: 0, // Not given
 										// precipitationType: "", // Not given
-										pressure: body?.result?.hourly?.pressure?.[i]?.value / 10,
+										pressure: body?.result?.hourly?.pressure?.[i]?.value / 100,
 										// pressureTrend: "", // Not given
 										// snowfallAmount: 0, // Not given
 										// snowfallIntensity: 0, // Not given
