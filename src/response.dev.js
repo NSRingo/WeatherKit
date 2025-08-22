@@ -131,7 +131,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
 										// 自动存储新的天气类型
 										Console.debug("// --- Start Store --- //");
-										$request.headers.accept = "application/json";
+										if ($request.headers.Accept) $request.headers.Accept = "application/json";
+										if ($request.headers.accept) $request.headers.accept = "application/json";
 										const jsonBody = await fetch($request).then(res => JSON.parse(res?.body ?? "{}"));
 										// 时间判断
 										const jsonTime = jsonBody.currentWeather.metadata.reportedTime;
