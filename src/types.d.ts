@@ -1,6 +1,6 @@
 export interface Settings {
     /**
-     * [数据集] 需要包含的数据集
+     * [数据集]
      *
      * 选中的数据集会被包含在请求中。
      *
@@ -12,14 +12,15 @@ export interface Settings {
      * - `'forecastDaily'` - 每日预报
      * - `'forecastHourly'` - 每小时预报
      * - `'forecastNextHour'` - 未来一小时降水强度
+     * - `'locationInfo'` - 位置信息
      * - `'news'` - 新闻
      * - `'historicalComparisons'` - 历史对比
      * - `'weatherAlerts'` - 天气预警
      * - `'weatherChanges'` - 天气变化
      *
-     * @defaultValue ["airQuality","currentWeather","forecastDaily","forecastHourly","forecastNextHour","news","historicalComparisons","weatherAlerts","weatherChanges"]
+     * @defaultValue ["airQuality","currentWeather","forecastDaily","forecastHourly","forecastNextHour","locationInfo","news","historicalComparisons","weatherAlerts","weatherChanges"]
      */
-    DataSets?: ('airQuality' | 'currentWeather' | 'forecastDaily' | 'forecastHourly' | 'forecastNextHour' | 'news' | 'historicalComparisons' | 'weatherAlerts' | 'weatherChanges')[];
+    DataSets?: ('airQuality' | 'currentWeather' | 'forecastDaily' | 'forecastHourly' | 'forecastNextHour' | 'locationInfo' | 'news' | 'historicalComparisons' | 'weatherAlerts' | 'weatherChanges')[];
     CurrentWeather?: {
     /**
          * [当前天气] 数据源

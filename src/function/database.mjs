@@ -1,7 +1,7 @@
 export default {
 	WeatherKit: {
 		Settings: {
-			DataSets: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
+			DataSets: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
 			CurrentWeather: {
 				Provider: "WeatherKit",
 			},
