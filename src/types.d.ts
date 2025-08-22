@@ -127,6 +127,7 @@ export interface Settings {
          *
          * Possible values:
          * - `'HJ6332012'` - 中国 (HJ 633—2012)
+         * - `'EPA_NowCast'` - 美国 (EPA NowCast)
          *
          * @defaultValue ["HJ6332012"]
          */
