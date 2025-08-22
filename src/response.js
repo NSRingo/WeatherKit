@@ -116,6 +116,14 @@ Console.info(`FORMAT: ${FORMAT}`);
 									body = await InjectCurrentWeather(url, body, Settings);
 									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
 								}
+								if (url.searchParams.get("dataSets").includes("forecastDaily")) {
+									body = await InjectForecastDaily(url, body, Settings);
+									if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
+								}
+								if (url.searchParams.get("dataSets").includes("forecastHourly")) {
+									body = await InjectForecastHourly(url, body, Settings);
+									if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
+								}
 								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
 									if (!body?.forecastNextHour) body = await InjectForecastNextHour(url, body, Settings);
 									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
@@ -228,7 +236,7 @@ async function CompareAirQuality(url, body, Settings) {
 		}
 		case "ColorfulClouds": {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
-			const Hourly = await colorfulClouds.Hourly(undefined, 1, Date.now() - 24 * 60 * 60 * 1000);
+			const Hourly = (await colorfulClouds.Hourly(undefined, 1, Date.now() - 24 * 60 * 60 * 1000)).airQuality;
 			body.airQuality.previousDayComparison = AirQuality.ComparisonTrend(body.airQuality.index, Hourly.index);
 			break;
 		}
@@ -326,5 +334,66 @@ async function InjectCurrentWeather(url, body, Settings) {
 		Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
 	}
 	Console.log("✅ InjectCurrentWeather");
+	return body;
+}
+/**
+ * @param {string} url
+ * @param {any} body
+ * @param {import('./types').Settings} Settings
+ */
+async function InjectForecastDaily(url, body, Settings) {
+	Console.log("☑️ InjectForecastDaily");
+	let forecastDaily;
+	switch (Settings?.Daily?.Provider) {
+		case "WeatherKit":
+			break;
+		case "QWeather": {
+			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
+			forecastDaily = await qWeather.Daily();
+			break;
+		}
+		case "ColorfulClouds":
+		default: {
+			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
+			forecastDaily = await colorfulClouds.Daily();
+			break;
+		}
+	}
+	if (forecastDaily?.metadata) {
+		forecastDaily.metadata = { ...body?.forecastDaily?.metadata, ...forecastDaily.metadata };
+		body.forecastDaily = { ...body?.forecastDaily, ...forecastDaily };
+	}
+	Console.log("✅ InjectForecastDaily");
+	return body;
+}
+
+/**
+ * @param {string} url
+ * @param {any} body
+ * @param {import('./types').Settings} Settings
+ */
+async function InjectForecastHourly(url, body, Settings) {
+	Console.log("☑️ InjectForecastHourly");
+	let forecastHourly;
+	switch (Settings?.Hourly?.Provider) {
+		case "WeatherKit":
+			break;
+		case "QWeather": {
+			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
+			forecastHourly = await qWeather.Hourly();
+			break;
+		}
+		case "ColorfulClouds":
+		default: {
+			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
+			forecastHourly = (await colorfulClouds.Hourly(undefined, 1, Date.now() - 24 * 60 * 60 * 1000)).forecastHourly;
+			break;
+		}
+	}
+	if (forecastHourly?.metadata) {
+		forecastHourly.metadata = { ...body?.forecastHourly?.metadata, ...forecastHourly.metadata };
+		body.forecastHourly = { ...body?.forecastHourly, ...forecastHourly };
+	}
+	Console.log("✅ InjectForecastHourly");
 	return body;
 }
