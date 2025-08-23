@@ -128,8 +128,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 												});
 											break;
 									}
-									// Fix Convert units that does not supported in Apple Weather
-									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.FixUnits(body.airQuality.pollutants);
+									// Convert units that does not supported in Apple Weather
+									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.ConvertUnits(body.airQuality.pollutants);
 									// ProviderLogo
 									if (body?.airQuality?.metadata?.providerName && !body?.airQuality?.metadata?.providerLogo) body.airQuality.metadata.providerLogo = providerNameToLogo(body?.airQuality?.metadata?.providerName, "v2");
 								}

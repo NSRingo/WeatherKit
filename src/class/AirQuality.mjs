@@ -107,8 +107,8 @@ export default class AirQuality {
 		return trend;
 	}
 
-	static FixUnits(pollutants = []) {
-		Console.log("☑️ FixUnits");
+	static ConvertUnits(pollutants = []) {
+		Console.log("☑️ ConvertUnits");
 		pollutants = pollutants.map(pollutant => {
 			switch (pollutant.units) {
 				case "PARTS_PER_MILLION":
@@ -125,7 +125,7 @@ export default class AirQuality {
 			return pollutant;
 		});
 		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
-		Console.log("✅ FixUnits");
+		Console.log("✅ ConvertUnits");
 		return pollutants;
 	}
 
