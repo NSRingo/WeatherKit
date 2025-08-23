@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(options) {
 		this.Name = "QWeather";
-		this.Version = "4.3.2";
+		this.Version = "4.3.3";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.url = new URL($request.url);
 		this.host = "devapi.qweather.com";
@@ -430,14 +430,14 @@ export default class QWeather {
 								// sunsetAstronomical: 0, // Not given
 								// sunsetCivil: 0, // Not given
 								// sunsetNautical: 0, // Not given
-								temperatureMax: Number.parseInt(daily?.tempMax, 10),
+								temperatureMax: Number.parseFloat(daily?.tempMax),
 								// temperatureMaxTime: 0, // Not given
-								temperatureMin: Number.parseInt(daily?.tempMin, 10),
+								temperatureMin: Number.parseFloat(daily?.tempMin),
 								// temperatureMinTime: 0, // Not given
 								// visibilityMax: 0, // Not given
 								// visibilityMin: 0, // Not given
 								// windGustSpeedMax: 0, // Not given
-								windSpeedAvg: (Number.parseInt(daily?.windSpeedDay, 10) * 7 + Number.parseInt(daily?.windSpeedNight, 10) * 17) / 24, // 加权平均：白天7小时，晚上17小时
+								windSpeedAvg: (Number.parseFloat(daily?.windSpeedDay) * 7 + Number.parseFloat(daily?.windSpeedNight) * 17) / 24, // 加权平均：白天7小时，晚上17小时
 								// windSpeedMax: 0, // Not given
 								daytimeForecast: {
 									forecastStart: timeStamp + 7 * 3600, // 7 hours
@@ -486,7 +486,7 @@ export default class QWeather {
 									// visibility 用一整天的数据代替
 									// visibilityMax: 0, // Not given
 									// visibilityMin: 0, // Not given
-									windDirection: Number.parseInt(daily?.wind360Night),
+									windDirection: Number.parseInt(daily?.wind360Night, 10),
 									// windGustSpeedMax: 0, // Not given
 									windSpeed: Number.parseFloat(daily?.windSpeedNight),
 									// windSpeedMax: 0, // Not given
