@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.3.4";
+	static Version = "2.4.0";
 	static Author = "Virgil Clyne & Wordless Echo";
 
 	static #Config = {
@@ -586,6 +586,38 @@ export default class AirQuality {
 		}
 		Console.log("✅ CategoryIndex", `categoryIndex: ${categoryIndex}`);
 		return categoryIndex;
+	}
+
+	/**
+	 * 转换空气质量数据
+	 * 将空气质量数据按照指定的标准进行转换，包括污染物数值转换和AQI指数计算
+	 * @param {Object} body - 包含空气质量数据的响应体对象
+	 * @param {Object} body.airQuality - 空气质量数据对象
+	 * @param {Array} body.airQuality.pollutants - 污染物数组
+	 * @param {Object} body.airQuality.metadata - 空气质量元数据
+	 * @param {string} body.airQuality.metadata.providerName - 数据提供商名称
+	 * @param {import('../types').Settings} Settings - 设置对象
+	 * @returns {Object} 转换后的响应体对象，包含更新的空气质量数据
+	 */
+	static Convert(body, Settings) {
+		Console.log("☑️ Convert");
+		let airQuality;
+		switch (Settings?.AQI?.Local?.Scale) {
+			case "NONE":
+				break;
+			case "HJ_633":
+			case "EPA_NowCast":
+			case "WAQI_InstantCast":
+			default:
+				airQuality = AirQuality.ConvertScale(body?.airQuality?.pollutants, Settings?.AQI?.Local?.Scale, Settings?.AQI?.Local?.ConvertUnits);
+				break;
+		}
+		if (airQuality?.index) {
+			body.airQuality = { ...body.airQuality, ...airQuality };
+			body.airQuality.metadata.providerName += `\nConverted using ${Settings?.AQI?.Local?.Scale}`;
+		}
+		Console.log("✅ Convert");
+		return body;
 	}
 
 	static ComparisonTrend(todayAQI, yesterdayAQI) {

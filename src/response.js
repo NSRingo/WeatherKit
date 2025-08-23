@@ -87,7 +87,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									// InjectAirQuality
 									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body = await InjectAirQuality(url, body, Settings);
 									// ConvertAirQuality
-									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body = ConvertAirQuality(body, Settings);
+									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body = AirQuality.Convert(body, Settings);
 									// CompareAirQuality
 									body = await CompareAirQuality(url, body, Settings);
 									// PollutantUnitConverter
@@ -226,7 +226,7 @@ async function CompareAirQuality(url, body, Settings) {
 			if (body?.airQuality?.scale === historicalAirQuality.scale) {
 				ConvertedAirQualtiy = historicalAirQuality;
 			} else {
-				ConvertedAirQualtiy = ConvertAirQuality({ airQuality: historicalAirQuality }, Settings).airQuality;
+				ConvertedAirQualtiy = AirQuality.Convert({ airQuality: historicalAirQuality }, Settings).airQuality;
 				if (body?.airQuality?.scale !== ConvertedAirQualtiy?.scale) {
 					ConvertedAirQualtiy = null;
 				}
@@ -253,27 +253,6 @@ async function CompareAirQuality(url, body, Settings) {
  * @param {any} body
  * @param {import('./types').Settings} Settings
  */
-function ConvertAirQuality(body, Settings) {
-	Console.log("☑️ ConvertAirQuality");
-	let airQuality;
-	switch (Settings?.AQI?.Local?.Scale) {
-		case "NONE":
-			break;
-		case "HJ_633":
-		case "EPA_NowCast":
-		case "WAQI_InstantCast":
-		default:
-			airQuality = AirQuality.ConvertScale(body?.airQuality?.pollutants, Settings?.AQI?.Local?.Scale, Settings?.AQI?.Local?.ConvertUnits);
-			break;
-	}
-	if (airQuality?.index) {
-		body.airQuality = { ...body.airQuality, ...airQuality };
-		body.airQuality.metadata.providerName += `\nConverted using ${Settings?.AQI?.Local?.Scale}`;
-	}
-	Console.log("✅ ConvertAirQuality");
-	return body;
-}
-
 /**
  * @param {string} url
  * @param {any} body
