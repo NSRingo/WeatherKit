@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(options) {
 		this.Name = "QWeather";
-		this.Version = "4.3.0";
+		this.Version = "4.3.1";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.url = new URL($request.url);
 		this.host = "devapi.qweather.com";
@@ -315,16 +315,15 @@ export default class QWeather {
 		return forecastNextHour;
 	}
 
-	async Hourly(token = this.token, hours = 24) {
+	async Hourly(token = this.token, hours = 168) {
 		Console.log("☑️ Daily", `host: ${this.host}`);
 		const request = {
-			url: `https://${this.host}/v7/weather/${hours.toString()}h?location=${this.longitude},${this.latitude}&key=${token}`,
+			url: `https://${this.host}/v7/weather/${hours}h?location=${this.longitude},${this.latitude}&key=${token}`,
 			header: this.header,
 		};
 		let forecastHourly;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Number.parseInt(Date.parse(body?.daily?.[0]?.fxTime) / 1000, 10);
 			switch (body?.code) {
 				case "200":
 					forecastHourly = {
@@ -334,33 +333,33 @@ export default class QWeather {
 							providerName: "和风天气",
 							sourceType: "STATION",
 						},
-						hours: Array.from({ length: hours }, (_, i) => {
+						hours: body?.hourly?.map(hourly => {
 							return {
-								cloudCover: body?.hourly?.[i]?.cloud,
+								cloudCover: hourly?.cloud,
 								// cloudCoverHighAltPct: 0, // Not given
 								// cloudCoverLowAltPct: 0, // Not given
 								// cloudCoverMidAltPct: 0, // Not given
-								conditionCode: this.#ConvertWeatherCode(body?.hourly?.[i]?.text),
+								conditionCode: this.#ConvertWeatherCode(hourly?.text),
 								// daylight: false, // Not given
-								forecastStart: timeStamp + i * 3600,
-								humidity: body?.hourly?.[i]?.humidity,
+								forecastStart: Math.round(Date.parse(hourly?.fxTime) / 1000),
+								humidity: hourly?.humidity,
 								// perceivedPrecipitationIntensity: "", // Not given
-								precipitationAmount: body?.hourly?.[i]?.precip,
-								precipitationChance: body?.hourly?.[i]?.pop,
-								precipitationIntensity: body?.hourly?.[i]?.precip,
+								precipitationAmount: hourly?.precip,
+								precipitationChance: hourly?.pop,
+								precipitationIntensity: hourly?.precip,
 								// precipitationType: "", // Not given
-								pressure: body?.hourly?.[i]?.pressure,
+								pressure: hourly?.pressure,
 								// pressureTrend: "", // Not given
 								// snowfallAmount: 0, // Not given
 								// snowfallIntensity: 0, // Not given
-								temperature: body?.hourly?.[i]?.temp,
+								temperature: hourly?.temp,
 								// temperatureApparent: 0, // Not given
-								temperatureDewPoint: body?.hourly?.[i]?.dew,
+								temperatureDewPoint: hourly?.dew,
 								// uvIndex: 0, // Not given
 								// visibility: 0, // Not given
-								windDirection: body?.hourly?.[i]?.wind360,
+								windDirection: hourly?.wind360,
 								// windGust: 0, // Not given
-								windSpeed: body?.hourly?.[i]?.windSpeed,
+								windSpeed: hourly?.windSpeed,
 							};
 						}),
 					};
@@ -388,7 +387,7 @@ export default class QWeather {
 	async Daily(token = this.token, days = 10) {
 		Console.log("☑️ Daily", `host: ${this.host}`);
 		const request = {
-			url: `https://${this.host}/v7/weather/${days.toString()}d?location=${this.longitude},${this.latitude}&key=${token}`,
+			url: `https://${this.host}/v7/weather/${days}d?location=${this.longitude},${this.latitude}&key=${token}`,
 			header: this.header,
 		};
 		let forecastDaily;
@@ -403,63 +402,55 @@ export default class QWeather {
 							providerName: "和风天气",
 							sourceType: "STATION",
 						},
-						days: Array.from({ length: days }, (_, i) => {
-							const timeGap = 86400;
-							const timeStamp = Number.parseInt(Date.parse(body?.daily?.[i]?.fxDate) / 1000, 10); // 0H
-
-							const dayTimeGap = 43200;
-							const dayTimeStamp = timeStamp + 7 * 3600; // 7H
-
-							const nightTimeGap = 43200;
-							const nightTimeStamp = timeStamp + 19 * 3600; // 19H
-
+						days: body?.daily?.map(daily => {
+							const timeStamp = Math.round(Date.parse(daily?.fxDate) / 1000);
 							return {
 								forecastStart: timeStamp,
-								forecastEnd: timeStamp + timeGap,
-								conditionCode: this.#ConvertWeatherCode(body?.daily?.[i]?.textDay), // Not Accurate (用白天数据代替)
+								forecastEnd: timeStamp + 24 * 3600, // 24 hours
+								conditionCode: this.#ConvertWeatherCode(daily?.textDay), // Not Accurate (用白天数据代替)
 								// humidity 用一整天的数据代替
-								// humidityMax: body?.daily?.[i]?.humidity, // Not Accurate
-								// humidityMin: body?.daily?.[i]?.humidity, // Not Accurate
-								maxUvIndex: body?.daily?.[i]?.uvIndex, // Not Accurate
-								moonPhase: body?.daily?.[i]?.moonPhase,
-								moonrise: body?.daily?.[i]?.moonrise,
-								moonset: body?.daily?.[i]?.moonset,
-								precipitationAmount: body?.daily?.[i]?.precip,
+								// humidityMax: daily?.humidity, // Not Accurate
+								// humidityMin: daily?.humidity, // Not Accurate
+								maxUvIndex: daily?.uvIndex, // Not Accurate
+								moonPhase: daily?.moonPhase,
+								moonrise: daily?.moonrise,
+								moonset: daily?.moonset,
+								precipitationAmount: daily?.precip,
 								// precipitationAmountByType: [], // Not given
 								// precipitationChance: 0, // Not given
 								// precipitationType: "", // Not given
 								// snowfallAmount: 0, // Not given
 								// solarMidnight: 0, // Not given
 								// solarNoon: 0, // Not given
-								sunrise: body?.daily?.[i]?.sunrise,
+								sunrise: daily?.sunrise,
 								// sunriseAstronomical: 0, // Not given
 								// sunriseCivil: 0, // Not given
 								// sunriseNautical: 0, // Not given
-								sunset: body?.daily?.[i]?.sunset,
+								sunset: daily?.sunset,
 								// sunsetAstronomical: 0, // Not given
 								// sunsetCivil: 0, // Not given
 								// sunsetNautical: 0, // Not given
-								temperatureMax: body?.daily?.[i]?.tempMax,
+								temperatureMax: daily?.tempMax,
 								// temperatureMaxTime: 0, // Not given
-								temperatureMin: body?.daily?.[i]?.tempMin,
+								temperatureMin: daily?.tempMin,
 								// temperatureMinTime: 0, // Not given
-								visibilityMax: body?.daily?.[i]?.vis, // Not Accurate
-								visibilityMin: body?.daily?.[i]?.vis, // Not Accurate
+								visibilityMax: daily?.vis, // Not Accurate
+								visibilityMin: daily?.vis, // Not Accurate
 								// windGustSpeedMax: 0, // Not given
-								windSpeedAvg: (body?.daily?.[i]?.windSpeedDay + body?.daily?.[i]?.windSpeedNight) / 2, // Not Accurate (用白天+晚上数据代替)
-								windSpeedMax: Math.max(body?.daily?.[i]?.windSpeedDay, body?.daily?.[i]?.windSpeedNight),
+								windSpeedAvg: (daily?.windSpeedDay * 7 + daily?.windSpeedNight * 17) / 24, // 加权平均：白天7小时，晚上17小时
+								windSpeedMax: Math.max(daily?.windSpeedDay, daily?.windSpeedNight),
 								daytimeForecast: {
-									forecastStart: dayTimeStamp,
-									forecastEnd: dayTimeStamp + dayTimeGap,
-									cloudCover: body?.daily?.[i]?.cloud,
+									forecastStart: timeStamp + 7 * 3600, // 7 hours
+									forecastEnd: timeStamp + 7 * 3600 + 12 * 3600, // 7 + 12 hours
+									//cloudCover: 0, // Not given
 									// cloudCoverHighAltPct: 0, // Not given
 									// cloudCoverLowAltPct: 0, // Not given
 									// cloudCoverMidAltPct: 0, // Not given
-									conditionCode: this.#ConvertWeatherCode(body?.daily?.[i]?.textDay),
+									conditionCode: this.#ConvertWeatherCode(daily?.textDay),
 									// humidity 用一整天的数据代替
-									// humidityMax: body?.daily?.[i]?.humidity, // Not Accurate
-									// humidityMin: body?.daily?.[i]?.humidity, // Not Accurate
-									precipitationAmount: body?.daily?.[i]?.precip,
+									// humidityMax: daily?.humidity, // Not Accurate
+									// humidityMin: daily?.humidity, // Not Accurate
+									precipitationAmount: daily?.precip,
 									// precipitationAmountByType: [], // Not given
 									// precipitationChance: 0, // Not given
 									// precipitationType: "", // Not given
@@ -469,23 +460,23 @@ export default class QWeather {
 									// visibility 用一整天的数据代替
 									// visibilityMax: 0, // Not given
 									// visibilityMin: 0, // Not given
-									windDirection: body?.daily?.[i]?.wind360Day,
+									windDirection: daily?.wind360Day,
 									// windGustSpeedMax: 0, // Not given
-									windSpeed: body?.daily?.[i]?.windSpeedDay,
-									windSpeedMax: (body?.daily?.[i]?.windScaleDay).splite("-")[1],
+									windSpeed: daily?.windSpeedDay,
+									windSpeedMax: daily?.windScaleDay?.split("-")[1],
 								},
 								overnightForecast: {
-									forecastStart: nightTimeStamp,
-									forecastEnd: nightTimeStamp + nightTimeGap,
-									cloudCover: body?.result?.daily?.cloudrate?.[i]?.avg,
+									forecastStart: timeStamp + 19 * 3600, // 19 hours
+									forecastEnd: timeStamp + 19 * 3600 + 12 * 3600, // 19 + 12 hours
+									//cloudCover: 0, // Not given
 									// cloudCoverHighAltPct: 0, // Not given
 									// cloudCoverLowAltPct: 0, // Not given
 									// cloudCoverMidAltPct: 0, // Not given
-									conditionCode: this.#ConvertWeatherCode(body?.daily?.[i]?.textNight),
+									conditionCode: this.#ConvertWeatherCode(daily?.textNight),
 									// humidity 用一整天的数据代替
-									// humidityMax: body?.daily?.[i]?.humidity, // Not Accurate
-									// humidityMin: body?.daily?.[i]?.humidity, // Not Accurate
-									precipitationAmount: body?.daily?.[i]?.precip,
+									// humidityMax: daily?.humidity, // Not Accurate
+									// humidityMin: daily?.humidity, // Not Accurate
+									precipitationAmount: daily?.precip,
 									// precipitationAmountByType: [], // Not given
 									// precipitationChance: 0, // Not given
 									// precipitationType: "", // Not given
@@ -495,10 +486,10 @@ export default class QWeather {
 									// visibility 用一整天的数据代替
 									// visibilityMax: 0, // Not given
 									// visibilityMin: 0, // Not given
-									windDirection: body?.daily?.[i]?.wind360Night,
+									windDirection: daily?.wind360Night,
 									// windGustSpeedMax: 0, // Not given
-									windSpeed: body?.daily?.[i]?.windSpeedNight,
-									windSpeedMax: (body?.daily?.[i]?.windScaleNight).splite("-")[1],
+									windSpeed: daily?.windSpeedNight,
+									windSpeedMax: daily?.windScaleNight?.split("-")[1],
 								},
 							};
 						}),
@@ -598,7 +589,6 @@ export default class QWeather {
 	}
 
 	#ConvertWeatherCode(textDescription) {
-		Console.debug(`textDescription: ${textDescription}`);
 		switch (textDescription) {
 			// 晴天
 			case "晴":
@@ -698,6 +688,7 @@ export default class QWeather {
 			// 未知
 			case "未知":
 			default:
+				Console.debug(`textDescription: ${textDescription}`);
 				return null;
 		}
 	}
