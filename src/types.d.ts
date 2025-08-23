@@ -103,20 +103,6 @@ export interface Settings {
         ComparisonProvider?: 'WeatherKit' | 'QWeather';
     Local?: {
         /**
-         * [空气质量] 本地替换算法
-         *
-         * 本地替换时使用的算法
-         *
-         * @remarks
-         *
-         * Possible values:
-         * - `'NONE'` - None (不进行替换)
-         * - `'WAQI_InstantCast'` - WAQI InstantCast
-         *
-         * @defaultValue "WAQI_InstantCast"
-         */
-        Scale?: 'NONE' | 'WAQI_InstantCast';
-        /**
          * [空气质量] 需要修改的标准
          *
          * 选中的空气质量标准会被替换。请注意各国监测的污染物种类可能有所不同，转换算法或API未必适合当地。
@@ -130,6 +116,20 @@ export interface Settings {
          * @defaultValue ["HJ6332012"]
          */
         ReplaceScales?: ('HJ6332012' | 'EPA_NowCast')[];
+        /**
+         * [空气质量] 本地替换算法
+         *
+         * 本地替换时使用的算法
+         *
+         * @remarks
+         *
+         * Possible values:
+         * - `'NONE'` - None (不进行替换)
+         * - `'WAQI_InstantCast'` - WAQI InstantCast
+         *
+         * @defaultValue "WAQI_InstantCast"
+         */
+        Scale?: 'NONE' | 'WAQI_InstantCast';
         /**
          * [空气质量] 转换污染物计量单位
          *

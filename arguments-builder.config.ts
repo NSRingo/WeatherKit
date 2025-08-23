@@ -113,17 +113,6 @@ export default defineConfig({
 			description: "始终会使用选定的数据源，填补无对比昨日地区的数据。",
 		},
 		{
-			key: "AQI.Local.Scale",
-			type: "string",
-			name: "[空气质量] 本地替换算法",
-			description: "本地替换时使用的算法",
-			defaultValue: "WAQI_InstantCast",
-			options: [
-				{ key: "NONE", label: "None (不进行替换)" },
-				{ key: "WAQI_InstantCast", label: "WAQI InstantCast" },
-			],
-		},
-		{
 			key: "AQI.Local.ReplaceScales",
 			type: "array",
 			name: "[空气质量] 需要修改的标准",
@@ -132,6 +121,17 @@ export default defineConfig({
 			options: [
 				{ key: "HJ6332012", label: "中国 (HJ 633—2012)" },
 				{ key: "EPA_NowCast", label: "美国 (EPA NowCast)" },
+			],
+		},
+		{
+			key: "AQI.Local.Scale",
+			type: "string",
+			name: "[空气质量] 本地替换算法",
+			description: "本地替换时使用的算法",
+			defaultValue: "WAQI_InstantCast",
+			options: [
+				{ key: "NONE", label: "None (不进行替换)" },
+				{ key: "WAQI_InstantCast", label: "WAQI InstantCast" },
 			],
 		},
 		{
