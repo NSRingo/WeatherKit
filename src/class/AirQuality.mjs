@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.4.1";
+	static Version = "2.5.0";
 	static Author = "Virgil Clyne & Wordless Echo";
 
 	/**
@@ -126,6 +126,36 @@ export default class AirQuality {
 		});
 		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
 		Console.log("✅ ConvertUnits");
+		return pollutants;
+	}
+
+	/**
+	 * 修复特定供应商的污染物单位
+	 * 主要修复和风天气/QWeather提供商的CO单位问题
+	 * @param {Array} pollutants - 污染物数组
+	 * @param {string} providerName - 数据提供商名称
+	 * @returns {Array} 修复后的污染物数组
+	 */
+	static FixUnits(pollutants = [], providerName = "") {
+		Console.log("☑️ FixUnits");
+		switch (providerName?.split("\n")?.[0]) {
+			case "和风天气":
+			case "QWeather":
+				pollutants = pollutants.map(pollutant => {
+					switch (pollutant.pollutantType) {
+						case "CO": // Fix CO amount units
+							pollutant.units = "MILLIGRAMS_PER_CUBIC_METER";
+							break;
+						default:
+							break;
+					}
+					return pollutant;
+				});
+				break;
+			default:
+				break;
+		}
+		Console.log("✅ FixUnits");
 		return pollutants;
 	}
 

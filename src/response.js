@@ -89,23 +89,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body = AirQuality.Convert(body, Settings);
 									// CompareAirQuality
 									body = await CompareAirQuality(url, body, Settings);
-									// PollutantUnitConverter
-									switch (body?.airQuality?.metadata?.providerName?.split("\n")?.[0]) {
-										case "和风天气":
-										case "QWeather":
-											if (body?.airQuality?.pollutants)
-												body.airQuality.pollutants = body.airQuality.pollutants.map(pollutant => {
-													switch (pollutant.pollutantType) {
-														case "CO": // Fix CO amount units
-															pollutant.units = "MILLIGRAMS_PER_CUBIC_METER";
-															break;
-														default:
-															break;
-													}
-													return pollutant;
-												});
-											break;
-									}
+									// FixPollutantUnits
+									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.FixUnits(body.airQuality.pollutants, body?.airQuality?.metadata?.providerName);
 									// Convert units that does not supported in Apple Weather
 									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.ConvertUnits(body.airQuality.pollutants);
 									// ProviderLogo
