@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(options) {
 		this.Name = "QWeather";
-		this.Version = "4.3.1";
+		this.Version = "4.3.2";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.url = new URL($request.url);
 		this.host = "devapi.qweather.com";
@@ -97,17 +97,17 @@ export default class QWeather {
 							temporarilyUnavailable: false,
 							sourceType: "STATION",
 						},
-						cloudCover: body?.now?.cloud,
+						cloudCover: Number.parseInt(body?.now?.cloud, 10),
 						conditionCode: this.#ConvertWeatherCode(body?.now?.text),
-						humidity: body?.now?.humidity,
-						perceivedPrecipitationIntensity: body?.now?.precip,
-						pressure: body?.now?.pressure,
-						temperature: body?.now?.temp,
-						temperatureApparent: body?.now?.feelsLike,
-						temperatureDewPoint: body?.now.dew,
-						visibility: body?.now?.vis * 1000,
-						windDirection: body?.now?.wind360,
-						windSpeed: body?.now?.windSpeed,
+						humidity: Number.parseInt(body?.now?.humidity, 10),
+						perceivedPrecipitationIntensity: Number.parseFloat(body?.now?.precip),
+						pressure: Number.parseFloat(body?.now?.pressure),
+						temperature: Number.parseFloat(body?.now?.temp),
+						temperatureApparent: Number.parseFloat(body?.now?.feelsLike),
+						temperatureDewPoint: Number.parseFloat(body?.now?.dew),
+						visibility: Number.parseFloat(body?.now?.vis) * 1000,
+						windDirection: Number.parseInt(body?.now?.wind360, 10),
+						windSpeed: Number.parseFloat(body?.now?.windSpeed),
 					};
 					break;
 				case "204":
@@ -344,22 +344,22 @@ export default class QWeather {
 								forecastStart: Math.round(Date.parse(hourly?.fxTime) / 1000),
 								humidity: Number.parseInt(hourly?.humidity, 10),
 								// perceivedPrecipitationIntensity: "", // Not given
-								precipitationAmount: Number.parseInt(hourly?.precip, 10),
+								precipitationAmount: Number.parseFloat(hourly?.precip),
 								precipitationChance: Number.parseInt(hourly?.pop, 10),
 								precipitationIntensity: Number.parseInt(hourly?.precip, 10),
 								// precipitationType: "", // Not given
-								pressure: Number.parseInt(hourly?.pressure, 10),
+								pressure: Number.parseFloat(hourly?.pressure),
 								// pressureTrend: "", // Not given
 								// snowfallAmount: 0, // Not given
 								// snowfallIntensity: 0, // Not given
-								temperature: Number.parseInt(hourly?.temp, 10),
+								temperature: Number.parseFloat(hourly?.temp),
 								// temperatureApparent: 0, // Not given
-								temperatureDewPoint: Number.parseInt(hourly?.dew, 10),
+								temperatureDewPoint: Number.parseFloat(hourly?.dew),
 								// uvIndex: 0, // Not given
 								// visibility: 0, // Not given
 								windDirection: Number.parseInt(hourly?.wind360, 10),
 								// windGust: 0, // Not given
-								windSpeed: Number.parseInt(hourly?.windSpeed, 10),
+								windSpeed: Number.parseFloat(hourly?.windSpeed),
 							};
 						}),
 					};
@@ -415,7 +415,7 @@ export default class QWeather {
 								// moonPhase: daily?.moonPhase, // 未转换！
 								// moonrise: daily?.moonrise, // 未转换！
 								// moonset: daily?.moonset, // 未转换！
-								precipitationAmount: Number.parseInt(daily?.precip, 10),
+								precipitationAmount: Number.parseFloat(daily?.precip),
 								// precipitationAmountByType: [], // Not given
 								// precipitationChance: 0, // Not given
 								// precipitationType: "", // Not given
@@ -450,7 +450,7 @@ export default class QWeather {
 									// humidity 用一整天的数据代替
 									// humidityMax: daily?.humidity, // Not Accurate
 									// humidityMin: daily?.humidity, // Not Accurate
-									precipitationAmount: Number.parseInt(daily?.precip, 10),
+									precipitationAmount: Number.parseFloat(daily?.precip),
 									// precipitationAmountByType: [], // Not given
 									// precipitationChance: 0, // Not given
 									// precipitationType: "", // Not given
@@ -462,7 +462,7 @@ export default class QWeather {
 									// visibilityMin: 0, // Not given
 									windDirection: Number.parseInt(daily?.wind360Day, 10),
 									// windGustSpeedMax: 0, // Not given
-									windSpeed: Number.parseInt(daily?.windSpeedDay, 10),
+									windSpeed: Number.parseFloat(daily?.windSpeedDay),
 									// windSpeedMax: 0, // Not given
 								},
 								overnightForecast: {
@@ -476,7 +476,7 @@ export default class QWeather {
 									// humidity 用一整天的数据代替
 									// humidityMax: daily?.humidity, // Not Accurate
 									// humidityMin: daily?.humidity, // Not Accurate
-									precipitationAmount: Number.parseInt(daily?.precip, 10),
+									precipitationAmount: Number.parseFloat(daily?.precip),
 									// precipitationAmountByType: [], // Not given
 									// precipitationChance: 0, // Not given
 									// precipitationType: "", // Not given
@@ -486,9 +486,9 @@ export default class QWeather {
 									// visibility 用一整天的数据代替
 									// visibilityMax: 0, // Not given
 									// visibilityMin: 0, // Not given
-									windDirection: Number.parseInt(daily?.wind360Night, 10),
+									windDirection: Number.parseInt(daily?.wind360Night),
 									// windGustSpeedMax: 0, // Not given
-									windSpeed: Number.parseInt(daily?.windSpeedNight, 10),
+									windSpeed: Number.parseFloat(daily?.windSpeedNight),
 									// windSpeedMax: 0, // Not given
 								},
 							};
