@@ -396,8 +396,14 @@ async function InjectForecastDaily(url, body, Settings) {
 		}
 	}
 	if (forecastDaily?.metadata) {
-		forecastDaily.metadata = { ...body?.forecastDaily?.metadata, ...forecastDaily.metadata };
-		body.forecastDaily = { ...body?.forecastDaily, ...forecastDaily };
+		body.forecastDaily.metadata = { ...body?.forecastDaily?.metadata, ...forecastDaily.metadata };
+		body.forecastDaily.days = body.forecastDaily.days.map((day, i) => {
+			if (forecastDaily.days[i]) {
+				forecastDaily.days[i].daytimeForecast = { ...day.daytimeForecast, ...forecastDaily.days[i].daytimeForecast };
+				forecastDaily.days[i].overnightForecast = { ...day.overnightForecast, ...forecastDaily.days[i].overnightForecast };
+				return { ...day, ...forecastDaily.days[i] };
+			} else return day;
+		});
 		Console.debug(`body.forecastDaily: ${JSON.stringify(body?.forecastDaily, null, 2)}`);
 	}
 	Console.log("✅ InjectForecastDaily");
@@ -428,8 +434,13 @@ async function InjectForecastHourly(url, body, Settings) {
 		}
 	}
 	if (forecastHourly?.metadata) {
-		forecastHourly.metadata = { ...body?.forecastHourly?.metadata, ...forecastHourly.metadata };
-		body.forecastHourly = { ...body?.forecastHourly, ...forecastHourly };
+		body.forecastHourly.metadata = { ...body?.forecastHourly?.metadata, ...forecastHourly.metadata };
+		body.forecastHourly.hours = body.forecastHourly.hours.map((hour, i) => {
+			return {
+				...hour,
+				...forecastHourly.hours[i],
+			};
+		});
 		Console.debug(`body.forecastHourly: ${JSON.stringify(body?.forecastHourly, null, 2)}`);
 	}
 	Console.log("✅ InjectForecastHourly");
