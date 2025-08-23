@@ -106,11 +106,11 @@ Console.info(`FORMAT: ${FORMAT}`);
 										matchEnum.airQuality();
 									}
 									// InjectAirQuality
-									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(url, body.airQuality, Settings);
+									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(body.airQuality, Settings, url);
 									// ConvertAirQuality
 									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body = AirQuality.Convert(body, Settings);
 									// CompareAirQuality
-									body.airQuality = await CompareAirQuality(url, body.airQuality, Settings);
+									body.airQuality = await CompareAirQuality(body.airQuality, Settings, url);
 									// FixPollutantUnits
 									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.FixUnits(body.airQuality.pollutants, body?.airQuality?.metadata?.providerName);
 									// Convert units that does not supported in Apple Weather
@@ -124,22 +124,22 @@ Console.info(`FORMAT: ${FORMAT}`);
 										matchEnum.weatherCondition();
 										matchEnum.pressureTrend();
 									}
-									body.currentWeather = await InjectCurrentWeather(url, body.currentWeather, Settings);
+									body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, url);
 									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastDaily")) {
 									//Console.debug(`body.forecastDaily: ${JSON.stringify(body?.forecastDaily, null, 2)}`);
-									body.forecastDaily = await InjectForecastDaily(url, body.forecastDaily, Settings);
+									body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, url);
 									if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastHourly")) {
 									//Console.debug(`body.forecastHourly: ${JSON.stringify(body?.forecastHourly, null, 2)}`);
-									body.forecastHourly = await InjectForecastHourly(url, body.forecastHourly, Settings);
+									body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, url);
 									if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
 									//Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
-									if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(url, body.forecastNextHour, Settings);
+									if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, url);
 									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("weatherAlerts")) {
@@ -195,11 +195,13 @@ Console.info(`FORMAT: ${FORMAT}`);
 	.finally(() => done($response));
 
 /**
- * @param {string} url
- * @param {any} airQuality
- * @param {import('./types').Settings} Settings
+ * 注入空气质量数据
+ * @param {any} airQuality - 空气质量数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {string} url - 请求URL
+ * @returns {Promise<any>} 注入后的空气质量数据
  */
-async function InjectAirQuality(url, airQuality, Settings) {
+async function InjectAirQuality(airQuality, Settings, url) {
 	Console.log("☑️ InjectAirQuality");
 	let newAirQuality;
 	switch (Settings?.AQI?.Provider) {
@@ -243,11 +245,13 @@ async function InjectAirQuality(url, airQuality, Settings) {
 }
 
 /**
- * @param {string} url
- * @param {any} airQuality
- * @param {import('./types').Settings} Settings
+ * 比较空气质量数据
+ * @param {any} airQuality - 空气质量数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {string} url - 请求URL
+ * @returns {Promise<any>} 比较后的空气质量数据
  */
-async function CompareAirQuality(url, airQuality, Settings) {
+async function CompareAirQuality(airQuality, Settings, url) {
 	Console.log("☑️ CompareAirQuality");
 	switch (Settings?.AQI?.ComparisonProvider) {
 		case "WeatherKit":
@@ -290,15 +294,13 @@ async function CompareAirQuality(url, airQuality, Settings) {
 }
 
 /**
- * @param {any} body
- * @param {import('./types').Settings} Settings
+ * 注入下一小时天气预报数据
+ * @param {any} forecastNextHour - 下一小时预报数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {string} url - 请求URL
+ * @returns {Promise<any>} 注入后的下一小时预报数据
  */
-/**
- * @param {string} url
- * @param {any} forecastNextHour
- * @param {import('./types').Settings} Settings
- */
-async function InjectForecastNextHour(url, forecastNextHour, Settings) {
+async function InjectForecastNextHour(forecastNextHour, Settings, url) {
 	Console.log("☑️ InjectForecastNextHour");
 	let newForecastNextHour;
 	switch (Settings?.NextHour?.Provider) {
@@ -326,11 +328,13 @@ async function InjectForecastNextHour(url, forecastNextHour, Settings) {
 }
 
 /**
- * @param {string} url
- * @param {any} currentWeather
- * @param {import('./types').Settings} Settings
+ * 注入当前天气数据
+ * @param {any} currentWeather - 当前天气数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {string} url - 请求URL
+ * @returns {Promise<any>} 注入后的当前天气数据
  */
-async function InjectCurrentWeather(url, currentWeather, Settings) {
+async function InjectCurrentWeather(currentWeather, Settings, url) {
 	Console.log("☑️ InjectCurrentWeather");
 	let newCurrentWeather;
 	switch (Settings?.Weather?.Provider) {
@@ -358,11 +362,13 @@ async function InjectCurrentWeather(url, currentWeather, Settings) {
 }
 
 /**
- * @param {string} url
- * @param {any} forecastDaily
- * @param {import('./types').Settings} Settings
+ * 注入每日天气预报数据
+ * @param {any} forecastDaily - 每日预报数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {string} url - 请求URL
+ * @returns {Promise<any>} 注入后的每日预报数据
  */
-async function InjectForecastDaily(url, forecastDaily, Settings) {
+async function InjectForecastDaily(forecastDaily, Settings, url) {
 	Console.log("☑️ InjectForecastDaily");
 	let newForecastDaily;
 	switch (Settings?.Weather?.Provider) {
@@ -396,11 +402,13 @@ async function InjectForecastDaily(url, forecastDaily, Settings) {
 }
 
 /**
- * @param {string} url
- * @param {any} forecastHourly
- * @param {import('./types').Settings} Settings
+ * 注入小时天气预报数据
+ * @param {any} forecastHourly - 小时预报数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {string} url - 请求URL
+ * @returns {Promise<any>} 注入后的小时预报数据
  */
-async function InjectForecastHourly(url, forecastHourly, Settings) {
+async function InjectForecastHourly(forecastHourly, Settings, url) {
 	Console.log("☑️ InjectForecastHourly");
 	let newForecastHourly;
 	switch (Settings?.Weather?.Provider) {
