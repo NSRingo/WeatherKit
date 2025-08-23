@@ -6,7 +6,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class WAQI {
 	constructor(options) {
 		this.Name = "WAQI";
-		this.Version = "1.3.9";
+		this.Version = "1.3.10";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.url = new URL($request.url);
 		this.header = { "Content-Type": "application/json" };
@@ -111,8 +111,8 @@ export default class WAQI {
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ Nearest");
-			return airQuality;
 		}
+		return airQuality;
 	}
 
 	async Token(stationId = Number()) {
@@ -151,8 +151,8 @@ export default class WAQI {
 		} finally {
 			//Console.debug(`token: ${token}`);
 			Console.log("✅ Token");
-			return token;
 		}
+		return token;
 	}
 
 	async AQI(stationId = Number(), token = this.token) {
@@ -214,8 +214,8 @@ export default class WAQI {
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ AQI");
-			return airQuality;
 		}
+		return airQuality;
 	}
 
 	async AQI2(stationId = Number(), token = this.token) {
@@ -263,7 +263,7 @@ export default class WAQI {
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ AQI2");
-			return airQuality;
 		}
+		return airQuality;
 	}
 }
