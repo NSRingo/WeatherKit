@@ -1,4 +1,5 @@
 import { Console, fetch, Lodash as _ } from "@nsnanocat/util";
+import Weather from "./Weather.mjs";
 import AirQuality from "./AirQuality.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
@@ -83,7 +84,7 @@ export default class ColorfulClouds {
 								cloudCover: Math.round(body?.result?.realtime?.cloudrate * 100),
 								conditionCode: this.#ConvertWeatherCode(body?.result?.realtime?.skycon),
 								humidity: Math.round(body?.result?.realtime?.humidity * 100),
-								uvIndex: dswrfToUVIndex(body?.result?.realtime?.dswrf),
+								uvIndex: Weather.ConvertDSWRF(body?.result?.realtime?.dswrf),
 								perceivedPrecipitationIntensity: body?.result?.realtime?.precipitation?.local?.intensity,
 								pressure: body?.result?.realtime?.pressure / 100,
 								temperature: body?.result?.realtime?.temperature,
@@ -328,7 +329,7 @@ export default class ColorfulClouds {
 									conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon?.[i]?.value),
 									humidityMax: body?.result?.daily?.humidity?.[i]?.max,
 									humidityMin: body?.result?.daily?.humidity?.[i]?.min,
-									maxUvIndex: dswrfToUVIndex(body?.result?.daily?.dswrf?.[i]?.max),
+									maxUvIndex: Weather.ConvertDSWRF(body?.result?.daily?.dswrf?.[i]?.max),
 									// moonPhase: "", // Not given
 									// moonrise: body?.result?.daily?.astro?.[i].sunset.time, // Not given
 									// moonset: body?.result?.daily?.astro?.[i].sunrise.time, // Not given
@@ -515,17 +516,4 @@ export default class ColorfulClouds {
 				return null;
 		}
 	}
-}
-
-/**
- * 将 DSWRF（W/m²）估算为 UV Index（整数）
- * @param {number} dswrf - 向下短波辐射通量
- * @param {number} k - UV 占比系数，可选，默认 0.04
- * @returns {number} UV Index（四舍五入为整数）
- */
-function dswrfToUVIndex(dswrf, k = 0.04) {
-	if (dswrf <= 0) return 0;
-	const uvIndex = (dswrf * k) / 0.025; // 估算 UV Index
-	// 限制结果在 0~11，并四舍五入为整数
-	return Math.min(Math.max(Math.round(uvIndex), 0), 11);
 }
