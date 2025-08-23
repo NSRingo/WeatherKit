@@ -57,7 +57,6 @@ Console.info(`FORMAT: ${FORMAT}`);
 				case "weatherkit.apple.com":
 					// 路径判断
 					if (url.pathname.startsWith("/api/v1/availability/")) {
-						Console.debug(`body: ${JSON.stringify(body)}`);
 						body = Configs?.Availability?.v2;
 					}
 					break;
@@ -310,7 +309,6 @@ async function InjectCurrentWeather(url, body, Settings) {
 	if (currentWeather?.metadata) {
 		currentWeather.metadata = { ...body?.currentWeather?.metadata, ...currentWeather.metadata };
 		body.currentWeather = { ...body?.currentWeather, ...currentWeather };
-		Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
 	}
 	Console.log("✅ InjectCurrentWeather");
 	return body;

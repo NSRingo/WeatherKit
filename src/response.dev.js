@@ -143,12 +143,12 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastDaily")) {
-									Console.debug(`body.forecastDaily: ${JSON.stringify(body?.forecastDaily, null, 2)}`);
+									//Console.debug(`body.forecastDaily: ${JSON.stringify(body?.forecastDaily, null, 2)}`);
 									body = await InjectForecastDaily(url, body, Settings);
 									if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastHourly")) {
-									Console.debug(`body.forecastHourly: ${JSON.stringify(body?.forecastHourly, null, 2)}`);
+									//Console.debug(`body.forecastHourly: ${JSON.stringify(body?.forecastHourly, null, 2)}`);
 									body = await InjectForecastHourly(url, body, Settings);
 									if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
 								}
@@ -251,7 +251,7 @@ async function InjectAirQuality(url, body, Settings) {
 		airQuality.metadata = { ...body?.airQuality?.metadata, ...airQuality.metadata };
 		body.airQuality = { ...body?.airQuality, ...airQuality };
 		if (!body?.airQuality?.pollutants) body.airQuality.pollutants = [];
-		Console.debug(`body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`);
+		//Console.debug(`body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`);
 	}
 	Console.log("✅ InjectAirQuality");
 	return body;
@@ -334,7 +334,7 @@ async function InjectForecastNextHour(url, body, Settings) {
 	if (forecastNextHour?.metadata) {
 		forecastNextHour.metadata = { ...body?.forecastNextHour?.metadata, ...forecastNextHour.metadata };
 		body.forecastNextHour = { ...body?.forecastNextHour, ...forecastNextHour };
-		Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
+		//Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
 	}
 	Console.log("✅ InjectForecastNextHour");
 	return body;
@@ -366,7 +366,7 @@ async function InjectCurrentWeather(url, body, Settings) {
 	if (currentWeather?.metadata) {
 		currentWeather.metadata = { ...body?.currentWeather?.metadata, ...currentWeather.metadata };
 		body.currentWeather = { ...body?.currentWeather, ...currentWeather };
-		Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
+		//Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
 	}
 	Console.log("✅ InjectCurrentWeather");
 	return body;
@@ -404,7 +404,7 @@ async function InjectForecastDaily(url, body, Settings) {
 				return { ...day, ...forecastDaily.days[i] };
 			} else return day;
 		});
-		Console.debug(`body.forecastDaily: ${JSON.stringify(body?.forecastDaily, null, 2)}`);
+		//Console.debug(`body.forecastDaily: ${JSON.stringify(body?.forecastDaily, null, 2)}`);
 	}
 	Console.log("✅ InjectForecastDaily");
 	return body;
@@ -441,7 +441,7 @@ async function InjectForecastHourly(url, body, Settings) {
 				...forecastHourly.hours[i],
 			};
 		});
-		Console.debug(`body.forecastHourly: ${JSON.stringify(body?.forecastHourly, null, 2)}`);
+		//Console.debug(`body.forecastHourly: ${JSON.stringify(body?.forecastHourly, null, 2)}`);
 	}
 	Console.log("✅ InjectForecastHourly");
 	return body;
