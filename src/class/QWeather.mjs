@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(options) {
 		this.Name = "QWeather";
-		this.Version = "4.2.1";
+		this.Version = "4.3.0";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.url = new URL($request.url);
 		this.host = "devapi.qweather.com";
@@ -324,7 +324,7 @@ export default class QWeather {
 		let forecastHourly;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = parseInt(Date.parse(body?.daily?.[0]?.fxTime) / 1000, 10);
+			const timeStamp = Number.parseInt(Date.parse(body?.daily?.[0]?.fxTime) / 1000, 10);
 			switch (body?.code) {
 				case "200":
 					forecastHourly = {
@@ -405,7 +405,7 @@ export default class QWeather {
 						},
 						days: Array.from({ length: days }, (_, i) => {
 							const timeGap = 86400;
-							const timeStamp = parseInt(Date.parse(body?.daily?.[i]?.fxDate) / 1000, 10); // 0H
+							const timeStamp = Number.parseInt(Date.parse(body?.daily?.[i]?.fxDate) / 1000, 10); // 0H
 
 							const dayTimeGap = 43200;
 							const dayTimeStamp = timeStamp + 7 * 3600; // 7H

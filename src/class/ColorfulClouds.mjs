@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(options) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.1.1";
+		this.Version = "3.2.0";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.url = new URL($request.url);
 		this.header = { "Content-Type": "application/json" };
@@ -104,7 +104,7 @@ export default class ColorfulClouds {
 					throw Error(JSON.stringify(body ?? {}));
 			}
 		} catch (error) {
-			this.logErr(error);
+			Console.error(error);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ RealTime");
@@ -190,7 +190,7 @@ export default class ColorfulClouds {
 	async Hourly(token = this.token, hourlysteps = 1, begin = Date.now()) {
 		Console.log("☑️ Hourly");
 		const request = {
-			url: `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/hourly?hourlysteps=${hourlysteps}&begin=${parseInt(begin / 1000, 10)}`,
+			url: `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/hourly?hourlysteps=${hourlysteps}&begin=${Number.parseInt(begin / 1000, 10)}`,
 			header: this.header,
 		};
 		let airQuality;
@@ -280,7 +280,7 @@ export default class ColorfulClouds {
 					throw Error(JSON.stringify(body ?? {}));
 			}
 		} catch (error) {
-			this.logErr(error);
+			Console.error(error);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.log("✅ Hourly");
@@ -288,10 +288,10 @@ export default class ColorfulClouds {
 		return { airQuality, forecastHourly };
 	}
 
-	async Daily(token = this.token, dailysteps = 10, begin = Date.now()) {
+	async Daily(token = this.token, dailysteps = 10) {
 		Console.log("☑️ Daily");
 		const request = {
-			url: `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/daily?dailysteps=${dailysteps}&begin=${parseInt(begin / 1000, 10)}`,
+			url: `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/daily?dailysteps=${dailysteps}`,
 			header: this.header,
 		};
 		let forecastDaily;
@@ -318,7 +318,7 @@ export default class ColorfulClouds {
 								},
 								days: Array.from({ length: dailysteps }, (_, i) => {
 									const timeGap = 86400;
-									const timeStamp = parseInt(Date.parse(body?.result?.daily?.skycon?.[i]?.date) / 1000, 10); // 0H
+									const timeStamp = Number.parseInt(Date.parse(body?.result?.daily?.skycon?.[i]?.date) / 1000, 10); // 0H
 
 									const dayTimeGap = 43200;
 									const dayTimeStamp = timeStamp + 7 * 3600; // 7H
@@ -427,7 +427,7 @@ export default class ColorfulClouds {
 					throw Error(JSON.stringify(body ?? {}));
 			}
 		} catch (error) {
-			this.logErr(error);
+			Console.error(error);
 		} finally {
 			//Console.debug(`Daily: ${JSON.stringify(Daily, null, 2)}`);
 			Console.log("✅ Daily");
