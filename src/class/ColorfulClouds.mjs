@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(options) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.2.0";
+		this.Version = "3.2.1";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.url = new URL($request.url);
 		this.header = { "Content-Type": "application/json" };
@@ -187,12 +187,13 @@ export default class ColorfulClouds {
 		return forecastNextHour;
 	}
 
-	async Hourly(token = this.token, hourlysteps = 1, begin = Date.now()) {
+	async Hourly(token = this.token, hourlysteps = 273, begin = undefined) {
 		Console.log("☑️ Hourly");
 		const request = {
-			url: `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/hourly?hourlysteps=${hourlysteps}&begin=${Number.parseInt(begin / 1000, 10)}`,
+			url: `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/hourly?hourlysteps=${hourlysteps}`,
 			header: this.header,
 		};
+		if (begin) request.url += `&begin=${Number.parseInt(begin / 1000, 10)}`;
 		let airQuality;
 		let forecastHourly;
 		try {
@@ -238,36 +239,37 @@ export default class ColorfulClouds {
 									temporarilyUnavailable: false,
 									sourceType: "STATION",
 								},
-								hours: Array.from({ length: hours }, (_, i) => {
-									return {
-										cloudCover: body?.result?.hourly?.cloudrate?.[i]?.value,
-										// cloudCoverHighAltPct: 0, // Not given
-										// cloudCoverLowAltPct: 0, // Not given
-										// cloudCoverMidAltPct: 0, // Not given
-										conditionCode: this.#ConvertWeatherCode(body?.result?.hourly?.skycon?.[i]?.value),
-										// daylight: false, // Not given
-										forecastStart: Math.round(Date.parse(body?.result?.hourly?.skycon?.[i]?.datetime) / 1000),
-										humidity: body?.result?.hourly?.humidity?.[i]?.value,
-										// perceivedPrecipitationIntensity: "", // Not given
-										precipitationAmount: body?.result?.hourly?.precipitation?.[i]?.value,
-										precipitationChance: body?.result?.hourly?.precipitation?.[i]?.probability,
-										// precipitationIntensity: 0, // Not given
-										// precipitationType: "", // Not given
-										pressure: body?.result?.hourly?.pressure?.[i]?.value / 100,
-										// pressureTrend: "", // Not given
-										// snowfallAmount: 0, // Not given
-										// snowfallIntensity: 0, // Not given
-										temperature: body?.result?.hourly?.temperature?.[i]?.value,
-										temperatureApparent: body?.result?.hourly?.apparent_temperature?.[i]?.value,
-										// temperatureDewPoint: 0, // Not given
-										// uvIndex: 0, // Not given
-										visibility: body?.result?.hourly?.visibility?.[i]?.value,
-										windDirection: body?.result?.hourly?.wind?.[i]?.direction,
-										// windGust: 0, // Not given
-										windSpeed: body?.result?.hourly?.wind?.[i]?.speed,
-									};
-								}),
+								hours: [],
 							};
+							for (let i = 0; i < hourlysteps; i++) {
+								forecastHourly.hours.push({
+									cloudCover: body?.result?.hourly?.cloudrate?.[i]?.value,
+									// cloudCoverHighAltPct: 0, // Not given
+									// cloudCoverLowAltPct: 0, // Not given
+									// cloudCoverMidAltPct: 0, // Not given
+									conditionCode: this.#ConvertWeatherCode(body?.result?.hourly?.skycon?.[i]?.value),
+									// daylight: false, // Not given
+									forecastStart: Math.round(Date.parse(body?.result?.hourly?.skycon?.[i]?.datetime) / 1000),
+									humidity: body?.result?.hourly?.humidity?.[i]?.value,
+									// perceivedPrecipitationIntensity: "", // Not given
+									precipitationAmount: body?.result?.hourly?.precipitation?.[i]?.value,
+									precipitationChance: body?.result?.hourly?.precipitation?.[i]?.probability,
+									// precipitationIntensity: 0, // Not given
+									// precipitationType: "", // Not given
+									pressure: body?.result?.hourly?.pressure?.[i]?.value / 100,
+									// pressureTrend: "", // Not given
+									// snowfallAmount: 0, // Not given
+									// snowfallIntensity: 0, // Not given
+									temperature: body?.result?.hourly?.temperature?.[i]?.value,
+									temperatureApparent: body?.result?.hourly?.apparent_temperature?.[i]?.value,
+									// temperatureDewPoint: 0, // Not given
+									// uvIndex: 0, // Not given
+									visibility: body?.result?.hourly?.visibility?.[i]?.value,
+									windDirection: body?.result?.hourly?.wind?.[i]?.direction,
+									// windGust: 0, // Not given
+									windSpeed: body?.result?.hourly?.wind?.[i]?.speed,
+								});
+							}
 							break;
 						case "error":
 						case undefined:
@@ -316,105 +318,98 @@ export default class ColorfulClouds {
 									temporarilyUnavailable: false,
 									sourceType: "STATION",
 								},
-								days: Array.from({ length: dailysteps }, (_, i) => {
-									const timeGap = 86400;
-									const timeStamp = Number.parseInt(Date.parse(body?.result?.daily?.skycon?.[i]?.date) / 1000, 10); // 0H
-
-									const dayTimeGap = 43200;
-									const dayTimeStamp = timeStamp + 7 * 3600; // 7H
-
-									const nightTimeGap = 43200;
-									const nightTimeStamp = timeStamp + 19 * 3600; // 19H
-
-									return {
-										forecastStart: timeStamp,
-										forecastEnd: timeStamp + timeGap,
-										conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon?.[i]?.value),
+								days: [],
+							};
+							for (let i = 0; i < dailysteps; i++) {
+								const timeStamp = Math.round(Date.parse(body?.result?.daily?.skycon?.[i]?.date) / 1000);
+								forecastDaily.days.push({
+									forecastStart: timeStamp,
+									forecastEnd: timeStamp + 24 * 3600, // 24 hours
+									conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon?.[i]?.value),
+									humidityMax: body?.result?.daily?.humidity?.[i]?.max,
+									humidityMin: body?.result?.daily?.humidity?.[i]?.min,
+									maxUvIndex: dswrfToUVIndex(body?.result?.daily?.dswrf?.[i]?.max),
+									// moonPhase: "", // Not given
+									// moonrise: body?.result?.daily?.astro?.[i].sunset.time, // Not given
+									// moonset: body?.result?.daily?.astro?.[i].sunrise.time, // Not given
+									precipitationAmount: body?.result?.daily?.precipitation?.[i]?.avg,
+									// precipitationAmountByType: [], // Not given
+									precipitationChance: body?.result?.daily?.precipitation?.[i]?.probability,
+									// precipitationType: "", // Not given
+									// snowfallAmount: 0, // Not given
+									// solarMidnight: 0, // Not given
+									// solarNoon: 0, // Not given
+									sunrise: body?.result?.daily?.astro?.[i].sunrise.time,
+									// sunriseAstronomical: 0, // Not given
+									// sunriseCivil: 0, // Not given
+									// sunriseNautical: 0, // Not given
+									sunset: body?.result?.daily?.astro?.[i].sunset.time,
+									// sunsetAstronomical: 0, // Not given
+									// sunsetCivil: 0, // Not given
+									// sunsetNautical: 0, // Not given
+									temperatureMax: body?.result?.daily?.temperature?.[i]?.max,
+									// temperatureMaxTime: 0, // Not given
+									temperatureMin: body?.result?.daily?.temperature?.[i]?.min,
+									// temperatureMinTime: 0, // Not given
+									visibilityMax: body?.result?.daily?.visibility?.[i]?.max,
+									visibilityMin: body?.result?.daily?.visibility?.[i]?.min,
+									// windGustSpeedMax: 0, // Not given
+									windSpeedAvg: body?.result?.daily?.wind?.[i]?.avg?.speed,
+									windSpeedMax: body?.result?.daily?.wind?.[i]?.max?.speed,
+									daytimeForecast: {
+										forecastStart: timeStamp + 8 * 3600, // 8 hours
+										forecastEnd: timeStamp + 8 * 3600 + 12 * 3600, // 8 + 12 hours
+										cloudCover: body?.result?.daily?.cloudrate?.[i]?.avg,
+										// cloudCoverHighAltPct: 0, // Not given
+										// cloudCoverLowAltPct: 0, // Not given
+										// cloudCoverMidAltPct: 0, // Not given
+										conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon_08h_20h?.[i]?.value),
+										// humidity 用一整天的数据代替
 										humidityMax: body?.result?.daily?.humidity?.[i]?.max,
 										humidityMin: body?.result?.daily?.humidity?.[i]?.min,
-										maxUvIndex: dswrfToUVIndex(body?.result?.daily?.dswrf?.[i]?.max),
-										// moonPhase: "", // Not given
-										// moonrise: body?.result?.daily?.astro?.[i].sunset.time, // Not given
-										// moonset: body?.result?.daily?.astro?.[i].sunrise.time, // Not given
-										precipitationAmount: body?.result?.daily?.precipitation?.[i]?.avg,
+										precipitationAmount: body?.result?.daily?.precipitation_08h_20h?.[i]?.avg,
 										// precipitationAmountByType: [], // Not given
-										precipitationChance: body?.result?.daily?.precipitation?.[i]?.probability,
+										precipitationChance: body?.result?.daily?.precipitation_08h_20h?.[i]?.probability,
 										// precipitationType: "", // Not given
 										// snowfallAmount: 0, // Not given
-										// solarMidnight: 0, // Not given
-										// solarNoon: 0, // Not given
-										sunrise: body?.result?.daily?.astro?.[i].sunrise.time,
-										// sunriseAstronomical: 0, // Not given
-										// sunriseCivil: 0, // Not given
-										// sunriseNautical: 0, // Not given
-										sunset: body?.result?.daily?.astro?.[i].sunset.time,
-										// sunsetAstronomical: 0, // Not given
-										// sunsetCivil: 0, // Not given
-										// sunsetNautical: 0, // Not given
-										temperatureMax: body?.result?.daily?.temperature?.[i]?.max,
-										// temperatureMaxTime: 0, // Not given
-										temperatureMin: body?.result?.daily?.temperature?.[i]?.min,
-										// temperatureMinTime: 0, // Not given
+										temperatureMax: body?.result?.daily?.temperature_08h_20h?.[i]?.max,
+										temperatureMin: body?.result?.daily?.temperature_08h_20h?.[i]?.min,
+										// visibility 用一整天的数据代替
 										visibilityMax: body?.result?.daily?.visibility?.[i]?.max,
 										visibilityMin: body?.result?.daily?.visibility?.[i]?.min,
+										windDirection: body?.result?.daily?.wind_08h_20h?.[i]?.avg?.direction,
 										// windGustSpeedMax: 0, // Not given
-										windSpeedAvg: body?.result?.daily?.wind?.[i]?.avg?.speed,
-										windSpeedMax: body?.result?.daily?.wind?.[i]?.max?.speed,
-										daytimeForecast: {
-											forecastStart: dayTimeStamp,
-											forecastEnd: dayTimeStamp + dayTimeGap,
-											cloudCover: body?.result?.daily?.cloudrate?.[i]?.avg,
-											// cloudCoverHighAltPct: 0, // Not given
-											// cloudCoverLowAltPct: 0, // Not given
-											// cloudCoverMidAltPct: 0, // Not given
-											conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon_08h_20h?.[i]?.value),
-											// humidity 用一整天的数据代替
-											humidityMax: body?.result?.daily?.humidity?.[i]?.max,
-											humidityMin: body?.result?.daily?.humidity?.[i]?.min,
-											precipitationAmount: body?.result?.daily?.precipitation_08h_20h?.[i]?.avg,
-											// precipitationAmountByType: [], // Not given
-											precipitationChance: body?.result?.daily?.precipitation_08h_20h?.[i]?.probability,
-											// precipitationType: "", // Not given
-											// snowfallAmount: 0, // Not given
-											temperatureMax: body?.result?.daily?.temperature_08h_20h?.[i]?.max,
-											temperatureMin: body?.result?.daily?.temperature_08h_20h?.[i]?.min,
-											// visibility 用一整天的数据代替
-											visibilityMax: body?.result?.daily?.visibility?.[i]?.max,
-											visibilityMin: body?.result?.daily?.visibility?.[i]?.min,
-											windDirection: body?.result?.daily?.wind_08h_20h?.[i]?.avg?.direction,
-											// windGustSpeedMax: 0, // Not given
-											windSpeed: body?.result?.daily?.wind_08h_20h?.[i]?.avg?.speed,
-											windSpeedMax: body?.result?.daily?.wind_08h_20h?.[i]?.max?.speed,
-										},
-										overnightForecast: {
-											forecastStart: nightTimeStamp,
-											forecastEnd: nightTimeStamp + nightTimeGap,
-											cloudCover: body?.result?.daily?.cloudrate?.[i]?.avg,
-											// cloudCoverHighAltPct: 0, // Not given
-											// cloudCoverLowAltPct: 0, // Not given
-											// cloudCoverMidAltPct: 0, // Not given
-											conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon_20h_32h?.[i]?.value),
-											// humidity 用一整天的数据代替
-											humidityMax: body?.result?.daily?.humidity?.[i]?.max,
-											humidityMin: body?.result?.daily?.humidity?.[i]?.min,
-											precipitationAmount: body?.result?.daily?.precipitation_20h_32h?.[i]?.avg,
-											// precipitationAmountByType: [], // Not given
-											precipitationChance: body?.result?.daily?.precipitation_20h_32h?.[i]?.probability,
-											// precipitationType: "", // Not given
-											// snowfallAmount: 0, // Not given
-											temperatureMax: body?.result?.daily?.temperature_20h_32h?.[i]?.max,
-											temperatureMin: body?.result?.daily?.temperature_20h_32h?.[i]?.min,
-											// visibility 用一整天的数据代替
-											visibilityMax: body?.result?.daily?.visibility?.[i]?.max,
-											visibilityMin: body?.result?.daily?.visibility?.[i]?.min,
-											windDirection: body?.result?.daily?.wind_20h_32h?.[i]?.avg?.direction,
-											// windGustSpeedMax: 0, // Not given
-											windSpeed: body?.result?.daily?.wind_20h_32h?.[i]?.avg?.speed,
-											windSpeedMax: body?.result?.daily?.wind_20h_32h?.[i]?.max?.speed,
-										},
-									};
-								}),
-							};
+										windSpeed: body?.result?.daily?.wind_08h_20h?.[i]?.avg?.speed,
+										windSpeedMax: body?.result?.daily?.wind_08h_20h?.[i]?.max?.speed,
+									},
+									overnightForecast: {
+										forecastStart: timeStamp + 20 * 3600, // 20 hours
+										forecastEnd: timeStamp + 20 * 3600 + 12 * 3600, // 20 + 12 hours
+										cloudCover: body?.result?.daily?.cloudrate?.[i]?.avg,
+										// cloudCoverHighAltPct: 0, // Not given
+										// cloudCoverLowAltPct: 0, // Not given
+										// cloudCoverMidAltPct: 0, // Not given
+										conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon_20h_32h?.[i]?.value),
+										// humidity 用一整天的数据代替
+										humidityMax: body?.result?.daily?.humidity?.[i]?.max,
+										humidityMin: body?.result?.daily?.humidity?.[i]?.min,
+										precipitationAmount: body?.result?.daily?.precipitation_20h_32h?.[i]?.avg,
+										// precipitationAmountByType: [], // Not given
+										precipitationChance: body?.result?.daily?.precipitation_20h_32h?.[i]?.probability,
+										// precipitationType: "", // Not given
+										// snowfallAmount: 0, // Not given
+										temperatureMax: body?.result?.daily?.temperature_20h_32h?.[i]?.max,
+										temperatureMin: body?.result?.daily?.temperature_20h_32h?.[i]?.min,
+										// visibility 用一整天的数据代替
+										visibilityMax: body?.result?.daily?.visibility?.[i]?.max,
+										visibilityMin: body?.result?.daily?.visibility?.[i]?.min,
+										windDirection: body?.result?.daily?.wind_20h_32h?.[i]?.avg?.direction,
+										// windGustSpeedMax: 0, // Not given
+										windSpeed: body?.result?.daily?.wind_20h_32h?.[i]?.avg?.speed,
+										windSpeedMax: body?.result?.daily?.wind_20h_32h?.[i]?.max?.speed,
+									},
+								});
+							}
 							break;
 						case "error":
 						case undefined:
@@ -468,7 +463,6 @@ export default class ColorfulClouds {
 	}
 
 	#ConvertWeatherCode(skycon) {
-		Console.debug(`skycon: ${skycon}`);
 		switch (skycon) {
 			case "CLEAR_DAY":
 			case "CLEAR_NIGHT":
@@ -517,6 +511,7 @@ export default class ColorfulClouds {
 				return "WINDY";
 
 			default:
+				Console.debug(`skycon: ${skycon}`);
 				return null;
 		}
 	}
