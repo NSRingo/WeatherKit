@@ -292,16 +292,16 @@ async function InjectForecastNextHour(url, body, Settings) {
 async function InjectCurrentWeather(url, body, Settings) {
 	Console.log("☑️ InjectCurrentWeather");
 	let currentWeather;
-	switch (Settings?.CurrentWeather?.Provider) {
+	switch (Settings?.Weather?.Provider) {
 		case "WeatherKit":
+		default:
 			break;
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
 			currentWeather = await qWeather.WeatherNow();
 			break;
 		}
-		case "ColorfulClouds":
-		default: {
+		case "ColorfulClouds": {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
 			currentWeather = (await colorfulClouds.RealTime()).currentWeather;
 			break;
@@ -323,16 +323,16 @@ async function InjectCurrentWeather(url, body, Settings) {
 async function InjectForecastDaily(url, body, Settings) {
 	Console.log("☑️ InjectForecastDaily");
 	let forecastDaily;
-	switch (Settings?.Daily?.Provider) {
+	switch (Settings?.Weather?.Provider) {
 		case "WeatherKit":
+		default:
 			break;
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
 			forecastDaily = await qWeather.Daily();
 			break;
 		}
-		case "ColorfulClouds":
-		default: {
+		case "ColorfulClouds": {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
 			forecastDaily = await colorfulClouds.Daily();
 			break;
@@ -360,16 +360,16 @@ async function InjectForecastDaily(url, body, Settings) {
 async function InjectForecastHourly(url, body, Settings) {
 	Console.log("☑️ InjectForecastHourly");
 	let forecastHourly;
-	switch (Settings?.Hourly?.Provider) {
+	switch (Settings?.Weather?.Provider) {
 		case "WeatherKit":
+		default:
 			break;
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
 			forecastHourly = await qWeather.Hourly();
 			break;
 		}
-		case "ColorfulClouds":
-		default: {
+		case "ColorfulClouds": {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
 			forecastHourly = (await colorfulClouds.Hourly(undefined, 1, Date.now() - 24 * 60 * 60 * 1000)).forecastHourly;
 			break;

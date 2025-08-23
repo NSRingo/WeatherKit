@@ -21,11 +21,11 @@ export interface Settings {
      * @defaultValue ["airQuality","currentWeather","forecastDaily","forecastHourly","forecastNextHour","locationInfo","news","historicalComparisons","weatherAlerts","weatherChanges"]
      */
     DataSets?: ('airQuality' | 'currentWeather' | 'forecastDaily' | 'forecastHourly' | 'forecastNextHour' | 'locationInfo' | 'news' | 'historicalComparisons' | 'weatherAlerts' | 'weatherChanges')[];
-    CurrentWeather?: {
+    Weather?: {
     /**
-         * [当前天气] 数据源
+         * [天气] 数据源
          *
-         * 始终会使用选定的数据源，替换当前天气数据。
+         * 始终会使用选定的数据源，替换天气数据。
          *
          * @remarks
          *

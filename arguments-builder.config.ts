@@ -52,8 +52,8 @@ export default defineConfig({
 			],
 		},
 		{
-			key: "CurrentWeather.Provider",
-			name: "[当前天气] 数据源",
+			key: "Weather.Provider",
+			name: "[天气] 数据源",
 			defaultValue: "WeatherKit",
 			type: "string",
 			options: [
@@ -61,7 +61,7 @@ export default defineConfig({
 				{ key: "ColorfulClouds", label: "彩云天气" },
 				{ key: "QWeather", label: "和风天气" },
 			],
-			description: "始终会使用选定的数据源，替换当前天气数据。",
+			description: "始终会使用选定的数据源，替换天气数据。",
 		},
 		{
 			key: "NextHour.Provider",
