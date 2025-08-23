@@ -2,8 +2,132 @@ import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.4.0";
+	static Version = "2.4.1";
 	static Author = "Virgil Clyne & Wordless Echo";
+
+	/**
+	 * 转换空气质量数据
+	 * 将空气质量数据按照指定的标准进行转换，包括污染物数值转换和AQI指数计算
+	 * @param {Object} body - 包含空气质量数据的响应体对象
+	 * @param {Object} body.airQuality - 空气质量数据对象
+	 * @param {Array} body.airQuality.pollutants - 污染物数组
+	 * @param {Object} body.airQuality.metadata - 空气质量元数据
+	 * @param {string} body.airQuality.metadata.providerName - 数据提供商名称
+	 * @param {import('../types').Settings} Settings - 设置对象
+	 * @returns {Object} 转换后的响应体对象，包含更新的空气质量数据
+	 */
+	static Convert(body, Settings) {
+		Console.log("☑️ Convert");
+		let airQuality;
+		switch (Settings?.AQI?.Local?.Scale) {
+			case "NONE":
+				break;
+			case "HJ_633":
+			case "EPA_NowCast":
+			case "WAQI_InstantCast":
+			default:
+				airQuality = AirQuality.#ConvertScale(body?.airQuality?.pollutants, Settings?.AQI?.Local?.Scale, Settings?.AQI?.Local?.ConvertUnits);
+				break;
+		}
+		if (airQuality?.index) {
+			body.airQuality = { ...body.airQuality, ...airQuality };
+			body.airQuality.metadata.providerName += `\nConverted using ${Settings?.AQI?.Local?.Scale}`;
+		}
+		Console.log("✅ Convert");
+		return body;
+	}
+
+	static CategoryIndex(aqi = Number(), scale = "WAQI_InstantCast") {
+		switch (typeof aqi) {
+			case "number":
+				break;
+			case "string":
+				aqi = Number.parseInt(aqi, 10);
+				break;
+		}
+		Console.log("☑️ CategoryIndex", `aqi: ${aqi}`);
+		let categoryIndex;
+		for (const [key, value] of Object.entries(AirQuality.#Config.Scales[scale].categoryIndex)) {
+			categoryIndex = Number.parseInt(key, 10);
+			if (aqi >= value[0] && aqi <= value[1]) break;
+		}
+		Console.log("✅ CategoryIndex", `categoryIndex: ${categoryIndex}`);
+		return categoryIndex;
+	}
+
+	static ComparisonTrend(todayAQI, yesterdayAQI) {
+		Console.log("☑️ ComparisonTrend", `todayAQI: ${todayAQI}`, `yesterdayAQI: ${yesterdayAQI}`);
+		let trend = "UNKNOWN";
+		if (isNaN(todayAQI - yesterdayAQI)) trend = "UNKNOWN";
+		else
+			switch (todayAQI - yesterdayAQI) {
+				case 10:
+				case 9:
+				case 8:
+				case 7:
+				case 6:
+				case 5:
+				case 4:
+					trend = "WORSE";
+					break;
+				case 3:
+				case 2:
+				case 1:
+				case 0:
+				case -1:
+				case -2:
+				case -3:
+					trend = "SAME";
+					break;
+				case -4:
+				case -5:
+				case -6:
+				case -7:
+				case -8:
+				case -9:
+				case -10:
+					trend = "BETTER";
+					break;
+				case null:
+				case NaN:
+					trend = "UNKNOWN";
+					break;
+				default:
+					switch (Boolean(todayAQI - yesterdayAQI)) {
+						case true:
+							trend = "UNKNOWN1";
+							break;
+						case false:
+							trend = "UNKNOWN5";
+							break;
+					}
+					break;
+			}
+		Console.log("✅ ComparisonTrend", `trend: ${trend}`);
+		return trend;
+	}
+
+	static FixUnits(pollutants = []) {
+		Console.log("☑️ FixUnits");
+		pollutants = pollutants.map(pollutant => {
+			switch (pollutant.units) {
+				case "PARTS_PER_MILLION":
+					pollutant.amount = AirQuality.#ConvertUnit(pollutant.amount, pollutant.units, "PARTS_PER_BILLION"); // Will not convert to Xg/m3
+					pollutant.units = "PARTS_PER_BILLION";
+					break;
+				case "MILLIGRAMS_PER_CUBIC_METER":
+					pollutant.amount = AirQuality.#ConvertUnit(pollutant.amount, pollutant.units, "MICROGRAMS_PER_CUBIC_METER"); // Will not convert to Xg/m3
+					pollutant.units = "MICROGRAMS_PER_CUBIC_METER";
+					break;
+				default:
+					break;
+			}
+			return pollutant;
+		});
+		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
+		Console.log("✅ FixUnits");
+		return pollutants;
+	}
 
 	static #Config = {
 		Scales: {
@@ -428,12 +552,12 @@ export default class AirQuality {
 		},
 	};
 
-	static Pollutants(pollutants = [], scale = "WAQI_InstantCast") {
+	static #Pollutants(pollutants = [], scale = "WAQI_InstantCast") {
 		Console.log("☑️ Pollutants", `scale: ${scale}`);
 		pollutants = pollutants.map(pollutant => {
 			// Convert unit based on standard
 			const PollutantStandard = AirQuality.#Config.Scales[scale].pollutants[pollutant.pollutantType];
-			pollutant.convertedAmount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, PollutantStandard.units, PollutantStandard.ppxToXGM3);
+			pollutant.convertedAmount = AirQuality.#ConvertUnit(pollutant.amount, pollutant.units, PollutantStandard.units, PollutantStandard.ppxToXGM3);
 			pollutant.convertedUnits = PollutantStandard.units;
 			pollutant = { ...PollutantStandard, ...pollutant };
 			// Calculate AQI for each pollutant
@@ -453,9 +577,9 @@ export default class AirQuality {
 		return pollutants;
 	}
 
-	static ConvertScale(pollutants = [], scale = "WAQI_InstantCast", convertUnits = false) {
+	static #ConvertScale(pollutants = [], scale = "WAQI_InstantCast", convertUnits = false) {
 		Console.log("☑️ ConvertScale");
-		pollutants = AirQuality.Pollutants(pollutants, scale);
+		pollutants = AirQuality.#Pollutants(pollutants, scale);
 		const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous.AQI > current.AQI ? previous : current));
 		const airQuality = {
 			index: index,
@@ -476,7 +600,7 @@ export default class AirQuality {
 		return airQuality;
 	}
 
-	static ConvertUnit(amount, unitFrom, unitTo, ppxToXGM3Value = -1) {
+	static #ConvertUnit(amount, unitFrom, unitTo, ppxToXGM3Value = -1) {
 		Console.log("☑️ ConvertUnit");
 		Console.debug(`amount: ${amount}`, `ppxToXGM3Value: ${ppxToXGM3Value}`, `unitFrom: ${unitFrom}`, `unitTo: ${unitTo}`);
 		if (amount < 0) amount = -1;
@@ -493,7 +617,7 @@ export default class AirQuality {
 							amount = amount * ppxToXGM3Value;
 							break;
 						case "MICROGRAMS_PER_CUBIC_METER": {
-							const inPpb = AirQuality.ConvertUnit(amount, unitFrom, "PARTS_PER_BILLION", ppxToXGM3Value);
+							const inPpb = AirQuality.#ConvertUnit(amount, unitFrom, "PARTS_PER_BILLION", ppxToXGM3Value);
 							amount = inPpb * ppxToXGM3Value;
 							break;
 						}
@@ -510,7 +634,7 @@ export default class AirQuality {
 							amount = amount * 0.001;
 							break;
 						case "MILLIGRAMS_PER_CUBIC_METER": {
-							const inPpm = AirQuality.ConvertUnit(amount, unitFrom, "PARTS_PER_MILLION", ppxToXGM3Value);
+							const inPpm = AirQuality.#ConvertUnit(amount, unitFrom, "PARTS_PER_MILLION", ppxToXGM3Value);
 							amount = inPpm * ppxToXGM3Value;
 							break;
 						}
@@ -533,7 +657,7 @@ export default class AirQuality {
 							amount = amount / ppxToXGM3Value;
 							break;
 						case "PARTS_PER_BILLION": {
-							const inUgM3 = AirQuality.ConvertUnit(amount, unitFrom, "MICROGRAMS_PER_CUBIC_METER", ppxToXGM3Value);
+							const inUgM3 = AirQuality.#ConvertUnit(amount, unitFrom, "MICROGRAMS_PER_CUBIC_METER", ppxToXGM3Value);
 							amount = inUgM3 / ppxToXGM3Value;
 							break;
 						}
@@ -550,7 +674,7 @@ export default class AirQuality {
 							amount = amount * 0.001;
 							break;
 						case "PARTS_PER_MILLION": {
-							const inMgM3 = AirQuality.ConvertUnit(amount, unitFrom, "MILLIGRAMS_PER_CUBIC_METER", ppxToXGM3Value);
+							const inMgM3 = AirQuality.#ConvertUnit(amount, unitFrom, "MILLIGRAMS_PER_CUBIC_METER", ppxToXGM3Value);
 							amount = inMgM3 / ppxToXGM3Value;
 							break;
 						}
@@ -568,129 +692,5 @@ export default class AirQuality {
 			}
 		//Console.log("✅ ConvertUnit", `amount: ${amount}`);
 		return amount;
-	}
-
-	static CategoryIndex(aqi = Number(), scale = "WAQI_InstantCast") {
-		switch (typeof aqi) {
-			case "number":
-				break;
-			case "string":
-				aqi = Number.parseInt(aqi, 10);
-				break;
-		}
-		Console.log("☑️ CategoryIndex", `aqi: ${aqi}`);
-		let categoryIndex;
-		for (const [key, value] of Object.entries(AirQuality.#Config.Scales[scale].categoryIndex)) {
-			categoryIndex = Number.parseInt(key, 10);
-			if (aqi >= value[0] && aqi <= value[1]) break;
-		}
-		Console.log("✅ CategoryIndex", `categoryIndex: ${categoryIndex}`);
-		return categoryIndex;
-	}
-
-	/**
-	 * 转换空气质量数据
-	 * 将空气质量数据按照指定的标准进行转换，包括污染物数值转换和AQI指数计算
-	 * @param {Object} body - 包含空气质量数据的响应体对象
-	 * @param {Object} body.airQuality - 空气质量数据对象
-	 * @param {Array} body.airQuality.pollutants - 污染物数组
-	 * @param {Object} body.airQuality.metadata - 空气质量元数据
-	 * @param {string} body.airQuality.metadata.providerName - 数据提供商名称
-	 * @param {import('../types').Settings} Settings - 设置对象
-	 * @returns {Object} 转换后的响应体对象，包含更新的空气质量数据
-	 */
-	static Convert(body, Settings) {
-		Console.log("☑️ Convert");
-		let airQuality;
-		switch (Settings?.AQI?.Local?.Scale) {
-			case "NONE":
-				break;
-			case "HJ_633":
-			case "EPA_NowCast":
-			case "WAQI_InstantCast":
-			default:
-				airQuality = AirQuality.ConvertScale(body?.airQuality?.pollutants, Settings?.AQI?.Local?.Scale, Settings?.AQI?.Local?.ConvertUnits);
-				break;
-		}
-		if (airQuality?.index) {
-			body.airQuality = { ...body.airQuality, ...airQuality };
-			body.airQuality.metadata.providerName += `\nConverted using ${Settings?.AQI?.Local?.Scale}`;
-		}
-		Console.log("✅ Convert");
-		return body;
-	}
-
-	static ComparisonTrend(todayAQI, yesterdayAQI) {
-		Console.log("☑️ ComparisonTrend", `todayAQI: ${todayAQI}`, `yesterdayAQI: ${yesterdayAQI}`);
-		let trend = "UNKNOWN";
-		if (isNaN(todayAQI - yesterdayAQI)) trend = "UNKNOWN";
-		else
-			switch (todayAQI - yesterdayAQI) {
-				case 10:
-				case 9:
-				case 8:
-				case 7:
-				case 6:
-				case 5:
-				case 4:
-					trend = "WORSE";
-					break;
-				case 3:
-				case 2:
-				case 1:
-				case 0:
-				case -1:
-				case -2:
-				case -3:
-					trend = "SAME";
-					break;
-				case -4:
-				case -5:
-				case -6:
-				case -7:
-				case -8:
-				case -9:
-				case -10:
-					trend = "BETTER";
-					break;
-				case null:
-				case NaN:
-					trend = "UNKNOWN";
-					break;
-				default:
-					switch (Boolean(todayAQI - yesterdayAQI)) {
-						case true:
-							trend = "UNKNOWN1";
-							break;
-						case false:
-							trend = "UNKNOWN5";
-							break;
-					}
-					break;
-			}
-		Console.log("✅ ComparisonTrend", `trend: ${trend}`);
-		return trend;
-	}
-
-	static FixUnits(pollutants = []) {
-		Console.log("☑️ FixUnits");
-		pollutants = pollutants.map(pollutant => {
-			switch (pollutant.units) {
-				case "PARTS_PER_MILLION":
-					pollutant.amount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, "PARTS_PER_BILLION"); // Will not convert to Xg/m3
-					pollutant.units = "PARTS_PER_BILLION";
-					break;
-				case "MILLIGRAMS_PER_CUBIC_METER":
-					pollutant.amount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, "MICROGRAMS_PER_CUBIC_METER"); // Will not convert to Xg/m3
-					pollutant.units = "MICROGRAMS_PER_CUBIC_METER";
-					break;
-				default:
-					break;
-			}
-			return pollutant;
-		});
-		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
-		Console.log("✅ FixUnits");
-		return pollutants;
 	}
 }
