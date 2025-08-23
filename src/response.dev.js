@@ -106,11 +106,11 @@ Console.info(`FORMAT: ${FORMAT}`);
 										matchEnum.airQuality();
 									}
 									// InjectAirQuality
-									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body = await InjectAirQuality(url, body, Settings);
+									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(url, body.airQuality, Settings);
 									// ConvertAirQuality
 									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body = AirQuality.Convert(body, Settings);
 									// CompareAirQuality
-									body = await CompareAirQuality(url, body, Settings);
+									body.airQuality = await CompareAirQuality(url, body.airQuality, Settings);
 									// FixPollutantUnits
 									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.FixUnits(body.airQuality.pollutants, body?.airQuality?.metadata?.providerName);
 									// Convert units that does not supported in Apple Weather
@@ -124,22 +124,22 @@ Console.info(`FORMAT: ${FORMAT}`);
 										matchEnum.weatherCondition();
 										matchEnum.pressureTrend();
 									}
-									body = await InjectCurrentWeather(url, body, Settings);
+									body.currentWeather = await InjectCurrentWeather(url, body.currentWeather, Settings);
 									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastDaily")) {
 									//Console.debug(`body.forecastDaily: ${JSON.stringify(body?.forecastDaily, null, 2)}`);
-									body = await InjectForecastDaily(url, body, Settings);
+									body.forecastDaily = await InjectForecastDaily(url, body.forecastDaily, Settings);
 									if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastHourly")) {
 									//Console.debug(`body.forecastHourly: ${JSON.stringify(body?.forecastHourly, null, 2)}`);
-									body = await InjectForecastHourly(url, body, Settings);
+									body.forecastHourly = await InjectForecastHourly(url, body.forecastHourly, Settings);
 									if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
 									//Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
-									if (!body?.forecastNextHour) body = await InjectForecastNextHour(url, body, Settings);
+									if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(url, body.forecastNextHour, Settings);
 									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("weatherAlerts")) {
@@ -196,58 +196,58 @@ Console.info(`FORMAT: ${FORMAT}`);
 
 /**
  * @param {string} url
- * @param {any} body
+ * @param {any} airQuality
  * @param {import('./types').Settings} Settings
  */
-async function InjectAirQuality(url, body, Settings) {
+async function InjectAirQuality(url, airQuality, Settings) {
 	Console.log("☑️ InjectAirQuality");
-	let airQuality;
+	let newAirQuality;
 	switch (Settings?.AQI?.Provider) {
 		case "WeatherKit":
 			break;
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
-			airQuality = await qWeather.AirNow();
-			//airQuality = await qWeather.AirQualityCurrent();
+			newAirQuality = await qWeather.AirNow();
+			//newAirQuality = await qWeather.AirQualityCurrent();
 			break;
 		}
 		case "ColorfulClouds":
 		default: {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
-			airQuality = (await colorfulClouds.RealTime()).airQuality;
+			newAirQuality = (await colorfulClouds.RealTime()).airQuality;
 			break;
 		}
 		case "WAQI": {
 			const waqi = new WAQI({ url: url, header: Settings?.API?.WAQI?.Header, token: Settings?.API?.WAQI?.Token });
 			if (Settings?.API?.WAQI?.Token) {
-				airQuality = await waqi.AQI2();
+				newAirQuality = await waqi.AQI2();
 			} else {
 				const Nearest = await waqi.Nearest();
 				const Token = await waqi.Token(Nearest?.metadata?.stationId);
 				//Caches.WAQI.set(stationId, Token);
-				airQuality = await waqi.AQI(Nearest?.metadata?.stationId, Token);
-				airQuality.metadata = { ...Nearest?.metadata, ...airQuality?.metadata };
-				airQuality = { ...Nearest, ...airQuality };
+				newAirQuality = await waqi.AQI(Nearest?.metadata?.stationId, Token);
+				newAirQuality.metadata = { ...Nearest?.metadata, ...newAirQuality?.metadata };
+				newAirQuality = { ...Nearest, ...newAirQuality };
 			}
 			break;
 		}
 	}
-	if (airQuality?.metadata) {
-		airQuality.metadata = { ...body?.airQuality?.metadata, ...airQuality.metadata };
-		body.airQuality = { ...body?.airQuality, ...airQuality };
-		if (!body?.airQuality?.pollutants) body.airQuality.pollutants = [];
-		//Console.debug(`body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`);
+	if (newAirQuality?.metadata) {
+		newAirQuality.metadata = { ...airQuality?.metadata, ...newAirQuality.metadata };
+		airQuality = { ...airQuality, ...newAirQuality };
+		if (!airQuality?.pollutants) airQuality.pollutants = [];
+		//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 	}
 	Console.log("✅ InjectAirQuality");
-	return body;
+	return airQuality;
 }
 
 /**
  * @param {string} url
- * @param {any} body
+ * @param {any} airQuality
  * @param {import('./types').Settings} Settings
  */
-async function CompareAirQuality(url, body, Settings) {
+async function CompareAirQuality(url, airQuality, Settings) {
 	Console.log("☑️ CompareAirQuality");
 	switch (Settings?.AQI?.ComparisonProvider) {
 		case "WeatherKit":
@@ -255,29 +255,29 @@ async function CompareAirQuality(url, body, Settings) {
 		case "QWeather":
 		default: {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
-			if (!body?.airQuality?.metadata?.locationID) {
+			if (!airQuality?.metadata?.locationID) {
 				const metadata = await qWeather.GeoAPI();
-				if (!body?.airQuality?.metadata?.attributionUrl) body.airQuality.metadata.attributionUrl = metadata.attributionUrl;
-				body.airQuality.metadata.locationID = metadata?.locationID;
+				if (!airQuality?.metadata?.attributionUrl) airQuality.metadata.attributionUrl = metadata.attributionUrl;
+				airQuality.metadata.locationID = metadata?.locationID;
 			}
-			const historicalAirQuality = await qWeather.HistoricalAir(undefined, body.airQuality?.metadata?.locationID);
+			const historicalAirQuality = await qWeather.HistoricalAir(undefined, airQuality?.metadata?.locationID);
 			let ConvertedAirQualtiy;
-			Console.log(`body.airQuality.scale: ${body?.airQuality?.scale}`, `historicalAirQuality.scale: ${historicalAirQuality.scale}`);
-			if (body?.airQuality?.scale === historicalAirQuality.scale) {
+			Console.log(`airQuality.scale: ${airQuality?.scale}`, `historicalAirQuality.scale: ${historicalAirQuality.scale}`);
+			if (airQuality?.scale === historicalAirQuality.scale) {
 				ConvertedAirQualtiy = historicalAirQuality;
 			} else {
 				ConvertedAirQualtiy = AirQuality.Convert({ airQuality: historicalAirQuality }, Settings).airQuality;
-				if (body?.airQuality?.scale !== ConvertedAirQualtiy?.scale) {
+				if (airQuality?.scale !== ConvertedAirQualtiy?.scale) {
 					ConvertedAirQualtiy = null;
 				}
 			}
-			body.airQuality.previousDayComparison = AirQuality.ComparisonTrend(body.airQuality?.index, ConvertedAirQualtiy?.index);
+			airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality?.index, ConvertedAirQualtiy?.index);
 			break;
 		}
 		case "ColorfulClouds": {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
 			const Hourly = (await colorfulClouds.Hourly(undefined, 1, Date.now() - 24 * 60 * 60 * 1000)).airQuality;
-			body.airQuality.previousDayComparison = AirQuality.ComparisonTrend(body.airQuality.index, Hourly.index);
+			airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality.index, Hourly.index);
 			break;
 		}
 		case "WAQI": {
@@ -286,7 +286,7 @@ async function CompareAirQuality(url, body, Settings) {
 		}
 	}
 	Console.log("✅ CompareAirQuality");
-	return body;
+	return airQuality;
 }
 
 /**
@@ -295,139 +295,139 @@ async function CompareAirQuality(url, body, Settings) {
  */
 /**
  * @param {string} url
- * @param {any} body
+ * @param {any} forecastNextHour
  * @param {import('./types').Settings} Settings
  */
-async function InjectForecastNextHour(url, body, Settings) {
+async function InjectForecastNextHour(url, forecastNextHour, Settings) {
 	Console.log("☑️ InjectForecastNextHour");
-	let forecastNextHour;
+	let newForecastNextHour;
 	switch (Settings?.NextHour?.Provider) {
 		case "WeatherKit":
 			break;
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
-			forecastNextHour = await qWeather.Minutely();
+			newForecastNextHour = await qWeather.Minutely();
 			break;
 		}
 		case "ColorfulClouds":
 		default: {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
-			forecastNextHour = await colorfulClouds.Minutely();
+			newForecastNextHour = await colorfulClouds.Minutely();
 			break;
 		}
 	}
-	if (forecastNextHour?.metadata) {
-		forecastNextHour.metadata = { ...body?.forecastNextHour?.metadata, ...forecastNextHour.metadata };
-		body.forecastNextHour = { ...body?.forecastNextHour, ...forecastNextHour };
-		//Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
+	if (newForecastNextHour?.metadata) {
+		newForecastNextHour.metadata = { ...forecastNextHour?.metadata, ...newForecastNextHour.metadata };
+		forecastNextHour = { ...forecastNextHour, ...newForecastNextHour };
+		//Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
 	}
 	Console.log("✅ InjectForecastNextHour");
-	return body;
+	return forecastNextHour;
 }
 
 /**
  * @param {string} url
- * @param {any} body
+ * @param {any} currentWeather
  * @param {import('./types').Settings} Settings
  */
-async function InjectCurrentWeather(url, body, Settings) {
+async function InjectCurrentWeather(url, currentWeather, Settings) {
 	Console.log("☑️ InjectCurrentWeather");
-	let currentWeather;
+	let newCurrentWeather;
 	switch (Settings?.Weather?.Provider) {
 		case "WeatherKit":
 		default:
 			break;
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
-			currentWeather = await qWeather.WeatherNow();
+			newCurrentWeather = await qWeather.WeatherNow();
 			break;
 		}
 		case "ColorfulClouds": {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
-			currentWeather = (await colorfulClouds.RealTime()).currentWeather;
+			newCurrentWeather = (await colorfulClouds.RealTime()).currentWeather;
 			break;
 		}
 	}
-	if (currentWeather?.metadata) {
-		currentWeather.metadata = { ...body?.currentWeather?.metadata, ...currentWeather.metadata };
-		body.currentWeather = { ...body?.currentWeather, ...currentWeather };
-		//Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
+	if (newCurrentWeather?.metadata) {
+		newCurrentWeather.metadata = { ...currentWeather?.metadata, ...newCurrentWeather.metadata };
+		currentWeather = { ...currentWeather, ...newCurrentWeather };
+		//Console.debug(`currentWeather: ${JSON.stringify(currentWeather, null, 2)}`);
 	}
 	Console.log("✅ InjectCurrentWeather");
-	return body;
+	return currentWeather;
 }
 
 /**
  * @param {string} url
- * @param {any} body
+ * @param {any} forecastDaily
  * @param {import('./types').Settings} Settings
  */
-async function InjectForecastDaily(url, body, Settings) {
+async function InjectForecastDaily(url, forecastDaily, Settings) {
 	Console.log("☑️ InjectForecastDaily");
-	let forecastDaily;
+	let newForecastDaily;
 	switch (Settings?.Weather?.Provider) {
 		case "WeatherKit":
 		default:
 			break;
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
-			forecastDaily = await qWeather.Daily();
+			newForecastDaily = await qWeather.Daily();
 			break;
 		}
 		case "ColorfulClouds": {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
-			forecastDaily = await colorfulClouds.Daily();
+			newForecastDaily = await colorfulClouds.Daily();
 			break;
 		}
 	}
-	if (forecastDaily?.metadata) {
-		body.forecastDaily.metadata = { ...body?.forecastDaily?.metadata, ...forecastDaily.metadata };
-		body.forecastDaily.days = body.forecastDaily.days.map((day, i) => {
-			if (forecastDaily.days[i]) {
-				forecastDaily.days[i].daytimeForecast = { ...day.daytimeForecast, ...forecastDaily.days[i].daytimeForecast };
-				forecastDaily.days[i].overnightForecast = { ...day.overnightForecast, ...forecastDaily.days[i].overnightForecast };
-				return { ...day, ...forecastDaily.days[i] };
+	if (newForecastDaily?.metadata) {
+		forecastDaily.metadata = { ...forecastDaily?.metadata, ...newForecastDaily.metadata };
+		forecastDaily.days = forecastDaily.days.map((day, i) => {
+			if (newForecastDaily.days[i]) {
+				newForecastDaily.days[i].daytimeForecast = { ...day.daytimeForecast, ...newForecastDaily.days[i].daytimeForecast };
+				newForecastDaily.days[i].overnightForecast = { ...day.overnightForecast, ...newForecastDaily.days[i].overnightForecast };
+				return { ...day, ...newForecastDaily.days[i] };
 			} else return day;
 		});
-		//Console.debug(`body.forecastDaily: ${JSON.stringify(body?.forecastDaily, null, 2)}`);
+		//Console.debug(`forecastDaily: ${JSON.stringify(forecastDaily, null, 2)}`);
 	}
 	Console.log("✅ InjectForecastDaily");
-	return body;
+	return forecastDaily;
 }
 
 /**
  * @param {string} url
- * @param {any} body
+ * @param {any} forecastHourly
  * @param {import('./types').Settings} Settings
  */
-async function InjectForecastHourly(url, body, Settings) {
+async function InjectForecastHourly(url, forecastHourly, Settings) {
 	Console.log("☑️ InjectForecastHourly");
-	let forecastHourly;
+	let newForecastHourly;
 	switch (Settings?.Weather?.Provider) {
 		case "WeatherKit":
 		default:
 			break;
 		case "QWeather": {
 			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
-			forecastHourly = await qWeather.Hourly();
+			newForecastHourly = await qWeather.Hourly();
 			break;
 		}
 		case "ColorfulClouds": {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
-			forecastHourly = (await colorfulClouds.Hourly(undefined, 1, Date.now() - 24 * 60 * 60 * 1000)).forecastHourly;
+			newForecastHourly = (await colorfulClouds.Hourly(undefined, 1, Date.now() - 24 * 60 * 60 * 1000)).forecastHourly;
 			break;
 		}
 	}
-	if (forecastHourly?.metadata) {
-		body.forecastHourly.metadata = { ...body?.forecastHourly?.metadata, ...forecastHourly.metadata };
-		body.forecastHourly.hours = body.forecastHourly.hours.map((hour, i) => {
+	if (newForecastHourly?.metadata) {
+		forecastHourly.metadata = { ...forecastHourly?.metadata, ...newForecastHourly.metadata };
+		forecastHourly.hours = forecastHourly.hours.map((hour, i) => {
 			return {
 				...hour,
-				...forecastHourly.hours[i],
+				...newForecastHourly.hours[i],
 			};
 		});
-		//Console.debug(`body.forecastHourly: ${JSON.stringify(body?.forecastHourly, null, 2)}`);
+		//Console.debug(`forecastHourly: ${JSON.stringify(forecastHourly, null, 2)}`);
 	}
 	Console.log("✅ InjectForecastHourly");
-	return body;
+	return forecastHourly;
 }
