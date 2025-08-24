@@ -84,13 +84,18 @@ Console.info(`FORMAT: ${FORMAT}`);
 							if (url.pathname.startsWith("/api/v2/weather/")) {
 								body = WeatherKit2.decode(ByteBuffer, "all");
 								const parameters = parseWeatherKitURL(url);
+								const enviroments = {
+									colorfulClouds: new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
+									qWeather: new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host),
+									waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
+								};
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
 									// InjectAirQuality
-									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(body.airQuality, Settings, parameters);
+									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(body.airQuality, Settings, enviroments);
 									// ConvertAirQuality
 									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body = AirQuality.Convert(body, Settings);
 									// CompareAirQuality
-									body.airQuality = await CompareAirQuality(body.airQuality, Settings, parameters);
+									body.airQuality = await CompareAirQuality(body.airQuality, Settings, enviroments);
 									// FixPollutantUnits
 									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.FixUnits(body.airQuality.pollutants, body?.airQuality?.metadata?.providerName);
 									// Convert units that does not supported in Apple Weather
@@ -99,19 +104,19 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (body?.airQuality?.metadata?.providerName && !body?.airQuality?.metadata?.providerLogo) body.airQuality.metadata.providerLogo = providerNameToLogo(body?.airQuality?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("currentWeather")) {
-									body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, parameters);
+									body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
 									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastDaily")) {
-									body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, parameters);
+									body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
 									if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastHourly")) {
-									body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, parameters);
+									body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
 									if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
-									if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, parameters);
+									if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
 									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
 								}
 								const WeatherData = WeatherKit2.encode(Builder, "all", body);
@@ -146,35 +151,32 @@ Console.info(`FORMAT: ${FORMAT}`);
  * 注入空气质量数据
  * @param {any} airQuality - 空气质量数据对象
  * @param {import('./types').Settings} Settings - 设置对象
- * @param {Parameters} parameters - 请求参数
+ * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 注入后的空气质量数据
  */
-async function InjectAirQuality(airQuality, Settings, parameters) {
+async function InjectAirQuality(airQuality, Settings, enviroments) {
 	Console.log("☑️ InjectAirQuality");
 	let newAirQuality;
 	switch (Settings?.AQI?.Provider) {
 		case "WeatherKit":
 			break;
 		case "QWeather": {
-			const qWeather = new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host);
-			newAirQuality = await qWeather.AirNow();
+			newAirQuality = await enviroments.qWeather.AirNow();
 			break;
 		}
 		case "ColorfulClouds":
 		default: {
-			const colorfulClouds = new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
-			newAirQuality = (await colorfulClouds.RealTime()).airQuality;
+			newAirQuality = (await enviroments.colorfulClouds.RealTime()).airQuality;
 			break;
 		}
 		case "WAQI": {
-			const waqi = new WAQI(parameters, Settings?.API?.WAQI?.Token);
 			if (Settings?.API?.WAQI?.Token) {
-				newAirQuality = await waqi.AQI2();
+				newAirQuality = await enviroments.waqi.AQI2();
 			} else {
-				const Nearest = await waqi.Nearest();
-				const Token = await waqi.Token(Nearest?.metadata?.stationId);
+				const Nearest = await enviroments.waqi.Nearest();
+				const Token = await enviroments.waqi.Token(Nearest?.metadata?.stationId);
 				//Caches.WAQI.set(stationId, Token);
-				newAirQuality = await waqi.AQI(Nearest?.metadata?.stationId, Token);
+				newAirQuality = await enviroments.waqi.AQI(Nearest?.metadata?.stationId, Token);
 				newAirQuality.metadata = { ...Nearest?.metadata, ...newAirQuality?.metadata };
 				newAirQuality = { ...Nearest, ...newAirQuality };
 			}
@@ -194,23 +196,22 @@ async function InjectAirQuality(airQuality, Settings, parameters) {
  * 比较空气质量数据
  * @param {any} airQuality - 空气质量数据对象
  * @param {import('./types').Settings} Settings - 设置对象
- * @param {Parameters} parameters - 请求参数
+ * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 比较后的空气质量数据
  */
-async function CompareAirQuality(airQuality, Settings, parameters) {
+async function CompareAirQuality(airQuality, Settings, enviroments) {
 	Console.log("☑️ CompareAirQuality");
 	switch (Settings?.AQI?.ComparisonProvider) {
 		case "WeatherKit":
 			break;
 		case "QWeather":
 		default: {
-			const qWeather = new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host);
 			if (!airQuality?.metadata?.locationID) {
-				const metadata = await qWeather.GeoAPI();
+				const metadata = await enviroments.qWeather.GeoAPI();
 				if (!airQuality?.metadata?.attributionUrl) airQuality.metadata.attributionUrl = metadata.attributionUrl;
 				airQuality.metadata.locationID = metadata?.locationID;
 			}
-			const historicalAirQuality = await qWeather.HistoricalAir(airQuality?.metadata?.locationID);
+			const historicalAirQuality = await enviroments.qWeather.HistoricalAir(airQuality?.metadata?.locationID);
 			let ConvertedAirQualtiy;
 			Console.log(`airQuality.scale: ${airQuality?.scale}`, `historicalAirQuality.scale: ${historicalAirQuality.scale}`);
 			if (airQuality?.scale === historicalAirQuality.scale) {
@@ -225,13 +226,11 @@ async function CompareAirQuality(airQuality, Settings, parameters) {
 			break;
 		}
 		case "ColorfulClouds": {
-			const colorfulClouds = new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
-			const Hourly = (await colorfulClouds.Hourly(1, Date.now() - 24 * 60 * 60 * 1000)).airQuality;
+			const Hourly = (await enviroments.colorfulClouds.Hourly(1, Date.now() - 24 * 60 * 60 * 1000)).airQuality;
 			airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality.index, Hourly.index);
 			break;
 		}
 		case "WAQI": {
-			const waqi = new WAQI(parameters, Settings?.API?.WAQI?.Token);
 			break;
 		}
 	}
@@ -243,24 +242,22 @@ async function CompareAirQuality(airQuality, Settings, parameters) {
  * 注入下一小时天气预报数据
  * @param {any} forecastNextHour - 下一小时预报数据对象
  * @param {import('./types').Settings} Settings - 设置对象
- * @param {Parameters} parameters - 请求参数
+ * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 注入后的下一小时预报数据
  */
-async function InjectForecastNextHour(forecastNextHour, Settings, parameters) {
+async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
 	Console.log("☑️ InjectForecastNextHour");
 	let newForecastNextHour;
 	switch (Settings?.NextHour?.Provider) {
 		case "WeatherKit":
 			break;
 		case "QWeather": {
-			const qWeather = new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host);
-			newForecastNextHour = await qWeather.Minutely();
+			newForecastNextHour = await enviroments.qWeather.Minutely();
 			break;
 		}
 		case "ColorfulClouds":
 		default: {
-			const colorfulClouds = new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
-			newForecastNextHour = await colorfulClouds.Minutely();
+			newForecastNextHour = await enviroments.colorfulClouds.Minutely();
 			break;
 		}
 	}
@@ -276,10 +273,10 @@ async function InjectForecastNextHour(forecastNextHour, Settings, parameters) {
  * 注入当前天气数据
  * @param {any} currentWeather - 当前天气数据对象
  * @param {import('./types').Settings} Settings - 设置对象
- * @param {Parameters} parameters - 请求参数
+ * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 注入后的当前天气数据
  */
-async function InjectCurrentWeather(currentWeather, Settings, parameters) {
+async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
 	Console.log("☑️ InjectCurrentWeather");
 	let newCurrentWeather;
 	switch (Settings?.Weather?.Provider) {
@@ -287,13 +284,11 @@ async function InjectCurrentWeather(currentWeather, Settings, parameters) {
 		default:
 			break;
 		case "QWeather": {
-			const qWeather = new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host);
-			newCurrentWeather = await qWeather.WeatherNow();
+			newCurrentWeather = await enviroments.qWeather.WeatherNow();
 			break;
 		}
 		case "ColorfulClouds": {
-			const colorfulClouds = new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
-			newCurrentWeather = (await colorfulClouds.RealTime()).currentWeather;
+			newCurrentWeather = (await enviroments.colorfulClouds.RealTime()).currentWeather;
 			break;
 		}
 	}
@@ -308,10 +303,10 @@ async function InjectCurrentWeather(currentWeather, Settings, parameters) {
  * 注入每日天气预报数据
  * @param {any} forecastDaily - 每日预报数据对象
  * @param {import('./types').Settings} Settings - 设置对象
- * @param {Parameters} parameters - 请求参数
+ * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 注入后的每日预报数据
  */
-async function InjectForecastDaily(forecastDaily, Settings, parameters) {
+async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
 	Console.log("☑️ InjectForecastDaily");
 	let newForecastDaily;
 	switch (Settings?.Weather?.Provider) {
@@ -319,13 +314,11 @@ async function InjectForecastDaily(forecastDaily, Settings, parameters) {
 		default:
 			break;
 		case "QWeather": {
-			const qWeather = new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host);
-			newForecastDaily = await qWeather.Daily();
+			newForecastDaily = await enviroments.qWeather.Daily();
 			break;
 		}
 		case "ColorfulClouds": {
-			const colorfulClouds = new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
-			newForecastDaily = await colorfulClouds.Daily();
+			newForecastDaily = await enviroments.colorfulClouds.Daily();
 			break;
 		}
 	}
@@ -347,10 +340,10 @@ async function InjectForecastDaily(forecastDaily, Settings, parameters) {
  * 注入小时天气预报数据
  * @param {any} forecastHourly - 小时预报数据对象
  * @param {import('./types').Settings} Settings - 设置对象
- * @param {Parameters} parameters - 请求参数
+ * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 注入后的小时预报数据
  */
-async function InjectForecastHourly(forecastHourly, Settings, parameters) {
+async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
 	Console.log("☑️ InjectForecastHourly");
 	let newForecastHourly;
 	switch (Settings?.Weather?.Provider) {
@@ -358,13 +351,11 @@ async function InjectForecastHourly(forecastHourly, Settings, parameters) {
 		default:
 			break;
 		case "QWeather": {
-			const qWeather = new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host);
-			newForecastHourly = await qWeather.Hourly();
+			newForecastHourly = await enviroments.qWeather.Hourly();
 			break;
 		}
 		case "ColorfulClouds": {
-			const colorfulClouds = new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
-			newForecastHourly = (await colorfulClouds.Hourly()).forecastHourly;
+			newForecastHourly = (await enviroments.colorfulClouds.Hourly()).forecastHourly;
 			break;
 		}
 	}
