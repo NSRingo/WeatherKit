@@ -21,7 +21,6 @@ export default {
 			API: {
 				WAQI: {
 					Token: null,
-					Header: { "Content-Type": "application/json" },
 				},
 				QWeather: {
 					Token: null,

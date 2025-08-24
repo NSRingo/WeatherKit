@@ -1,17 +1,19 @@
 import { Console, fetch } from "@nsnanocat/util";
 import AirQuality from "../class/AirQuality.mjs";
-import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
 
 export default class WAQI {
-	constructor(options) {
+	constructor(parameters, token) {
 		this.Name = "WAQI";
-		this.Version = "1.3.10";
+		this.Version = "1.4.0";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
-		this.url = new URL($request.url);
-		this.header = { "Content-Type": "application/json" };
-		const Parameters = parseWeatherKitURL(this.url);
-		Object.assign(this, Parameters, options);
+		this.header = { Accept: "application/json" };
+		this.token = token;
+		this.version = parameters.version;
+		this.language = parameters.language;
+		this.latitude = parameters.latitude;
+		this.longitude = parameters.longitude;
+		this.country = parameters.country;
 	}
 
 	#Configs = {

@@ -221,7 +221,7 @@ async function InjectAirQuality(airQuality, Settings, url) {
 			break;
 		}
 		case "WAQI": {
-			const waqi = new WAQI({ url: url, header: Settings?.API?.WAQI?.Header, token: Settings?.API?.WAQI?.Token });
+			const waqi = new WAQI(parseWeatherKitURL(url), Settings?.API?.WAQI?.Token);
 			if (Settings?.API?.WAQI?.Token) {
 				newAirQuality = await waqi.AQI2();
 			} else {
@@ -286,7 +286,7 @@ async function CompareAirQuality(airQuality, Settings, url) {
 			break;
 		}
 		case "WAQI": {
-			const waqi = new WAQI({ url: url, header: Settings?.API?.WAQI?.Header, token: Settings?.API?.WAQI?.Token });
+			const waqi = new WAQI(parseWeatherKitURL(url), Settings?.API?.WAQI?.Token);
 			break;
 		}
 	}
