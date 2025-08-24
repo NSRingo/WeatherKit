@@ -6,10 +6,10 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "4.4.1";
+		this.Version = "4.4.2";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://${host}`;
-		this.header = { "X-QW-Api-Key": token };
+		this.headers = { "X-QW-Api-Key": token };
 		this.version = parameters.version;
 		this.language = parameters.language;
 		this.latitude = parameters.latitude;
@@ -45,7 +45,7 @@ export default class QWeather {
 		Console.log("☑️ GeoAPI");
 		const request = {
 			url: `https://geoapi.qweather.com/v2/${path}?location=${this.longitude},${this.latitude}`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let metadata;
 		try {
@@ -76,7 +76,7 @@ export default class QWeather {
 		Console.log("☑️ WeatherNow");
 		const request = {
 			url: `${this.endpoint}/v7/weather/now?location=${this.longitude},${this.latitude}`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let currentWeather;
 		try {
@@ -136,7 +136,7 @@ export default class QWeather {
 		Console.log("☑️ AirNow");
 		const request = {
 			url: `${this.endpoint}/v7/air/now?location=${this.longitude},${this.latitude}`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let airQuality;
 		try {
@@ -193,7 +193,7 @@ export default class QWeather {
 		Console.log("☑️ AirQualityCurrent");
 		const request = {
 			url: `${this.endpoint}/airquality/v1/current/${this.latitude}/${this.longitude}`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let airQuality;
 		try {
@@ -248,7 +248,7 @@ export default class QWeather {
 		Console.log("☑️ Minutely");
 		const request = {
 			url: `${this.endpoint}/v7/minutely/5m?location=${this.longitude},${this.latitude}`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let forecastNextHour;
 		try {
@@ -324,7 +324,7 @@ export default class QWeather {
 		Console.log("☑️ Daily", `host: ${this.host}`);
 		const request = {
 			url: `${this.endpoint}/v7/weather/${hours}h?location=${this.longitude},${this.latitude}`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let forecastHourly;
 		try {
@@ -402,7 +402,7 @@ export default class QWeather {
 		Console.log("☑️ Daily", `host: ${this.host}`);
 		const request = {
 			url: `${this.endpoint}/v7/weather/${days}d?location=${this.longitude},${this.latitude}`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let forecastDaily;
 		try {
@@ -542,7 +542,7 @@ export default class QWeather {
 		Console.log("☑️ HistoricalAir", `locationID:${locationID}`, `date: ${date}`);
 		const request = {
 			url: `${this.endpoint}/v7/historical/air/?location=${locationID}&date=${date}`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let airQuality;
 		try {

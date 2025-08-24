@@ -7,10 +7,10 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(parameters, token) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.3.1";
+		this.Version = "3.3.2";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
-		this.header = { Referer: "https://caiyunapp.com/" };
+		this.headers = { Referer: "https://caiyunapp.com/" };
 		this.version = parameters.version;
 		this.language = parameters.language;
 		this.country = parameters.country;
@@ -34,7 +34,7 @@ export default class ColorfulClouds {
 		Console.log("☑️ RealTime");
 		const request = {
 			url: `${this.endpoint}/realtime`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let airQuality;
 		let currentWeather;
@@ -107,7 +107,7 @@ export default class ColorfulClouds {
 		Console.log("☑️ Minutely");
 		const request = {
 			url: `${this.endpoint}/minutely?unit=metric:v2`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let forecastNextHour;
 		try {
@@ -184,7 +184,7 @@ export default class ColorfulClouds {
 		Console.log("☑️ Hourly");
 		const request = {
 			url: `${this.endpoint}/hourly?hourlysteps=${hourlysteps}`,
-			header: this.header,
+			headers: this.headers,
 		};
 		if (begin) request.url += `&begin=${Number.parseInt(begin / 1000, 10)}`;
 		let airQuality;
@@ -277,7 +277,7 @@ export default class ColorfulClouds {
 		Console.log("☑️ Daily");
 		const request = {
 			url: `${this.endpoint}/daily?dailysteps=${dailysteps}`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let forecastDaily;
 		try {

@@ -5,9 +5,9 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class WAQI {
 	constructor(parameters, token) {
 		this.Name = "WAQI";
-		this.Version = "1.4.1";
+		this.Version = "1.4.2";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
-		this.header = { Accept: "application/json" };
+		this.headers = { Accept: "application/json" };
 		this.token = token;
 		this.version = parameters.version;
 		this.language = parameters.language;
@@ -35,7 +35,7 @@ export default class WAQI {
 		const request = {
 			url: `https://api.waqi.info/${mapqVersion}/nearest?n=1&geo=1/${this.latitude}/${this.longitude}`,
 			//"url": `https://mapq.waqi.info/${mapqVersion}/nearest/station/${stationId}?n=1`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let airQuality;
 		try {
@@ -124,7 +124,7 @@ export default class WAQI {
 		Console.log("☑️ Token", `stationId: ${stationId}`);
 		const request = {
 			url: `https://api.waqi.info/api/token/${stationId}`,
-			header: this.header,
+			headers: this.headers,
 		};
 		let token;
 		try {
@@ -163,7 +163,7 @@ export default class WAQI {
 		Console.log("☑️ AQI", `stationId: ${stationId}`, `token: ${token}`);
 		const request = {
 			url: `https://api.waqi.info/api/feed/@${stationId}/aqi.json`,
-			header: this.header,
+			headers: this.headers,
 			body: `token=${token}&id=${stationId}`,
 		};
 		let airQuality;
@@ -227,7 +227,7 @@ export default class WAQI {
 		Console.log("☑️ AQI2", `stationId: ${stationId}`);
 		const request = {
 			url: `https://api2.waqi.info/feed/geo:${this.latitude};${this.longitude}/?token=${token}`,
-			header: this.header,
+			headers: this.headers,
 		};
 		if (stationId) request.url = `https://api2.waqi.info/feed/@${stationId}/?token=${token}`;
 		let airQuality;
