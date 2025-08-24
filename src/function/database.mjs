@@ -30,7 +30,6 @@ export default {
 				},
 				ColorfulClouds: {
 					Token: null,
-					Header: { "Content-Type": "application/json" },
 				},
 			},
 		},

@@ -1,6 +1,7 @@
 import { $app, Console, done, Lodash as _ } from "@nsnanocat/util";
 import database from "./function/database.mjs";
 import setENV from "./function/setENV.mjs";
+import parseWeatherKitURL from "./function/parseWeatherKitURL.mjs";
 import providerNameToLogo from "./function/providerNameToLogo.mjs";
 import WeatherKit2 from "./class/WeatherKit2.mjs";
 import WAQI from "./class/WAQI.mjs";
@@ -144,7 +145,7 @@ Console.info(`FORMAT: ${FORMAT}`);
  * 注入空气质量数据
  * @param {any} airQuality - 空气质量数据对象
  * @param {import('./types').Settings} Settings - 设置对象
- * @param {string} url - 请求URL
+ * @param {URL} url - 请求URL
  * @returns {Promise<any>} 注入后的空气质量数据
  */
 async function InjectAirQuality(airQuality, Settings, url) {
@@ -160,7 +161,7 @@ async function InjectAirQuality(airQuality, Settings, url) {
 		}
 		case "ColorfulClouds":
 		default: {
-			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
+			const colorfulClouds = new ColorfulClouds(parseWeatherKitURL(url), Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
 			newAirQuality = (await colorfulClouds.RealTime()).airQuality;
 			break;
 		}
@@ -192,7 +193,7 @@ async function InjectAirQuality(airQuality, Settings, url) {
  * 比较空气质量数据
  * @param {any} airQuality - 空气质量数据对象
  * @param {import('./types').Settings} Settings - 设置对象
- * @param {string} url - 请求URL
+ * @param {URL} url - 请求URL
  * @returns {Promise<any>} 比较后的空气质量数据
  */
 async function CompareAirQuality(airQuality, Settings, url) {
@@ -223,8 +224,8 @@ async function CompareAirQuality(airQuality, Settings, url) {
 			break;
 		}
 		case "ColorfulClouds": {
-			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
-			const Hourly = (await colorfulClouds.Hourly(undefined, 1, Date.now() - 24 * 60 * 60 * 1000)).airQuality;
+			const colorfulClouds = new ColorfulClouds(parseWeatherKitURL(url), Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
+			const Hourly = (await colorfulClouds.Hourly(1, Date.now() - 24 * 60 * 60 * 1000)).airQuality;
 			airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality.index, Hourly.index);
 			break;
 		}
@@ -241,7 +242,7 @@ async function CompareAirQuality(airQuality, Settings, url) {
  * 注入下一小时天气预报数据
  * @param {any} forecastNextHour - 下一小时预报数据对象
  * @param {import('./types').Settings} Settings - 设置对象
- * @param {string} url - 请求URL
+ * @param {URL} url - 请求URL
  * @returns {Promise<any>} 注入后的下一小时预报数据
  */
 async function InjectForecastNextHour(forecastNextHour, Settings, url) {
@@ -257,7 +258,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, url) {
 		}
 		case "ColorfulClouds":
 		default: {
-			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
+			const colorfulClouds = new ColorfulClouds(parseWeatherKitURL(url), Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
 			newForecastNextHour = await colorfulClouds.Minutely();
 			break;
 		}
@@ -274,7 +275,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, url) {
  * 注入当前天气数据
  * @param {any} currentWeather - 当前天气数据对象
  * @param {import('./types').Settings} Settings - 设置对象
- * @param {string} url - 请求URL
+ * @param {URL} url - 请求URL
  * @returns {Promise<any>} 注入后的当前天气数据
  */
 async function InjectCurrentWeather(currentWeather, Settings, url) {
@@ -290,7 +291,7 @@ async function InjectCurrentWeather(currentWeather, Settings, url) {
 			break;
 		}
 		case "ColorfulClouds": {
-			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
+			const colorfulClouds = new ColorfulClouds(parseWeatherKitURL(url), Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
 			newCurrentWeather = (await colorfulClouds.RealTime()).currentWeather;
 			break;
 		}
@@ -306,7 +307,7 @@ async function InjectCurrentWeather(currentWeather, Settings, url) {
  * 注入每日天气预报数据
  * @param {any} forecastDaily - 每日预报数据对象
  * @param {import('./types').Settings} Settings - 设置对象
- * @param {string} url - 请求URL
+ * @param {URL} url - 请求URL
  * @returns {Promise<any>} 注入后的每日预报数据
  */
 async function InjectForecastDaily(forecastDaily, Settings, url) {
@@ -322,7 +323,7 @@ async function InjectForecastDaily(forecastDaily, Settings, url) {
 			break;
 		}
 		case "ColorfulClouds": {
-			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
+			const colorfulClouds = new ColorfulClouds(parseWeatherKitURL(url), Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
 			newForecastDaily = await colorfulClouds.Daily();
 			break;
 		}
@@ -345,7 +346,7 @@ async function InjectForecastDaily(forecastDaily, Settings, url) {
  * 注入小时天气预报数据
  * @param {any} forecastHourly - 小时预报数据对象
  * @param {import('./types').Settings} Settings - 设置对象
- * @param {string} url - 请求URL
+ * @param {URL} url - 请求URL
  * @returns {Promise<any>} 注入后的小时预报数据
  */
 async function InjectForecastHourly(forecastHourly, Settings, url) {
@@ -361,8 +362,8 @@ async function InjectForecastHourly(forecastHourly, Settings, url) {
 			break;
 		}
 		case "ColorfulClouds": {
-			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
-			newForecastHourly = (await colorfulClouds.Hourly(undefined, 1, Date.now() - 24 * 60 * 60 * 1000)).forecastHourly;
+			const colorfulClouds = new ColorfulClouds(parseWeatherKitURL(url), Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
+			newForecastHourly = (await colorfulClouds.Hourly()).forecastHourly;
 			break;
 		}
 	}

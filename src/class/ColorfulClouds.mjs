@@ -2,18 +2,18 @@ import { Console, fetch, Lodash as _ } from "@nsnanocat/util";
 import Weather from "./Weather.mjs";
 import AirQuality from "./AirQuality.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
-import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
 
 export default class ColorfulClouds {
-	constructor(options) {
+	constructor(parameters, token) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.2.1";
+		this.Version = "3.3.0";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
-		this.url = new URL($request.url);
-		this.header = { "Content-Type": "application/json" };
-		const Parameters = parseWeatherKitURL(this.url);
-		Object.assign(this, Parameters, options);
+		this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
+		this.header = { Referer: "https://caiyunapp.com/" };
+		this.version = parameters.version;
+		this.language = parameters.language;
+		this.country = parameters.country;
 	}
 
 	#Config = {
@@ -30,10 +30,10 @@ export default class ColorfulClouds {
 		},
 	};
 
-	async RealTime(token = this.token) {
+	async RealTime() {
 		Console.log("☑️ RealTime");
 		const request = {
-			url: `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/realtime`,
+			url: `${this.endpoint}/realtime`,
 			header: this.header,
 		};
 		let airQuality;
@@ -113,10 +113,10 @@ export default class ColorfulClouds {
 		return { airQuality, currentWeather };
 	}
 
-	async Minutely(token = this.token) {
+	async Minutely() {
 		Console.log("☑️ Minutely");
 		const request = {
-			url: `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/minutely?unit=metric:v2`,
+			url: `${this.endpoint}/minutely?unit=metric:v2`,
 			header: this.header,
 		};
 		let forecastNextHour;
@@ -126,7 +126,7 @@ export default class ColorfulClouds {
 			switch (body?.status) {
 				case "ok":
 					switch (body?.result?.minutely?.status) {
-						case "ok":
+						case "ok": {
 							body.result.minutely.probability = body.result.minutely.probability.map(probability => Math.round(probability * 100));
 							let minuteStemp = new Date(body?.server_time * 1000).setSeconds(0, 0);
 							minuteStemp = minuteStemp.valueOf() / 1000 - 60;
@@ -168,6 +168,7 @@ export default class ColorfulClouds {
 							forecastNextHour.summary = ForecastNextHour.Summary(forecastNextHour.minutes);
 							forecastNextHour.condition = ForecastNextHour.Condition(forecastNextHour.minutes);
 							break;
+						}
 						case "error":
 						case "failed":
 						case undefined:
@@ -188,10 +189,10 @@ export default class ColorfulClouds {
 		return forecastNextHour;
 	}
 
-	async Hourly(token = this.token, hourlysteps = 273, begin = undefined) {
+	async Hourly(hourlysteps = 273, begin = undefined) {
 		Console.log("☑️ Hourly");
 		const request = {
-			url: `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/hourly?hourlysteps=${hourlysteps}`,
+			url: `${this.endpoint}/hourly?hourlysteps=${hourlysteps}`,
 			header: this.header,
 		};
 		if (begin) request.url += `&begin=${Number.parseInt(begin / 1000, 10)}`;
@@ -291,10 +292,10 @@ export default class ColorfulClouds {
 		return { airQuality, forecastHourly };
 	}
 
-	async Daily(token = this.token, dailysteps = 10) {
+	async Daily(dailysteps = 10) {
 		Console.log("☑️ Daily");
 		const request = {
-			url: `https://api.caiyunapp.com/v2.6/${token}/${this.longitude},${this.latitude}/daily?dailysteps=${dailysteps}`,
+			url: `${this.endpoint}/daily?dailysteps=${dailysteps}`,
 			header: this.header,
 		};
 		let forecastDaily;
