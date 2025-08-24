@@ -157,15 +157,9 @@ export interface Settings {
          *
          * 和风天气 API 使用的主机名
          *
-         * @remarks
-         *
-         * Possible values:
-         * - `'devapi.qweather.com'` - 免费订阅 (devapi.qweather.com)
-         * - `'api.qweather.com'` - 付费订阅 (api.qweather.com)
-         *
          * @defaultValue "devapi.qweather.com"
          */
-        Host?: 'devapi.qweather.com' | 'api.qweather.com';
+        Host?: string;
         /**
          * [API] 和风天气令牌
          *

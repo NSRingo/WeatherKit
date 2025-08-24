@@ -154,11 +154,8 @@ export default defineConfig({
 			name: "[API] 和风天气主机",
 			defaultValue: "devapi.qweather.com",
 			type: "string",
+			placeholder: "devapi.qweather.com",
 			description: "和风天气 API 使用的主机名",
-			options: [
-				{ key: "devapi.qweather.com", label: "免费订阅 (devapi.qweather.com)" },
-				{ key: "api.qweather.com", label: "付费订阅 (api.qweather.com)" },
-			],
 		},
 		{
 			key: "API.QWeather.Token",
