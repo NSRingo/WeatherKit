@@ -6,7 +6,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "4.4.0";
+		this.Version = "4.4.1";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://${host}`;
 		this.header = { "X-QW-Api-Key": token };
@@ -81,9 +81,9 @@ export default class QWeather {
 		let currentWeather;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Math.round(Date.now() / 1000);
 			switch (body?.code) {
-				case "200":
+				case "200": {
+					const timeStamp = Math.round(Date.now() / 1000);
 					currentWeather = {
 						metadata: {
 							attributionUrl: body?.fxLink,
@@ -111,6 +111,7 @@ export default class QWeather {
 						windSpeed: Number.parseFloat(body?.now?.windSpeed),
 					};
 					break;
+				}
 				case "204":
 				case "400":
 				case "401":
@@ -140,9 +141,9 @@ export default class QWeather {
 		let airQuality;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Math.round(Date.now() / 1000);
 			switch (body?.code) {
-				case "200":
+				case "200": {
+					const timeStamp = Math.round(Date.now() / 1000);
 					airQuality = {
 						metadata: {
 							attributionUrl: body?.fxLink,
@@ -167,6 +168,7 @@ export default class QWeather {
 					};
 					if (body?.refer?.sources?.[0]) airQuality.metadata.providerName += `\n数据源: ${body?.refer?.sources?.[0]}`;
 					break;
+				}
 				case "204":
 				case "400":
 				case "401":
@@ -196,9 +198,9 @@ export default class QWeather {
 		let airQuality;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Math.round(Date.now() / 1000);
 			switch (body?.error) {
-				case undefined:
+				case undefined: {
+					const timeStamp = Math.round(Date.now() / 1000);
 					airQuality = {
 						metadata: {
 							attributionUrl: request.url,
@@ -229,6 +231,7 @@ export default class QWeather {
 					};
 					if (body?.stations?.[0]?.name) airQuality.metadata.providerName += `\n数据源: ${body?.stations?.[0]?.name}检测站`;
 					break;
+				}
 				default:
 					throw Error(JSON.stringify(body?.error, null, 2));
 			}
@@ -250,9 +253,9 @@ export default class QWeather {
 		let forecastNextHour;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Math.round(Date.now() / 1000);
 			switch (body?.code) {
-				case "200":
+				case "200": {
+					const timeStamp = Math.round(Date.now() / 1000);
 					let minuteStemp = new Date(body?.updateTime).setSeconds(0, 0);
 					minuteStemp = minuteStemp.valueOf() / 1000;
 					forecastNextHour = {
@@ -265,7 +268,7 @@ export default class QWeather {
 							providerLogo: providerNameToLogo("和风天气", this.version),
 							providerName: "和风天气",
 							readTime: timeStamp,
-							reportedTime: minuteStemp,
+							reportedTime: timeStamp,
 							temporarilyUnavailable: false,
 							sourceType: "MODELED",
 						},
@@ -296,6 +299,7 @@ export default class QWeather {
 					forecastNextHour.summary = ForecastNextHour.Summary(forecastNextHour.minutes);
 					forecastNextHour.condition = ForecastNextHour.Condition(forecastNextHour.minutes);
 					break;
+				}
 				case "204":
 				case "400":
 				case "401":
@@ -326,12 +330,20 @@ export default class QWeather {
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.code) {
-				case "200":
+				case "200": {
+					const timeStamp = Math.round(Date.now() / 1000);
 					forecastHourly = {
 						metadata: {
 							attributionUrl: body?.fxLink,
+							expireTime: timeStamp + 60 * 60,
+							language: `${this.language}-${this.country}`, // body?.lang,
+							latitude: this.latitude,
+							longitude: this.longitude,
 							providerLogo: providerNameToLogo("和风天气", this.version),
 							providerName: "和风天气",
+							readTime: timeStamp,
+							reportedTime: timeStamp,
+							temporarilyUnavailable: false,
 							sourceType: "STATION",
 						},
 						hours: body?.hourly?.map(hourly => {
@@ -365,6 +377,7 @@ export default class QWeather {
 						}),
 					};
 					break;
+				}
 				case "204":
 				case "400":
 				case "401":
@@ -395,12 +408,20 @@ export default class QWeather {
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.code) {
-				case "200":
+				case "200": {
+					const timeStamp = Math.round(Date.now() / 1000);
 					forecastDaily = {
 						metadata: {
 							attributionUrl: body?.fxLink,
+							expireTime: timeStamp + 60 * 60,
+							language: `${this.language}-${this.country}`, // body?.lang,
+							latitude: this.latitude,
+							longitude: this.longitude,
 							providerLogo: providerNameToLogo("和风天气", this.version),
 							providerName: "和风天气",
+							readTime: timeStamp,
+							reportedTime: timeStamp,
+							temporarilyUnavailable: false,
 							sourceType: "STATION",
 						},
 						days: body?.daily?.map(daily => {
@@ -496,6 +517,7 @@ export default class QWeather {
 						}),
 					};
 					break;
+				}
 				case "204":
 				case "400":
 				case "401":
@@ -525,14 +547,22 @@ export default class QWeather {
 		let airQuality;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const Hour = new Date().getHours();
 			switch (body?.code) {
-				case "200":
+				case "200": {
+					const timeStamp = Math.round(Date.now() / 1000);
+					const Hour = new Date().getHours();
 					airQuality = {
 						metadata: {
 							attributionUrl: body?.fxLink,
+							expireTime: timeStamp + 60 * 60,
+							language: `${this.language}-${this.country}`, // body?.lang,
+							latitude: this.latitude,
+							longitude: this.longitude,
 							providerLogo: providerNameToLogo("和风天气", this.version),
 							providerName: "和风天气",
+							readTime: timeStamp,
+							reportedTime: timeStamp,
+							temporarilyUnavailable: false,
 							sourceType: "STATION",
 						},
 						categoryIndex: Number.parseInt(body?.airHourly?.[Hour]?.level, 10),
@@ -542,6 +572,7 @@ export default class QWeather {
 						scale: "HJ6332012",
 					};
 					break;
+				}
 				case "204":
 				case "400":
 				case "401":
