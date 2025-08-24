@@ -3,8 +3,9 @@ on:
   push:
     # Sequence of patterns matched against refs/tags
     tags:
-      - v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+
-      - v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+
+      - v[0-9]+.[0-9]+.[0-9]+-alpha[0-9]+
+      - v[0-9]+.[0-9]+.[0-9]+-beta[0-9]+
+      - v[0-9]+.[0-9]+.[0-9]+-pre[0-9]+
 
 permissions:
   actions: read
