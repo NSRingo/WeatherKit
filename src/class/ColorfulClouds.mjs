@@ -14,6 +14,8 @@ export default class ColorfulClouds {
 		this.version = parameters.version;
 		this.language = parameters.language;
 		this.country = parameters.country;
+		this.airQuality;
+		this.currentWeather;
 	}
 
 	#Config = {
@@ -31,76 +33,76 @@ export default class ColorfulClouds {
 	};
 
 	async RealTime() {
-		Console.log("☑️ RealTime");
-		const request = {
-			url: `${this.endpoint}/realtime`,
-			headers: this.headers,
-		};
-		let airQuality;
-		let currentWeather;
-		try {
-			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			switch (body?.status) {
-				case "ok":
-					switch (body?.result?.realtime?.status) {
-						case "ok": {
-							const timeStamp = Math.round(Date.now() / 1000);
-							const metadata = {
-								attributionUrl: "https://www.caiyunapp.com/h5",
-								expireTime: timeStamp + 60 * 60,
-								language: `${this.language}-${this.country}`,
-								latitude: body?.location?.[0],
-								longitude: body?.location?.[1],
-								providerLogo: providerNameToLogo("彩云天气", this.version),
-								providerName: "彩云天气",
-								readTime: timeStamp,
-								reportedTime: body?.server_time,
-								temporarilyUnavailable: false,
-								sourceType: "STATION",
-							};
-							airQuality = {
-								metadata: metadata,
-								categoryIndex: AirQuality.CategoryIndex(body?.result?.realtime?.air_quality?.aqi.chn, "HJ_633"),
-								index: Number.parseInt(body?.result?.realtime?.air_quality?.aqi.chn, 10),
-								isSignificant: true,
-								pollutants: this.#CreatePollutants(body?.result?.realtime?.air_quality),
-								previousDayComparison: "UNKNOWN",
-								primaryPollutant: "NOT_AVAILABLE",
-								scale: "HJ6332012",
-							};
-							currentWeather = {
-								metadata: metadata,
-								cloudCover: Math.round(body?.result?.realtime?.cloudrate * 100),
-								conditionCode: this.#ConvertWeatherCode(body?.result?.realtime?.skycon),
-								humidity: Math.round(body?.result?.realtime?.humidity * 100),
-								uvIndex: Weather.ConvertDSWRF(body?.result?.realtime?.dswrf),
-								perceivedPrecipitationIntensity: body?.result?.realtime?.precipitation?.local?.intensity,
-								pressure: body?.result?.realtime?.pressure / 100,
-								temperature: body?.result?.realtime?.temperature,
-								temperatureApparent: body?.result?.realtime?.apparent_temperature,
-								visibility: body?.result?.realtime?.visibility * 1000,
-								windDirection: body?.result?.realtime?.wind?.direction,
-								windSpeed: body?.result?.realtime?.wind?.speed,
-							};
-							break;
+		if (!this.airQuality || !this.currentWeather) {
+			Console.log("☑️ RealTime");
+			const request = {
+				url: `${this.endpoint}/realtime`,
+				headers: this.headers,
+			};
+			try {
+				const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+				switch (body?.status) {
+					case "ok":
+						switch (body?.result?.realtime?.status) {
+							case "ok": {
+								const timeStamp = Math.round(Date.now() / 1000);
+								const metadata = {
+									attributionUrl: "https://www.caiyunapp.com/h5",
+									expireTime: timeStamp + 60 * 60,
+									language: `${this.language}-${this.country}`,
+									latitude: body?.location?.[0],
+									longitude: body?.location?.[1],
+									providerLogo: providerNameToLogo("彩云天气", this.version),
+									providerName: "彩云天气",
+									readTime: timeStamp,
+									reportedTime: body?.server_time,
+									temporarilyUnavailable: false,
+									sourceType: "STATION",
+								};
+								this.airQuality = {
+									metadata: metadata,
+									categoryIndex: AirQuality.CategoryIndex(body?.result?.realtime?.air_quality?.aqi.chn, "HJ_633"),
+									index: Number.parseInt(body?.result?.realtime?.air_quality?.aqi.chn, 10),
+									isSignificant: true,
+									pollutants: this.#CreatePollutants(body?.result?.realtime?.air_quality),
+									previousDayComparison: "UNKNOWN",
+									primaryPollutant: "NOT_AVAILABLE",
+									scale: "HJ6332012",
+								};
+								this.currentWeather = {
+									metadata: metadata,
+									cloudCover: Math.round(body?.result?.realtime?.cloudrate * 100),
+									conditionCode: this.#ConvertWeatherCode(body?.result?.realtime?.skycon),
+									humidity: Math.round(body?.result?.realtime?.humidity * 100),
+									uvIndex: Weather.ConvertDSWRF(body?.result?.realtime?.dswrf),
+									perceivedPrecipitationIntensity: body?.result?.realtime?.precipitation?.local?.intensity,
+									pressure: body?.result?.realtime?.pressure / 100,
+									temperature: body?.result?.realtime?.temperature,
+									temperatureApparent: body?.result?.realtime?.apparent_temperature,
+									visibility: body?.result?.realtime?.visibility * 1000,
+									windDirection: body?.result?.realtime?.wind?.direction,
+									windSpeed: body?.result?.realtime?.wind?.speed,
+								};
+								break;
+							}
+							case "error":
+							case undefined:
+								throw Error(JSON.stringify({ status: body?.result?.realtime?.status, reason: body?.result?.realtime }));
 						}
-						case "error":
-						case undefined:
-							throw Error(JSON.stringify({ status: body?.result?.realtime?.status, reason: body?.result?.realtime }));
-					}
-					break;
-				case "error":
-				case "failed":
-				case undefined:
-					throw Error(JSON.stringify(body ?? {}));
+						break;
+					case "error":
+					case "failed":
+					case undefined:
+						throw Error(JSON.stringify(body ?? {}));
+				}
+			} catch (error) {
+				Console.error(error);
+			} finally {
+				//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+				Console.log("✅ RealTime");
 			}
-		} catch (error) {
-			Console.error(error);
-		} finally {
-			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
-			Console.log("✅ RealTime");
 		}
-		return { airQuality, currentWeather };
+		return { airQuality: this.airQuality, currentWeather: this.currentWeather };
 	}
 
 	async Minutely() {
