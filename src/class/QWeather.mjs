@@ -434,9 +434,9 @@ export default class QWeather {
 								// humidityMax: daily?.humidity, // Not Accurate
 								// humidityMin: daily?.humidity, // Not Accurate
 								maxUvIndex: Number.parseInt(daily?.uvIndex, 10),
-								// moonPhase: daily?.moonPhase, // 未转换！
-								// moonrise: daily?.moonrise, // 未转换！
-								// moonset: daily?.moonset, // 未转换！
+								moonPhase: this.#ConvertMoonPhase(daily?.moonPhase),
+								moonrise: this.#ConvertTimeStamp(daily?.fxDate, daily?.moonrise),
+								moonset: this.#ConvertTimeStamp(daily?.fxDate, daily?.moonset),
 								precipitationAmount: Number.parseFloat(daily?.precip),
 								// precipitationAmountByType: [], // Not given
 								// precipitationChance: 0, // Not given
@@ -444,11 +444,11 @@ export default class QWeather {
 								// snowfallAmount: 0, // Not given
 								// solarMidnight: 0, // Not given
 								// solarNoon: 0, // Not given
-								// sunrise: daily?.sunrise, // 未转换！
+								sunrise: this.#ConvertTimeStamp(daily?.fxDate, daily?.sunrise),
 								// sunriseAstronomical: 0, // Not given
 								// sunriseCivil: 0, // Not given
 								// sunriseNautical: 0, // Not given
-								// sunset: daily?.sunset, // 未转换！
+								sunset: this.#ConvertTimeStamp(daily?.fxDate, daily?.sunset),
 								// sunsetAstronomical: 0, // Not given
 								// sunsetCivil: 0, // Not given
 								// sunsetNautical: 0, // Not given
@@ -723,5 +723,33 @@ export default class QWeather {
 				Console.debug(`textDescription: ${textDescription}`);
 				return null;
 		}
+	}
+
+	#ConvertMoonPhase(moonPhase) {
+		switch (moonPhase) {
+			case "新月":
+				return "NEW";
+			case "蛾眉月":
+				return "WAXING_CRESCENT";
+			case "上弦月":
+				return "FIRST_QUARTER";
+			case "盈凸月":
+				return "WAXING_GIBBOUS";
+			case "满月":
+				return "FULL";
+			case "亏凸月":
+				return "WANING_GIBBOUS";
+			case "下弦月":
+				return "THIRD_QUARTER";
+			case "残月":
+				return "WANING_CRESCENT";
+			default:
+				return moonPhase;
+		}
+	}
+
+	#ConvertTimeStamp(fxDate, time) {
+		const dateTime = `${fxDate}T${time}:00+08:00`;
+		return Math.round(new Date(dateTime).getTime() / 1000);
 	}
 }
