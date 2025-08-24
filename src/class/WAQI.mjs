@@ -5,7 +5,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class WAQI {
 	constructor(parameters, token) {
 		this.Name = "WAQI";
-		this.Version = "1.4.0";
+		this.Version = "1.4.1";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.header = { Accept: "application/json" };
 		this.token = token;
@@ -40,12 +40,12 @@ export default class WAQI {
 		let airQuality;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Math.round(Date.now() / 1000);
 			switch (mapqVersion) {
 				case "mapq":
 					switch (body?.status) {
 						default:
-						case undefined:
+						case undefined: {
+							const timeStamp = Math.round(Date.now() / 1000);
 							airQuality = {
 								metadata: {
 									attributionUrl: request.url,
@@ -70,13 +70,15 @@ export default class WAQI {
 							};
 							airQuality.isSignificant = airQuality.categoryIndex >= 3;
 							break;
+						}
 						case "error":
 							throw JSON.stringify({ status: body?.status, reason: body?.message });
 					}
 					break;
 				case "mapq2":
 					switch (body?.status) {
-						case "ok":
+						case "ok": {
+							const timeStamp = Math.round(Date.now() / 1000);
 							airQuality = {
 								metadata: {
 									attributionUrl: request.url,
@@ -100,6 +102,7 @@ export default class WAQI {
 							};
 							airQuality.isSignificant = airQuality.categoryIndex >= 3;
 							break;
+						}
 						case "error":
 						case undefined:
 							throw JSON.stringify({ status: body?.status, reason: body?.reason });
@@ -126,7 +129,6 @@ export default class WAQI {
 		let token;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Math.round(Date.now() / 1000);
 			switch (body?.status) {
 				case "error":
 					throw JSON.stringify({ status: body?.status, reason: body?.data });
@@ -167,7 +169,6 @@ export default class WAQI {
 		let airQuality;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Math.round(Date.now() / 1000);
 			switch (body?.status) {
 				case "error":
 					throw JSON.stringify({ status: body?.status, reason: body?.data });
@@ -176,7 +177,8 @@ export default class WAQI {
 					switch (body?.rxs?.status) {
 						case "ok":
 							switch (body?.rxs?.obs?.[0]?.status) {
-								case "ok":
+								case "ok": {
+									const timeStamp = Math.round(Date.now() / 1000);
 									airQuality = {
 										metadata: {
 											attributionUrl: body?.rxs?.obs?.[0]?.msg?.city?.url,
@@ -200,6 +202,7 @@ export default class WAQI {
 									};
 									airQuality.isSignificant = airQuality.categoryIndex >= 3;
 									break;
+								}
 								case "error":
 								case undefined:
 									throw JSON.stringify({ status: body?.rxs?.[0]?.status, reason: body?.rxs?.obs?.[0]?.msg });
@@ -230,9 +233,9 @@ export default class WAQI {
 		let airQuality;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Math.round(Date.now() / 1000);
 			switch (body?.status) {
-				case "ok":
+				case "ok": {
+					const timeStamp = Math.round(Date.now() / 1000);
 					airQuality = {
 						metadata: {
 							attributionUrl: body?.data?.city?.url,
@@ -256,6 +259,7 @@ export default class WAQI {
 					};
 					airQuality.isSignificant = airQuality.categoryIndex >= 3;
 					break;
+				}
 				case "error":
 				case undefined:
 					throw JSON.stringify({ status: body?.status, reason: body?.data });
