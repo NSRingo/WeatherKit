@@ -115,7 +115,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									// InjectAirQuality
 									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(body.airQuality, Settings, enviroments);
 									// ConvertAirQuality
-									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body = AirQuality.Convert(body, Settings);
+									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body.airQuality = AirQuality.Convert(body.airQuality, Settings);
 									// CompareAirQuality
 									body.airQuality = await CompareAirQuality(body.airQuality, Settings, enviroments);
 									// FixPollutantUnits
@@ -273,7 +273,7 @@ async function CompareAirQuality(airQuality, Settings, enviroments) {
 			if (airQuality?.scale === historicalAirQuality.scale) {
 				ConvertedAirQualtiy = historicalAirQuality;
 			} else {
-				ConvertedAirQualtiy = AirQuality.Convert({ airQuality: historicalAirQuality }, Settings).airQuality;
+				ConvertedAirQualtiy = AirQuality.Convert(historicalAirQuality, Settings);
 				if (airQuality?.scale !== ConvertedAirQualtiy?.scale) {
 					ConvertedAirQualtiy = null;
 				}
