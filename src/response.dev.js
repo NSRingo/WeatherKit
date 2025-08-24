@@ -257,20 +257,21 @@ async function InjectAirQuality(airQuality, Settings, enviroments) {
  */
 async function CompareAirQuality(airQuality, Settings, enviroments) {
 	Console.log("☑️ CompareAirQuality");
-	switch (Settings?.AQI?.ComparisonProvider) {
+	let ConvertedAirQualtiy;
+	switch (Settings?.AQI?.ComparisonProvider || Settings?.AQI?.Provider) {
 		case "WeatherKit":
+		default:
 			break;
-		case "QWeather":
-		default: {
+		case "QWeather": {
 			if (!airQuality?.metadata?.locationID) {
 				const metadata = await enviroments.qWeather.GeoAPI();
 				if (!airQuality?.metadata?.attributionUrl) airQuality.metadata.attributionUrl = metadata.attributionUrl;
 				airQuality.metadata.locationID = metadata?.locationID;
 			}
 			const historicalAirQuality = await enviroments.qWeather.HistoricalAir(airQuality?.metadata?.locationID);
-			let ConvertedAirQualtiy;
-			Console.log(`airQuality.scale: ${airQuality?.scale}`, `historicalAirQuality.scale: ${historicalAirQuality.scale}`);
-			if (airQuality?.scale === historicalAirQuality.scale) {
+
+			Console.debug(`airQuality.scale: ${airQuality?.scale}`, `historicalAirQuality.scale: ${historicalAirQuality?.scale}`);
+			if (airQuality?.scale === historicalAirQuality?.scale) {
 				ConvertedAirQualtiy = historicalAirQuality;
 			} else {
 				ConvertedAirQualtiy = AirQuality.Convert(historicalAirQuality, Settings);
