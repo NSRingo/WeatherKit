@@ -25,7 +25,6 @@ export default {
 				},
 				QWeather: {
 					Token: null,
-					Header: { "Content-Type": "application/json" },
 					Host: "devapi.qweather.com",
 				},
 				ColorfulClouds: {

@@ -1,19 +1,20 @@
 import { Console, fetch, Lodash as _, time } from "@nsnanocat/util";
 import AirQuality from "../class/AirQuality.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
-import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
 
 export default class QWeather {
-	constructor(options) {
+	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "4.3.3";
+		this.Version = "4.4.0";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
-		this.url = new URL($request.url);
-		this.host = "devapi.qweather.com";
-		this.header = { "Content-Type": "application/json" };
-		const Parameters = parseWeatherKitURL(this.url);
-		Object.assign(this, Parameters, options);
+		this.endpoint = `https://${host}`;
+		this.header = { "X-QW-Api-Key": token };
+		this.version = parameters.version;
+		this.language = parameters.language;
+		this.latitude = parameters.latitude;
+		this.longitude = parameters.longitude;
+		this.country = parameters.country;
 	}
 
 	#Config = {
@@ -40,10 +41,10 @@ export default class QWeather {
 		},
 	};
 
-	async GeoAPI(token = this.token, path = "city/lookup") {
+	async GeoAPI(path = "city/lookup") {
 		Console.log("☑️ GeoAPI");
 		const request = {
-			url: `https://geoapi.qweather.com/v2/${path}?location=${this.longitude},${this.latitude}&key=${token}`,
+			url: `https://geoapi.qweather.com/v2/${path}?location=${this.longitude},${this.latitude}`,
 			header: this.header,
 		};
 		let metadata;
@@ -71,10 +72,10 @@ export default class QWeather {
 		return metadata;
 	}
 
-	async WeatherNow(token = this.token) {
-		Console.log("☑️ Now");
+	async WeatherNow() {
+		Console.log("☑️ WeatherNow");
 		const request = {
-			url: `https://${this.host}/v7/weather/now?location=${this.longitude},${this.latitude}&key=${token}`,
+			url: `${this.endpoint}/v7/weather/now?location=${this.longitude},${this.latitude}`,
 			header: this.header,
 		};
 		let currentWeather;
@@ -130,10 +131,10 @@ export default class QWeather {
 		return currentWeather;
 	}
 
-	async AirNow(token = this.token) {
+	async AirNow() {
 		Console.log("☑️ AirNow");
 		const request = {
-			url: `https://${this.host}/v7/air/now?location=${this.longitude},${this.latitude}&key=${token}`,
+			url: `${this.endpoint}/v7/air/now?location=${this.longitude},${this.latitude}`,
 			header: this.header,
 		};
 		let airQuality;
@@ -186,10 +187,10 @@ export default class QWeather {
 		return airQuality;
 	}
 
-	async AirQualityCurrent(token = this.token) {
+	async AirQualityCurrent() {
 		Console.log("☑️ AirQualityCurrent");
 		const request = {
-			url: `https://${this.host}/airquality/v1/current/${this.latitude}/${this.longitude}?key=${token}`,
+			url: `${this.endpoint}/airquality/v1/current/${this.latitude}/${this.longitude}`,
 			header: this.header,
 		};
 		let airQuality;
@@ -240,10 +241,10 @@ export default class QWeather {
 		return airQuality;
 	}
 
-	async Minutely(token = this.token) {
-		Console.log("☑️ Minutely", `host: ${this.host}`);
+	async Minutely() {
+		Console.log("☑️ Minutely");
 		const request = {
-			url: `https://${this.host}/v7/minutely/5m?location=${this.longitude},${this.latitude}&key=${token}`,
+			url: `${this.endpoint}/v7/minutely/5m?location=${this.longitude},${this.latitude}`,
 			header: this.header,
 		};
 		let forecastNextHour;
@@ -315,10 +316,10 @@ export default class QWeather {
 		return forecastNextHour;
 	}
 
-	async Hourly(token = this.token, hours = 168) {
+	async Hourly(hours = 168) {
 		Console.log("☑️ Daily", `host: ${this.host}`);
 		const request = {
-			url: `https://${this.host}/v7/weather/${hours}h?location=${this.longitude},${this.latitude}&key=${token}`,
+			url: `${this.endpoint}/v7/weather/${hours}h?location=${this.longitude},${this.latitude}`,
 			header: this.header,
 		};
 		let forecastHourly;
@@ -384,10 +385,10 @@ export default class QWeather {
 		return forecastHourly;
 	}
 
-	async Daily(token = this.token, days = 10) {
+	async Daily(days = 10) {
 		Console.log("☑️ Daily", `host: ${this.host}`);
 		const request = {
-			url: `https://${this.host}/v7/weather/${days}d?location=${this.longitude},${this.latitude}&key=${token}`,
+			url: `${this.endpoint}/v7/weather/${days}d?location=${this.longitude},${this.latitude}`,
 			header: this.header,
 		};
 		let forecastDaily;
@@ -515,10 +516,10 @@ export default class QWeather {
 		return forecastDaily;
 	}
 
-	async HistoricalAir(token = this.token, locationID = new Number(), date = time("yyyyMMdd", Date.now() - 24 * 60 * 60 * 1000)) {
+	async HistoricalAir(locationID = new Number(), date = time("yyyyMMdd", Date.now() - 24 * 60 * 60 * 1000)) {
 		Console.log("☑️ HistoricalAir", `locationID:${locationID}`, `date: ${date}`);
 		const request = {
-			url: `https://${this.host}/v7/historical/air/?location=${locationID}&date=${date}&key=${token}`,
+			url: `${this.endpoint}/v7/historical/air/?location=${locationID}&date=${date}`,
 			header: this.header,
 		};
 		let airQuality;

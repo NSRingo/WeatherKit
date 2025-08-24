@@ -155,7 +155,7 @@ async function InjectAirQuality(airQuality, Settings, url) {
 		case "WeatherKit":
 			break;
 		case "QWeather": {
-			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
+			const qWeather = new QWeather(parseWeatherKitURL(url), Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host);
 			newAirQuality = await qWeather.AirNow();
 			break;
 		}
@@ -203,13 +203,13 @@ async function CompareAirQuality(airQuality, Settings, url) {
 			break;
 		case "QWeather":
 		default: {
-			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
+			const qWeather = new QWeather(parseWeatherKitURL(url), Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host);
 			if (!airQuality?.metadata?.locationID) {
 				const metadata = await qWeather.GeoAPI();
 				if (!airQuality?.metadata?.attributionUrl) airQuality.metadata.attributionUrl = metadata.attributionUrl;
 				airQuality.metadata.locationID = metadata?.locationID;
 			}
-			const historicalAirQuality = await qWeather.HistoricalAir(undefined, airQuality?.metadata?.locationID);
+			const historicalAirQuality = await qWeather.HistoricalAir(airQuality?.metadata?.locationID);
 			let ConvertedAirQualtiy;
 			Console.log(`airQuality.scale: ${airQuality?.scale}`, `historicalAirQuality.scale: ${historicalAirQuality.scale}`);
 			if (airQuality?.scale === historicalAirQuality.scale) {
@@ -252,7 +252,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, url) {
 		case "WeatherKit":
 			break;
 		case "QWeather": {
-			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
+			const qWeather = new QWeather(parseWeatherKitURL(url), Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host);
 			newForecastNextHour = await qWeather.Minutely();
 			break;
 		}
@@ -286,7 +286,7 @@ async function InjectCurrentWeather(currentWeather, Settings, url) {
 		default:
 			break;
 		case "QWeather": {
-			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
+			const qWeather = new QWeather(parseWeatherKitURL(url), Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host);
 			newCurrentWeather = await qWeather.WeatherNow();
 			break;
 		}
@@ -318,7 +318,7 @@ async function InjectForecastDaily(forecastDaily, Settings, url) {
 		default:
 			break;
 		case "QWeather": {
-			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
+			const qWeather = new QWeather(parseWeatherKitURL(url), Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host);
 			newForecastDaily = await qWeather.Daily();
 			break;
 		}
@@ -357,7 +357,7 @@ async function InjectForecastHourly(forecastHourly, Settings, url) {
 		default:
 			break;
 		case "QWeather": {
-			const qWeather = new QWeather({ url: url, host: Settings?.API?.QWeather?.Host, header: Settings?.API?.QWeather?.Header, token: Settings?.API?.QWeather?.Token });
+			const qWeather = new QWeather(parseWeatherKitURL(url), Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host);
 			newForecastHourly = await qWeather.Hourly();
 			break;
 		}
