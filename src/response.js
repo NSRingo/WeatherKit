@@ -167,7 +167,7 @@ async function InjectAirQuality(url, body, Settings) {
 		case "ColorfulClouds":
 		default: {
 			const colorfulClouds = new ColorfulClouds({ url: url, header: Settings?.API?.ColorfulClouds?.Header, token: Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==" });
-			airQuality = await colorfulClouds.RealTime();
+			airQuality = (await colorfulClouds.RealTime()).airQuality;
 			break;
 		}
 		case "WAQI": {
