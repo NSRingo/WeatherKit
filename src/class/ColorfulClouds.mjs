@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(parameters, token) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.3.0";
+		this.Version = "3.3.1";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
 		this.header = { Referer: "https://caiyunapp.com/" };
@@ -40,25 +40,26 @@ export default class ColorfulClouds {
 		let currentWeather;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Math.round(Date.now() / 1000);
 			switch (body?.status) {
 				case "ok":
 					switch (body?.result?.realtime?.status) {
-						case "ok":
+						case "ok": {
+							const timeStamp = Math.round(Date.now() / 1000);
+							const metadata = {
+								attributionUrl: "https://www.caiyunapp.com/h5",
+								expireTime: timeStamp + 60 * 60,
+								language: `${this.language}-${this.country}`,
+								latitude: body?.location?.[0],
+								longitude: body?.location?.[1],
+								providerLogo: providerNameToLogo("彩云天气", this.version),
+								providerName: "彩云天气",
+								readTime: timeStamp,
+								reportedTime: body?.server_time,
+								temporarilyUnavailable: false,
+								sourceType: "STATION",
+							};
 							airQuality = {
-								metadata: {
-									attributionUrl: "https://www.caiyunapp.com/h5",
-									expireTime: timeStamp + 60 * 60,
-									language: `${this.language}-${this.country}`,
-									latitude: body?.location?.[0],
-									longitude: body?.location?.[1],
-									providerLogo: providerNameToLogo("彩云天气", this.version),
-									providerName: "彩云天气",
-									readTime: timeStamp,
-									reportedTime: body?.server_time,
-									temporarilyUnavailable: false,
-									sourceType: "STATION",
-								},
+								metadata: metadata,
 								categoryIndex: AirQuality.CategoryIndex(body?.result?.realtime?.air_quality?.aqi.chn, "HJ_633"),
 								index: Number.parseInt(body?.result?.realtime?.air_quality?.aqi.chn, 10),
 								isSignificant: true,
@@ -68,19 +69,7 @@ export default class ColorfulClouds {
 								scale: "HJ6332012",
 							};
 							currentWeather = {
-								metadata: {
-									attributionUrl: "https://www.caiyunapp.com/h5",
-									expireTime: timeStamp + 60 * 60,
-									language: `${this.language}-${this.country}`,
-									latitude: body?.location?.[0],
-									longitude: body?.location?.[1],
-									providerLogo: providerNameToLogo("彩云天气", this.version),
-									providerName: "彩云天气",
-									readTime: timeStamp,
-									reportedTime: body?.server_time,
-									temporarilyUnavailable: false,
-									sourceType: "STATION",
-								},
+								metadata: metadata,
 								cloudCover: Math.round(body?.result?.realtime?.cloudrate * 100),
 								conditionCode: this.#ConvertWeatherCode(body?.result?.realtime?.skycon),
 								humidity: Math.round(body?.result?.realtime?.humidity * 100),
@@ -94,6 +83,7 @@ export default class ColorfulClouds {
 								windSpeed: body?.result?.realtime?.wind?.speed,
 							};
 							break;
+						}
 						case "error":
 						case undefined:
 							throw Error(JSON.stringify({ status: body?.result?.realtime?.status, reason: body?.result?.realtime }));
@@ -122,28 +112,29 @@ export default class ColorfulClouds {
 		let forecastNextHour;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Math.round(Date.now() / 1000);
 			switch (body?.status) {
 				case "ok":
 					switch (body?.result?.minutely?.status) {
 						case "ok": {
+							const timeStamp = Math.round(Date.now() / 1000);
+							const metadata = {
+								attributionUrl: "https://www.caiyunapp.com/h5",
+								expireTime: timeStamp + 60 * 60,
+								language: `${this.language}-${this.country}`, // body?.lang,
+								latitude: body?.location?.[0],
+								longitude: body?.location?.[1],
+								providerLogo: providerNameToLogo("彩云天气", this.version),
+								providerName: "彩云天气",
+								readTime: timeStamp,
+								reportedTime: body?.server_time,
+								temporarilyUnavailable: false,
+								sourceType: "MODELED",
+							};
 							body.result.minutely.probability = body.result.minutely.probability.map(probability => Math.round(probability * 100));
 							let minuteStemp = new Date(body?.server_time * 1000).setSeconds(0, 0);
 							minuteStemp = minuteStemp.valueOf() / 1000 - 60;
 							forecastNextHour = {
-								metadata: {
-									attributionUrl: "https://www.caiyunapp.com/h5",
-									expireTime: timeStamp + 60 * 60,
-									language: `${this.language}-${this.country}`, // body?.lang,
-									latitude: body?.location?.[0],
-									longitude: body?.location?.[1],
-									providerLogo: providerNameToLogo("彩云天气", this.version),
-									providerName: "彩云天气",
-									readTime: timeStamp,
-									reportedTime: body?.server_time,
-									temporarilyUnavailable: false,
-									sourceType: "MODELED",
-								},
+								metadata: metadata,
 								condition: [],
 								forecastEnd: 0,
 								forecastStart: minuteStemp,
@@ -200,25 +191,26 @@ export default class ColorfulClouds {
 		let forecastHourly;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Math.round(Date.now() / 1000);
 			switch (body?.status) {
 				case "ok":
 					switch (body?.result?.hourly?.status) {
-						case "ok":
+						case "ok": {
+							const timeStamp = Math.round(Date.now() / 1000);
+							const metadata = {
+								attributionUrl: "https://www.caiyunapp.com/h5",
+								expireTime: timeStamp + 60 * 60,
+								language: `${this.language}-${this.country}`,
+								latitude: body?.location?.[0],
+								longitude: body?.location?.[1],
+								providerLogo: providerNameToLogo("彩云天气", this.version),
+								providerName: "彩云天气",
+								readTime: timeStamp,
+								reportedTime: body?.server_time,
+								temporarilyUnavailable: false,
+								sourceType: "STATION",
+							};
 							airQuality = {
-								metadata: {
-									attributionUrl: "https://www.caiyunapp.com/h5",
-									expireTime: timeStamp + 60 * 60,
-									language: `${this.language}-${this.country}`,
-									latitude: body?.location?.[0],
-									longitude: body?.location?.[1],
-									providerLogo: providerNameToLogo("彩云天气", this.version),
-									providerName: "彩云天气",
-									readTime: timeStamp,
-									reportedTime: body?.server_time,
-									temporarilyUnavailable: false,
-									sourceType: "STATION",
-								},
+								metadata: metadata,
 								categoryIndex: AirQuality.CategoryIndex(body?.result?.hourly?.air_quality?.aqi?.[0]?.value?.chn, "HJ_633"),
 								index: Number.parseInt(body?.result?.hourly?.air_quality?.aqi?.[0]?.value?.chn, 10),
 								isSignificant: true,
@@ -228,19 +220,7 @@ export default class ColorfulClouds {
 								scale: "HJ6332012",
 							};
 							forecastHourly = {
-								metadata: {
-									attributionUrl: "https://www.caiyunapp.com/h5",
-									expireTime: timeStamp + 60 * 60,
-									language: `${this.language}-${this.country}`,
-									latitude: body?.location?.[0],
-									longitude: body?.location?.[1],
-									providerLogo: providerNameToLogo("彩云天气", this.version),
-									providerName: "彩云天气",
-									readTime: timeStamp,
-									reportedTime: body?.server_time,
-									temporarilyUnavailable: false,
-									sourceType: "STATION",
-								},
+								metadata: metadata,
 								hours: [],
 							};
 							for (let i = 0; i < hourlysteps; i++) {
@@ -273,6 +253,7 @@ export default class ColorfulClouds {
 								});
 							}
 							break;
+						}
 						case "error":
 						case undefined:
 							throw Error(JSON.stringify({ status: body?.result?.hourly?.status, reason: body?.result?.hourly }));
@@ -301,25 +282,26 @@ export default class ColorfulClouds {
 		let forecastDaily;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
-			const timeStamp = Math.round(Date.now() / 1000);
 			switch (body?.status) {
 				case "ok":
 					switch (body?.result?.daily?.status) {
-						case "ok":
+						case "ok": {
+							const timeStamp = Math.round(Date.now() / 1000);
+							const metadata = {
+								attributionUrl: "https://www.caiyunapp.com/h5",
+								expireTime: timeStamp + 60 * 60,
+								language: `${this.language}-${this.country}`,
+								latitude: body?.location?.[0],
+								longitude: body?.location?.[1],
+								providerLogo: providerNameToLogo("彩云天气", this.version),
+								providerName: "彩云天气",
+								readTime: timeStamp,
+								reportedTime: body?.server_time,
+								temporarilyUnavailable: false,
+								sourceType: "STATION",
+							};
 							forecastDaily = {
-								metadata: {
-									attributionUrl: "https://www.caiyunapp.com/h5",
-									expireTime: timeStamp + 60 * 60,
-									language: `${this.language}-${this.country}`,
-									latitude: body?.location?.[0],
-									longitude: body?.location?.[1],
-									providerLogo: providerNameToLogo("彩云天气", this.version),
-									providerName: "彩云天气",
-									readTime: timeStamp,
-									reportedTime: body?.server_time,
-									temporarilyUnavailable: false,
-									sourceType: "STATION",
-								},
+								metadata: metadata,
 								days: [],
 							};
 							for (let i = 0; i < dailysteps; i++) {
@@ -413,6 +395,7 @@ export default class ColorfulClouds {
 								});
 							}
 							break;
+						}
 						case "error":
 						case undefined:
 							throw Error(JSON.stringify({ status: body?.result?.daily?.status, reason: body?.result?.daily }));
