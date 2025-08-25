@@ -1,14 +1,15 @@
 import { $app, Console, done, Lodash as _ } from "@nsnanocat/util";
 import database from "./function/database.mjs";
 import setENV from "./function/setENV.mjs";
+import * as flatbuffers from "flatbuffers";
+import WeatherKit2 from "./class/WeatherKit2.mjs";
 import parseWeatherKitURL from "./function/parseWeatherKitURL.mjs";
 import providerNameToLogo from "./function/providerNameToLogo.mjs";
-import WeatherKit2 from "./class/WeatherKit2.mjs";
-import WAQI from "./class/WAQI.mjs";
 import ColorfulClouds from "./class/ColorfulClouds.mjs";
 import QWeather from "./class/QWeather.mjs";
+import WAQI from "./class/WAQI.mjs";
+import Weather from "./class/Weather.mjs";
 import AirQuality from "./class/AirQuality.mjs";
-import * as flatbuffers from "flatbuffers";
 /***************** Processing *****************/
 // 解构URL
 const url = new URL($request.url);
@@ -327,13 +328,7 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
 	}
 	if (newForecastDaily?.metadata) {
 		forecastDaily.metadata = { ...forecastDaily?.metadata, ...newForecastDaily.metadata };
-		forecastDaily.days = forecastDaily.days.map((day, i) => {
-			if (newForecastDaily.days[i]) {
-				newForecastDaily.days[i].daytimeForecast = { ...day.daytimeForecast, ...newForecastDaily.days[i].daytimeForecast };
-				newForecastDaily.days[i].overnightForecast = { ...day.overnightForecast, ...newForecastDaily.days[i].overnightForecast };
-				return { ...day, ...newForecastDaily.days[i] };
-			} else return day;
-		});
+		Weather.mergeForecast(forecastDaily?.days, newForecastDaily?.days);
 	}
 	Console.log("✅ InjectForecastDaily");
 	return forecastDaily;
@@ -366,12 +361,7 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
 	}
 	if (newForecastHourly?.metadata) {
 		forecastHourly.metadata = { ...forecastHourly?.metadata, ...newForecastHourly.metadata };
-		forecastHourly.hours = forecastHourly.hours.map((hour, i) => {
-			return {
-				...hour,
-				...newForecastHourly.hours[i],
-			};
-		});
+		forecastHourly.hours = Weather.mergeForecast(forecastHourly?.hours, newForecastHourly?.hours);
 	}
 	Console.log("✅ InjectForecastHourly");
 	return forecastHourly;
