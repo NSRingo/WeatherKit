@@ -1,4 +1,5 @@
 import { Console, fetch, Lodash as _, time } from "@nsnanocat/util";
+import Weather from "./Weather.mjs";
 import AirQuality from "../class/AirQuality.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
@@ -6,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "4.4.6";
+		this.Version = "4.4.7";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://${host}`;
 		this.headers = { "X-QW-Api-Key": token };
@@ -99,7 +100,7 @@ export default class QWeather {
 							sourceType: "STATION",
 						},
 						cloudCover: Number.parseInt(body?.now?.cloud, 10),
-						conditionCode: this.#ConvertWeatherCode(body?.now?.text),
+						conditionCode: Weather.ConvertWeatherCode(body?.now?.text),
 						humidity: Number.parseInt(body?.now?.humidity, 10),
 						perceivedPrecipitationIntensity: Number.parseFloat(body?.now?.precip),
 						pressure: Number.parseFloat(body?.now?.pressure),
@@ -352,7 +353,7 @@ export default class QWeather {
 								// cloudCoverHighAltPct: 0, // Not given
 								// cloudCoverLowAltPct: 0, // Not given
 								// cloudCoverMidAltPct: 0, // Not given
-								conditionCode: this.#ConvertWeatherCode(hourly?.text),
+								conditionCode: Weather.ConvertWeatherCode(hourly?.text),
 								// daylight: false, // Not given
 								forecastStart: (new Date(hourly?.fxTime).getTime() / 1000) | 0,
 								humidity: Number.parseInt(hourly?.humidity, 10),
@@ -431,12 +432,12 @@ export default class QWeather {
 							return {
 								forecastStart: timeStamp,
 								forecastEnd: timeStamp + 24 * 3600, // 24 hours
-								// conditionCode: this.#ConvertWeatherCode(daily?.textDay), // Not given (用白天数据代替)
+								// conditionCode: Weather.ConvertWeatherCode(daily?.textDay), // Not given (用白天数据代替)
 								// humidity 用一整天的数据代替
 								// humidityMax: daily?.humidity, // Not Accurate
 								// humidityMin: daily?.humidity, // Not Accurate
 								maxUvIndex: Number.parseInt(daily?.uvIndex, 10),
-								moonPhase: this.#ConvertMoonPhase(daily?.moonPhase),
+								moonPhase: Weather.ConvertMoonPhase(daily?.moonPhase),
 								moonrise: this.#ConvertTimeStamp(daily?.fxDate, daily?.moonrise),
 								moonset: this.#ConvertTimeStamp(daily?.fxDate, daily?.moonset),
 								precipitationAmount: Number.parseFloat(daily?.precip),
@@ -470,7 +471,7 @@ export default class QWeather {
 									// cloudCoverHighAltPct: 0, // Not given
 									// cloudCoverLowAltPct: 0, // Not given
 									// cloudCoverMidAltPct: 0, // Not given
-									conditionCode: this.#ConvertWeatherCode(daily?.textDay),
+									conditionCode: Weather.ConvertWeatherCode(daily?.textDay),
 									// humidity 用一整天的数据代替
 									// humidityMax: daily?.humidity, // Not Accurate
 									// humidityMin: daily?.humidity, // Not Accurate
@@ -496,7 +497,7 @@ export default class QWeather {
 									// cloudCoverHighAltPct: 0, // Not given
 									// cloudCoverLowAltPct: 0, // Not given
 									// cloudCoverMidAltPct: 0, // Not given
-									conditionCode: this.#ConvertWeatherCode(daily?.textNight),
+									conditionCode: Weather.ConvertWeatherCode(daily?.textNight),
 									// humidity 用一整天的数据代替
 									// humidityMax: daily?.humidity, // Not Accurate
 									// humidityMin: daily?.humidity, // Not Accurate
@@ -620,134 +621,6 @@ export default class QWeather {
 		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
 		Console.log("✅ CreatePollutants");
 		return pollutants;
-	}
-
-	#ConvertWeatherCode(textDescription) {
-		switch (textDescription) {
-			// 晴天
-			case "晴":
-				return "CLEAR";
-
-			// 多云相关
-			case "多云":
-				return "PARTLY_CLOUDY";
-			case "少云":
-				return "MOSTLY_CLEAR";
-			case "晴间多云":
-				return "PARTLY_CLOUDY";
-			case "阴":
-				return "CLOUDY";
-
-			// 雾霾相关
-			case "薄雾":
-			case "雾":
-			case "浓雾":
-			case "强浓雾":
-			case "大雾":
-			case "特强浓雾":
-				return "FOGGY";
-			case "霾":
-			case "中度霾":
-			case "重度霾":
-			case "严重霾":
-				return "HAZE";
-
-			// 沙尘相关(暂用 HAZE 代替)
-			case "扬沙":
-			case "浮尘":
-			case "沙尘暴":
-			case "强沙尘暴":
-				return "HAZE";
-
-			// 降雨相关
-			case "毛毛雨/细雨":
-				return "DRIZZLE";
-			case "小雨":
-				return "DRIZZLE";
-			case "中雨":
-			case "小到中雨":
-				return "RAIN";
-			case "大雨":
-			case "中到大雨":
-				return "HEAVY_RAIN";
-			case "暴雨":
-			case "大暴雨":
-			case "特大暴雨":
-			case "大到暴雨":
-			case "暴雨到大暴雨":
-			case "大暴雨到特大暴雨":
-			case "极端降雨":
-				return "HEAVY_RAIN";
-			case "阵雨":
-				return "RAIN";
-			case "强阵雨":
-				return "HEAVY_RAIN";
-			case "雨":
-				return "RAIN";
-
-			// 雷雨相关
-			case "雷阵雨":
-			case "强雷阵雨":
-				return "THUNDERSTORMS";
-			case "雷阵雨伴有冰雹":
-				return "THUNDERSTORMS";
-
-			// 降雪相关
-			case "小雪":
-				return "FLURRIES";
-			case "中雪":
-			case "小到中雪":
-				return "SNOW";
-			case "大雪":
-			case "中到大雪":
-				return "HEAVY_SNOW";
-			case "暴雪":
-			case "大到暴雪":
-				return "BLIZZARD";
-			case "阵雪":
-			case "雪":
-				return "SNOW";
-
-			// 雨雪混合
-			case "雨夹雪":
-			case "雨雪天气":
-			case "阵雨夹雪":
-			case "冻雨":
-				return "FREEZING_DRIZZLE";
-
-			// 温度相关
-			case "热":
-			case "冷":
-
-			// 未知
-			case "未知":
-			default:
-				Console.debug(`textDescription: ${textDescription}`);
-				return null;
-		}
-	}
-
-	#ConvertMoonPhase(moonPhase) {
-		switch (moonPhase) {
-			case "新月":
-				return "NEW";
-			case "蛾眉月":
-				return "WAXING_CRESCENT";
-			case "上弦月":
-				return "FIRST_QUARTER";
-			case "盈凸月":
-				return "WAXING_GIBBOUS";
-			case "满月":
-				return "FULL";
-			case "亏凸月":
-				return "WANING_GIBBOUS";
-			case "下弦月":
-				return "THIRD_QUARTER";
-			case "残月":
-				return "WANING_CRESCENT";
-			default:
-				return moonPhase;
-		}
 	}
 
 	#ConvertTimeStamp(fxDate, time) {

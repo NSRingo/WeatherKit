@@ -1,5 +1,5 @@
 import { Console, fetch, Lodash as _ } from "@nsnanocat/util";
-// import Weather from "./Weather.mjs";
+import Weather from "./Weather.mjs";
 import AirQuality from "./AirQuality.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(parameters, token) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.3.3";
+		this.Version = "3.3.4";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
 		this.headers = { Referer: "https://caiyunapp.com/" };
@@ -72,7 +72,7 @@ export default class ColorfulClouds {
 								this.currentWeather = {
 									metadata: metadata,
 									cloudCover: Math.round(body?.result?.realtime?.cloudrate * 100),
-									conditionCode: this.#ConvertWeatherCode(body?.result?.realtime?.skycon),
+									conditionCode: Weather.ConvertWeatherCode(body?.result?.realtime?.skycon),
 									humidity: Math.round(body?.result?.realtime?.humidity * 100),
 									// uvIndex: Weather.ConvertDSWRF(body?.result?.realtime?.dswrf), // ConvertDSWRF 转换不准确
 									perceivedPrecipitationIntensity: body?.result?.realtime?.precipitation?.local?.intensity,
@@ -231,7 +231,7 @@ export default class ColorfulClouds {
 									// cloudCoverHighAltPct: 0, // Not given
 									// cloudCoverLowAltPct: 0, // Not given
 									// cloudCoverMidAltPct: 0, // Not given
-									conditionCode: this.#ConvertWeatherCode(body?.result?.hourly?.skycon?.[i]?.value),
+									conditionCode: Weather.ConvertWeatherCode(body?.result?.hourly?.skycon?.[i]?.value),
 									// daylight: false, // Not given
 									forecastStart: (new Date(body?.result?.hourly?.skycon?.[i]?.datetime).getTime() / 1000) | 0,
 									humidity: Math.round(body?.result?.hourly?.humidity?.[i]?.value * 100),
@@ -312,7 +312,7 @@ export default class ColorfulClouds {
 								forecastDaily.days.push({
 									forecastStart: timeStamp,
 									forecastEnd: timeStamp + 24 * 3600, // 24 hours
-									conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon?.[i]?.value),
+									conditionCode: Weather.ConvertWeatherCode(body?.result?.daily?.skycon?.[i]?.value),
 									humidityMax: Math.round(body?.result?.daily?.humidity?.[i]?.max * 100),
 									humidityMin: Math.round(body?.result?.daily?.humidity?.[i]?.min * 100),
 									// maxUvIndex: Weather.ConvertDSWRF(body?.result?.daily?.dswrf?.[i]?.max), // ConvertDSWRF 转换不准确
@@ -350,7 +350,7 @@ export default class ColorfulClouds {
 										// cloudCoverHighAltPct: 0, // Not given
 										// cloudCoverLowAltPct: 0, // Not given
 										// cloudCoverMidAltPct: 0, // Not given
-										conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon_08h_20h?.[i]?.value),
+										conditionCode: Weather.ConvertWeatherCode(body?.result?.daily?.skycon_08h_20h?.[i]?.value),
 										// humidityMax: Math.round(body?.result?.daily?.humidity?.[i]?.max * 100), // Not given
 										// humidityMin: Math.round(body?.result?.daily?.humidity?.[i]?.min * 100), // Not given
 										precipitationAmount: body?.result?.daily?.precipitation_08h_20h?.[i]?.avg,
@@ -374,7 +374,7 @@ export default class ColorfulClouds {
 										// cloudCoverHighAltPct: 0, // Not given
 										// cloudCoverLowAltPct: 0, // Not given
 										// cloudCoverMidAltPct: 0, // Not given
-										conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon_20h_32h?.[i]?.value),
+										conditionCode: Weather.ConvertWeatherCode(body?.result?.daily?.skycon_20h_32h?.[i]?.value),
 										// humidityMax: Math.round(body?.result?.daily?.humidity?.[i]?.max * 100), // Not given
 										// humidityMin: Math.round(body?.result?.daily?.humidity?.[i]?.min * 100), // Not given
 										precipitationAmount: body?.result?.daily?.precipitation_20h_32h?.[i]?.avg,
@@ -444,59 +444,5 @@ export default class ColorfulClouds {
 		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
 		Console.log("✅ CreatePollutants");
 		return pollutants;
-	}
-
-	#ConvertWeatherCode(skycon) {
-		switch (skycon) {
-			case "CLEAR_DAY":
-			case "CLEAR_NIGHT":
-				return "CLEAR";
-
-			case "PARTLY_CLOUDY_DAY":
-				return "PARTLY_CLOUDY";
-			case "PARTLY_CLOUDY_NIGHT":
-				return "PARTLY_CLOUDY";
-
-			case "CLOUDY":
-				return "CLOUDY";
-
-			case "LIGHT_HAZE":
-			case "MODERATE_HAZE":
-			case "HEAVY_HAZE":
-				return "HAZE";
-
-			case "LIGHT_RAIN":
-				return "DRIZZLE";
-			case "MODERATE_RAIN":
-				return "RAIN";
-			case "HEAVY_RAIN":
-				return "HEAVY_RAIN";
-			case "STORM_RAIN":
-				return "THUNDERSTORMS";
-
-			case "FOG":
-				return "FOGGY";
-
-			case "LIGHT_SNOW":
-				return "FLURRIES";
-			case "MODERATE_SNOW":
-				return "SNOW";
-			case "HEAVY_SNOW":
-				return "HEAVY_SNOW";
-			case "STORM_SNOW":
-				return "BLIZZARD";
-
-			// Apple 缺失 DUST/SAND 定义，用 HAZE 替代
-			case "DUST":
-			case "SAND":
-				return "HAZE";
-
-			case "WIND":
-				return "WINDY";
-
-			default:
-				Console.debug(`skycon: ${skycon}`);
-				return null;
-		}
 	}
 }
