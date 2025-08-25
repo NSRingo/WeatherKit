@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(parameters, token) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.3.2";
+		this.Version = "3.3.3";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
 		this.headers = { Referer: "https://caiyunapp.com/" };
@@ -45,7 +45,7 @@ export default class ColorfulClouds {
 					case "ok":
 						switch (body?.result?.realtime?.status) {
 							case "ok": {
-								const timeStamp = Math.round(Date.now() / 1000);
+								const timeStamp = (Date.now() / 1000) | 0;
 								const metadata = {
 									attributionUrl: "https://www.caiyunapp.com/h5",
 									expireTime: timeStamp + 60 * 60,
@@ -118,7 +118,7 @@ export default class ColorfulClouds {
 				case "ok":
 					switch (body?.result?.minutely?.status) {
 						case "ok": {
-							const timeStamp = Math.round(Date.now() / 1000);
+							const timeStamp = (Date.now() / 1000) | 0;
 							const metadata = {
 								attributionUrl: "https://www.caiyunapp.com/h5",
 								expireTime: timeStamp + 60 * 60,
@@ -197,7 +197,7 @@ export default class ColorfulClouds {
 				case "ok":
 					switch (body?.result?.hourly?.status) {
 						case "ok": {
-							const timeStamp = Math.round(Date.now() / 1000);
+							const timeStamp = (Date.now() / 1000) | 0;
 							const metadata = {
 								attributionUrl: "https://www.caiyunapp.com/h5",
 								expireTime: timeStamp + 60 * 60,
@@ -233,7 +233,7 @@ export default class ColorfulClouds {
 									// cloudCoverMidAltPct: 0, // Not given
 									conditionCode: this.#ConvertWeatherCode(body?.result?.hourly?.skycon?.[i]?.value),
 									// daylight: false, // Not given
-									forecastStart: Math.round(Date.parse(body?.result?.hourly?.skycon?.[i]?.datetime) / 1000),
+									forecastStart: (new Date(body?.result?.hourly?.skycon?.[i]?.datetime).getTime() / 1000) | 0,
 									humidity: body?.result?.hourly?.humidity?.[i]?.value,
 									// perceivedPrecipitationIntensity: "", // Not given
 									precipitationAmount: body?.result?.hourly?.precipitation?.[i]?.value,
@@ -288,7 +288,7 @@ export default class ColorfulClouds {
 				case "ok":
 					switch (body?.result?.daily?.status) {
 						case "ok": {
-							const timeStamp = Math.round(Date.now() / 1000);
+							const timeStamp = (Date.now() / 1000) | 0;
 							const metadata = {
 								attributionUrl: "https://www.caiyunapp.com/h5",
 								expireTime: timeStamp + 60 * 60,
@@ -307,7 +307,7 @@ export default class ColorfulClouds {
 								days: [],
 							};
 							for (let i = 0; i < dailysteps; i++) {
-								const timeStamp = Math.round(Date.parse(body?.result?.daily?.skycon?.[i]?.date) / 1000);
+								const timeStamp = (new Date(body?.result?.daily?.skycon?.[i]?.date).getTime() / 1000) | 0;
 								forecastDaily.days.push({
 									forecastStart: timeStamp,
 									forecastEnd: timeStamp + 24 * 3600, // 24 hours

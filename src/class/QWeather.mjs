@@ -6,7 +6,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "4.4.2";
+		this.Version = "4.4.3";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://${host}`;
 		this.headers = { "X-QW-Api-Key": token };
@@ -83,7 +83,7 @@ export default class QWeather {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.code) {
 				case "200": {
-					const timeStamp = Math.round(Date.now() / 1000);
+					const timeStamp = (Date.now() / 1000) | 0;
 					currentWeather = {
 						metadata: {
 							attributionUrl: body?.fxLink,
@@ -94,7 +94,7 @@ export default class QWeather {
 							providerLogo: providerNameToLogo("和风天气", this.version),
 							providerName: "和风天气",
 							readTime: timeStamp,
-							reportedTime: Math.round(new Date(body?.now?.pubTime).valueOf() / 1000),
+							reportedTime: (new Date(body?.now?.pubTime).getTime() / 1000) | 0,
 							temporarilyUnavailable: false,
 							sourceType: "STATION",
 						},
@@ -143,7 +143,7 @@ export default class QWeather {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.code) {
 				case "200": {
-					const timeStamp = Math.round(Date.now() / 1000);
+					const timeStamp = (Date.now() / 1000) | 0;
 					airQuality = {
 						metadata: {
 							attributionUrl: body?.fxLink,
@@ -154,7 +154,7 @@ export default class QWeather {
 							providerLogo: providerNameToLogo("和风天气", this.version),
 							providerName: "和风天气",
 							readTime: timeStamp,
-							reportedTime: Math.round(new Date(body?.now?.pubTime).valueOf() / 1000),
+							reportedTime: (new Date(body?.now?.pubTime).getTime() / 1000) | 0,
 							temporarilyUnavailable: false,
 							sourceType: "STATION",
 						},
@@ -200,7 +200,7 @@ export default class QWeather {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.error) {
 				case undefined: {
-					const timeStamp = Math.round(Date.now() / 1000);
+					const timeStamp = (Date.now() / 1000) | 0;
 					airQuality = {
 						metadata: {
 							attributionUrl: request.url,
@@ -255,7 +255,7 @@ export default class QWeather {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.code) {
 				case "200": {
-					const timeStamp = Math.round(Date.now() / 1000);
+					const timeStamp = (Date.now() / 1000) | 0;
 					let minuteStemp = new Date(body?.updateTime).setSeconds(0, 0);
 					minuteStemp = minuteStemp.valueOf() / 1000;
 					forecastNextHour = {
@@ -331,7 +331,7 @@ export default class QWeather {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.code) {
 				case "200": {
-					const timeStamp = Math.round(Date.now() / 1000);
+					const timeStamp = (Date.now() / 1000) | 0;
 					forecastHourly = {
 						metadata: {
 							attributionUrl: body?.fxLink,
@@ -354,7 +354,7 @@ export default class QWeather {
 								// cloudCoverMidAltPct: 0, // Not given
 								conditionCode: this.#ConvertWeatherCode(hourly?.text),
 								// daylight: false, // Not given
-								forecastStart: Math.round(Date.parse(hourly?.fxTime) / 1000),
+								forecastStart: (new Date(hourly?.fxTime).getTime() / 1000) | 0,
 								humidity: Number.parseInt(hourly?.humidity, 10),
 								// perceivedPrecipitationIntensity: "", // Not given
 								precipitationAmount: Number.parseFloat(hourly?.precip),
@@ -409,7 +409,7 @@ export default class QWeather {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.code) {
 				case "200": {
-					const timeStamp = Math.round(Date.now() / 1000);
+					const timeStamp = (Date.now() / 1000) | 0;
 					forecastDaily = {
 						metadata: {
 							attributionUrl: body?.fxLink,
@@ -425,7 +425,7 @@ export default class QWeather {
 							sourceType: "STATION",
 						},
 						days: body?.daily?.map(daily => {
-							const timeStamp = Math.round(Date.parse(daily?.fxDate) / 1000);
+							const timeStamp = (new Date(daily?.fxDate).getTime() / 1000) | 0;
 							return {
 								forecastStart: timeStamp,
 								forecastEnd: timeStamp + 24 * 3600, // 24 hours
@@ -549,7 +549,7 @@ export default class QWeather {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.code) {
 				case "200": {
-					const timeStamp = Math.round(Date.now() / 1000);
+					const timeStamp = (Date.now() / 1000) | 0;
 					const Hour = new Date().getHours();
 					airQuality = {
 						metadata: {
@@ -750,6 +750,6 @@ export default class QWeather {
 
 	#ConvertTimeStamp(fxDate, time) {
 		const dateTime = `${fxDate}T${time}:00+08:00`;
-		return Math.round(new Date(dateTime).getTime() / 1000);
+		return (new Date(dateTime).getTime() / 1000) | 0;
 	}
 }

@@ -5,7 +5,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class WAQI {
 	constructor(parameters, token) {
 		this.Name = "WAQI";
-		this.Version = "1.4.2";
+		this.Version = "1.4.3";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.headers = { Accept: "application/json" };
 		this.token = token;
@@ -45,7 +45,7 @@ export default class WAQI {
 					switch (body?.status) {
 						default:
 						case undefined: {
-							const timeStamp = Math.round(Date.now() / 1000);
+							const timeStamp = (Date.now() / 1000) | 0;
 							airQuality = {
 								metadata: {
 									attributionUrl: request.url,
@@ -78,7 +78,7 @@ export default class WAQI {
 				case "mapq2":
 					switch (body?.status) {
 						case "ok": {
-							const timeStamp = Math.round(Date.now() / 1000);
+							const timeStamp = (Date.now() / 1000) | 0;
 							airQuality = {
 								metadata: {
 									attributionUrl: request.url,
@@ -89,7 +89,7 @@ export default class WAQI {
 									providerLogo: providerNameToLogo("WAQI", this.version),
 									providerName: `World Air Quality Index Project\n监测站：${body?.data?.stations?.[0]?.name}`,
 									readTime: timeStamp,
-									reportedTime: Math.round(new Date(body?.data?.stations?.[0]?.utime).getTime() / 1000),
+									reportedTime: (new Date(body?.data?.stations?.[0]?.utime).getTime() / 1000) | 0,
 									temporarilyUnavailable: false,
 									sourceType: "STATION",
 									stationId: Number.parseInt(body?.data?.stations?.[0]?.idx, 10),
@@ -178,7 +178,7 @@ export default class WAQI {
 						case "ok":
 							switch (body?.rxs?.obs?.[0]?.status) {
 								case "ok": {
-									const timeStamp = Math.round(Date.now() / 1000);
+									const timeStamp = (Date.now() / 1000) | 0;
 									airQuality = {
 										metadata: {
 											attributionUrl: body?.rxs?.obs?.[0]?.msg?.city?.url,
@@ -235,7 +235,7 @@ export default class WAQI {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.status) {
 				case "ok": {
-					const timeStamp = Math.round(Date.now() / 1000);
+					const timeStamp = (Date.now() / 1000) | 0;
 					airQuality = {
 						metadata: {
 							attributionUrl: body?.data?.city?.url,
