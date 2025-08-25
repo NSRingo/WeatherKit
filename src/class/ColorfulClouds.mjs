@@ -188,7 +188,7 @@ export default class ColorfulClouds {
 			url: `${this.endpoint}/hourly?hourlysteps=${hourlysteps}`,
 			headers: this.headers,
 		};
-		if (begin) request.url += `&begin=${Number.parseInt(begin / 1000, 10)}`;
+		if (begin) request.url += `&begin=${begin}`;
 		let airQuality;
 		let forecastHourly;
 		try {
@@ -275,12 +275,13 @@ export default class ColorfulClouds {
 		return { airQuality, forecastHourly };
 	}
 
-	async Daily(dailysteps = 10) {
+	async Daily(dailysteps = 10, begin = undefined) {
 		Console.log("☑️ Daily");
 		const request = {
 			url: `${this.endpoint}/daily?dailysteps=${dailysteps}`,
 			headers: this.headers,
 		};
+		if (begin) request.url += `&begin=${begin}`;
 		let forecastDaily;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
