@@ -321,7 +321,7 @@ export default class QWeather {
 	}
 
 	async Hourly(hours = 168) {
-		Console.log("☑️ Daily", `host: ${this.host}`);
+		Console.log("☑️ Hourly", `host: ${this.host}`);
 		const request = {
 			url: `${this.endpoint}/v7/weather/${hours}h?location=${this.longitude},${this.latitude}`,
 			headers: this.headers,
@@ -393,7 +393,7 @@ export default class QWeather {
 			Console.error(error);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(forecastHourly, null, 2)}`);
-			Console.log("✅ Daily");
+			Console.log("✅ Hourly");
 		}
 		return forecastHourly;
 	}
