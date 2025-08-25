@@ -6,7 +6,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "4.4.5";
+		this.Version = "4.4.6";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://${host}`;
 		this.headers = { "X-QW-Api-Key": token };
@@ -342,7 +342,7 @@ export default class QWeather {
 							providerLogo: providerNameToLogo("和风天气", this.version),
 							providerName: "和风天气",
 							readTime: timeStamp,
-							reportedTime: timeStamp,
+							reportedTime: new Date(body?.updateTime),
 							temporarilyUnavailable: false,
 							sourceType: "STATION",
 						},
@@ -419,7 +419,7 @@ export default class QWeather {
 						providerLogo: providerNameToLogo("和风天气", this.version),
 						providerName: "和风天气",
 						readTime: timeStamp,
-						reportedTime: timeStamp,
+						reportedTime: new Date(body?.updateTime),
 						temporarilyUnavailable: false,
 						sourceType: "STATION",
 					};
