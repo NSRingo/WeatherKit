@@ -314,7 +314,7 @@ export default class ColorfulClouds {
 									conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon?.[i]?.value),
 									humidityMax: body?.result?.daily?.humidity?.[i]?.max,
 									humidityMin: body?.result?.daily?.humidity?.[i]?.min,
-									maxUvIndex: Weather.ConvertDSWRF(body?.result?.daily?.dswrf?.[i]?.max),
+									//maxUvIndex: Weather.ConvertDSWRF(body?.result?.daily?.dswrf?.[i]?.max),
 									// moonPhase: "", // Not given
 									// moonrise: body?.result?.daily?.astro?.[i].sunset.time, // Not given
 									// moonset: body?.result?.daily?.astro?.[i].sunrise.time, // Not given
@@ -325,11 +325,11 @@ export default class ColorfulClouds {
 									// snowfallAmount: 0, // Not given
 									// solarMidnight: 0, // Not given
 									// solarNoon: 0, // Not given
-									sunrise: body?.result?.daily?.astro?.[i].sunrise.time,
+									//sunrise: body?.result?.daily?.astro?.[i].sunrise.time, // 未转换
 									// sunriseAstronomical: 0, // Not given
 									// sunriseCivil: 0, // Not given
 									// sunriseNautical: 0, // Not given
-									sunset: body?.result?.daily?.astro?.[i].sunset.time,
+									//sunset: body?.result?.daily?.astro?.[i].sunset.time, // 未转换
 									// sunsetAstronomical: 0, // Not given
 									// sunsetCivil: 0, // Not given
 									// sunsetNautical: 0, // Not given
@@ -337,8 +337,8 @@ export default class ColorfulClouds {
 									// temperatureMaxTime: 0, // Not given
 									temperatureMin: body?.result?.daily?.temperature?.[i]?.min,
 									// temperatureMinTime: 0, // Not given
-									visibilityMax: body?.result?.daily?.visibility?.[i]?.max,
-									visibilityMin: body?.result?.daily?.visibility?.[i]?.min,
+									//visibilityMax: body?.result?.daily?.visibility?.[i]?.max,
+									//visibilityMin: body?.result?.daily?.visibility?.[i]?.min,
 									// windGustSpeedMax: 0, // Not given
 									windSpeedAvg: body?.result?.daily?.wind?.[i]?.avg?.speed,
 									windSpeedMax: body?.result?.daily?.wind?.[i]?.max?.speed,
@@ -351,8 +351,8 @@ export default class ColorfulClouds {
 										// cloudCoverMidAltPct: 0, // Not given
 										conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon_08h_20h?.[i]?.value),
 										// humidity 用一整天的数据代替
-										humidityMax: body?.result?.daily?.humidity?.[i]?.max,
-										humidityMin: body?.result?.daily?.humidity?.[i]?.min,
+										//humidityMax: body?.result?.daily?.humidity?.[i]?.max,
+										//humidityMin: body?.result?.daily?.humidity?.[i]?.min,
 										precipitationAmount: body?.result?.daily?.precipitation_08h_20h?.[i]?.avg,
 										// precipitationAmountByType: [], // Not given
 										precipitationChance: body?.result?.daily?.precipitation_08h_20h?.[i]?.probability,
@@ -377,8 +377,8 @@ export default class ColorfulClouds {
 										// cloudCoverMidAltPct: 0, // Not given
 										conditionCode: this.#ConvertWeatherCode(body?.result?.daily?.skycon_20h_32h?.[i]?.value),
 										// humidity 用一整天的数据代替
-										humidityMax: body?.result?.daily?.humidity?.[i]?.max,
-										humidityMin: body?.result?.daily?.humidity?.[i]?.min,
+										//humidityMax: body?.result?.daily?.humidity?.[i]?.max,
+										//humidityMin: body?.result?.daily?.humidity?.[i]?.min,
 										precipitationAmount: body?.result?.daily?.precipitation_20h_32h?.[i]?.avg,
 										// precipitationAmountByType: [], // Not given
 										precipitationChance: body?.result?.daily?.precipitation_20h_32h?.[i]?.probability,
@@ -387,8 +387,8 @@ export default class ColorfulClouds {
 										temperatureMax: body?.result?.daily?.temperature_20h_32h?.[i]?.max,
 										temperatureMin: body?.result?.daily?.temperature_20h_32h?.[i]?.min,
 										// visibility 用一整天的数据代替
-										visibilityMax: body?.result?.daily?.visibility?.[i]?.max,
-										visibilityMin: body?.result?.daily?.visibility?.[i]?.min,
+										//visibilityMax: body?.result?.daily?.visibility?.[i]?.max,
+										//visibilityMin: body?.result?.daily?.visibility?.[i]?.min,
 										windDirection: body?.result?.daily?.wind_20h_32h?.[i]?.avg?.direction,
 										// windGustSpeedMax: 0, // Not given
 										windSpeed: body?.result?.daily?.wind_20h_32h?.[i]?.avg?.speed,
