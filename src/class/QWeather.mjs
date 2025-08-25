@@ -6,7 +6,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "4.4.4";
+		this.Version = "4.4.5";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://${host}`;
 		this.headers = { "X-QW-Api-Key": token };
@@ -410,22 +410,24 @@ export default class QWeather {
 			switch (body?.code) {
 				case "200": {
 					const timeStamp = (Date.now() / 1000) | 0;
+					const metadata = {
+						attributionUrl: body?.fxLink,
+						expireTime: timeStamp + 60 * 60,
+						language: `${this.language}-${this.country}`, // body?.lang,
+						latitude: this.latitude,
+						longitude: this.longitude,
+						providerLogo: providerNameToLogo("和风天气", this.version),
+						providerName: "和风天气",
+						readTime: timeStamp,
+						reportedTime: timeStamp,
+						temporarilyUnavailable: false,
+						sourceType: "STATION",
+					};
+					const timezoneOffset = metadata.reportedTime.getTimezoneOffset();
 					forecastDaily = {
-						metadata: {
-							attributionUrl: body?.fxLink,
-							expireTime: timeStamp + 60 * 60,
-							language: `${this.language}-${this.country}`, // body?.lang,
-							latitude: this.latitude,
-							longitude: this.longitude,
-							providerLogo: providerNameToLogo("和风天气", this.version),
-							providerName: "和风天气",
-							readTime: timeStamp,
-							reportedTime: timeStamp,
-							temporarilyUnavailable: false,
-							sourceType: "STATION",
-						},
+						metadata: metadata,
 						days: body?.daily?.map(daily => {
-							const timeStamp = (new Date(daily?.fxDate).getTime() / 1000) | 0;
+							const timeStamp = ((Date.parse(daily?.fxDate) / 1000) | 0) + timezoneOffset * 60; // 本地转 Unix 时间戳
 							return {
 								forecastStart: timeStamp,
 								forecastEnd: timeStamp + 24 * 3600, // 24 hours
