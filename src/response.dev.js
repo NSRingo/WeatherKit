@@ -283,7 +283,7 @@ async function CompareAirQuality(airQuality, Settings, enviroments) {
 			break;
 		}
 		case "ColorfulClouds": {
-			const Hourly = (await enviroments.colorfulClouds.Hourly(1, Date.now() - 24 * 60 * 60 * 1000)).airQuality;
+			const Hourly = (await enviroments.colorfulClouds.Hourly(1, ((Date.now() - 864e5) / 1000) | 0)).airQuality;
 			airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality.index, Hourly.index);
 			break;
 		}
@@ -378,13 +378,18 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
 			break;
 		}
 		case "ColorfulClouds": {
-			newForecastDaily = await enviroments.colorfulClouds.Daily();
+			const dailysteps = forecastDaily.days?.length || 11;
+			const begin = forecastDaily.days?.[0]?.forecastStart || undefined;
+			Console.debug(`dailysteps: ${dailysteps}, begin: ${begin}`);
+			newForecastDaily = await enviroments.colorfulClouds.Daily(dailysteps, begin);
 			break;
 		}
 	}
 	if (newForecastDaily?.metadata) {
 		forecastDaily.metadata = { ...forecastDaily?.metadata, ...newForecastDaily.metadata };
 		forecastDaily.days = forecastDaily.days.map((day, i) => {
+			Console.debug(`forecastStart: ${day.forecastStart}`);
+			Console.debug(`newForecastStart: ${newForecastDaily.days[i]?.forecastStart}`);
 			if (newForecastDaily.days[i]) {
 				newForecastDaily.days[i].daytimeForecast = { ...day.daytimeForecast, ...newForecastDaily.days[i].daytimeForecast };
 				newForecastDaily.days[i].overnightForecast = { ...day.overnightForecast, ...newForecastDaily.days[i].overnightForecast };
@@ -416,13 +421,18 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
 			break;
 		}
 		case "ColorfulClouds": {
-			newForecastHourly = (await enviroments.colorfulClouds.Hourly()).forecastHourly;
+			const hourlysteps = forecastHourly.hours?.length || 273;
+			const begin = forecastHourly.hours?.[0]?.forecastStart || undefined;
+			Console.debug(`hourlysteps: ${hourlysteps}, begin: ${begin}`);
+			newForecastHourly = (await enviroments.colorfulClouds.Hourly(hourlysteps, begin)).forecastHourly;
 			break;
 		}
 	}
 	if (newForecastHourly?.metadata) {
 		forecastHourly.metadata = { ...forecastHourly?.metadata, ...newForecastHourly.metadata };
 		forecastHourly.hours = forecastHourly.hours.map((hour, i) => {
+			Console.debug(`forecastStart: ${hour.forecastStart}`);
+			Console.debug(`newForecastStart: ${newForecastHourly.hours[i]?.forecastStart}`);
 			return {
 				...hour,
 				...newForecastHourly.hours[i],

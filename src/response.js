@@ -226,7 +226,7 @@ async function CompareAirQuality(airQuality, Settings, enviroments) {
 			break;
 		}
 		case "ColorfulClouds": {
-			const Hourly = (await enviroments.colorfulClouds.Hourly(1, Date.now() - 24 * 60 * 60 * 1000)).airQuality;
+			const Hourly = (await enviroments.colorfulClouds.Hourly(1, ((Date.now() - 864e5) / 1000) | 0)).airQuality;
 			airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality.index, Hourly.index);
 			break;
 		}
@@ -299,6 +299,7 @@ async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
 	Console.log("✅ InjectCurrentWeather");
 	return currentWeather;
 }
+
 /**
  * 注入每日天气预报数据
  * @param {any} forecastDaily - 每日预报数据对象
@@ -318,7 +319,9 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
 			break;
 		}
 		case "ColorfulClouds": {
-			newForecastDaily = await enviroments.colorfulClouds.Daily();
+			const dailysteps = forecastDaily.days?.length || 11;
+			const begin = forecastDaily.days?.[0]?.forecastStart || undefined;
+			newForecastDaily = await enviroments.colorfulClouds.Daily(dailysteps, begin);
 			break;
 		}
 	}
@@ -355,7 +358,9 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
 			break;
 		}
 		case "ColorfulClouds": {
-			newForecastHourly = (await enviroments.colorfulClouds.Hourly()).forecastHourly;
+			const hourlysteps = forecastHourly.hours?.length || 273;
+			const begin = forecastHourly.hours?.[0]?.forecastStart || undefined;
+			newForecastHourly = (await enviroments.colorfulClouds.Hourly(hourlysteps, begin)).forecastHourly;
 			break;
 		}
 	}
