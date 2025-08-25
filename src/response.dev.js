@@ -284,7 +284,7 @@ async function CompareAirQuality(airQuality, Settings, enviroments) {
 		}
 		case "ColorfulClouds": {
 			const Hourly = (await enviroments.colorfulClouds.Hourly(1, ((Date.now() - 864e5) / 1000) | 0)).airQuality;
-			airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality.index, Hourly.index);
+			airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality?.index, Hourly?.index);
 			break;
 		}
 		case "WAQI": {
