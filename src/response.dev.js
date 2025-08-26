@@ -258,40 +258,18 @@ async function InjectAirQuality(airQuality, Settings, enviroments) {
  */
 async function CompareAirQuality(airQuality, Settings, enviroments) {
 	Console.log("☑️ CompareAirQuality");
+	const historicalAirQuality = await HistoricalAirQuality(airQuality, Settings, enviroments);
 	let ConvertedAirQualtiy;
-	switch (Settings?.AQI?.ComparisonProvider || Settings?.AQI?.Provider) {
-		case "WeatherKit":
-		default:
-			break;
-		case "QWeather": {
-			if (!airQuality?.metadata?.locationID) {
-				const metadata = await enviroments.qWeather.GeoAPI();
-				if (!airQuality?.metadata?.attributionUrl) airQuality.metadata.attributionUrl = metadata.attributionUrl;
-				airQuality.metadata.locationID = metadata?.locationID;
-			}
-			const historicalAirQuality = await enviroments.qWeather.HistoricalAir(airQuality?.metadata?.locationID);
-
-			Console.debug(`airQuality.scale: ${airQuality?.scale}`, `historicalAirQuality.scale: ${historicalAirQuality?.scale}`);
-			if (airQuality?.scale === historicalAirQuality?.scale) {
-				ConvertedAirQualtiy = historicalAirQuality;
-			} else {
-				ConvertedAirQualtiy = AirQuality.Convert(historicalAirQuality, Settings);
-				if (airQuality?.scale !== ConvertedAirQualtiy?.scale) {
-					ConvertedAirQualtiy = null;
-				}
-			}
-			airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality?.index, ConvertedAirQualtiy?.index);
-			break;
-		}
-		case "ColorfulClouds": {
-			const Hourly = (await enviroments.colorfulClouds.Hourly(1, ((Date.now() - 864e5) / 1000) | 0)).airQuality;
-			airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality?.index, Hourly?.index);
-			break;
-		}
-		case "WAQI": {
-			break;
+	if (airQuality?.scale === historicalAirQuality?.scale) {
+		ConvertedAirQualtiy = historicalAirQuality;
+	} else {
+		ConvertedAirQualtiy = AirQuality.Convert(historicalAirQuality, Settings);
+		if (airQuality?.scale !== ConvertedAirQualtiy?.scale) {
+			ConvertedAirQualtiy = null;
 		}
 	}
+	Console.debug(`airQuality.scale: ${airQuality?.scale}`, `historicalAirQuality.scale: ${historicalAirQuality?.scale}`);
+	airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality?.index, ConvertedAirQualtiy?.index);
 	Console.log("✅ CompareAirQuality");
 	return airQuality;
 }
@@ -428,4 +406,44 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
 	}
 	Console.log("✅ InjectForecastHourly");
 	return forecastHourly;
+}
+
+/**
+ * 获取历史空气质量数据
+ * @param {any} airQuality - 空气质量数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {any} enviroments - 环境变量
+ * @returns {Promise<any>} 获取后的历史空气质量数据
+ */
+async function HistoricalAirQuality(airQuality, Settings, enviroments) {
+	Console.log("☑️ HistoricalAirQuality");
+	let historicalAirQuality;
+	switch (Settings?.AQI?.ComparisonProvider || Settings?.AQI?.Provider) {
+		case "Auto":
+		default:
+			Settings.AQI.ComparisonProvider = Settings.AQI.Provider;
+			historicalAirQuality = await HistoricalAirQuality(airQuality, Settings, enviroments);
+			break;
+		case "WeatherKit":
+			break;
+		case "QWeather": {
+			if (!airQuality?.metadata?.locationID) {
+				const metadata = await enviroments.qWeather.GeoAPI();
+				if (!airQuality?.metadata?.attributionUrl) airQuality.metadata.attributionUrl = metadata.attributionUrl;
+				airQuality.metadata.locationID = metadata?.locationID;
+			}
+			historicalAirQuality = await enviroments.qWeather.HistoricalAir(airQuality?.metadata?.locationID);
+			break;
+		}
+		case "ColorfulClouds": {
+			historicalAirQuality = (await enviroments.colorfulClouds.Hourly(1, ((Date.now() - 864e5) / 1000) | 0)).airQuality;
+			break;
+		}
+		case "WAQI": {
+			// todo
+			break;
+		}
+	}
+	Console.log("✅ HistoricalAirQuality");
+	return historicalAirQuality;
 }
