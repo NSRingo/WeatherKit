@@ -91,6 +91,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 									waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
 								};
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
+									// FixPollutantUnits
+									body.airQuality = AirQuality.FixUnits(body.airQuality);
 									// InjectAirQuality
 									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(body.airQuality, Settings, enviroments);
 									// ConvertAirQuality

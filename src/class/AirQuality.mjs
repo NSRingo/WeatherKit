@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.5.1";
+	static Version = "2.5.2";
 	static Author = "Virgil Clyne & Wordless Echo";
 
 	/**
@@ -131,16 +131,17 @@ export default class AirQuality {
 	/**
 	 * 修复特定供应商的污染物单位
 	 * 主要修复和风天气/QWeather提供商的CO单位问题
-	 * @param {Array} pollutants - 污染物数组
-	 * @param {string} providerName - 数据提供商名称
-	 * @returns {Array} 修复后的污染物数组
+	 * @param {Object} airQuality - 空气质量数据对象
+	 * @param {Array} airQuality.pollutants - 污染物数组
+	 * @param {Object} airQuality.metadata - 空气质量元数据
+	 * @param {string} airQuality.metadata.providerName - 数据提供商名称
 	 */
-	static FixUnits(pollutants = [], providerName = "") {
+	static FixUnits(airQuality) {
 		Console.log("☑️ FixUnits");
-		switch (providerName?.split("\n")?.[0]) {
+		switch (airQuality?.metadata?.providerName) {
 			case "和风天气":
 			case "QWeather":
-				pollutants = pollutants.map(pollutant => {
+				airQuality.pollutants = airQuality?.pollutants?.map(pollutant => {
 					switch (pollutant.pollutantType) {
 						case "CO": // Fix CO amount units
 							pollutant.units = "MILLIGRAMS_PER_CUBIC_METER";
@@ -155,7 +156,7 @@ export default class AirQuality {
 				break;
 		}
 		Console.log("✅ FixUnits");
-		return pollutants;
+		return airQuality;
 	}
 
 	static #Config = {

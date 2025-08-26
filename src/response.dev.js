@@ -113,6 +113,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
 										matchEnum.airQuality();
 									}
+									// FixPollutantUnits
+									body.airQuality = AirQuality.FixUnits(body.airQuality);
 									// InjectAirQuality
 									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(body.airQuality, Settings, enviroments);
 									// ConvertAirQuality
