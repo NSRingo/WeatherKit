@@ -11,7 +11,7 @@ export default {
 			AQI: {
 				Provider: "ColorfulClouds",
 				ReplaceProviders: ["QWeather"],
-				ComparisonProvider: "QWeather",
+				ComparisonProvider: "Auto",
 				Local: {
 					Scale: "WAQI_InstantCast",
 					ReplaceScales: ["HJ6332012"],

@@ -95,12 +95,15 @@ export interface Settings {
          * @remarks
          *
          * Possible values:
+         * - `'Auto'` - 自动选择(与[空气质量] 数据源一致)
          * - `'WeatherKit'` - WeatherKit (不进行替换)
+         * - `'ColorfulClouds'` - 彩云天气
          * - `'QWeather'` - 和风天气
+         * - `'WAQI'` - The World Air Quality Project
          *
-         * @defaultValue "QWeather"
+         * @defaultValue "Auto"
          */
-        ComparisonProvider?: 'WeatherKit' | 'QWeather';
+        ComparisonProvider?: 'Auto' | 'WeatherKit' | 'ColorfulClouds' | 'QWeather' | 'WAQI';
     Local?: {
         /**
          * [空气质量] 需要修改的标准
