@@ -414,6 +414,12 @@ export default class ColorfulClouds {
 		return forecastDaily;
 	}
 
+	/**
+	 * 创建苹果格式的污染物对象
+	 * @link https://docs.caiyunapp.com/weather-api/v2/v2.6/1-realtime.html
+	 * @param {Object} pollutantsObj - 污染物对象
+	 * @returns {Object} 修复后的污染物对象
+	 */
 	#CreatePollutants(pollutantsObj = {}) {
 		Console.log("☑️ CreatePollutants");
 		const pollutants = [];

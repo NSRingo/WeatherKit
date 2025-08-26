@@ -596,12 +596,24 @@ export default class QWeather {
 		return airQuality;
 	}
 
+	/**
+	 * 创建苹果格式的污染物对象
+	 * @link https://dev.qweather.com/docs/resource/unit/
+	 * @param {Object} pollutantsObj - 污染物对象
+	 * @returns {Object} 修复后的污染物对象
+	 */
 	#CreatePollutants(pollutantsObj = {}) {
 		Console.log("☑️ CreatePollutants");
 		const pollutants = [];
 		for (const [key, value] of Object.entries(pollutantsObj)) {
 			switch (key) {
 				case "co":
+					pollutants.push({
+						amount: Number.parseFloat(value ?? -1),
+						pollutantType: this.#Config.Pollutants[key],
+						units: "MILLIGRAMS_PER_CUBIC_METER",
+					});
+					break;
 				case "no":
 				case "no2":
 				case "so2":

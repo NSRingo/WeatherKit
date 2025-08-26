@@ -97,8 +97,6 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body.airQuality = AirQuality.Convert(body.airQuality, Settings);
 									// CompareAirQuality
 									body.airQuality = await CompareAirQuality(body.airQuality, Settings, enviroments);
-									// FixPollutantUnits
-									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.FixUnits(body.airQuality.pollutants, body?.airQuality?.metadata?.providerName);
 									// Convert units that does not supported in Apple Weather
 									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.ConvertUnits(body.airQuality.pollutants);
 									// ProviderLogo
