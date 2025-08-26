@@ -609,7 +609,7 @@ export default class AirQuality {
 	static #ConvertScale(pollutants = [], scale = "WAQI_InstantCast", convertUnits = false) {
 		Console.log("☑️ ConvertScale");
 		pollutants = AirQuality.#Pollutants(pollutants, scale);
-		const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous.AQI > current.AQI ? previous : current));
+		const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous?.AQI > current?.AQI ? previous : current), {});
 		const airQuality = {
 			index: index,
 			pollutants: pollutants,
