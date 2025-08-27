@@ -43,7 +43,7 @@ export default class QWeather {
 	};
 
 	async GeoAPI(path = "city/lookup") {
-		Console.log("☑️ GeoAPI");
+		Console.info("☑️ GeoAPI");
 		const request = {
 			url: `${this.endpoint}/geo/v2/${path}?location=${this.longitude},${this.latitude}`,
 			headers: this.headers,
@@ -68,13 +68,13 @@ export default class QWeather {
 			Console.error(error);
 		} finally {
 			Console.debug(`metadata: ${JSON.stringify(metadata, null, 2)}`);
-			Console.log("✅ GeoAPI");
+			Console.info("✅ GeoAPI");
 		}
 		return metadata;
 	}
 
 	async WeatherNow() {
-		Console.log("☑️ WeatherNow");
+		Console.info("☑️ WeatherNow");
 		const request = {
 			url: `${this.endpoint}/v7/weather/now?location=${this.longitude},${this.latitude}`,
 			headers: this.headers,
@@ -128,13 +128,13 @@ export default class QWeather {
 			Console.error(error);
 		} finally {
 			//Console.debug(`currentWeather: ${JSON.stringify(currentWeather, null, 2)}`);
-			Console.log("✅ WeatherNow");
+			Console.info("✅ WeatherNow");
 		}
 		return currentWeather;
 	}
 
 	async AirNow() {
-		Console.log("☑️ AirNow");
+		Console.info("☑️ AirNow");
 		const request = {
 			url: `${this.endpoint}/v7/air/now?location=${this.longitude},${this.latitude}`,
 			headers: this.headers,
@@ -185,13 +185,13 @@ export default class QWeather {
 			Console.error(error);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
-			Console.log("✅ AirNow");
+			Console.info("✅ AirNow");
 		}
 		return airQuality;
 	}
 
 	async AirQualityCurrent() {
-		Console.log("☑️ AirQualityCurrent");
+		Console.info("☑️ AirQualityCurrent");
 		const request = {
 			url: `${this.endpoint}/airquality/v1/current/${this.latitude}/${this.longitude}`,
 			headers: this.headers,
@@ -240,13 +240,13 @@ export default class QWeather {
 			Console.error(error);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
-			Console.log("✅ AirQualityCurrent");
+			Console.info("✅ AirQualityCurrent");
 		}
 		return airQuality;
 	}
 
 	async Minutely() {
-		Console.log("☑️ Minutely");
+		Console.info("☑️ Minutely");
 		const request = {
 			url: `${this.endpoint}/v7/minutely/5m?location=${this.longitude},${this.latitude}`,
 			headers: this.headers,
@@ -316,13 +316,13 @@ export default class QWeather {
 			Console.error(error);
 		} finally {
 			//Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
-			Console.log("✅ Minutely");
+			Console.info("✅ Minutely");
 		}
 		return forecastNextHour;
 	}
 
 	async Hourly(hours = 168) {
-		Console.log("☑️ Hourly", `host: ${this.host}`);
+		Console.info("☑️ Hourly", `host: ${this.host}`);
 		const request = {
 			url: `${this.endpoint}/v7/weather/${hours}h?location=${this.longitude},${this.latitude}`,
 			headers: this.headers,
@@ -394,13 +394,13 @@ export default class QWeather {
 			Console.error(error);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(forecastHourly, null, 2)}`);
-			Console.log("✅ Hourly");
+			Console.info("✅ Hourly");
 		}
 		return forecastHourly;
 	}
 
 	async Daily(days = 10) {
-		Console.log("☑️ Daily", `host: ${this.host}`);
+		Console.info("☑️ Daily", `host: ${this.host}`);
 		const request = {
 			url: `${this.endpoint}/v7/weather/${days}d?location=${this.longitude},${this.latitude}`,
 			headers: this.headers,
@@ -536,13 +536,13 @@ export default class QWeather {
 			Console.error(error);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(forecastDaily, null, 2)}`);
-			Console.log("✅ Daily");
+			Console.info("✅ Daily");
 		}
 		return forecastDaily;
 	}
 
 	async HistoricalAir(locationID = new Number(), date = time("yyyyMMdd", Date.now() - 24 * 60 * 60 * 1000)) {
-		Console.log("☑️ HistoricalAir", `locationID:${locationID}`, `date: ${date}`);
+		Console.info("☑️ HistoricalAir", `locationID:${locationID}`, `date: ${date}`);
 		const request = {
 			url: `${this.endpoint}/v7/historical/air/?location=${locationID}&date=${date}`,
 			headers: this.headers,
@@ -591,7 +591,7 @@ export default class QWeather {
 			Console.error(error);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
-			Console.log("✅ HistoricalAir");
+			Console.info("✅ HistoricalAir");
 		}
 		return airQuality;
 	}
@@ -603,7 +603,7 @@ export default class QWeather {
 	 * @returns {Object} 修复后的污染物对象
 	 */
 	#CreatePollutants(pollutantsObj = {}) {
-		Console.log("☑️ CreatePollutants");
+		Console.info("☑️ CreatePollutants");
 		const pollutants = [];
 		for (const [key, value] of Object.entries(pollutantsObj)) {
 			switch (key) {
@@ -631,7 +631,7 @@ export default class QWeather {
 			}
 		}
 		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
-		Console.log("✅ CreatePollutants");
+		Console.info("✅ CreatePollutants");
 		return pollutants;
 	}
 

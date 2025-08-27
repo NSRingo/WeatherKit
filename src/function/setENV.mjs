@@ -9,7 +9,7 @@ import { Console, getStorage, Lodash as _ } from "@nsnanocat/util";
  * @return {Object} { Settings, Caches, Configs }
  */
 export default function setENV(name, platforms, database) {
-	Console.log("☑️ Set Environment Variables");
+	Console.info("☑️ Set Environment Variables");
 	const { Settings, Caches, Configs } = getStorage(name, platforms, database);
 	/***************** Settings *****************/
 	if (!Array.isArray(Settings?.AQI?.ReplaceProviders)) _.set(Settings, "AQI.ReplaceProviders", Settings?.AQI?.ReplaceProviders ? [Settings.AQI.ReplaceProviders.toString()] : []);
@@ -24,6 +24,6 @@ export default function setENV(name, platforms, database) {
 	//Configs.Storefront = new Map(Configs.Storefront);
 	if (Configs.Locale) Configs.Locale = new Map(Configs.Locale);
 	if (Configs.i18n) for (const type in Configs.i18n) Configs.i18n[type] = new Map(Configs.i18n[type]);
-	Console.log("✅ Set Environment Variables");
+	Console.info("✅ Set Environment Variables");
 	return { Settings, Caches, Configs };
 }

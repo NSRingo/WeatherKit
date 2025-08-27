@@ -210,7 +210,7 @@ Console.info(`FORMAT: ${FORMAT}`);
  * @returns {Promise<any>} 注入后的空气质量数据
  */
 async function InjectAirQuality(airQuality, Settings, enviroments) {
-	Console.log("☑️ InjectAirQuality");
+	Console.info("☑️ InjectAirQuality");
 	let newAirQuality;
 	switch (Settings?.AQI?.Provider) {
 		case "WeatherKit":
@@ -245,7 +245,7 @@ async function InjectAirQuality(airQuality, Settings, enviroments) {
 		if (!airQuality?.pollutants) airQuality.pollutants = [];
 		//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 	}
-	Console.log("✅ InjectAirQuality");
+	Console.info("✅ InjectAirQuality");
 	return airQuality;
 }
 
@@ -257,13 +257,13 @@ async function InjectAirQuality(airQuality, Settings, enviroments) {
  * @returns {Promise<any>} 比较后的空气质量数据
  */
 async function CompareAirQuality(airQuality, Settings, enviroments) {
-	Console.log("☑️ CompareAirQuality", `airQuality.scale: ${airQuality?.scale}`);
+	Console.info("☑️ CompareAirQuality", `airQuality.scale: ${airQuality?.scale}`);
 	const historicalAirQuality = await HistoricalAirQuality(airQuality, Settings, enviroments);
 	Console.debug(`historicalAirQuality.scale: ${historicalAirQuality?.scale}`);
 	const ConvertedAirQualtiy = AirQuality.ConvertScale(historicalAirQuality, Settings);
 	Console.debug(`ConvertedAirQualtiy.scale: ${ConvertedAirQualtiy?.scale}`);
 	airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality?.index, ConvertedAirQualtiy?.index);
-	Console.log("✅ CompareAirQuality");
+	Console.info("✅ CompareAirQuality");
 	return airQuality;
 }
 
@@ -275,7 +275,7 @@ async function CompareAirQuality(airQuality, Settings, enviroments) {
  * @returns {Promise<any>} 注入后的下一小时预报数据
  */
 async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
-	Console.log("☑️ InjectForecastNextHour");
+	Console.info("☑️ InjectForecastNextHour");
 	let newForecastNextHour;
 	switch (Settings?.NextHour?.Provider) {
 		case "WeatherKit":
@@ -295,7 +295,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
 		forecastNextHour = { ...forecastNextHour, ...newForecastNextHour };
 		//Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
 	}
-	Console.log("✅ InjectForecastNextHour");
+	Console.info("✅ InjectForecastNextHour");
 	return forecastNextHour;
 }
 
@@ -307,7 +307,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  * @returns {Promise<any>} 注入后的当前天气数据
  */
 async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
-	Console.log("☑️ InjectCurrentWeather");
+	Console.info("☑️ InjectCurrentWeather");
 	let newCurrentWeather;
 	switch (Settings?.Weather?.Provider) {
 		case "WeatherKit":
@@ -327,7 +327,7 @@ async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
 		currentWeather = { ...currentWeather, ...newCurrentWeather };
 		//Console.debug(`currentWeather: ${JSON.stringify(currentWeather, null, 2)}`);
 	}
-	Console.log("✅ InjectCurrentWeather");
+	Console.info("✅ InjectCurrentWeather");
 	return currentWeather;
 }
 
@@ -339,7 +339,7 @@ async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
  * @returns {Promise<any>} 注入后的每日预报数据
  */
 async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
-	Console.log("☑️ InjectForecastDaily");
+	Console.info("☑️ InjectForecastDaily");
 	let newForecastDaily;
 	switch (Settings?.Weather?.Provider) {
 		case "WeatherKit":
@@ -362,7 +362,7 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
 		Weather.mergeForecast(forecastDaily?.days, newForecastDaily?.days);
 		//Console.debug(`forecastDaily: ${JSON.stringify(forecastDaily, null, 2)}`);
 	}
-	Console.log("✅ InjectForecastDaily");
+	Console.info("✅ InjectForecastDaily");
 	return forecastDaily;
 }
 
@@ -374,7 +374,7 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
  * @returns {Promise<any>} 注入后的小时预报数据
  */
 async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
-	Console.log("☑️ InjectForecastHourly");
+	Console.info("☑️ InjectForecastHourly");
 	let newForecastHourly;
 	switch (Settings?.Weather?.Provider) {
 		case "WeatherKit":
@@ -397,7 +397,7 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
 		forecastHourly.hours = Weather.mergeForecast(forecastHourly?.hours, newForecastHourly?.hours);
 		//Console.debug(`forecastHourly: ${JSON.stringify(forecastHourly, null, 2)}`);
 	}
-	Console.log("✅ InjectForecastHourly");
+	Console.info("✅ InjectForecastHourly");
 	return forecastHourly;
 }
 
@@ -409,7 +409,7 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
  * @returns {Promise<any>} 获取后的历史空气质量数据
  */
 async function HistoricalAirQuality(airQuality, Settings, enviroments) {
-	Console.log("☑️ HistoricalAirQuality");
+	Console.info("☑️ HistoricalAirQuality");
 	let historicalAirQuality;
 	switch (Settings?.AQI?.ComparisonProvider || Settings?.AQI?.Provider) {
 		case "Auto":
@@ -437,6 +437,6 @@ async function HistoricalAirQuality(airQuality, Settings, enviroments) {
 			break;
 		}
 	}
-	Console.log("✅ HistoricalAirQuality");
+	Console.info("✅ HistoricalAirQuality");
 	return historicalAirQuality;
 }

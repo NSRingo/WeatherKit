@@ -80,28 +80,28 @@ export default class ForecastNextHour {
 	};
 
 	static WeatherCondition(sentence) {
-		Console.log("☑️ WeatherCondition", `sentence: ${sentence}`);
+		Console.info("☑️ WeatherCondition", `sentence: ${sentence}`);
 		let weatherCondition = "CLEAR";
 		Object.keys(ForecastNextHour.#Configs.WeatherCondition).forEach(key => {
 			if (sentence.includes(key)) weatherCondition = ForecastNextHour.#Configs.WeatherCondition[key];
 		});
-		Console.log(`✅ WeatherCondition: ${weatherCondition}`);
+		Console.info(`✅ WeatherCondition: ${weatherCondition}`);
 		return weatherCondition;
 	}
 
 	static PrecipitationType(sentence) {
-		Console.log("☑️ PrecipitationType", `sentence: ${sentence}`);
+		Console.info("☑️ PrecipitationType", `sentence: ${sentence}`);
 		let precipitationType = "CLEAR";
 		Object.keys(ForecastNextHour.#Configs.PrecipitationType).forEach(key => {
 			if (sentence.includes(key)) precipitationType = ForecastNextHour.#Configs.PrecipitationType[key];
 		});
-		Console.log(`✅ PrecipitationType: ${precipitationType}`);
+		Console.info(`✅ PrecipitationType: ${precipitationType}`);
 		return precipitationType;
 	}
 
 	static ConditionType(precipitationIntensity, precipitationType, units = "mmph") {
 		// refer: https://docs.caiyunapp.com/weather-api/v2/v2.6/tables/precip.html
-		//Console.log("☑️ ConditionType");
+		//Console.info("☑️ ConditionType");
 		//Console.debug(`precipitationIntensity: ${precipitationIntensity}`, `precipitationChance: ${precipitationChance}`, `precipitationType: ${precipitationType}`);
 		const Range = ForecastNextHour.#Configs.Precipitation.Range[units];
 		let condition = "CLEAR";
@@ -155,12 +155,12 @@ export default class ForecastNextHour {
 					break;
 			}
 		}
-		//Console.log(`✅ #ConditionType: ${condition}`);
+		//Console.info(`✅ #ConditionType: ${condition}`);
 		return condition;
 	}
 
 	static Minute(minutes = [], description = "", units = "mmph") {
-		Console.log("☑️ Minute");
+		Console.info("☑️ Minute");
 		const PrecipitationType = ForecastNextHour.PrecipitationType(description);
 		minutes = minutes.map(minute => {
 			//minute.precipitationIntensity = Math.round(minute.precipitationIntensity * 1000000) / 1000000; // 六位小数
@@ -169,12 +169,12 @@ export default class ForecastNextHour {
 			minute.precipitationType = minute.perceivedPrecipitationIntensity ? PrecipitationType : "CLEAR";
 			return minute;
 		});
-		Console.log("✅ Minute");
+		Console.info("✅ Minute");
 		return minutes;
 	}
 
 	static Summary(minutes = []) {
-		Console.log("☑️ Summary");
+		Console.info("☑️ Summary");
 		const Summaries = [];
 		const Summary = {
 			condition: "CLEAR",
@@ -241,12 +241,12 @@ export default class ForecastNextHour {
 					break;
 			}
 		}
-		Console.log("✅ Summary");
+		Console.info("✅ Summary");
 		return Summaries;
 	}
 
 	static Condition(minutes = []) {
-		Console.log("☑️ Condition");
+		Console.info("☑️ Condition");
 		const Conditions = [];
 		const Condition = {
 			beginCondition: "CLEAR",
@@ -415,12 +415,12 @@ export default class ForecastNextHour {
 			}
 			//Console.debug(`⚠️ ${i}, after, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 		}
-		Console.log("✅ Condition");
+		Console.info("✅ Condition");
 		return Conditions;
 	}
 
 	static ConvertPrecipitationIntensity(precipitationIntensity, condition, units = "mmph") {
-		//Console.log("☑️ ConvertPrecipitationIntensity");
+		//Console.info("☑️ ConvertPrecipitationIntensity");
 		let perceivedPrecipitationIntensity = 0;
 		const Range = ForecastNextHour.#Configs.Precipitation.Range[units];
 		let level = 0;
@@ -455,7 +455,7 @@ export default class ForecastNextHour {
 		perceivedPrecipitationIntensity = Math.round(perceivedPrecipitationIntensity * 1000) / 1000;
 		perceivedPrecipitationIntensity = Math.max(0, perceivedPrecipitationIntensity);
 		perceivedPrecipitationIntensity = Math.min(3, perceivedPrecipitationIntensity);
-		//Console.log(`✅ ConvertPrecipitationIntensity: ${perceivedPrecipitationIntensity}`);
+		//Console.info(`✅ ConvertPrecipitationIntensity: ${perceivedPrecipitationIntensity}`);
 		return perceivedPrecipitationIntensity;
 	}
 }

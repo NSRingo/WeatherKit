@@ -16,7 +16,7 @@ export default class AirQuality {
 	static ConvertScale(airQuality, Settings) {
 		const scale = Settings?.AQI?.Local?.Scale || "WAQI_InstantCast";
 		const convertUnits = Settings?.AQI?.Local?.ConvertUnits || false;
-		Console.log(`☑️ ConvertScale`, `${airQuality?.scale} -> ${scale}`, `convertUnits: ${convertUnits}`);
+		Console.info(`☑️ ConvertScale`, `${airQuality?.scale} -> ${scale}`, `convertUnits: ${convertUnits}`);
 		switch (airQuality?.scale) {
 			case scale: {
 				Console.log("⏭️ ConvertScale");
@@ -62,7 +62,7 @@ export default class AirQuality {
 				pollutant.units = pollutant.convertedUnits;
 				return pollutant;
 			});
-		Console.log("✅ ConvertScale");
+		Console.info("✅ ConvertScale");
 		return airQuality;
 	}
 
@@ -74,18 +74,18 @@ export default class AirQuality {
 				aqi = Number.parseInt(aqi, 10);
 				break;
 		}
-		Console.log("☑️ CategoryIndex", `aqi: ${aqi}`);
+		Console.info("☑️ CategoryIndex", `aqi: ${aqi}`);
 		let categoryIndex;
 		for (const [key, value] of Object.entries(AirQuality.#Config.Scales[scale].categoryIndex)) {
 			categoryIndex = Number.parseInt(key, 10);
 			if (aqi >= value[0] && aqi <= value[1]) break;
 		}
-		Console.log("✅ CategoryIndex", `categoryIndex: ${categoryIndex}`);
+		Console.info("✅ CategoryIndex", `categoryIndex: ${categoryIndex}`);
 		return categoryIndex;
 	}
 
 	static ComparisonTrend(todayAQI, yesterdayAQI) {
-		Console.log("☑️ ComparisonTrend", `todayAQI: ${todayAQI}`, `yesterdayAQI: ${yesterdayAQI}`);
+		Console.info("☑️ ComparisonTrend", `todayAQI: ${todayAQI}`, `yesterdayAQI: ${yesterdayAQI}`);
 		let trend = "UNKNOWN";
 		if (isNaN(todayAQI - yesterdayAQI)) trend = "UNKNOWN";
 		else
@@ -131,12 +131,12 @@ export default class AirQuality {
 					}
 					break;
 			}
-		Console.log("✅ ComparisonTrend", `trend: ${trend}`);
+		Console.info("✅ ComparisonTrend", `trend: ${trend}`);
 		return trend;
 	}
 
 	static ConvertUnits(pollutants = []) {
-		Console.log("☑️ ConvertUnits");
+		Console.info("☑️ ConvertUnits");
 		pollutants = pollutants.map(pollutant => {
 			switch (pollutant.units) {
 				case "PARTS_PER_MILLION":
@@ -153,7 +153,7 @@ export default class AirQuality {
 			return pollutant;
 		});
 		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
-		Console.log("✅ ConvertUnits");
+		Console.info("✅ ConvertUnits");
 		return pollutants;
 	}
 
@@ -166,7 +166,7 @@ export default class AirQuality {
 	 * @param {string} airQuality.metadata.providerName - 数据提供商名称
 	 */
 	static FixUnits(airQuality) {
-		Console.log("☑️ FixUnits");
+		Console.info("☑️ FixUnits");
 		switch (airQuality?.metadata?.providerName) {
 			case "和风天气":
 			case "QWeather":
@@ -184,7 +184,7 @@ export default class AirQuality {
 			default:
 				break;
 		}
-		Console.log("✅ FixUnits");
+		Console.info("✅ FixUnits");
 		return airQuality;
 	}
 
@@ -612,7 +612,7 @@ export default class AirQuality {
 	};
 
 	static #Pollutants(pollutants = [], scale = "WAQI_InstantCast") {
-		Console.log("☑️ Pollutants", `scale: ${scale}`);
+		Console.info("☑️ Pollutants", `scale: ${scale}`);
 		pollutants = pollutants.map(pollutant => {
 			// Convert unit based on standard
 			const PollutantStandard = AirQuality.#Config.Scales[scale].pollutants[pollutant.pollutantType];
@@ -632,12 +632,12 @@ export default class AirQuality {
 			return pollutant;
 		});
 		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
-		Console.log("✅ Pollutants");
+		Console.info("✅ Pollutants");
 		return pollutants;
 	}
 
 	static #ConvertUnit(amount, unitFrom, unitTo, ppxToXGM3Value = -1) {
-		Console.log("☑️ ConvertUnit");
+		Console.info("☑️ ConvertUnit");
 		Console.debug(`amount: ${amount}`, `ppxToXGM3Value: ${ppxToXGM3Value}`, `unitFrom: ${unitFrom}`, `unitTo: ${unitTo}`);
 		if (amount < 0) amount = -1;
 		else
@@ -726,7 +726,7 @@ export default class AirQuality {
 					amount = -1;
 					break;
 			}
-		//Console.log("✅ ConvertUnit", `amount: ${amount}`);
+		//Console.info("✅ ConvertUnit", `amount: ${amount}`);
 		return amount;
 	}
 }

@@ -31,7 +31,7 @@ export default class WAQI {
 	};
 
 	async Nearest(mapqVersion = "mapq") {
-		Console.log("☑️ Nearest", `mapqVersion: ${mapqVersion}`);
+		Console.info("☑️ Nearest", `mapqVersion: ${mapqVersion}`);
 		const request = {
 			url: `https://api.waqi.info/${mapqVersion}/nearest?n=1&geo=1/${this.latitude}/${this.longitude}`,
 			//"url": `https://mapq.waqi.info/${mapqVersion}/nearest/station/${stationId}?n=1`,
@@ -115,13 +115,13 @@ export default class WAQI {
 			Console.error(error);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
-			Console.log("✅ Nearest");
+			Console.info("✅ Nearest");
 		}
 		return airQuality;
 	}
 
 	async Token(stationId = Number()) {
-		Console.log("☑️ Token", `stationId: ${stationId}`);
+		Console.info("☑️ Token", `stationId: ${stationId}`);
 		const request = {
 			url: `https://api.waqi.info/api/token/${stationId}`,
 			headers: this.headers,
@@ -154,13 +154,13 @@ export default class WAQI {
 			Console.error(error);
 		} finally {
 			//Console.debug(`token: ${token}`);
-			Console.log("✅ Token");
+			Console.info("✅ Token");
 		}
 		return token;
 	}
 
 	async AQI(stationId = Number(), token = this.token) {
-		Console.log("☑️ AQI", `stationId: ${stationId}`, `token: ${token}`);
+		Console.info("☑️ AQI", `stationId: ${stationId}`, `token: ${token}`);
 		const request = {
 			url: `https://api.waqi.info/api/feed/@${stationId}/aqi.json`,
 			headers: this.headers,
@@ -218,13 +218,13 @@ export default class WAQI {
 			Console.error(error);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
-			Console.log("✅ AQI");
+			Console.info("✅ AQI");
 		}
 		return airQuality;
 	}
 
 	async AQI2(stationId = Number(), token = this.token) {
-		Console.log("☑️ AQI2", `stationId: ${stationId}`);
+		Console.info("☑️ AQI2", `stationId: ${stationId}`);
 		const request = {
 			url: `https://api2.waqi.info/feed/geo:${this.latitude};${this.longitude}/?token=${token}`,
 			headers: this.headers,
@@ -268,7 +268,7 @@ export default class WAQI {
 			Console.error(error);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
-			Console.log("✅ AQI2");
+			Console.info("✅ AQI2");
 		}
 		return airQuality;
 	}

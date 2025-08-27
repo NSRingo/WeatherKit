@@ -34,7 +34,7 @@ export default class ColorfulClouds {
 
 	async RealTime() {
 		if (!this.airQuality || !this.currentWeather) {
-			Console.log("☑️ RealTime");
+			Console.info("☑️ RealTime");
 			const request = {
 				url: `${this.endpoint}/realtime`,
 				headers: this.headers,
@@ -103,14 +103,14 @@ export default class ColorfulClouds {
 				Console.error(error);
 			} finally {
 				//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
-				Console.log("✅ RealTime");
+				Console.info("✅ RealTime");
 			}
 		}
 		return { airQuality: this.airQuality, currentWeather: this.currentWeather };
 	}
 
 	async Minutely() {
-		Console.log("☑️ Minutely");
+		Console.info("☑️ Minutely");
 		const request = {
 			url: `${this.endpoint}/minutely?unit=metric:v2`,
 			headers: this.headers,
@@ -181,13 +181,13 @@ export default class ColorfulClouds {
 			Console.error(error);
 		} finally {
 			//Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
-			Console.log("✅ Minutely");
+			Console.info("✅ Minutely");
 		}
 		return forecastNextHour;
 	}
 
 	async Hourly(hourlysteps = 273, begin = undefined) {
-		Console.log("☑️ Hourly");
+		Console.info("☑️ Hourly");
 		const request = {
 			url: `${this.endpoint}/hourly?hourlysteps=${hourlysteps}`,
 			headers: this.headers,
@@ -278,13 +278,13 @@ export default class ColorfulClouds {
 			Console.error(error);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
-			Console.log("✅ Hourly");
+			Console.info("✅ Hourly");
 		}
 		return { airQuality, forecastHourly };
 	}
 
 	async Daily(dailysteps = 10, begin = undefined) {
-		Console.log("☑️ Daily");
+		Console.info("☑️ Daily");
 		const request = {
 			url: `${this.endpoint}/daily?dailysteps=${dailysteps}`,
 			headers: this.headers,
@@ -417,7 +417,7 @@ export default class ColorfulClouds {
 			Console.error(error);
 		} finally {
 			//Console.debug(`Daily: ${JSON.stringify(Daily, null, 2)}`);
-			Console.log("✅ Daily");
+			Console.info("✅ Daily");
 		}
 		return forecastDaily;
 	}
@@ -429,7 +429,7 @@ export default class ColorfulClouds {
 	 * @returns {Object} 修复后的污染物对象
 	 */
 	#CreatePollutants(pollutantsObj = {}) {
-		Console.log("☑️ CreatePollutants");
+		Console.info("☑️ CreatePollutants");
 		const pollutants = [];
 		for (const [key, value] of Object.entries(pollutantsObj)) {
 			switch (key) {
@@ -456,7 +456,7 @@ export default class ColorfulClouds {
 			}
 		}
 		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
-		Console.log("✅ CreatePollutants");
+		Console.info("✅ CreatePollutants");
 		return pollutants;
 	}
 }
