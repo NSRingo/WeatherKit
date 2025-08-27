@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "4.4.7";
+		this.Version = "4.4.8";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://${host}`;
 		this.headers = { "X-QW-Api-Key": token };
@@ -45,7 +45,7 @@ export default class QWeather {
 	async GeoAPI(path = "city/lookup") {
 		Console.log("☑️ GeoAPI");
 		const request = {
-			url: `${this.endpoint}/v2/${path}?location=${this.longitude},${this.latitude}`,
+			url: `${this.endpoint}/geo/v2/${path}?location=${this.longitude},${this.latitude}`,
 			headers: this.headers,
 		};
 		let metadata;
