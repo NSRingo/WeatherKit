@@ -88,7 +88,6 @@ export default class AirQuality {
 					trend = "BETTER";
 					break;
 				case null:
-				case NaN:
 					trend = "UNKNOWN";
 					break;
 				default:
