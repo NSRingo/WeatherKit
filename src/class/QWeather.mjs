@@ -65,7 +65,7 @@ export default class QWeather {
 					throw Error(body?.code);
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`GeoAPI: ${error}`);
 		} finally {
 			Console.debug(`metadata: ${JSON.stringify(metadata, null, 2)}`);
 			Console.info("✅ GeoAPI");
@@ -125,7 +125,7 @@ export default class QWeather {
 					throw Error(body?.code);
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`WeatherNow: ${error}`);
 		} finally {
 			//Console.debug(`currentWeather: ${JSON.stringify(currentWeather, null, 2)}`);
 			Console.info("✅ WeatherNow");
@@ -182,7 +182,7 @@ export default class QWeather {
 					throw Error(body?.code);
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`AirNow: ${error}`);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.info("✅ AirNow");
@@ -237,7 +237,7 @@ export default class QWeather {
 					throw Error(JSON.stringify(body?.error, null, 2));
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`AirQualityCurrent: ${error}`);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.info("✅ AirQualityCurrent");
@@ -313,7 +313,7 @@ export default class QWeather {
 					throw Error(body?.code);
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`Minutely: ${error}`);
 		} finally {
 			//Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
 			Console.info("✅ Minutely");
@@ -391,7 +391,7 @@ export default class QWeather {
 					throw Error(body?.code);
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`Hourly: ${error}`);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(forecastHourly, null, 2)}`);
 			Console.info("✅ Hourly");
@@ -533,7 +533,7 @@ export default class QWeather {
 					throw Error(body?.code);
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`Daily: ${error}`);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(forecastDaily, null, 2)}`);
 			Console.info("✅ Daily");
@@ -588,7 +588,7 @@ export default class QWeather {
 					throw Error(body?.code);
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`HistoricalAir: ${error}`);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.info("✅ HistoricalAir");

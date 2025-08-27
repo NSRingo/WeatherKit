@@ -100,7 +100,7 @@ export default class ColorfulClouds {
 						throw Error(JSON.stringify(body ?? {}));
 				}
 			} catch (error) {
-				Console.error(error);
+				Console.error(`RealTime: ${error}`);
 			} finally {
 				//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 				Console.info("✅ RealTime");
@@ -178,7 +178,7 @@ export default class ColorfulClouds {
 					throw Error(JSON.stringify(body ?? {}));
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`Minutely: ${error}`);
 		} finally {
 			//Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
 			Console.info("✅ Minutely");
@@ -275,7 +275,7 @@ export default class ColorfulClouds {
 					throw Error(JSON.stringify(body ?? {}));
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`Hourly: ${error}`);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.info("✅ Hourly");
@@ -414,7 +414,7 @@ export default class ColorfulClouds {
 					throw Error(JSON.stringify(body ?? {}));
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`Daily: ${error}`);
 		} finally {
 			//Console.debug(`Daily: ${JSON.stringify(Daily, null, 2)}`);
 			Console.info("✅ Daily");

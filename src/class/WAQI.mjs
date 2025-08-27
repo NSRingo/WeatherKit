@@ -112,7 +112,7 @@ export default class WAQI {
 					break;
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`Nearest: ${error}`);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.info("✅ Nearest");
@@ -151,7 +151,7 @@ export default class WAQI {
 					break;
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`Token: ${error}`);
 		} finally {
 			//Console.debug(`token: ${token}`);
 			Console.info("✅ Token");
@@ -215,7 +215,7 @@ export default class WAQI {
 					break;
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`AQI: ${error}`);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.info("✅ AQI");
@@ -265,7 +265,7 @@ export default class WAQI {
 					throw JSON.stringify({ status: body?.status, reason: body?.data });
 			}
 		} catch (error) {
-			Console.error(error);
+			Console.error(`AQI2: ${error}`);
 		} finally {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.info("✅ AQI2");
