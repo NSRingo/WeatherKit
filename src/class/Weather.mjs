@@ -34,7 +34,7 @@ export default class Weather {
 			const newForecastStart = j < from.length ? from[j].forecastStart : Number.POSITIVE_INFINITY;
 
 			if (forecastStart === newForecastStart) {
-				Console.debug(`${i}: ${newForecastStart} -> ${forecastStart}`);
+				//Console.debug(`${i}: ${newForecastStart} -> ${forecastStart}`);
 				// 原地把 from[j] 的字段合入 to[i]（A 冲突字段保留 or 被覆盖，看你需要）
 				if (Object.hasOwn(from[j], "daytimeForecast")) from[j].daytimeForecast = { ...to[i].daytimeForecast, ...from[j].daytimeForecast };
 				if (Object.hasOwn(from[j], "overnightForecast")) from[j].overnightForecast = { ...to[i].overnightForecast, ...from[j].overnightForecast };
@@ -43,10 +43,10 @@ export default class Weather {
 				i++;
 				j++;
 			} else if (newForecastStart < forecastStart) {
-				Console.debug(`${j}: ${newForecastStart} -> X`);
+				//Console.debug(`${j}: ${newForecastStart} -> X`);
 				j++; // 让 from 追上 to
 			} else {
-				Console.debug(`${i}: X -> ${forecastStart}`);
+				//Console.debug(`${i}: X -> ${forecastStart}`);
 				i++; // to 无匹配，保留 to[i]
 			}
 		}

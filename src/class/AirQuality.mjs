@@ -61,7 +61,7 @@ export default class AirQuality {
 				break;
 			}
 		}
-		Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+		//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 		// 如果需要转换单位
 		if (convertUnits)
 			airQuality.pollutants = airQuality?.pollutants?.map(pollutant => {
@@ -165,8 +165,8 @@ export default class AirQuality {
 	}
 
 	/**
-	 * 修复特定供应商的污染物单位
-	 * 主要修复和风天气/QWeather提供商的CO单位问题
+	 * 修复 WeatherKit 特定供应商的污染物单位
+	 * 主要修复 WeatherKit 数据源错误标注 和风天气/QWeather 提供商的 CO 单位问题
 	 * @param {Object} airQuality - 空气质量数据对象
 	 * @param {Array} airQuality.pollutants - 污染物数组
 	 * @param {Object} airQuality.metadata - 空气质量元数据
