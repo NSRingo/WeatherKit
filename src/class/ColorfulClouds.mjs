@@ -61,13 +61,17 @@ export default class ColorfulClouds {
 								};
 								this.airQuality = {
 									metadata: metadata,
-									categoryIndex: AirQuality.CategoryIndex(body?.result?.realtime?.air_quality?.aqi.chn, "HJ_633"),
-									index: Number.parseInt(body?.result?.realtime?.air_quality?.aqi.chn, 10),
-									isSignificant: true,
+									categoryIndex: -1, // 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
+									index: {
+										// 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
+										HJ6332012: body?.result?.realtime?.air_quality?.aqi?.chn,
+										EPA_NowCast: body?.result?.realtime?.air_quality?.aqi?.usa,
+									},
+									isSignificant: false, // 交给 AirQuality.ConvertScale 计算
 									pollutants: this.#CreatePollutants(body?.result?.realtime?.air_quality),
 									previousDayComparison: "UNKNOWN",
-									primaryPollutant: "NOT_AVAILABLE",
-									scale: "HJ6332012",
+									primaryPollutant: "NOT_AVAILABLE", // 交给 AirQuality.ConvertScale 计算
+									//scale: "HJ6332012", // 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
 								};
 								this.currentWeather = {
 									metadata: metadata,
@@ -213,13 +217,17 @@ export default class ColorfulClouds {
 							};
 							airQuality = {
 								metadata: metadata,
-								categoryIndex: AirQuality.CategoryIndex(body?.result?.hourly?.air_quality?.aqi?.[0]?.value?.chn, "HJ_633"),
-								index: Number.parseInt(body?.result?.hourly?.air_quality?.aqi?.[0]?.value?.chn, 10),
-								isSignificant: true,
+								categoryIndex: -1, // 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
+								index: {
+									// 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
+									HJ6332012: body?.result?.hourly?.air_quality?.aqi?.[0]?.value?.chn,
+									EPA_NowCast: body?.result?.hourly?.air_quality?.aqi?.[0]?.value?.usa,
+								},
+								isSignificant: false, // 交给 AirQuality.ConvertScale 计算
 								pollutants: [],
 								previousDayComparison: "UNKNOWN",
-								primaryPollutant: "NOT_AVAILABLE",
-								scale: "HJ6332012",
+								primaryPollutant: "NOT_AVAILABLE", // 交给 AirQuality.ConvertScale 计算
+								//scale: "HJ6332012", // 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
 							};
 							forecastHourly = {
 								metadata: metadata,
