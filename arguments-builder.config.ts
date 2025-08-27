@@ -106,11 +106,11 @@ export default defineConfig({
 			defaultValue: "Auto",
 			type: "string",
 			options: [
-				{ key: "Auto", label: "自动选择(与[空气质量] 数据源一致)" },
+				{ key: "Auto", label: "自动选择 (与[空气质量] 数据源一致)" },
 				{ key: "WeatherKit", label: "WeatherKit (不进行替换)" },
 				{ key: "ColorfulClouds", label: "彩云天气" },
 				{ key: "QWeather", label: "和风天气" },
-				{ key: "WAQI", label: "The World Air Quality Project" },
+				//{ key: "WAQI", label: "The World Air Quality Project" },
 			],
 			description: "始终会使用选定的数据源，填补无对比昨日地区的数据。",
 		},

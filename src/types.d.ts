@@ -95,7 +95,7 @@ export interface Settings {
          * @remarks
          *
          * Possible values:
-         * - `'Auto'` - 自动选择(与[空气质量] 数据源一致)
+         * - `'Auto'` - 自动选择 (与[空气质量] 数据源一致)
          * - `'WeatherKit'` - WeatherKit (不进行替换)
          * - `'ColorfulClouds'` - 彩云天气
          * - `'QWeather'` - 和风天气
