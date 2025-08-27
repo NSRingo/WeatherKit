@@ -250,6 +250,46 @@ async function InjectAirQuality(airQuality, Settings, enviroments) {
 }
 
 /**
+ * 获取历史空气质量数据
+ * @param {any} airQuality - 空气质量数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {any} enviroments - 环境变量
+ * @returns {Promise<any>} 获取后的历史空气质量数据
+ */
+async function HistoricalAirQuality(airQuality, Settings, enviroments) {
+	Console.info("☑️ HistoricalAirQuality");
+	let historicalAirQuality;
+	switch (Settings?.AQI?.ComparisonProvider || Settings?.AQI?.Provider) {
+		case "Auto":
+		default:
+			Settings.AQI.ComparisonProvider = Settings.AQI.Provider;
+			historicalAirQuality = await HistoricalAirQuality(airQuality, Settings, enviroments);
+			break;
+		case "WeatherKit":
+			break;
+		case "QWeather": {
+			if (!airQuality?.metadata?.locationID) {
+				const metadata = await enviroments.qWeather.GeoAPI();
+				if (!airQuality?.metadata?.attributionUrl) airQuality.metadata.attributionUrl = metadata.attributionUrl;
+				airQuality.metadata.locationID = metadata?.locationID;
+			}
+			historicalAirQuality = await enviroments.qWeather.HistoricalAir(airQuality?.metadata?.locationID);
+			break;
+		}
+		case "ColorfulClouds": {
+			historicalAirQuality = (await enviroments.colorfulClouds.Hourly(1, ((Date.now() - 864e5) / 1000) | 0)).airQuality;
+			break;
+		}
+		case "WAQI": {
+			// todo
+			break;
+		}
+	}
+	Console.info("✅ HistoricalAirQuality");
+	return historicalAirQuality;
+}
+
+/**
  * 比较空气质量数据
  * @param {any} airQuality - 空气质量数据对象
  * @param {import('./types').Settings} Settings - 设置对象
@@ -265,38 +305,6 @@ async function CompareAirQuality(airQuality, Settings, enviroments) {
 	airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality?.index, ConvertedAirQualtiy?.index);
 	Console.info("✅ CompareAirQuality");
 	return airQuality;
-}
-
-/**
- * 注入下一小时天气预报数据
- * @param {any} forecastNextHour - 下一小时预报数据对象
- * @param {import('./types').Settings} Settings - 设置对象
- * @param {any} enviroments - 环境变量
- * @returns {Promise<any>} 注入后的下一小时预报数据
- */
-async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
-	Console.info("☑️ InjectForecastNextHour");
-	let newForecastNextHour;
-	switch (Settings?.NextHour?.Provider) {
-		case "WeatherKit":
-			break;
-		case "QWeather": {
-			newForecastNextHour = await enviroments.qWeather.Minutely();
-			break;
-		}
-		case "ColorfulClouds":
-		default: {
-			newForecastNextHour = await enviroments.colorfulClouds.Minutely();
-			break;
-		}
-	}
-	if (newForecastNextHour?.metadata) {
-		newForecastNextHour.metadata = { ...forecastNextHour?.metadata, ...newForecastNextHour.metadata };
-		forecastNextHour = { ...forecastNextHour, ...newForecastNextHour };
-		//Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
-	}
-	Console.info("✅ InjectForecastNextHour");
-	return forecastNextHour;
 }
 
 /**
@@ -402,41 +410,33 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
 }
 
 /**
- * 获取历史空气质量数据
- * @param {any} airQuality - 空气质量数据对象
+ * 注入下一小时天气预报数据
+ * @param {any} forecastNextHour - 下一小时预报数据对象
  * @param {import('./types').Settings} Settings - 设置对象
  * @param {any} enviroments - 环境变量
- * @returns {Promise<any>} 获取后的历史空气质量数据
+ * @returns {Promise<any>} 注入后的下一小时预报数据
  */
-async function HistoricalAirQuality(airQuality, Settings, enviroments) {
-	Console.info("☑️ HistoricalAirQuality");
-	let historicalAirQuality;
-	switch (Settings?.AQI?.ComparisonProvider || Settings?.AQI?.Provider) {
-		case "Auto":
-		default:
-			Settings.AQI.ComparisonProvider = Settings.AQI.Provider;
-			historicalAirQuality = await HistoricalAirQuality(airQuality, Settings, enviroments);
-			break;
+async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
+	Console.info("☑️ InjectForecastNextHour");
+	let newForecastNextHour;
+	switch (Settings?.NextHour?.Provider) {
 		case "WeatherKit":
 			break;
 		case "QWeather": {
-			if (!airQuality?.metadata?.locationID) {
-				const metadata = await enviroments.qWeather.GeoAPI();
-				if (!airQuality?.metadata?.attributionUrl) airQuality.metadata.attributionUrl = metadata.attributionUrl;
-				airQuality.metadata.locationID = metadata?.locationID;
-			}
-			historicalAirQuality = await enviroments.qWeather.HistoricalAir(airQuality?.metadata?.locationID);
+			newForecastNextHour = await enviroments.qWeather.Minutely();
 			break;
 		}
-		case "ColorfulClouds": {
-			historicalAirQuality = (await enviroments.colorfulClouds.Hourly(1, ((Date.now() - 864e5) / 1000) | 0)).airQuality;
-			break;
-		}
-		case "WAQI": {
-			// todo
+		case "ColorfulClouds":
+		default: {
+			newForecastNextHour = await enviroments.colorfulClouds.Minutely();
 			break;
 		}
 	}
-	Console.info("✅ HistoricalAirQuality");
-	return historicalAirQuality;
+	if (newForecastNextHour?.metadata) {
+		newForecastNextHour.metadata = { ...forecastNextHour?.metadata, ...newForecastNextHour.metadata };
+		forecastNextHour = { ...forecastNextHour, ...newForecastNextHour };
+		//Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
+	}
+	Console.info("✅ InjectForecastNextHour");
+	return forecastNextHour;
 }
