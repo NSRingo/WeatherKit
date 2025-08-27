@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.6.0";
+	static Version = "2.7.0";
 	static Author = "Virgil Clyne & Wordless Echo";
 
 	/**
@@ -16,29 +16,53 @@ export default class AirQuality {
 	static ConvertScale(airQuality, Settings) {
 		const scale = Settings?.AQI?.Local?.Scale || "WAQI_InstantCast";
 		const convertUnits = Settings?.AQI?.Local?.ConvertUnits || false;
-		Console.log(`☑️ ConvertScale, ${airQuality.scale} -> ${scale}, convertUnits: ${convertUnits}`);
-		if (airQuality.scale === scale) {
-			Console.log("⏭️ ConvertScale");
-		} else {
-			// 首先将污染物转换为指定标准的单位
-			const pollutants = AirQuality.#Pollutants(airQuality.pollutants, scale);
-			// 计算 AQI 与首要污染物
-			const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous?.AQI > current?.AQI ? previous : current), {});
-			airQuality.index = index;
-			airQuality.scale = AirQuality.#Config.Scales[scale].scale;
-			airQuality.primaryPollutant = primaryPollutant;
-			airQuality.categoryIndex = AirQuality.CategoryIndex(index, scale);
-			airQuality.isSignificant = airQuality.categoryIndex >= AirQuality.#Config.Scales[scale].significant;
-			if (convertUnits)
-				airQuality.pollutants = airQuality.pollutants.map(pollutant => {
-					pollutant.amount = pollutant.convertedAmount;
-					pollutant.units = pollutant.convertedUnits;
-					return pollutant;
-				});
-			airQuality.metadata.providerName += `\nConverted using ${scale}`;
-			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
-			Console.log("✅ ConvertScale");
+		Console.log(`☑️ ConvertScale`, `${airQuality?.scale} -> ${scale}`, `convertUnits: ${convertUnits}`);
+		switch (airQuality?.scale) {
+			case scale: {
+				Console.log("⏭️ ConvertScale");
+				// 就算标准相同，也要检查是否有主要污染物数据，没有主要污染物也要补充
+				if (!airQuality.primaryPollutant || airQuality.primaryPollutant === "NOT_AVAILABLE") {
+					// 首先将污染物转换为指定标准的单位
+					const pollutants = AirQuality.#Pollutants(airQuality.pollutants, scale);
+					// 计算 AQI 与首要污染物
+					const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous?.AQI > current?.AQI ? previous : current), {});
+					//airQuality.index = index;
+					airQuality.primaryPollutant = primaryPollutant;
+					//airQuality.categoryIndex = AirQuality.CategoryIndex(index, scale);
+				}
+				break;
+			}
+			case undefined: {
+				// 彩云天气历史数据不含污染物数据，只有历史 AQI
+				airQuality.scale = AirQuality.#Config.Scales[scale].scale;
+				airQuality.index = airQuality?.index?.[airQuality?.scale];
+				airQuality.categoryIndex = AirQuality.CategoryIndex(airQuality?.index, scale);
+				break;
+			}
+			default: {
+				// 首先将污染物转换为指定标准的单位
+				const pollutants = AirQuality.#Pollutants(airQuality.pollutants, scale);
+				// 重新计算 AQI 与首要污染物
+				const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous?.AQI > current?.AQI ? previous : current), {});
+				airQuality.index = index;
+				airQuality.scale = AirQuality.#Config.Scales[scale].scale;
+				airQuality.primaryPollutant = primaryPollutant;
+				airQuality.categoryIndex = AirQuality.CategoryIndex(index, scale);
+				airQuality.metadata.providerName += `\nConverted using ${scale}`;
+				break;
+			}
 		}
+		// 以上都要计算显著性
+		airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[scale].significant;
+		Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+		// 如果需要转换单位
+		if (convertUnits)
+			airQuality.pollutants = airQuality?.pollutants?.map(pollutant => {
+				pollutant.amount = pollutant.convertedAmount;
+				pollutant.units = pollutant.convertedUnits;
+				return pollutant;
+			});
+		Console.log("✅ ConvertScale");
 		return airQuality;
 	}
 
