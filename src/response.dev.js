@@ -282,6 +282,7 @@ async function HistoricalAirQuality(airQuality, Settings, enviroments) {
 		}
 		case "WAQI": {
 			// todo
+			historicalAirQuality = {};
 			break;
 		}
 	}
