@@ -95,8 +95,6 @@ Console.info(`FORMAT: ${FORMAT}`);
 									body.airQuality = AirQuality.FixUnits(body.airQuality);
 									// InjectAirQuality
 									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(body.airQuality, Settings, enviroments);
-									// ConvertAirQuality
-									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body.airQuality = AirQuality.ConvertScale(body.airQuality, Settings);
 									// CompareAirQuality
 									body.airQuality = await CompareAirQuality(body.airQuality, Settings, enviroments);
 									// Convert units that does not supported in Apple Weather
@@ -189,6 +187,8 @@ async function InjectAirQuality(airQuality, Settings, enviroments) {
 		airQuality = { ...airQuality, ...newAirQuality };
 		if (!airQuality?.pollutants) airQuality.pollutants = [];
 	}
+	// ConvertAirQuality，现在是必要操作
+	airQuality = AirQuality.ConvertScale(airQuality, Settings);
 	Console.info("✅ InjectAirQuality");
 	return airQuality;
 }
@@ -243,10 +243,13 @@ async function HistoricalAirQuality(airQuality, Settings, enviroments) {
  */
 async function CompareAirQuality(airQuality, Settings, enviroments) {
 	Console.info("☑️ CompareAirQuality", `airQuality.scale: ${airQuality?.scale}`);
+	// 获取历史空气质量数据（昨日）
 	const historicalAirQuality = await HistoricalAirQuality(airQuality, Settings, enviroments);
 	Console.debug(`historicalAirQuality.scale: ${historicalAirQuality?.scale}`);
+	// ConvertAirQuality 现在是必要操作
 	const ConvertedAirQualtiy = AirQuality.ConvertScale(historicalAirQuality, Settings);
 	Console.debug(`ConvertedAirQualtiy.scale: ${ConvertedAirQualtiy?.scale}`);
+	// 比较两日数据并确定变化趋势
 	airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality?.index, ConvertedAirQualtiy?.index);
 	Console.info("✅ CompareAirQuality");
 	return airQuality;
