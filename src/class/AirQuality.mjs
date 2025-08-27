@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.7.0";
+	static Version = "2.7.1";
 	static Author = "Virgil Clyne & Wordless Echo";
 
 	/**
@@ -14,46 +14,53 @@ export default class AirQuality {
 	 * @returns {Object} 转换后的空气质量数据对象
 	 */
 	static ConvertScale(airQuality, Settings) {
-		const scale = Settings?.AQI?.Local?.Scale || "WAQI_InstantCast";
-		const convertUnits = Settings?.AQI?.Local?.ConvertUnits || false;
-		Console.info(`☑️ ConvertScale`, `${airQuality?.scale} -> ${scale}`, `convertUnits: ${convertUnits}`);
-		switch (airQuality?.scale) {
-			case scale: {
+		const sourceScale = airQuality?.scale?.split(".")?.[0]; // 原始标准
+		const targetScale = Settings?.AQI?.Local?.Scale || "WAQI_InstantCast"; // 目标标准
+		const convertUnits = Settings?.AQI?.Local?.ConvertUnits || false; // 是否转换单位
+		Console.info(`☑️ ConvertScale`, `${sourceScale} -> ${targetScale}`, `convertUnits: ${convertUnits}`);
+		switch (sourceScale) {
+			case targetScale: {
 				Console.log("⏭️ ConvertScale");
 				// 就算标准相同，也要检查是否有主要污染物数据，没有主要污染物也要补充
 				if (!airQuality.primaryPollutant || airQuality.primaryPollutant === "NOT_AVAILABLE") {
 					// 首先将污染物转换为指定标准的单位
-					const pollutants = AirQuality.#Pollutants(airQuality.pollutants, scale);
+					const pollutants = AirQuality.#Pollutants(airQuality.pollutants, targetScale);
 					// 计算 AQI 与首要污染物
 					const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous?.AQI > current?.AQI ? previous : current), {});
 					//airQuality.index = index;
 					airQuality.primaryPollutant = primaryPollutant;
-					//airQuality.categoryIndex = AirQuality.CategoryIndex(index, scale);
+					//airQuality.categoryIndex = AirQuality.CategoryIndex(index, targetScale);
 				}
+				// 就算标准相同，也要重新计算显著性
+				airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[targetScale].significant;
 				break;
 			}
 			case undefined: {
 				// 彩云天气历史数据不含污染物数据，只有历史 AQI
-				airQuality.scale = AirQuality.#Config.Scales[scale].scale;
+				airQuality.scale = AirQuality.#Config.Scales[targetScale].scale;
 				airQuality.index = airQuality?.index?.[airQuality?.scale];
-				airQuality.categoryIndex = AirQuality.CategoryIndex(airQuality?.index, scale);
+				airQuality.categoryIndex = AirQuality.CategoryIndex(airQuality?.index, targetScale);
+				airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[targetScale].significant;
 				break;
 			}
-			default: {
-				// 首先将污染物转换为指定标准的单位
-				const pollutants = AirQuality.#Pollutants(airQuality.pollutants, scale);
-				// 重新计算 AQI 与首要污染物
-				const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous?.AQI > current?.AQI ? previous : current), {});
-				airQuality.index = index;
-				airQuality.scale = AirQuality.#Config.Scales[scale].scale;
-				airQuality.primaryPollutant = primaryPollutant;
-				airQuality.categoryIndex = AirQuality.CategoryIndex(index, scale);
-				airQuality.metadata.providerName += `\nConverted using ${scale}`;
+			case "HJ6332012":
+			case "EPA_NowCast": {
+				// [空气质量] 需要修改的标准 (ReplaceScales) 包含的标准才进行转换
+				if (Settings?.AQI?.Local?.ReplaceScales.includes(sourceScale)) {
+					// 首先将污染物转换为指定标准的单位
+					const pollutants = AirQuality.#Pollutants(airQuality.pollutants, targetScale);
+					// 重新计算 AQI 与首要污染物
+					const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous?.AQI > current?.AQI ? previous : current), {});
+					airQuality.index = index;
+					airQuality.scale = AirQuality.#Config.Scales[targetScale].scale;
+					airQuality.primaryPollutant = primaryPollutant;
+					airQuality.categoryIndex = AirQuality.CategoryIndex(index, targetScale);
+					airQuality.metadata.providerName += `\nConverted using ${targetScale}`;
+					airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[targetScale].significant;
+				}
 				break;
 			}
 		}
-		// 以上都要计算显著性
-		airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[scale].significant;
 		Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 		// 如果需要转换单位
 		if (convertUnits)
