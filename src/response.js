@@ -96,7 +96,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									// InjectAirQuality
 									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(body.airQuality, Settings, enviroments);
 									// ConvertAirQuality
-									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body.airQuality = AirQuality.Convert(body.airQuality, Settings);
+									if (body?.airQuality?.pollutants && Settings?.AQI?.Local?.ReplaceScales.includes(body?.airQuality?.scale.split(".")?.[0])) body.airQuality = AirQuality.ConvertScale(body.airQuality, Settings);
 									// CompareAirQuality
 									body.airQuality = await CompareAirQuality(body.airQuality, Settings, enviroments);
 									// Convert units that does not supported in Apple Weather
@@ -201,18 +201,11 @@ async function InjectAirQuality(airQuality, Settings, enviroments) {
  * @returns {Promise<any>} 比较后的空气质量数据
  */
 async function CompareAirQuality(airQuality, Settings, enviroments) {
-	Console.log("☑️ CompareAirQuality");
+	Console.log("☑️ CompareAirQuality", `airQuality.scale: ${airQuality?.scale}`);
 	const historicalAirQuality = await HistoricalAirQuality(airQuality, Settings, enviroments);
-	let ConvertedAirQualtiy;
-	if (airQuality?.scale === historicalAirQuality?.scale) {
-		ConvertedAirQualtiy = historicalAirQuality;
-	} else {
-		ConvertedAirQualtiy = AirQuality.Convert(historicalAirQuality, Settings);
-		if (airQuality?.scale !== ConvertedAirQualtiy?.scale) {
-			ConvertedAirQualtiy = null;
-		}
-	}
-	Console.debug(`airQuality.scale: ${airQuality?.scale}`, `historicalAirQuality.scale: ${historicalAirQuality?.scale}`);
+	Console.debug(`historicalAirQuality.scale: ${historicalAirQuality?.scale}`);
+	const ConvertedAirQualtiy = AirQuality.ConvertScale(historicalAirQuality, Settings);
+	Console.debug(`ConvertedAirQualtiy.scale: ${ConvertedAirQualtiy?.scale}`);
 	airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality?.index, ConvertedAirQualtiy?.index);
 	Console.log("✅ CompareAirQuality");
 	return airQuality;

@@ -2,37 +2,43 @@ import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.5.2";
+	static Version = "2.6.0";
 	static Author = "Virgil Clyne & Wordless Echo";
 
 	/**
-	 * 转换空气质量数据
+	 * 转换空气质量标准
 	 * 将空气质量数据按照指定的标准进行转换，包括污染物数值转换和AQI指数计算
 	 * @param {Object} airQuality - 空气质量数据对象
 	 * @param {Array} airQuality.pollutants - 污染物数组
-	 * @param {Object} airQuality.metadata - 空气质量元数据
-	 * @param {string} airQuality.metadata.providerName - 数据提供商名称
 	 * @param {import('../types').Settings} Settings - 设置对象
 	 * @returns {Object} 转换后的空气质量数据对象
 	 */
-	static Convert(airQuality, Settings) {
-		Console.log("☑️ Convert");
-		let newAirQuality;
-		switch (Settings?.AQI?.Local?.Scale) {
-			case "NONE":
-				break;
-			case "HJ_633":
-			case "EPA_NowCast":
-			case "WAQI_InstantCast":
-			default:
-				newAirQuality = AirQuality.#ConvertScale(airQuality?.pollutants, Settings?.AQI?.Local?.Scale, Settings?.AQI?.Local?.ConvertUnits);
-				break;
+	static ConvertScale(airQuality, Settings) {
+		const scale = Settings?.AQI?.Local?.Scale || "WAQI_InstantCast";
+		const convertUnits = Settings?.AQI?.Local?.ConvertUnits || false;
+		Console.log(`☑️ ConvertScale, ${airQuality.scale} -> ${scale}, convertUnits: ${convertUnits}`);
+		if (airQuality.scale === scale) {
+			Console.log("⏭️ ConvertScale");
+		} else {
+			// 首先将污染物转换为指定标准的单位
+			const pollutants = AirQuality.#Pollutants(airQuality.pollutants, scale);
+			// 计算 AQI 与首要污染物
+			const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous?.AQI > current?.AQI ? previous : current), {});
+			airQuality.index = index;
+			airQuality.scale = AirQuality.#Config.Scales[scale].scale;
+			airQuality.primaryPollutant = primaryPollutant;
+			airQuality.categoryIndex = AirQuality.CategoryIndex(index, scale);
+			airQuality.isSignificant = airQuality.categoryIndex >= AirQuality.#Config.Scales[scale].significant;
+			if (convertUnits)
+				airQuality.pollutants = airQuality.pollutants.map(pollutant => {
+					pollutant.amount = pollutant.convertedAmount;
+					pollutant.units = pollutant.convertedUnits;
+					return pollutant;
+				});
+			airQuality.metadata.providerName += `\nConverted using ${scale}`;
+			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+			Console.log("✅ ConvertScale");
 		}
-		if (newAirQuality?.index) {
-			airQuality = { ...airQuality, ...newAirQuality };
-			airQuality.metadata.providerName += `\nConverted using ${Settings?.AQI?.Local?.Scale}`;
-		}
-		Console.log("✅ Convert");
 		return airQuality;
 	}
 
@@ -604,29 +610,6 @@ export default class AirQuality {
 		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
 		Console.log("✅ Pollutants");
 		return pollutants;
-	}
-
-	static #ConvertScale(pollutants = [], scale = "WAQI_InstantCast", convertUnits = false) {
-		Console.log("☑️ ConvertScale");
-		pollutants = AirQuality.#Pollutants(pollutants, scale);
-		const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous?.AQI > current?.AQI ? previous : current), {});
-		const airQuality = {
-			index: index,
-			pollutants: pollutants,
-			scale: AirQuality.#Config.Scales[scale].scale,
-			primaryPollutant: primaryPollutant,
-			categoryIndex: AirQuality.CategoryIndex(index, scale),
-		};
-		airQuality.isSignificant = airQuality.categoryIndex >= AirQuality.#Config.Scales[scale].significant;
-		if (convertUnits)
-			airQuality.pollutants = airQuality.pollutants.map(pollutant => {
-				pollutant.amount = pollutant.convertedAmount;
-				pollutant.units = pollutant.convertedUnits;
-				return pollutant;
-			});
-		//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
-		Console.log("✅ ConvertScale");
-		return airQuality;
 	}
 
 	static #ConvertUnit(amount, unitFrom, unitTo, ppxToXGM3Value = -1) {
