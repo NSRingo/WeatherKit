@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "4.4.8";
+		this.Version = "4.4.9";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://${host}`;
 		this.headers = { "X-QW-Api-Key": token };
@@ -36,7 +36,7 @@ export default class QWeather {
 		},
 		Units: {
 			"μg/m3": "MICROGRAMS_PER_CUBIC_METER",
-			"ug/m3": "MILLIGRAMS_PER_CUBIC_METER",
+			"mg/m3": "MILLIGRAMS_PER_CUBIC_METER",
 			ppb: "PARTS_PER_BILLION",
 			ppm: "PARTS_PER_MILLION",
 		},
