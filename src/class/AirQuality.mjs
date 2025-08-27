@@ -616,6 +616,16 @@ export default class AirQuality {
 			pm10: "PM10",
 			other: "NOT_AVAILABLE",
 		},
+		Units: {
+			MICROGRAMS_PER_CUBIC_METER: "μg/m3",
+			"μg/m3": "MICROGRAMS_PER_CUBIC_METER",
+			MILLIGRAMS_PER_CUBIC_METER: "mg/m3",
+			"mg/m3": "MILLIGRAMS_PER_CUBIC_METER",
+			ppb: "PARTS_PER_BILLION",
+			PARTS_PER_BILLION: "ppb",
+			ppm: "PARTS_PER_MILLION",
+			PARTS_PER_MILLION: "ppm",
+		},
 	};
 
 	static #Pollutants(pollutants = [], scale = "WAQI_InstantCast") {
@@ -645,7 +655,8 @@ export default class AirQuality {
 
 	static #ConvertUnit(amount, unitFrom, unitTo, ppxToXGM3Value = -1) {
 		Console.info("☑️ ConvertUnit");
-		Console.debug(`amount: ${amount}`, `ppxToXGM3Value: ${ppxToXGM3Value}`, `unitFrom: ${unitFrom}`, `unitTo: ${unitTo}`);
+		Console.debug(`form: ${amount} ${AirQuality.#Config.Units[unitFrom]}`);
+		Console.debug(`ppxToXGM3Value: ${ppxToXGM3Value}`);
 		if (amount < 0) amount = -1;
 		else
 			switch (unitFrom) {
@@ -733,7 +744,8 @@ export default class AirQuality {
 					amount = -1;
 					break;
 			}
-		//Console.info("✅ ConvertUnit", `amount: ${amount}`);
+		Console.debug(`to: ${amount} ${AirQuality.#Config.Units[unitTo]}`);
+		Console.info("✅ ConvertUnit");
 		return amount;
 	}
 }
