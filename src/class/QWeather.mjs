@@ -161,7 +161,7 @@ export default class QWeather {
 						},
 						categoryIndex: Number.parseInt(body?.now?.level, 10),
 						index: Number.parseInt(body?.now?.aqi, 10),
-						isSignificant: true,
+						isSignificant: false,
 						pollutants: this.#CreatePollutants(body?.now),
 						previousDayComparison: "UNKNOWN",
 						primaryPollutant: this.#Config.Pollutants[body?.now?.primary] || "NOT_AVAILABLE",
@@ -219,7 +219,7 @@ export default class QWeather {
 						},
 						categoryIndex: Number.parseInt(body?.indexes?.[0]?.level, 10),
 						index: body?.indexes?.[0]?.aqi,
-						isSignificant: true,
+						isSignificant: false,
 						pollutants: body?.pollutants?.map(pollutant => {
 							pollutant.pollutantType = this.#Config.Pollutants[pollutant?.code];
 							pollutant.amount = pollutant?.concentration?.value;
