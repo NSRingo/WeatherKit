@@ -13,7 +13,7 @@ export default {
 				ReplaceProviders: ["QWeather"],
 				ComparisonProvider: "Auto",
 				Local: {
-					Scale: "WAQI_InstantCast",
+					Scale: "EPA_NowCast",
 					ReplaceScales: ["HJ6332012"],
 					ConvertUnits: false,
 				},

@@ -130,9 +130,11 @@ export default defineConfig({
 			type: "string",
 			name: "[空气质量] 本地替换算法",
 			description: "本地替换时使用的算法",
-			defaultValue: "WAQI_InstantCast",
+			defaultValue: "EPA_NowCast",
 			options: [
 				{ key: "NONE", label: "None (不进行替换)" },
+				//{ key: "HJ6332012", label: "中国 (HJ 633—2012)" },
+				{ key: "EPA_NowCast", label: "美国 (EPA NowCast)" },
 				{ key: "WAQI_InstantCast", label: "WAQI InstantCast" },
 			],
 		},

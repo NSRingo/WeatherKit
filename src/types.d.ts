@@ -128,11 +128,12 @@ export interface Settings {
          *
          * Possible values:
          * - `'NONE'` - None (不进行替换)
+         * - `'EPA_NowCast'` - 美国 (EPA NowCast)
          * - `'WAQI_InstantCast'` - WAQI InstantCast
          *
-         * @defaultValue "WAQI_InstantCast"
+         * @defaultValue "EPA_NowCast"
          */
-        Scale?: 'NONE' | 'WAQI_InstantCast';
+        Scale?: 'NONE' | 'EPA_NowCast' | 'WAQI_InstantCast';
         /**
          * [空气质量] 转换污染物计量单位
          *
