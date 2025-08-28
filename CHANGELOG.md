@@ -34,4 +34,5 @@
   * `和风天气 Token` 改为通过 Headers 发送
   * 调整调试信息等级，清理控制台输出
   * 空气质量在未达关注等级前不再置于显著位置
-  * iOS 26 临时解决方案: https://github.com/orgs/NSRingo/discussions/72
+  * ~~iOS 26 临时解决方案: https://github.com/orgs/NSRingo/discussions/72~~
+  * 已修复 26 的支持
