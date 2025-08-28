@@ -389,6 +389,7 @@ export default class WeatherKit2 {
 					// 创建UUID对象
 					const idOffset = WK2.UUID.createUUID(builder, idBytesOffset);
 					const areaIdOffset = builder.createString(alert?.areaId);
+					const areaNameOffset = builder.createString(alert?.areaName);
 					const attributionUrlOffset = builder.createString(alert?.attributionUrl);
 					const countryCodeOffset = builder.createString(alert?.countryCode);
 					const descriptionOffset = builder.createString(alert?.description);
@@ -401,7 +402,7 @@ export default class WeatherKit2 {
 						builder,
 						idOffset,
 						areaIdOffset,
-						alert?.unknown3,
+						areaNameOffset,
 						attributionUrlOffset,
 						countryCodeOffset,
 						descriptionOffset,
@@ -423,6 +424,8 @@ export default class WeatherKit2 {
 						responsesOffset,
 						alert?.unknown23,
 						alert?.unknown24,
+						alert?.unknown25,
+						alert?.unknown26,
 					);
 				});
 				const alertsOffset = WK2.WeatherAlertCollectionData.createAlertsVector(builder, alertsOffsets);
@@ -899,6 +902,7 @@ export default class WeatherKit2 {
 				for (let i = 0; i < WeatherAlertCollectionData?.alertsLength(); i++) {
 					const alert = {
 						areaId: WeatherAlertCollectionData?.alerts(i)?.areaId(),
+						areaName: WeatherAlertCollectionData?.alerts(i)?.areaName(),
 						attributionUrl: WeatherAlertCollectionData?.alerts(i)?.attributionUrl(),
 						certainty: WK2.Certainty[WeatherAlertCollectionData?.alerts(i)?.certainty()],
 						countryCode: WeatherAlertCollectionData?.alerts(i)?.countryCode(),
@@ -918,8 +922,11 @@ export default class WeatherKit2 {
 						significance: WK2.SignificanceType[WeatherAlertCollectionData?.alerts(i)?.significance()],
 						source: WeatherAlertCollectionData?.alerts(i)?.source(),
 						token: WeatherAlertCollectionData?.alerts(i)?.token(),
-						unknown3: WeatherAlertCollectionData?.alerts(i)?.unknown3(),
 						urgency: WK2.Urgency[WeatherAlertCollectionData?.alerts(i)?.urgency()],
+						unknown23: WeatherAlertCollectionData?.alerts(i)?.unknown23(),
+						unknown24: WeatherAlertCollectionData?.alerts(i)?.unknown24(),
+						unknown25: WeatherAlertCollectionData?.alerts(i)?.unknown25(),
+						unknown26: WeatherAlertCollectionData?.alerts(i)?.unknown26(),
 					};
 					//for (let j = 0; j < WeatherAlertCollectionData?.alerts(i)?.idLength(); j++) alert.id.push(WeatherAlertCollectionData?.alerts(i)?.id(j));
 					//for (let j = 0; j < WeatherAlertCollectionData?.alerts(i)?.idLength(); j++) alert.id.push({ "lowBytes": WeatherAlertCollectionData?.alerts(i)?.id(j).lowBytes(), "highBytes": WeatherAlertCollectionData?.alerts(i)?.id(j).highBytes() });
