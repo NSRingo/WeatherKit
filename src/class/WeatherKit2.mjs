@@ -384,11 +384,10 @@ export default class WeatherKit2 {
 				const alertsOffsets = data?.alerts?.map(alert => {
 					const responsesOffsets = alert?.responses?.map(response => WK2.ResponseType[response]);
 					const responsesOffset = WK2.WeatherAlertSummary.createResponsesVector(builder, responsesOffsets);
-					const idOffset = WK2.ID.createID(builder, builder.createString(alert?.id?.uuid));
-					//let idOffset = WK2.WeatherAlertSummary.createIdVector(builder, alert?.id);
-					//WK2.WeatherAlertSummary.startIdVector(builder, alert?.id?.length);
-					//alert?.id?.map(id => WK2.UUID.createUUID(builder, id?.lowBytes, id?.highBytes));
-					//let idOffset = builder.endVector();
+					// 创建UUID的bytes vector
+					const idBytesOffset = WK2.UUID.createBytesVector(builder, alert?.id?.bytes);
+					// 创建UUID对象
+					const idOffset = WK2.UUID.createUUID(builder, idBytesOffset);
 					const areaIdOffset = builder.createString(alert?.areaId);
 					const attributionUrlOffset = builder.createString(alert?.attributionUrl);
 					const countryCodeOffset = builder.createString(alert?.countryCode);
@@ -898,7 +897,6 @@ export default class WeatherKit2 {
 					detailsUrl: WeatherAlertCollectionData?.detailsUrl(),
 				};
 				for (let i = 0; i < WeatherAlertCollectionData?.alertsLength(); i++) {
-					//let uuid = { "uuid": WeatherAlertCollectionData?.alerts(i)?.id().uuid() };
 					const alert = {
 						areaId: WeatherAlertCollectionData?.alerts(i)?.areaId(),
 						attributionUrl: WeatherAlertCollectionData?.alerts(i)?.attributionUrl(),
@@ -911,7 +909,7 @@ export default class WeatherKit2 {
 						eventOnsetTime: WeatherAlertCollectionData?.alerts(i)?.eventOnsetTime(),
 						eventSource: WeatherAlertCollectionData?.alerts(i)?.eventSource(),
 						expireTime: WeatherAlertCollectionData?.alerts(i)?.expireTime(),
-						id: { uuid: WeatherAlertCollectionData?.alerts(i)?.id()?.uuid() },
+						id: { bytes: WeatherAlertCollectionData?.alerts(i)?.id()?.bytesArray() },
 						importance: WK2.ImportanceType[WeatherAlertCollectionData?.alerts(i)?.importance()],
 						issuedTime: WeatherAlertCollectionData?.alerts(i)?.issuedTime(),
 						phenomenon: WeatherAlertCollectionData?.alerts(i)?.phenomenon(),
