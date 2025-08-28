@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.7.1";
+	static Version = "2.8.1";
 	static Author = "Virgil Clyne & Wordless Echo";
 
 	/**
@@ -14,50 +14,65 @@ export default class AirQuality {
 	 * @returns {Object} 转换后的空气质量数据对象
 	 */
 	static ConvertScale(airQuality, Settings) {
-		const sourceScale = airQuality?.scale?.split(".")?.[0]; // 原始标准
-		const targetScale = Settings?.AQI?.Local?.Scale || "WAQI_InstantCast"; // 目标标准
+		// 源标准，针对彩云天气双标准 AQI 的情况默认用国标
+		const sourceScale = airQuality?.scale?.split(".")?.[0]; // 源标准
+		// 目标标准，NONE 时使用源标准，否则使用 Settings
+		let targetScale = Settings?.AQI?.Local?.Scale || "EPA_NowCast"; // 目标标准
 		const convertUnits = Settings?.AQI?.Local?.ConvertUnits || false; // 是否转换单位
 		Console.info(`☑️ ConvertScale`, `${sourceScale} -> ${targetScale}`, `convertUnits: ${convertUnits}`);
-		switch (sourceScale) {
-			case targetScale: {
-				Console.log("⏭️ ConvertScale");
-				// 就算标准相同，也要检查是否有主要污染物数据，没有主要污染物也要补充
-				if (!airQuality.primaryPollutant || airQuality.primaryPollutant === "NOT_AVAILABLE") {
-					// 首先将污染物转换为指定标准的单位
-					const pollutants = AirQuality.#Pollutants(airQuality.pollutants, targetScale);
-					// 计算 AQI 与首要污染物
-					const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous?.AQI > current?.AQI ? previous : current), {});
-					//airQuality.index = index;
-					airQuality.primaryPollutant = primaryPollutant;
-					//airQuality.categoryIndex = AirQuality.CategoryIndex(index, targetScale);
+		switch (`${sourceScale}|${targetScale}`) {
+			// biome-ignore lint/suspicious/noFallthroughSwitchClause: intentional fallthrough for NONE case
+			case "HJ6332012|NONE":
+				Console.debug("HJ6332012|NONE");
+				targetScale = sourceScale;
+			case "HJ6332012|HJ6332012":
+			case "EPA_NowCast|HJ6332012": {
+				Console.debug("HJ6332012|HJ6332012");
+				// 处理彩云天气双标准 AQI
+				if (typeof airQuality.index === "object") {
+					airQuality.scale = AirQuality.#Config.Scales[targetScale]?.scale;
+					airQuality.index = airQuality?.index?.[airQuality.scale];
+					airQuality.categoryIndex = AirQuality.CategoryIndex(airQuality?.index, airQuality.scale);
+					airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[airQuality.scale].significant;
 				}
 				// 就算标准相同，也要重新计算显著性
 				airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[targetScale].significant;
 				break;
 			}
-			case undefined: {
-				// 彩云天气历史数据不含污染物数据，只有历史 AQI
-				airQuality.scale = AirQuality.#Config.Scales[targetScale].scale;
-				airQuality.index = airQuality?.index?.[airQuality?.scale];
-				airQuality.categoryIndex = AirQuality.CategoryIndex(airQuality?.index, targetScale);
-				airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[targetScale].significant;
-				break;
-			}
-			case "HJ6332012":
-			case "EPA_NowCast": {
+			// biome-ignore lint/suspicious/noFallthroughSwitchClause: intentional fallthrough for NONE case
+			case "EPA_NowCast|NONE":
+				Console.debug("EPA_NowCast|NONE");
+				targetScale = sourceScale;
+			case "HJ6332012|EPA_NowCast":
+			case "HJ6332012|WAQI_InstantCast":
+			case "EPA_NowCast|EPA_NowCast":
+			case "EPA_NowCast|WAQI_InstantCast": {
+				Console.debug(`${sourceScale}|${targetScale}`);
+				if (Settings?.AQI?.Local?.Scale === "NONE") targetScale = sourceScale;
+				// 处理彩云天气双标准 AQI
+				if (typeof airQuality.index === "object") {
+					airQuality.scale = AirQuality.#Config.Scales[targetScale]?.scale;
+					airQuality.index = airQuality?.index?.[airQuality.scale];
+					airQuality.categoryIndex = AirQuality.CategoryIndex(airQuality?.index, airQuality.scale);
+					airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[airQuality.scale].significant;
+				}
 				// [空气质量] 需要修改的标准 (ReplaceScales) 包含的标准才进行转换
 				if (Settings?.AQI?.Local?.ReplaceScales.includes(sourceScale)) {
-					// 首先将污染物转换为指定标准的单位
-					const pollutants = AirQuality.#Pollutants(airQuality.pollutants, targetScale);
-					// 重新计算 AQI 与首要污染物
-					const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous?.AQI > current?.AQI ? previous : current), {});
-					airQuality.index = index;
-					airQuality.scale = AirQuality.#Config.Scales[targetScale].scale;
-					airQuality.primaryPollutant = primaryPollutant;
-					airQuality.categoryIndex = AirQuality.CategoryIndex(index, targetScale);
-					airQuality.metadata.providerName += `\nConverted using ${targetScale}`;
-					airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[targetScale].significant;
+					// 彩云天气历史数据不含污染物数据，只有历史 AQI，所以要先检查有没有污染物数据
+					if (airQuality.pollutants) {
+						// 首先将污染物转换为指定标准的单位，"HJ6332012"标准下，此步骤缺失污染物数据无法进行！
+						const pollutants = AirQuality.#Pollutants(airQuality.pollutants, targetScale);
+						// 重新计算 AQI 与首要污染物
+						const { AQI: index, pollutantType: primaryPollutant } = pollutants.reduce((previous, current) => (previous?.AQI > current?.AQI ? previous : current), {});
+						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.index = index;
+						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.scale = AirQuality.#Config.Scales[targetScale].scale;
+						airQuality.primaryPollutant = primaryPollutant || "NOT_AVAILABLE";
+						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.categoryIndex = AirQuality.CategoryIndex(index, targetScale);
+						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.metadata.providerName += `\nConverted using ${targetScale}`;
+					}
 				}
+				// 就算不进行替换，也要重新计算显著性
+				airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[targetScale].significant;
 				break;
 			}
 		}
@@ -197,7 +212,7 @@ export default class AirQuality {
 
 	static #Config = {
 		Scales: {
-			HJ_633: {
+			HJ6332012: {
 				/**
 				 * China AQI standard.
 				 * [环境空气质量指数（AQI）技术规定（试行）]{@link https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/jcffbz/201203/W020120410332725219541.pdf}
@@ -266,6 +281,10 @@ export default class AirQuality {
 							7: [3091, 3840], // OVER_RANGE
 						},
 					},
+					PM10: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						// 国标仅有单位
+					},
 					PM10_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ppxToXGM3: -1,
@@ -329,6 +348,10 @@ export default class AirQuality {
 							5: [266, 800], // VERY_UNHEALTHY
 							// 臭氧（O3）8小时平均浓度值高于800 ug/m3的，不再进行其空气质量分指数计算，臭氧（O3）空气质量分指数按1小时平均浓度计算的分指数报告。
 						},
+					},
+					PM2_5: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						// 国标仅有单位
 					},
 					PM2_5_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
