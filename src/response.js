@@ -187,7 +187,7 @@ async function InjectAirQuality(airQuality, Settings, enviroments) {
 		airQuality = { ...airQuality, ...newAirQuality };
 		if (!airQuality?.pollutants) airQuality.pollutants = [];
 	}
-	// ConvertAirQuality，现在是必要操作
+	// ConvertAirQuality 现在是必要操作
 	airQuality = AirQuality.ConvertScale(airQuality, Settings);
 	Console.info("✅ InjectAirQuality");
 	return airQuality;
@@ -230,6 +230,8 @@ async function HistoricalAirQuality(airQuality, Settings, enviroments) {
 			break;
 		}
 	}
+	// ConvertAirQuality 现在是必要操作
+	historicalAirQuality = AirQuality.ConvertScale(historicalAirQuality, Settings);
 	Console.info("✅ HistoricalAirQuality");
 	return historicalAirQuality;
 }
@@ -245,12 +247,8 @@ async function CompareAirQuality(airQuality, Settings, enviroments) {
 	Console.info("☑️ CompareAirQuality", `airQuality.scale: ${airQuality?.scale}`);
 	// 获取历史空气质量数据（昨日）
 	const historicalAirQuality = await HistoricalAirQuality(airQuality, Settings, enviroments);
-	Console.debug(`historicalAirQuality.scale: ${historicalAirQuality?.scale}`);
-	// ConvertAirQuality 现在是必要操作
-	const convertedAirQuality = AirQuality.ConvertScale(historicalAirQuality, Settings);
-	Console.debug(`convertedAirQuality.scale: ${convertedAirQuality?.scale}`);
 	// 比较两日数据并确定变化趋势
-	airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality?.index, convertedAirQuality?.index);
+	airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality?.index, historicalAirQuality?.index);
 	Console.info("✅ CompareAirQuality");
 	return airQuality;
 }
