@@ -203,12 +203,9 @@ async function InjectAirQuality(airQuality, Settings, enviroments) {
 async function HistoricalAirQuality(airQuality, Settings, enviroments) {
 	Console.info("☑️ HistoricalAirQuality");
 	let historicalAirQuality;
+	// 自动选项与空气质量数据源相同
+	if (Settings?.AQI?.ComparisonProvider === "Auto") Settings.AQI.ComparisonProvider = Settings.AQI.Provider;
 	switch (Settings?.AQI?.ComparisonProvider || Settings?.AQI?.Provider) {
-		case "Auto":
-		default:
-			Settings.AQI.ComparisonProvider = Settings.AQI.Provider;
-			historicalAirQuality = await HistoricalAirQuality(airQuality, Settings, enviroments);
-			break;
 		case "WeatherKit":
 			break;
 		case "QWeather": {
@@ -222,6 +219,8 @@ async function HistoricalAirQuality(airQuality, Settings, enviroments) {
 		}
 		case "ColorfulClouds": {
 			historicalAirQuality = (await enviroments.colorfulClouds.Hourly(1, ((Date.now() - 864e5) / 1000) | 0)).airQuality;
+			// 因为彩云天气提供双标准 AQI，所以这里要保持与当前地区数据相同的标准，以处理 Settings?.AQI?.Local?.Scale === "NONE" 的回退情况
+			historicalAirQuality.scale = airQuality.scale;
 			break;
 		}
 		case "WAQI": {
