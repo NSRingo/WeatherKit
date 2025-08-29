@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(parameters, token) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.3.4";
+		this.Version = "3.3.5";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
 		this.headers = { Referer: "https://caiyunapp.com/" };
@@ -69,8 +69,8 @@ export default class ColorfulClouds {
 									},
 									isSignificant: false, // 交给 AirQuality.ConvertScale 计算
 									pollutants: this.#CreatePollutants(body?.result?.realtime?.air_quality),
-									previousDayComparison: "UNKNOWN",
-									primaryPollutant: "NOT_AVAILABLE", // 交给 AirQuality.ConvertScale 计算
+									//previousDayComparison: "UNKNOWN",
+									//primaryPollutant: "NOT_AVAILABLE", // 交给 AirQuality.ConvertScale 计算
 									//scale: "HJ6332012", // 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
 								};
 								this.currentWeather = {
@@ -224,9 +224,9 @@ export default class ColorfulClouds {
 									EPA_NowCast: body?.result?.hourly?.air_quality?.aqi?.[0]?.value?.usa,
 								},
 								isSignificant: false, // 交给 AirQuality.ConvertScale 计算
-								pollutants: [],
-								previousDayComparison: "UNKNOWN",
-								primaryPollutant: "NOT_AVAILABLE", // 交给 AirQuality.ConvertScale 计算
+								//pollutants: [],
+								//previousDayComparison: "UNKNOWN",
+								//primaryPollutant: "NOT_AVAILABLE", // 交给 AirQuality.ConvertScale 计算
 								//scale: "HJ6332012", // 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
 							};
 							forecastHourly = {
