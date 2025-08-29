@@ -263,6 +263,7 @@ async function HistoricalAirQuality(airQuality, Settings, enviroments) {
 	if (Settings?.AQI?.ComparisonProvider === "Auto") Settings.AQI.ComparisonProvider = Settings.AQI.Provider;
 	switch (Settings?.AQI?.ComparisonProvider || Settings?.AQI?.Provider) {
 		case "WeatherKit":
+			historicalAirQuality = {};
 			break;
 		case "QWeather": {
 			if (!airQuality?.metadata?.locationID) {
