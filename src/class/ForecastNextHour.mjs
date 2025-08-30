@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
-	Version = "v1.4.3";
+	Version = "v1.4.4";
 	Author = "iRingo";
 
 	static #Configs = {
@@ -106,27 +106,28 @@ export default class ForecastNextHour {
 
 		minutes = minutes.map((minute, i) => {
 			// 根据precipitationIntensity来猜测生成perceivedPrecipitationIntensity
-			minute.perceivedPrecipitationIntensity = ForecastNextHour.#ConvertPrecipitationIntensity(minute.precipitationIntensity, precipitationType, units);
+			minute.perceivedPrecipitationIntensity = ForecastNextHour.#ConvertPrecipitationIntensity(minute.precipitationIntensity, units);
 			// 然后根据perceivedPrecipitationIntensity和precipitationChance来猜测生成condition和summaryCondition
 			if (minute.perceivedPrecipitationIntensity === 0) {
 				// 无降水
 				minute.condition = "CLEAR";
 				minute.summaryCondition = "CLEAR";
-			} else if (minute.perceivedPrecipitationIntensity > ForecastNextHour.#Configs.Precipitation.Range[units].NO[0] && minute.precipitationIntensity <= ForecastNextHour.#Configs.Precipitation.Range[units].NO[1]) {
-				// 轻微降水，可能感知不到
-				switch (precipitationType) {
-					case "RAIN":
-						minute.condition = "POSSIBLE_DRIZZLE";
-						break;
-					case "SNOW":
-						minute.condition = "POSSIBLE_FLURRIES";
-						break;
-					default:
-						minute.condition = `POSSIBLE_${precipitationType}`;
-						break;
+				if (minute.precipitationIntensity >= 0.1 || minute.precipitationChance >= 35) {
+					// 小雨，可以感知到
+					switch (precipitationType) {
+						case "RAIN":
+							minute.condition = "POSSIBLE_DRIZZLE";
+							break;
+						case "SNOW":
+							minute.condition = "POSSIBLE_FLURRIES";
+							break;
+						default:
+							minute.condition = `POSSIBLE_${precipitationType}`;
+							break;
+					}
+					minute.summaryCondition = precipitationType;
 				}
-				minute.summaryCondition = "CLEAR";
-			} else if (minute.perceivedPrecipitationIntensity > ForecastNextHour.#Configs.Precipitation.Range[units].LIGHT[0] && minute.perceivedPrecipitationIntensity <= ForecastNextHour.#Configs.Precipitation.Range[units].LIGHT[1]) {
+			} else if (minute.perceivedPrecipitationIntensity <= 1) {
 				// 小雨，可以感知到
 				switch (precipitationType) {
 					case "RAIN":
@@ -140,7 +141,7 @@ export default class ForecastNextHour {
 						break;
 				}
 				minute.summaryCondition = precipitationType;
-			} else if (minute.perceivedPrecipitationIntensity > ForecastNextHour.#Configs.Precipitation.Range[units].MODERATE[0] && minute.perceivedPrecipitationIntensity <= ForecastNextHour.#Configs.Precipitation.Range[units].MODERATE[1]) {
+			} else if (minute.perceivedPrecipitationIntensity <= 2) {
 				// 中雨，明显感知
 				switch (precipitationType) {
 					case "RAIN":
@@ -154,7 +155,7 @@ export default class ForecastNextHour {
 						break;
 				}
 				minute.summaryCondition = precipitationType;
-			} else if (minute.perceivedPrecipitationIntensity > ForecastNextHour.#Configs.Precipitation.Range[units].HEAVY[0]) {
+			} else {
 				// 大雨，强烈感知
 				switch (precipitationType) {
 					case "RAIN":
@@ -170,7 +171,7 @@ export default class ForecastNextHour {
 				minute.summaryCondition = precipitationType;
 			}
 
-			Console.debug(`minutes[${i}]`, JSON.stringify(minute.condition, null, 2));
+			Console.debug(`minutes[${i}]`, JSON.stringify(minute, null, 2));
 			return minute;
 		});
 
@@ -202,7 +203,7 @@ export default class ForecastNextHour {
 					if (minute.summaryCondition !== previousMinute.summaryCondition) {
 						// 结束当前summary
 						Summary.endTime = minute.startTime;
-						Console.debug(`Summaries[${i}]`, JSON.stringify(Summary, null, 2));
+						Console.debug(`Summaries[${i}]`, JSON.stringify({ ...minute, ...Summary }, null, 2));
 						Summaries.push({ ...Summary });
 
 						// 开始新的summary
@@ -218,7 +219,7 @@ export default class ForecastNextHour {
 					break;
 				case Length - 1:
 					Summary.endTime = 0; // ⚠️空值必须写零！
-					Console.debug(`Summaries[${i}]`, JSON.stringify(Summary, null, 2));
+					Console.debug(`Summaries[${i}]`, JSON.stringify({ ...minute, ...Summary }, null, 2));
 					Summaries.push({ ...Summary });
 					break;
 			}
@@ -273,11 +274,13 @@ export default class ForecastNextHour {
 											switch (Condition.beginCondition) {
 												case Condition.endCondition: // ✅与begin相同
 													Condition.parameters = [];
+													Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
 													Conditions.push({ ...Condition });
 													break;
 												default: // ✅与begin不同
 													Condition.endCondition = previousMinute.condition;
 													Condition.parameters = [{ date: Condition.endTime, type: "FIRST_AT" }];
+													Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
 													Conditions.push({ ...Condition });
 													// ✅CONSTANT
 													Condition.beginCondition = previousMinute.condition;
@@ -324,6 +327,7 @@ export default class ForecastNextHour {
 											break;
 									}
 									Condition.parameters.push({ date: minute.startTime, type: "SECOND_AT" });
+									Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
 									Conditions.push({ ...Condition });
 									// ✅初始化当前条件
 									Condition.beginCondition = Condition.endCondition;
@@ -369,6 +373,7 @@ export default class ForecastNextHour {
 						case "STOP": // ✅当前CLEAR
 							// ✅确定
 							Condition.parameters = [{ date: Condition.endTime, type: "FIRST_AT" }];
+							Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
 							Conditions.push({ ...Condition });
 							switch (Condition.forecastToken) {
 								case "START":
@@ -394,6 +399,7 @@ export default class ForecastNextHour {
 					}
 					Condition.endTime = 0; // ⚠️空值必须写零！
 					Condition.parameters = [];
+					Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
 					Conditions.push({ ...Condition });
 					break;
 			}
@@ -403,9 +409,9 @@ export default class ForecastNextHour {
 		return Conditions;
 	}
 
-	static #ConvertPrecipitationIntensity(precipitationIntensity, precipitationType, units = "mmph") {
-		Console.info("☑️ ConvertPrecipitationIntensity");
-		Console.debug(`precipitationIntensity: ${precipitationIntensity}`, `precipitationType: ${precipitationType}`, `units: ${units}`);
+	static #ConvertPrecipitationIntensity(precipitationIntensity, units = "mmph") {
+		//Console.info("☑️ ConvertPrecipitationIntensity");
+		//Console.debug(`precipitationIntensity: ${precipitationIntensity}`, `units: ${units}`);
 		const Range = ForecastNextHour.#Configs.Precipitation.Range[units];
 		let perceivedPrecipitationIntensity = 0;
 
@@ -428,8 +434,8 @@ export default class ForecastNextHour {
 			// 根据强度计算感知强度，在2-3之间
 			perceivedPrecipitationIntensity = 2 + Math.min(1, (precipitationIntensity - Range.HEAVY[0]) / (Range.HEAVY[1] - Range.HEAVY[0]));
 		}
-		Console.debug(`perceivedPrecipitationIntensity: ${perceivedPrecipitationIntensity}`);
-		Console.info(`✅ ConvertPrecipitationIntensity`);
+		//Console.debug(`perceivedPrecipitationIntensity: ${perceivedPrecipitationIntensity}`);
+		//Console.info(`✅ ConvertPrecipitationIntensity`);
 		return perceivedPrecipitationIntensity;
 	}
 }
