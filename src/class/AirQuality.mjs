@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.8.1";
+	static Version = "2.8.2";
 	static Author = "Virgil Clyne & Wordless Echo";
 
 	/**
@@ -43,12 +43,9 @@ export default class AirQuality {
 			case "EPA_NowCast|NONE":
 				Console.debug("EPA_NowCast|NONE");
 				targetScale = sourceScale;
-			case "HJ6332012|EPA_NowCast":
-			case "HJ6332012|WAQI_InstantCast":
-			case "EPA_NowCast|EPA_NowCast":
-			case "EPA_NowCast|WAQI_InstantCast": {
+			case `${sourceScale}|EPA_NowCast`:
+			case `${sourceScale}|WAQI_InstantCast`: {
 				Console.debug(`${sourceScale}|${targetScale}`);
-				if (Settings?.AQI?.Local?.Scale === "NONE") targetScale = sourceScale;
 				// 处理彩云天气双标准 AQI
 				if (typeof airQuality.index === "object") {
 					airQuality.scale = AirQuality.#Config.Scales[targetScale]?.scale;
