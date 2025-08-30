@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
-	Version = "v1.4.1";
+	Version = "v1.4.2";
 	Author = "iRingo";
 
 	static #Configs = {
@@ -111,7 +111,7 @@ export default class ForecastNextHour {
 				// 无降水
 				minute.condition = "CLEAR";
 				minute.perceivedPrecipitationIntensity = 0;
-				minute.precipitationType = "CLEAR";
+				minute.summaryCondition = "CLEAR";
 			} else if (minute.precipitationIntensity > Range.NO[0] && minute.precipitationIntensity <= Range.NO[1]) {
 				// 轻微降水，可能感知不到
 				switch (precipitationType) {
@@ -126,7 +126,7 @@ export default class ForecastNextHour {
 						break;
 				}
 				minute.perceivedPrecipitationIntensity = 0; // 轻微降水通常感知不到
-				minute.precipitationType = "CLEAR";
+				minute.summaryCondition = "CLEAR";
 			} else if (minute.precipitationIntensity > Range.LIGHT[0] && minute.precipitationIntensity <= Range.LIGHT[1]) {
 				// 小雨，可以感知到
 				switch (precipitationType) {
@@ -142,7 +142,7 @@ export default class ForecastNextHour {
 				}
 				// 根据强度计算感知强度，在0-1之间
 				minute.perceivedPrecipitationIntensity = Math.min(1, (minute.precipitationIntensity - Range.LIGHT[0]) / (Range.LIGHT[1] - Range.LIGHT[0]));
-				minute.precipitationType = precipitationType;
+				minute.summaryCondition = precipitationType;
 			} else if (minute.precipitationIntensity > Range.MODERATE[0] && minute.precipitationIntensity <= Range.MODERATE[1]) {
 				// 中雨，明显感知
 				switch (precipitationType) {
@@ -158,7 +158,7 @@ export default class ForecastNextHour {
 				}
 				// 根据强度计算感知强度，在1-2之间
 				minute.perceivedPrecipitationIntensity = 1 + Math.min(1, (minute.precipitationIntensity - Range.MODERATE[0]) / (Range.MODERATE[1] - Range.MODERATE[0]));
-				minute.precipitationType = precipitationType;
+				minute.summaryCondition = precipitationType;
 			} else if (minute.precipitationIntensity > Range.HEAVY[0]) {
 				// 大雨，强烈感知
 				switch (precipitationType) {
@@ -174,7 +174,7 @@ export default class ForecastNextHour {
 				}
 				// 根据强度计算感知强度，在2-3之间
 				minute.perceivedPrecipitationIntensity = 2 + Math.min(1, (minute.precipitationIntensity - Range.HEAVY[0]) / (Range.HEAVY[1] - Range.HEAVY[0]));
-				minute.precipitationType = precipitationType;
+				minute.summaryCondition = precipitationType;
 			}
 
 			Console.debug(`minutes[${i}]`, JSON.stringify(minute.condition, null, 2));
@@ -201,12 +201,12 @@ export default class ForecastNextHour {
 			switch (i) {
 				case 0:
 					Summary.startTime = minute.startTime;
-					Summary.condition = minute.precipitationType; // condition 只关心降水类型，不关心具体强弱描述
+					Summary.condition = minute.summaryCondition; // condition 只关心降水类型，不关心具体强弱描述
 					Summary.precipitationChance = minute.precipitationChance;
 					Summary.precipitationIntensity = minute.precipitationIntensity;
 					break;
 				default:
-					if (minute.precipitationType !== previousMinute.precipitationType) {
+					if (minute.summaryCondition !== previousMinute.summaryCondition) {
 						// 结束当前summary
 						Summary.endTime = minute.startTime;
 						Console.debug(`Summaries[${i}]`, JSON.stringify(Summary, null, 2));
@@ -214,7 +214,7 @@ export default class ForecastNextHour {
 
 						// 开始新的summary
 						Summary.startTime = minute.startTime;
-						Summary.condition = minute.precipitationType; // condition 只关心降水类型，不关心具体强弱描述
+						Summary.condition = minute.summaryCondition; // condition 只关心降水类型，不关心具体强弱描述
 						Summary.precipitationChance = minute.precipitationChance;
 						Summary.precipitationIntensity = minute.precipitationIntensity;
 					} else {
@@ -256,7 +256,7 @@ export default class ForecastNextHour {
 					Condition.beginCondition = minute.condition;
 					Condition.endCondition = minute.condition;
 					Condition.startTime = minute.startTime;
-					switch (minute.precipitationType) {
+					switch (minute.summaryCondition) {
 						case "CLEAR": //✅
 							Condition.forecastToken = "CLEAR";
 							break;
@@ -268,8 +268,8 @@ export default class ForecastNextHour {
 					//Console.debug(`⚠️ ${i}, after, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 					break;
 				default:
-					switch (minute?.precipitationType) {
-						case previousMinute?.precipitationType: // ✅与前次相同
+					switch (minute?.summaryCondition) {
+						case previousMinute?.summaryCondition: // ✅与前次相同
 							switch (minute?.condition) {
 								case previousMinute?.condition: // ✅与前次相同
 									break;
