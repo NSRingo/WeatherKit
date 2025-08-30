@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
-	Version = "v1.4.2";
+	Version = "v1.4.3";
 	Author = "iRingo";
 
 	static #Configs = {
@@ -103,16 +103,16 @@ export default class ForecastNextHour {
 		Console.info("☑️ Minute");
 		const precipitationType = ForecastNextHour.PrecipitationType(description);
 		// refer: https://docs.caiyunapp.com/weather-api/v2/v2.6/tables/precip.html
-		const Range = ForecastNextHour.#Configs.Precipitation.Range[units];
 
 		minutes = minutes.map((minute, i) => {
-			// 根据precipitationIntensity和Range配置来猜测生成perceivedPrecipitationIntensity和condition
-			if (minute.precipitationIntensity === 0) {
+			// 根据precipitationIntensity来猜测生成perceivedPrecipitationIntensity
+			minute.perceivedPrecipitationIntensity = ForecastNextHour.#ConvertPrecipitationIntensity(minute.precipitationIntensity, precipitationType, units);
+			// 然后根据perceivedPrecipitationIntensity和precipitationChance来猜测生成condition和summaryCondition
+			if (minute.perceivedPrecipitationIntensity === 0) {
 				// 无降水
 				minute.condition = "CLEAR";
-				minute.perceivedPrecipitationIntensity = 0;
 				minute.summaryCondition = "CLEAR";
-			} else if (minute.precipitationIntensity > Range.NO[0] && minute.precipitationIntensity <= Range.NO[1]) {
+			} else if (minute.perceivedPrecipitationIntensity > ForecastNextHour.#Configs.Precipitation.Range[units].NO[0] && minute.precipitationIntensity <= ForecastNextHour.#Configs.Precipitation.Range[units].NO[1]) {
 				// 轻微降水，可能感知不到
 				switch (precipitationType) {
 					case "RAIN":
@@ -125,9 +125,8 @@ export default class ForecastNextHour {
 						minute.condition = `POSSIBLE_${precipitationType}`;
 						break;
 				}
-				minute.perceivedPrecipitationIntensity = 0; // 轻微降水通常感知不到
 				minute.summaryCondition = "CLEAR";
-			} else if (minute.precipitationIntensity > Range.LIGHT[0] && minute.precipitationIntensity <= Range.LIGHT[1]) {
+			} else if (minute.perceivedPrecipitationIntensity > ForecastNextHour.#Configs.Precipitation.Range[units].LIGHT[0] && minute.perceivedPrecipitationIntensity <= ForecastNextHour.#Configs.Precipitation.Range[units].LIGHT[1]) {
 				// 小雨，可以感知到
 				switch (precipitationType) {
 					case "RAIN":
@@ -140,10 +139,8 @@ export default class ForecastNextHour {
 						minute.condition = precipitationType;
 						break;
 				}
-				// 根据强度计算感知强度，在0-1之间
-				minute.perceivedPrecipitationIntensity = Math.min(1, (minute.precipitationIntensity - Range.LIGHT[0]) / (Range.LIGHT[1] - Range.LIGHT[0]));
 				minute.summaryCondition = precipitationType;
-			} else if (minute.precipitationIntensity > Range.MODERATE[0] && minute.precipitationIntensity <= Range.MODERATE[1]) {
+			} else if (minute.perceivedPrecipitationIntensity > ForecastNextHour.#Configs.Precipitation.Range[units].MODERATE[0] && minute.perceivedPrecipitationIntensity <= ForecastNextHour.#Configs.Precipitation.Range[units].MODERATE[1]) {
 				// 中雨，明显感知
 				switch (precipitationType) {
 					case "RAIN":
@@ -156,10 +153,8 @@ export default class ForecastNextHour {
 						minute.condition = precipitationType;
 						break;
 				}
-				// 根据强度计算感知强度，在1-2之间
-				minute.perceivedPrecipitationIntensity = 1 + Math.min(1, (minute.precipitationIntensity - Range.MODERATE[0]) / (Range.MODERATE[1] - Range.MODERATE[0]));
 				minute.summaryCondition = precipitationType;
-			} else if (minute.precipitationIntensity > Range.HEAVY[0]) {
+			} else if (minute.perceivedPrecipitationIntensity > ForecastNextHour.#Configs.Precipitation.Range[units].HEAVY[0]) {
 				// 大雨，强烈感知
 				switch (precipitationType) {
 					case "RAIN":
@@ -172,8 +167,6 @@ export default class ForecastNextHour {
 						minute.condition = precipitationType;
 						break;
 				}
-				// 根据强度计算感知强度，在2-3之间
-				minute.perceivedPrecipitationIntensity = 2 + Math.min(1, (minute.precipitationIntensity - Range.HEAVY[0]) / (Range.HEAVY[1] - Range.HEAVY[0]));
 				minute.summaryCondition = precipitationType;
 			}
 
@@ -410,43 +403,33 @@ export default class ForecastNextHour {
 		return Conditions;
 	}
 
-	static ConvertPrecipitationIntensity(precipitationIntensity, condition, units = "mmph") {
-		//Console.info("☑️ ConvertPrecipitationIntensity");
-		let perceivedPrecipitationIntensity = 0;
+	static #ConvertPrecipitationIntensity(precipitationIntensity, precipitationType, units = "mmph") {
+		Console.info("☑️ ConvertPrecipitationIntensity");
+		Console.debug(`precipitationIntensity: ${precipitationIntensity}`, `precipitationType: ${precipitationType}`, `units: ${units}`);
 		const Range = ForecastNextHour.#Configs.Precipitation.Range[units];
-		let level = 0;
-		let range = [];
-		switch (condition) {
-			case "CLEAR":
-				level = 0;
-				range = Range.NO;
-				break;
-			case "POSSIBLE_DRIZZLE":
-			case "POSSIBLE_FLURRIES":
-				level = 0;
-				range = Range.LIGHT;
-				break;
-			case "DRIZZLE":
-			case "FLURRIES":
-				level = 0;
-				range = Range.LIGHT;
-				break;
-			case "RAIN":
-			case "SNOW":
-				level = 1;
-				range = Range.MODERATE;
-				break;
-			case "HEAVY_RAIN":
-			case "HEAVY_SNOW":
-				level = 2;
-				range = Range.HEAVY;
-				break;
+		let perceivedPrecipitationIntensity = 0;
+
+		if (precipitationIntensity === 0) {
+			// 无降水
+			perceivedPrecipitationIntensity = 0;
+		} else if (precipitationIntensity > Range.NO[0] && precipitationIntensity <= Range.NO[1]) {
+			// 轻微降水，可能感知不到
+			perceivedPrecipitationIntensity = 0; // 轻微降水通常感知不到
+		} else if (precipitationIntensity > Range.LIGHT[0] && precipitationIntensity <= Range.LIGHT[1]) {
+			// 小雨，可以感知到
+			// 根据强度计算感知强度，在0-1之间
+			perceivedPrecipitationIntensity = Math.min(1, (precipitationIntensity - Range.LIGHT[0]) / (Range.LIGHT[1] - Range.LIGHT[0]));
+		} else if (precipitationIntensity > Range.MODERATE[0] && precipitationIntensity <= Range.MODERATE[1]) {
+			// 中雨，明显感知
+			// 根据强度计算感知强度，在1-2之间
+			perceivedPrecipitationIntensity = 1 + Math.min(1, (precipitationIntensity - Range.MODERATE[0]) / (Range.MODERATE[1] - Range.MODERATE[0]));
+		} else if (precipitationIntensity > Range.HEAVY[0]) {
+			// 大雨，强烈感知
+			// 根据强度计算感知强度，在2-3之间
+			perceivedPrecipitationIntensity = 2 + Math.min(1, (precipitationIntensity - Range.HEAVY[0]) / (Range.HEAVY[1] - Range.HEAVY[0]));
 		}
-		perceivedPrecipitationIntensity = level + (precipitationIntensity - range[0]) / (range[1] - range[0]);
-		perceivedPrecipitationIntensity = Math.round(perceivedPrecipitationIntensity * 1000) / 1000;
-		perceivedPrecipitationIntensity = Math.max(0, perceivedPrecipitationIntensity);
-		perceivedPrecipitationIntensity = Math.min(3, perceivedPrecipitationIntensity);
-		//Console.info(`✅ ConvertPrecipitationIntensity: ${perceivedPrecipitationIntensity}`);
+		Console.debug(`perceivedPrecipitationIntensity: ${perceivedPrecipitationIntensity}`);
+		Console.info(`✅ ConvertPrecipitationIntensity`);
 		return perceivedPrecipitationIntensity;
 	}
 }
