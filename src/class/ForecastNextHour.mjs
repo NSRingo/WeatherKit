@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
-	Version = "v1.3.2";
+	Version = "v1.4.0";
 	Author = "iRingo";
 
 	static #Configs = {
@@ -99,76 +99,88 @@ export default class ForecastNextHour {
 		return precipitationType;
 	}
 
-	static ConditionType(precipitationIntensity, precipitationType, units = "mmph") {
-		// refer: https://docs.caiyunapp.com/weather-api/v2/v2.6/tables/precip.html
-		//Console.info("☑️ ConditionType");
-		//Console.debug(`precipitationIntensity: ${precipitationIntensity}`, `precipitationChance: ${precipitationChance}`, `precipitationType: ${precipitationType}`);
-		const Range = ForecastNextHour.#Configs.Precipitation.Range[units];
-		let condition = "CLEAR";
-		if (precipitationIntensity === 0) condition = "CLEAR";
-		else if (precipitationIntensity > Range.NO[0] && precipitationIntensity <= Range.NO[1]) {
-			switch (precipitationType) {
-				case "RAIN":
-					condition = "POSSIBLE_DRIZZLE";
-					break;
-				case "SNOW":
-					condition = "POSSIBLE_FLURRIES";
-					break;
-				default:
-					condition = `POSSIBLE_${precipitationType}`;
-					break;
-			}
-		} else if (precipitationIntensity > Range.LIGHT[0] && precipitationIntensity <= Range.LIGHT[1]) {
-			switch (precipitationType) {
-				case "RAIN":
-					condition = "DRIZZLE";
-					break;
-				case "SNOW":
-					condition = "FLURRIES";
-					break;
-				default:
-					condition = precipitationType;
-					break;
-			}
-		} else if (precipitationIntensity > Range.MODERATE[0] && precipitationIntensity <= Range.MODERATE[1]) {
-			switch (precipitationType) {
-				case "RAIN":
-					condition = "RAIN";
-					break;
-				case "SNOW":
-					condition = "SNOW";
-					break;
-				default:
-					condition = precipitationType;
-					break;
-			}
-		} else if (precipitationIntensity > Range.HEAVY[0]) {
-			switch (precipitationType) {
-				case "RAIN":
-					condition = "HEAVY_RAIN";
-					break;
-				case "SNOW":
-					condition = "HEAVY_SNOW";
-					break;
-				default:
-					condition = precipitationType;
-					break;
-			}
-		}
-		//Console.info(`✅ #ConditionType: ${condition}`);
-		return condition;
-	}
-
 	static Minute(minutes = [], description = "", units = "mmph") {
 		Console.info("☑️ Minute");
-		const PrecipitationType = ForecastNextHour.PrecipitationType(description);
-		minutes = minutes.map(minute => {
-			//minute.precipitationIntensity = Math.round(minute.precipitationIntensity * 1000000) / 1000000; // 六位小数
-			minute.condition = ForecastNextHour.ConditionType(minute.precipitationIntensity, PrecipitationType, units);
-			minute.perceivedPrecipitationIntensity = ForecastNextHour.ConvertPrecipitationIntensity(minute.precipitationIntensity, minute.condition, units);
-			minute.precipitationType = minute.perceivedPrecipitationIntensity ? PrecipitationType : "CLEAR";
+		const precipitationType = ForecastNextHour.PrecipitationType(description);
+		// refer: https://docs.caiyunapp.com/weather-api/v2/v2.6/tables/precip.html
+		const Range = ForecastNextHour.#Configs.Precipitation.Range[units];
+
+		minutes = minutes.map((minute, i) => {
+			// 根据precipitationIntensity和Range配置来猜测生成perceivedPrecipitationIntensity和condition
+			if (minute.precipitationIntensity === 0) {
+				// 无降水
+				minute.condition = "CLEAR";
+				minute.perceivedPrecipitationIntensity = 0;
+				minute.precipitationType = "CLEAR";
+			} else if (minute.precipitationIntensity > Range.NO[0] && minute.precipitationIntensity <= Range.NO[1]) {
+				// 轻微降水，可能感知不到
+				switch (precipitationType) {
+					case "RAIN":
+						minute.condition = "POSSIBLE_DRIZZLE";
+						break;
+					case "SNOW":
+						minute.condition = "POSSIBLE_FLURRIES";
+						break;
+					default:
+						minute.condition = `POSSIBLE_${precipitationType}`;
+						break;
+				}
+				minute.perceivedPrecipitationIntensity = 0; // 轻微降水通常感知不到
+				minute.precipitationType = "CLEAR";
+			} else if (minute.precipitationIntensity > Range.LIGHT[0] && minute.precipitationIntensity <= Range.LIGHT[1]) {
+				// 小雨，可以感知到
+				switch (precipitationType) {
+					case "RAIN":
+						minute.condition = "DRIZZLE";
+						break;
+					case "SNOW":
+						minute.condition = "FLURRIES";
+						break;
+					default:
+						minute.condition = precipitationType;
+						break;
+				}
+				// 根据强度计算感知强度，在0-1之间
+				minute.perceivedPrecipitationIntensity = Math.min(1, (minute.precipitationIntensity - Range.LIGHT[0]) / (Range.LIGHT[1] - Range.LIGHT[0]));
+				minute.precipitationType = precipitationType;
+			} else if (minute.precipitationIntensity > Range.MODERATE[0] && minute.precipitationIntensity <= Range.MODERATE[1]) {
+				// 中雨，明显感知
+				switch (precipitationType) {
+					case "RAIN":
+						minute.condition = "RAIN";
+						break;
+					case "SNOW":
+						minute.condition = "SNOW";
+						break;
+					default:
+						minute.condition = precipitationType;
+						break;
+				}
+				// 根据强度计算感知强度，在1-2之间
+				minute.perceivedPrecipitationIntensity = 1 + Math.min(1, (minute.precipitationIntensity - Range.MODERATE[0]) / (Range.MODERATE[1] - Range.MODERATE[0]));
+				minute.precipitationType = precipitationType;
+			} else if (minute.precipitationIntensity > Range.HEAVY[0]) {
+				// 大雨，强烈感知
+				switch (precipitationType) {
+					case "RAIN":
+						minute.condition = "HEAVY_RAIN";
+						break;
+					case "SNOW":
+						minute.condition = "HEAVY_SNOW";
+						break;
+					default:
+						minute.condition = precipitationType;
+						break;
+				}
+				// 根据强度计算感知强度，在2-3之间
+				minute.perceivedPrecipitationIntensity = 2 + Math.min(1, (minute.precipitationIntensity - Range.HEAVY[0]) / (Range.HEAVY[1] - Range.HEAVY[0]));
+				minute.precipitationType = precipitationType;
+			}
+
+			Console.debug(`minutes[${i}]`, JSON.stringify(minute.condition, null, 2));
 			return minute;
 		});
+
 		Console.info("✅ Minute");
 		return minutes;
 	}
@@ -255,6 +267,7 @@ export default class ForecastNextHour {
 			parameters: [],
 			startTime: 0,
 		};
+		// 问题2: 苹果的实际数据显示condition的生成逻辑更复杂，需要考虑降水强度的连续性和阈值变化
 		const Length = Math.min(71, minutes.length);
 		for (let i = 0; i < Length; i++) {
 			const minute = minutes[i];
@@ -367,6 +380,7 @@ export default class ForecastNextHour {
 					}
 					break;
 				case Length - 1:
+					// 问题5: 最后一个minute的处理逻辑有误，没有正确处理endTime=0的情况和最终状态的确定
 					switch (Condition.forecastToken) {
 						case "CLEAR": // ✅当前CLEAR
 						case "CONSTANT": // ✅当前RAIN
