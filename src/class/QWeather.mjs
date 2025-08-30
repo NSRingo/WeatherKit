@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "4.4.10";
+		this.Version = "4.4.9";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://${host}`;
 		this.headers = { "X-QW-Api-Key": token };
@@ -16,28 +16,6 @@ export default class QWeather {
 		this.latitude = parameters.latitude;
 		this.longitude = parameters.longitude;
 		this.country = parameters.country;
-		switch (true) {
-			case $request.headers["User-Agent"]?.startsWith("WeatherKit_WeatherWidget_macOS_Version"):
-			case $request.headers["user-agent"]?.startsWith("WeatherKit_WeatherWidget_macOS_Version"):
-				this.platform = "macOS";
-				this.type = "Widget";
-				break;
-			case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
-			case $request.headers["user-agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
-				this.platform = "macOS";
-				this.type = "App";
-				break;
-			case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_iOS_Version"):
-			case $request.headers["user-agent"]?.startsWith("WeatherKit_Weather_iOS_Version"):
-				this.platform = "iOS";
-				this.type = "App";
-				break;
-			case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_watchOS_Version"):
-			case $request.headers["user-agent"]?.startsWith("WeatherKit_Weather_watchOS_Version"):
-				this.platform = "watchOS";
-				this.type = "App";
-				break;
-		}
 	}
 
 	#Config = {
@@ -321,7 +299,6 @@ export default class QWeather {
 					forecastNextHour.minutes = ForecastNextHour.Minute(forecastNextHour.minutes, body?.summary, "mmph");
 					forecastNextHour.summary = ForecastNextHour.Summary(forecastNextHour.minutes);
 					forecastNextHour.condition = ForecastNextHour.Condition(forecastNextHour.minutes);
-					if (this.platform === "macOS" && this.type === "App") forecastNextHour.condition = [];
 					break;
 				}
 				case "204":

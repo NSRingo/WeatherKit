@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(parameters, token) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.3.6";
+		this.Version = "3.3.5";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
 		this.headers = { Referer: "https://caiyunapp.com/" };
@@ -16,28 +16,6 @@ export default class ColorfulClouds {
 		this.country = parameters.country;
 		this.airQuality;
 		this.currentWeather;
-		switch (true) {
-			case $request.headers["User-Agent"]?.startsWith("WeatherKit_WeatherWidget_macOS_Version"):
-			case $request.headers["user-agent"]?.startsWith("WeatherKit_WeatherWidget_macOS_Version"):
-				this.platform = "macOS";
-				this.type = "Widget";
-				break;
-			case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
-			case $request.headers["user-agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
-				this.platform = "macOS";
-				this.type = "App";
-				break;
-			case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_iOS_Version"):
-			case $request.headers["user-agent"]?.startsWith("WeatherKit_Weather_iOS_Version"):
-				this.platform = "iOS";
-				this.type = "App";
-				break;
-			case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_watchOS_Version"):
-			case $request.headers["user-agent"]?.startsWith("WeatherKit_Weather_watchOS_Version"):
-				this.platform = "watchOS";
-				this.type = "App";
-				break;
-		}
 	}
 
 	#Config = {
@@ -186,7 +164,6 @@ export default class ColorfulClouds {
 							forecastNextHour.minutes = ForecastNextHour.Minute(forecastNextHour.minutes, body?.result?.minutely?.description, "mmph");
 							forecastNextHour.summary = ForecastNextHour.Summary(forecastNextHour.minutes);
 							forecastNextHour.condition = ForecastNextHour.Condition(forecastNextHour.minutes);
-							if (this.platform === "macOS" && this.type === "App") forecastNextHour.condition = [];
 							break;
 						}
 						case "error":
