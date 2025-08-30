@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
-	Version = "v1.4.0";
+	Version = "v1.4.1";
 	Author = "iRingo";
 
 	static #Configs = {
@@ -198,57 +198,34 @@ export default class ForecastNextHour {
 		for (let i = 0; i < Length; i++) {
 			const minute = minutes[i];
 			const previousMinute = minutes[i - 1];
-			let maxPrecipitationIntensity = Math.max(minute?.precipitationIntensity ?? 0, previousMinute?.precipitationIntensity ?? 0);
-			let maxPrecipitationChance = Math.max(minute?.precipitationChance ?? 0, previousMinute?.precipitationChance ?? 0);
 			switch (i) {
 				case 0:
 					Summary.startTime = minute.startTime;
-					if (minute?.precipitationIntensity > 0) {
-						Summary.condition = minute.precipitationType;
-						Summary.precipitationChance = maxPrecipitationChance;
-						Summary.precipitationIntensity = maxPrecipitationIntensity;
-					}
+					Summary.condition = minute.precipitationType; // condition 只关心降水类型，不关心具体强弱描述
+					Summary.precipitationChance = minute.precipitationChance;
+					Summary.precipitationIntensity = minute.precipitationIntensity;
 					break;
 				default:
-					if (minute?.precipitationType !== previousMinute?.precipitationType) {
+					if (minute.precipitationType !== previousMinute.precipitationType) {
+						// 结束当前summary
 						Summary.endTime = minute.startTime;
-						switch (Summary.condition) {
-							case "CLEAR":
-								break;
-							default:
-								Summary.precipitationChance = maxPrecipitationChance;
-								Summary.precipitationIntensity = maxPrecipitationIntensity;
-								break;
-						}
+						Console.debug(`Summaries[${i}]`, JSON.stringify(Summary, null, 2));
 						Summaries.push({ ...Summary });
-						// reset
+
+						// 开始新的summary
 						Summary.startTime = minute.startTime;
-						switch (Summary.condition) {
-							case "CLEAR":
-								Summary.condition = minute.precipitationType;
-								Summary.precipitationChance = minute.precipitationChance;
-								Summary.precipitationIntensity = minute.precipitationIntensity;
-								break;
-							default:
-								Summary.condition = "CLEAR";
-								Summary.precipitationChance = 0;
-								Summary.precipitationIntensity = 0;
-								break;
-						}
-						maxPrecipitationChance = 0;
-						maxPrecipitationIntensity = 0;
+						Summary.condition = minute.precipitationType; // condition 只关心降水类型，不关心具体强弱描述
+						Summary.precipitationChance = minute.precipitationChance;
+						Summary.precipitationIntensity = minute.precipitationIntensity;
+					} else {
+						// 条件相同，更新最大值
+						Summary.precipitationChance = Math.max(Summary.precipitationChance, minute.precipitationChance);
+						Summary.precipitationIntensity = Math.max(Summary.precipitationIntensity, minute.precipitationIntensity);
 					}
 					break;
 				case Length - 1:
 					Summary.endTime = 0; // ⚠️空值必须写零！
-					switch (Summary.condition) {
-						case "CLEAR":
-							break;
-						default:
-							Summary.precipitationChance = maxPrecipitationChance;
-							Summary.precipitationIntensity = maxPrecipitationIntensity;
-							break;
-					}
+					Console.debug(`Summaries[${i}]`, JSON.stringify(Summary, null, 2));
 					Summaries.push({ ...Summary });
 					break;
 			}
