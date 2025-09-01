@@ -193,17 +193,22 @@ export default class ForecastNextHour {
 			const minute = minutes[i];
 			const previousMinute = minutes[i - 1];
 			switch (i) {
-				case 0:
+				case 0: // 第一个
 					Summary.startTime = minute.startTime;
 					Summary.condition = minute.summaryCondition; // condition 只关心降水类型，不关心具体强弱描述
 					Summary.precipitationChance = minute.precipitationChance;
 					Summary.precipitationIntensity = minute.precipitationIntensity;
 					break;
-				default:
+				case Length - 1: // 最后一个
+					Summary.endTime = 0; // ⚠️空值必须写零！
+					Console.debug(`Summaries[${i}]`, JSON.stringify({ ...minute, ...Summary }, null, 2));
+					Summaries.push({ ...Summary });
+					break;
+				default: // 中间
 					if (minute.summaryCondition !== previousMinute.summaryCondition) {
 						// 结束当前summary
 						Summary.endTime = minute.startTime;
-						Console.debug(`Summaries[${i}]`, JSON.stringify({ ...minute, ...Summary }, null, 2));
+						Console.debug(`Summaries[${i}]`, JSON.stringify({ ...previousMinute, ...Summary }, null, 2));
 						Summaries.push({ ...Summary });
 
 						// 开始新的summary
@@ -217,13 +222,9 @@ export default class ForecastNextHour {
 						Summary.precipitationIntensity = Math.max(Summary.precipitationIntensity, minute.precipitationIntensity);
 					}
 					break;
-				case Length - 1:
-					Summary.endTime = 0; // ⚠️空值必须写零！
-					Console.debug(`Summaries[${i}]`, JSON.stringify({ ...minute, ...Summary }, null, 2));
-					Summaries.push({ ...Summary });
-					break;
 			}
 		}
+		Console.debug(`Summaries: ${JSON.stringify(Summaries, null, 2)}`);
 		Console.info("✅ Summary");
 		return Summaries;
 	}
