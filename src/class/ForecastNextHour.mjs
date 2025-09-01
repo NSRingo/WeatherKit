@@ -245,7 +245,7 @@ export default class ForecastNextHour {
 			const previousMinute = minutes[i - 1];
 			//Console.debug(`⚠️ ${i}, before, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 			switch (i) {
-				case 0:
+				case 0: // 第一个
 					//Console.debug(`⚠️ ${i}, before, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 					Condition.beginCondition = minute.condition;
 					Condition.endCondition = minute.condition;
@@ -261,7 +261,56 @@ export default class ForecastNextHour {
 					Condition.parameters = [];
 					//Console.debug(`⚠️ ${i}, after, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
 					break;
-				default:
+				case Length - 1: // 最后一个
+					// 问题5: 最后一个minute的处理逻辑有误，没有正确处理endTime=0的情况和最终状态的确定
+					switch (Condition.forecastToken) {
+						case "CLEAR": // ✅当前CLEAR
+						case "CONSTANT": // ✅当前RAIN
+							switch (Condition.forecastToken) {
+								case "CLEAR": // ✅确定CLEAR
+									Condition.beginCondition = "CLEAR";
+									Condition.endCondition = "CLEAR";
+									Condition.forecastToken = "CLEAR";
+									break;
+								case "CONSTANT": // ✅确定CONSTANT
+									Condition.beginCondition = Condition.endCondition;
+									break;
+							}
+							break;
+						case "START": // ✅当前RAIN
+						case "STOP": // ✅当前CLEAR
+							// ✅确定
+							Condition.parameters = [{ date: Condition.endTime, type: "FIRST_AT" }];
+							Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
+							Conditions.push({ ...Condition });
+							switch (Condition.forecastToken) {
+								case "START":
+									// ✅补充CONSTANT
+									Condition.beginCondition = Condition.endCondition;
+									Condition.forecastToken = "CONSTANT";
+									break;
+								case "STOP":
+									// ✅补充CLEAR
+									Condition.beginCondition = "CLEAR";
+									Condition.endCondition = "CLEAR";
+									Condition.forecastToken = "CLEAR";
+									break;
+							}
+							Condition.startTime = Condition.endTime;
+							break;
+						case "START_STOP": // ✅当前CLEAR
+							Console.error(`⚠️ START_STOP\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
+							break;
+						case "STOP_START": // ✅当前RAIN
+							Console.error(`⚠️ STOP_START\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
+							break;
+					}
+					Condition.endTime = 0; // ⚠️空值必须写零！
+					Condition.parameters = [];
+					Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
+					Conditions.push({ ...Condition });
+					break;
+				default: // 中间
 					switch (minute?.summaryCondition) {
 						case previousMinute?.summaryCondition: // ✅与前次相同
 							switch (minute?.condition) {
@@ -352,55 +401,6 @@ export default class ForecastNextHour {
 							}
 							break;
 					}
-					break;
-				case Length - 1:
-					// 问题5: 最后一个minute的处理逻辑有误，没有正确处理endTime=0的情况和最终状态的确定
-					switch (Condition.forecastToken) {
-						case "CLEAR": // ✅当前CLEAR
-						case "CONSTANT": // ✅当前RAIN
-							switch (Condition.forecastToken) {
-								case "CLEAR": // ✅确定CLEAR
-									Condition.beginCondition = "CLEAR";
-									Condition.endCondition = "CLEAR";
-									Condition.forecastToken = "CLEAR";
-									break;
-								case "CONSTANT": // ✅确定CONSTANT
-									Condition.beginCondition = Condition.endCondition;
-									break;
-							}
-							break;
-						case "START": // ✅当前RAIN
-						case "STOP": // ✅当前CLEAR
-							// ✅确定
-							Condition.parameters = [{ date: Condition.endTime, type: "FIRST_AT" }];
-							Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
-							Conditions.push({ ...Condition });
-							switch (Condition.forecastToken) {
-								case "START":
-									// ✅补充CONSTANT
-									Condition.beginCondition = Condition.endCondition;
-									Condition.forecastToken = "CONSTANT";
-									break;
-								case "STOP":
-									// ✅补充CLEAR
-									Condition.beginCondition = "CLEAR";
-									Condition.endCondition = "CLEAR";
-									Condition.forecastToken = "CLEAR";
-									break;
-							}
-							Condition.startTime = Condition.endTime;
-							break;
-						case "START_STOP": // ✅当前CLEAR
-							Console.error(`⚠️ START_STOP\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
-							break;
-						case "STOP_START": // ✅当前RAIN
-							Console.error(`⚠️ STOP_START\nminute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
-							break;
-					}
-					Condition.endTime = 0; // ⚠️空值必须写零！
-					Condition.parameters = [];
-					Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
-					Conditions.push({ ...Condition });
 					break;
 			}
 			//Console.debug(`⚠️ ${i}, after, minute: ${JSON.stringify(minute, null, 2)}\nCondition: ${JSON.stringify(Condition, null, 2)}`);
