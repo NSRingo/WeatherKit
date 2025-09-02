@@ -4,4 +4,4 @@
   * 修复 `ForecastNextHour.Summary` 一直无法生成最后一个天气摘要的问题
 
 ### 🔄 Other Changes
-  * macOS 版天气 app 停用了`未来一小时降水强度`的文字描述部分，以临时解决 macOS 版天气 app 上的兼容性问题。
+  * 优化 `感知降水强度` 的计算方式以支持"可能有小雨"等描述文本。
