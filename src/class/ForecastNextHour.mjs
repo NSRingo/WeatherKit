@@ -108,12 +108,10 @@ export default class ForecastNextHour {
 			// 根据precipitationIntensity来猜测生成perceivedPrecipitationIntensity
 			minute.perceivedPrecipitationIntensity = ForecastNextHour.#ConvertPrecipitationIntensity(minute.precipitationIntensity, units);
 			// 然后根据perceivedPrecipitationIntensity和precipitationChance来猜测生成condition和summaryCondition
-			if (minute.perceivedPrecipitationIntensity === 0) {
-				// 无降水
-				minute.condition = "CLEAR";
-				minute.summaryCondition = "CLEAR";
-				if (minute.precipitationIntensity >= 0.1 || minute.precipitationChance >= 35) {
-					// 小雨，可以感知到
+			if (minute.perceivedPrecipitationIntensity <= 0.1) {
+				// 小于 0.1 苹果天气显示为无降水
+				if (minute.precipitationChance >= 35) {
+					// 可能降水，算作 CLEAR
 					switch (precipitationType) {
 						case "RAIN":
 							minute.condition = "POSSIBLE_DRIZZLE";
@@ -125,8 +123,8 @@ export default class ForecastNextHour {
 							minute.condition = `POSSIBLE_${precipitationType}`;
 							break;
 					}
-					minute.summaryCondition = precipitationType;
-				}
+				} else minute.condition = "CLEAR";
+				minute.summaryCondition = "CLEAR";
 			} else if (minute.perceivedPrecipitationIntensity <= 1) {
 				// 小雨，可以感知到
 				switch (precipitationType) {
