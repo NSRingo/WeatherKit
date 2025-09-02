@@ -272,84 +272,114 @@ export default class ForecastNextHour {
 							Condition.parameters = [];
 							break;
 						case "START": // ✅当前RAIN
-						case "STOP": // ✅当前CLEAR
-							// ✅ 确定当前缓存条件没有机会再变成 START_STOP/STOP_START
+							// ✅ 确定当前缓存条件没有机会再变成 START_STOP
 							if (!Condition.endTime) Condition.endTime = minute.startTime; // ✅ 结束时间永远是新起点的 startTime
 							if (!Condition.endCondition) Condition.endCondition = previousMinute.condition; // ✅ 当前缓存的结束条件是前一个的 condition
-							//Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }];
-							Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
+							Console.debug(`Condition[${i}]: START`, JSON.stringify({ ...minute, ...Condition }, null, 2));
 							Conditions.push({ ...Condition });
-							// ✅ 必须以 CONSTANT/CLEAR 结尾！
-							switch (Condition.forecastToken) {
-								case "START": // ✅ 以 CONSTANT 结尾
-									Condition.beginCondition = minute.condition;
-									Condition.endCondition = minute.condition;
-									Condition.forecastToken = "CONSTANT";
-									Condition.startTime = Condition.endTime; // 这里要紧接着上一个缓存条件的结束时间，而不是最后这个时间点
-									Condition.endTime = 0; // ⚠️空值必须写零！
-									Condition.parameters = [];
-									break;
-								case "STOP": // ✅ 以 CLEAR 结尾
-									Condition.beginCondition = "CLEAR";
-									Condition.endCondition = "CLEAR";
-									Condition.forecastToken = "CLEAR";
-									Condition.startTime = Condition.endTime; // 这里要紧接着上一个缓存条件的结束时间，而不是最后这个时间点
-									Condition.endTime = 0; // ⚠️空值必须写零！
-									Condition.parameters = [];
-									break;
-							}
-							break;
-						case "START_STOP": // ✅ 缓存的是 START_STOP, 说明当前是 CLEAR, 可以确认上一个的 SECOND_AT 了
-							// ✅ 确定上次缓存条件
-							Condition.parameters.push({ date: minute.startTime, type: "SECOND_AT" }); // ✅ 可以确认 START_STOP 的 SECOND_AT
-							Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
-							Conditions.push({ ...Condition }); // 尘埃落定，可以推送了
-							// ✅ START_STOP 的后面一定是一个 STOP, 然后才能 CLEAR, 这里我们补一个 STOP
-							Condition.forecastToken = "STOP";
-							Condition.startTime = Condition.endTime; // 这个 STOP 是紧接着上一个 START_STOP 的
-							Condition.endTime = minute.startTime; // 最后一个 minute 的 startTime
-							Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }];
-							Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
-							Conditions.push({ ...Condition });
-							// ✅ 这是结尾的 STOP, 所以最后还要补一个 CLEAR
-							Condition.beginCondition = "CLEAR";
-							Condition.endCondition = "CLEAR";
-							Condition.forecastToken = "CLEAR";
-							Condition.startTime = minute.startTime;
-							Condition.endTime = 0; // ⚠️空值必须写零！
-							Condition.parameters = [];
-							Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
-							Conditions.push({ ...Condition });
-							break;
-						case "STOP_START": // ✅ 缓存的是 STOP_START, 说明当前是 RAIN, 可以确认上一个的 SECOND_AT 了
-							// ✅ 确定上次缓存条件
-							Condition.parameters.push({ date: minute.startTime, type: "SECOND_AT" }); // ✅ 可以确认 STOP_START 的 SECOND_AT
-							Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
-							Conditions.push({ ...Condition }); // 尘埃落定，可以推送了
-							// ✅ STOP_START 的后面一定是一个 START, 然后才能 CONSTANT, 这里我们补一个 START
-							Condition.forecastToken = "START";
-							Condition.startTime = Condition.endTime; // 这个 START 是紧接着上一个 STOP_START 的
-							Condition.endTime = minute.startTime; // 最后一个 minute 的 startTime
-							Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }];
-							Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
-							Conditions.push({ ...Condition });
-							// ✅ 这是结尾的 START, 所以最后还要补一个 CONSTANT
+							// ✅ 必须以 CONSTANT 结尾
 							Condition.beginCondition = minute.condition;
 							Condition.endCondition = minute.condition;
 							Condition.forecastToken = "CONSTANT";
-							Condition.startTime = minute.startTime;
+							Condition.startTime = Condition.endTime; // 这里要紧接着上一个缓存条件的结束时间，而不是最后这个时间点
 							Condition.endTime = 0; // ⚠️空值必须写零！
 							Condition.parameters = [];
-							Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
+							break;
+						case "STOP": // ✅当前CLEAR
+							// ✅ 确定当前缓存条件没有机会再变成 STOP_START
+							if (!Condition.endTime) Condition.endTime = minute.startTime; // ✅ 结束时间永远是新起点的 startTime
+							if (!Condition.endCondition) Condition.endCondition = previousMinute.condition; // ✅ 当前缓存的结束条件是前一个的 condition
+							Console.debug(`Condition[${i}]: STOP`, JSON.stringify({ ...minute, ...Condition }, null, 2));
 							Conditions.push({ ...Condition });
+							// ✅ 必须以 CLEAR 结尾
+							Condition.beginCondition = "CLEAR";
+							Condition.endCondition = "CLEAR";
+							Condition.forecastToken = "CLEAR";
+							Condition.startTime = Condition.endTime; // 这里要紧接着上一个缓存条件的结束时间，而不是最后这个时间点
+							Condition.endTime = 0; // ⚠️空值必须写零！
+							Condition.parameters = [];
+							break;
+						case "START_STOP": // 不该出现这种情况
+						case "STOP_START": // 不该出现这种情况
+							Console.error(`Condition[${i}]: ${Condition.forecastToken}`, JSON.stringify({ ...minute, ...Condition }, null, 2));
 							break;
 					}
 					Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
 					Conditions.push({ ...Condition });
 					break;
 				default: // 中间
-					switch (minute?.summaryCondition) {
-						case previousMinute?.summaryCondition: // ✅ summaryCondition 与前次相同，说明降水情况没有变化
+					switch (minute.summaryCondition) {
+						case previousMinute.summaryCondition: // ✅ summaryCondition 与前次相同，说明降水情况没有变化
+							switch (`${previousMinute.condition}|${minute.condition}`) {
+								case `${previousMinute.condition}|${previousMinute.condition}`: // ✅ condition 与前次相同，说明降水量等级也完全没变化
+								case `${minute.condition}|${minute.condition}`: // ✅ condition 与前次相同，说明降水量等级也完全没变化
+									break;
+								case `POSSIBLE_DRIZZLE|${minute.condition}`: // POSSIBLE 不参与降水量转变描述，所以要始终单独列出
+									// ✅ 确定上次缓存条件
+									Condition.endCondition = minute.condition; // 这个一定不是 POSSIBLE
+									Condition.endTime = minute.startTime; // ✅ 结束时间永远是新起点的 startTime
+									//Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }]; // ✅ 可以确认 CONSTANT 的 FIRST_AT
+									Console.debug(`Condition[${i}]: POSSIBLE_DRIZZLE|${minute.condition}`, JSON.stringify({ ...minute, ...Condition }, null, 2));
+									Conditions.push({ ...Condition });
+									// ✅ 初始化当前缓存条件
+									// 这里我们假设下个节点依旧是 CONSTANT （只是是降水量变了，但没有停），但要等到下个节点到来才能确定是 CONSTANT 还是 STOP
+									Condition.beginCondition = minute.condition;
+									Condition.startTime = minute.startTime;
+									Condition.endTime = undefined; // 要重置
+									Condition.parameters = []; // 要重置
+									// 要等到下个节点才能确认写入什么条件
+									break;
+								case `${minute.condition}|POSSIBLE_DRIZZLE`: // POSSIBLE 不参与降水量转变描述，所以要始终单独列出
+									// ✅ 确定上次缓存条件
+									Condition.endCondition = previousMinute.condition; // 上一个一定不是 POSSIBLE
+									Condition.endTime = minute.startTime; // ✅ 结束时间永远是新起点的 startTime
+									//Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }]; // ✅ 可以确认 CONSTANT 的 FIRST_AT
+									Console.debug(`Condition[${i}]: ${minute.condition}|POSSIBLE_DRIZZLE`, JSON.stringify({ ...previousMinute, ...Condition }, null, 2));
+									Conditions.push({ ...Condition });
+									// ✅ 初始化当前缓存条件
+									// 这里我们假设下个节点依旧是 CONSTANT （只是是降水量变了，但没有停），但要等到下个节点到来才能确定是 CONSTANT 还是 STOP
+									Condition.beginCondition = minute.condition;
+									Condition.startTime = minute.startTime;
+									Condition.endTime = undefined; // 要重置
+									Condition.parameters = []; // 要重置
+									// 要等到下个节点才能确认写入什么条件
+									break;
+								case "HEAVY_RAIN|DRIZZLE": // 跨级突降/突升，必须要有 FIRST_AT
+								case "DRIZZLE|HEAVY_RAIN": // 跨级突降/突升，必须要有 FIRST_AT
+								case "HEAVY_SNOW|FLURRIES":
+								case "FLURRIES|HEAVY_SNOW":
+									// ✅ 确定上次缓存条件
+									Condition.endCondition = minute.condition; // 突变要用当前 condition
+									Condition.endTime = minute.startTime; // ✅ 结束时间永远是新起点的 startTime
+									Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }]; // ✅ 可以确认 CONSTANT 的 FIRST_AT
+									Console.debug(`Condition[${i}]: ${previousMinute.condition}|${minute.condition}`, JSON.stringify({ ...minute, ...Condition }, null, 2));
+									Conditions.push({ ...Condition });
+									// ✅ 初始化当前缓存条件
+									// 这里我们假设下个节点依旧是 CONSTANT （只是是降水量变了，但没有停），但要等到下个节点到来才能确定是 CONSTANT 还是 STOP
+									Condition.beginCondition = minute.condition;
+									Condition.startTime = minute.startTime;
+									Condition.endTime = undefined; // 要重置
+									Condition.parameters = []; // 要重置
+									// 要等到下个节点才能确认写入什么条件
+									break;
+								default: // 其他情况，说明依旧在降水，但降水量等级依次升高/降低，不需要有 FIRST_AT
+									// ✅ 确定上次缓存条件
+									Condition.endCondition = previousMinute.condition; // ✅ 上次缓存的结束条件是前一个的 condition
+									Condition.endTime = minute.startTime; // ✅ 结束时间永远是新起点的 startTime
+									//Condition.parameters = []; // 试着加一下 FIRST_AT
+									Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }]; // ✅ 可以确认 CONSTANT 的 FIRST_AT
+									Console.debug(`Condition[${i}]: ${previousMinute.condition}|${minute.condition}`, JSON.stringify({ ...previousMinute, ...Condition }, null, 2));
+									Conditions.push({ ...Condition });
+									// ✅ 初始化当前缓存条件
+									// 这里我们假设下个节点依旧是 CONSTANT （只是是降水量变了，但没有停），但要等到下个节点到来才能确定是 CONSTANT 还是 STOP
+									Condition.beginCondition = minute.condition;
+									Condition.startTime = minute.startTime;
+									Condition.endTime = undefined; // 要重置
+									Condition.parameters = []; // 要重置
+									// 要等到下个节点才能确认写入什么条件
+									break;
+							}
+							/*
 							switch (minute?.condition) {
 								case previousMinute?.condition: // ✅ condition 与前次相同，说明降水量等级也完全没变化
 									break;
@@ -390,6 +420,7 @@ export default class ForecastNextHour {
 									// 要等到下个节点才能确认写入什么条件
 									break;
 							}
+							*/
 							break;
 						default: // ✅ summaryCondition 与前次不同，说明开始降水/停止降水了
 							switch (Condition.forecastToken) {
@@ -401,52 +432,62 @@ export default class ForecastNextHour {
 									Condition.endTime = minute.startTime;
 									Condition.forecastToken = "START"; // ✅ 不推送，下一次才能确定会不会变为 START_STOP
 									Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }]; // ✅ 可以确认 START 的 FIRST_AT
+									// 不推送，如果转为 START_STOP, 还需要补充 SECOND_AT
 									break;
-								case "CONSTANT": // ✅ 缓存的是 CONSTANT, 说明当前是 CLEAR, 结束降水了，缓存的前一个 CONSTANT 转为 STOP
-									//Conditions.length = 0; // ✅ STOP 前面不能有 CONSTANT，只能是 STOP/STOP_START，所以要清除前面的 CONSTANT
-									// ✅ 初始化当前缓存条件，CONSTANT 转成 STOP
+								case "CONSTANT": // ✅ 缓存的是 CONSTANT, 说明当前是 CLEAR, 结束降水了
+									// ❌ 缓存的是 CONSTANT, 说明当前是 CLEAR, 结束降水了，缓存的前一个 CONSTANT 转为 STOP
+									// ❌ Conditions.length = 0; // ✅ STOP 前面不能有 CONSTANT，只能是 STOP/STOP_START，所以要清除前面的 CONSTANT
+									Conditions.forEach(condition => {
+										switch (condition.forecastToken) {
+											case "CONSTANT": // ✅ 缓存的是 CONSTANT, 说明当前是 CLEAR, 结束降水了，缓存的所有 CONSTANT 都要转为 STOP
+												condition.forecastToken = "STOP";
+												condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }];
+												break;
+											case "START": // ❓ 缓存的是 CONSTANT, 说明当前是 CLEAR, 结束降水了，缓存的所有 START 都要转为 START_STOP
+												condition.forecastToken = "START_STOP";
+												Condition.parameters.push({ date: minute.startTime, type: "SECOND_AT" });
+												break;
+										}
+										return condition;
+									});
+									// ✅ 初始化当前缓存条件, CONSTANT 转成 STOP
 									Condition.endCondition = previousMinute.condition; // ✅ 当前缓存的结束条件是前一个的 condition
 									Condition.endTime = minute.startTime; // ✅ 结束时间永远是新起点的 startTime
 									Condition.forecastToken = "STOP"; // ✅ 不推送，下一次才能确定会不会变为 STOP_START
 									Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }]; // ✅ 可以确认 STOP 的 FIRST_AT
+									// 不推送，如果转为 STOP_START, 还需要补充 SECOND_AT
 									break;
 								case "START": // ✅ 缓存的是 START, 说明当前是 CLEAR, 结束降水了，说明变成 START_STOP 了
 									// ✅ 确定上次缓存条件
 									Condition.endCondition = previousMinute.condition; // ✅ minute.condition 是 CLEAR, 不能用
-									Condition.endTime = minute.startTime; // ✅ 结束时间永远是新起点的 startTime
 									Condition.forecastToken = "START_STOP"; // ✅ 结束降水了，变成 START_STOP 了
-									Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }]; // ✅ 可以确认 START 的 FIRST_AT
-									// 不推送，下一次才能补充 SECOND_AT
+									Condition.parameters.push({ date: minute.startTime, type: "SECOND_AT" }); // ✅ 可以确认 START_STOP 的 SECOND_AT
+									Console.debug(`Condition[${i}]: START->START_STOP`, JSON.stringify({ ...previousMinute, ...Condition }, null, 2));
+									Conditions.push({ ...Condition }); // 尘埃落定，可以推送了
+									// ✅ START_STOP 后面要补一个 STOP, 大致与 START_STOP 相同, FIRST_AT 为 START_STOP 的 SECOND_AT
+									Condition.forecastToken = "STOP"; // ✅ 不推送，下一次才能确定会不会变为 STOP_START
+									Condition.startTime = Condition.endTime; // 这里要紧接着上一个缓存条件的结束时间，而不是最后这个时间点
+									Condition.endTime = minute.startTime; // ✅ 结束时间永远是新起点的 startTime
+									Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }];
+									// 不推送，如果转为 STOP_START, 还需要补充 SECOND_AT
 									break;
 								case "STOP": // ✅ 缓存的是 STOP, 说明当前是 RAIN, 又开始降水了，说明变成 STOP_START 了
 									// ✅ 确定上次缓存条件
 									Condition.endCondition = minute.condition; // ✅ previousMinute.condition 是 CLEAR, 不能用
-									Condition.endTime = minute.startTime; // ✅ 结束时间永远是新起点的 startTime
 									Condition.forecastToken = "STOP_START"; // ✅ 开始降水了，变成 STOP_START 了
-									Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }]; // ✅ 可以确认 STOP 的 FIRST_AT
-									// 不推送，下一次才能补充 SECOND_AT
-									break;
-								case "START_STOP": // ✅ 缓存的是 START_STOP, 说明当前是 RAIN, 又开始降水了，可以确认上一个的 SECOND_AT 了
-									// ✅ 确定上次缓存条件
-									Condition.parameters.push({ date: minute.startTime, type: "SECOND_AT" }); // ✅ 可以确认 START_STOP 的 SECOND_AT
-									Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
+									Condition.parameters.push({ date: minute.startTime, type: "SECOND_AT" }); // ✅ 可以确认 STOP_START 的 SECOND_AT
+									Console.debug(`Condition[${i}]: STOP->STOP_START`, JSON.stringify({ ...minute, ...Condition }, null, 2));
 									Conditions.push({ ...Condition }); // 尘埃落定，可以推送了
-									// ✅ 初始化当前缓存条件，新建一个 START
-									Condition.beginCondition = minute.condition;
-									Condition.startTime = minute.startTime;
+									// ✅ STOP_START 后面要补一个 START, 大致与 STOP_START 相同, FIRST_AT 为 STOP_START 的 SECOND_AT
 									Condition.forecastToken = "START"; // ✅ 不推送，下一次才能确定会不会变为 START_STOP
-									// 不推送，下一次才能补充 FIRST_AT
+									Condition.startTime = Condition.endTime; // 这里要紧接着上一个缓存条件的结束时间，而不是最后这个时间点
+									Condition.endTime = minute.startTime; // ✅ 结束时间永远是新起点的 startTime
+									Condition.parameters = [{ date: minute.startTime, type: "FIRST_AT" }];
+									// 不推送，如果转为 STOP_START, 还需要补充 SECOND_AT
 									break;
-								case "STOP_START": // ✅ 缓存的是 STOP_START, 说明当前是 CLEAR, 结束降水了，可以确认上一个的 SECOND_AT 了
-									// ✅ 确定上次缓存条件
-									Condition.parameters.push({ date: minute.startTime, type: "SECOND_AT" }); // ✅ 可以确认 START_STOP 的 SECOND_AT
-									Console.debug(`Condition[${i}]`, JSON.stringify({ ...minute, ...Condition }, null, 2));
-									Conditions.push({ ...Condition }); // 尘埃落定，可以推送了
-									// ✅ 初始化当前缓存条件，新建一个 STOP
-									Condition.beginCondition = minute.condition;
-									Condition.startTime = minute.startTime;
-									Condition.forecastToken = "STOP"; // ✅ 不推送，下一次才能确定会不会变为 STOP_START
-									// 不推送，下一次才能补充 FIRST_AT
+								case "START_STOP": // 不该出现这种情况
+								case "STOP_START": // 不该出现这种情况
+									Console.error(`Condition[${i}]: ${Condition.forecastToken}`, JSON.stringify({ ...minute, ...Condition }, null, 2));
 									break;
 							}
 							break;
