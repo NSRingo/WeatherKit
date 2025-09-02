@@ -145,6 +145,10 @@ Console.info(`FORMAT: ${FORMAT}`);
 								}
 								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
 									//Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
+									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+										matchEnum.conditionType();
+										matchEnum.forecastToken();
+									}
 									if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
 									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
 								}

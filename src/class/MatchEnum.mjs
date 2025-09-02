@@ -4,7 +4,7 @@ import * as WK2 from "../proto/apple/wk2.js";
 export default class MatchEnum {
 	constructor(proto) {
 		this.Name = "MatchEnum";
-		this.Version = "0.0.1";
+		this.Version = "0.0.2";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.request = $request;
 		this.json = {};
@@ -69,6 +69,28 @@ export default class MatchEnum {
 		if (jsonCode !== protoCode) {
 			$notification.post("PressureTrend", "", `reportedTime: ${jsonTime}-${protoTime}\njson: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
 		}
+	}
+
+	conditionType() {
+		this.json?.forecastNextHour?.condition?.forEach((condition, i) => {
+			const jsonCode = condition?.beginCondition;
+			const protoID = WK2.ConditionType[this.json?.forecastNextHour?.condition?.[i]?.beginCondition];
+			const protoCode = WK2.ConditionType[protoID];
+			if (jsonCode !== protoCode) {
+				$notification.post("ConditionType", "", `json[${i}]: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+			}
+		});
+	}
+
+	forecastToken() {
+		this.json?.forecastNextHour?.condition?.forEach((condition, i) => {
+			const jsonCode = condition?.forecastToken;
+			const protoID = WK2.ForecastToken[condition?.forecastToken];
+			const protoCode = WK2.ForecastToken[protoID];
+			if (jsonCode !== protoCode) {
+				$notification.post("ForecastToken", "", `json[${i}]: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+			}
+		});
 	}
 
 	severity() {
