@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.8.2";
+	static Version = "2.8.3";
 	static Author = "Virgil Clyne & Wordless Echo";
 
 	/**
@@ -142,10 +142,10 @@ export default class AirQuality {
 				default:
 					switch (Boolean(todayAQI - yesterdayAQI)) {
 						case true:
-							trend = "UNKNOWN1";
+							trend = "MUCH_WORSE";
 							break;
 						case false:
-							trend = "UNKNOWN5";
+							trend = "MUCH_BETTER";
 							break;
 					}
 					break;
