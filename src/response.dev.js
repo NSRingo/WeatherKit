@@ -144,7 +144,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
 								}
 								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
-									//Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
+									Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
 									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
 										matchEnum.conditionType();
 										matchEnum.forecastToken();
@@ -174,7 +174,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 								}
 								if (url.searchParams.get("dataSets").includes("locationInfo")) {
 									if (body?.locationInfo?.metadata?.providerName && !body?.locationInfo?.metadata?.providerLogo) body.locationInfo.metadata.providerLogo = providerNameToLogo(body?.locationInfo?.metadata?.providerName, "v2");
-									//Console.debug(`body.locationInfo: ${JSON.stringify(body?.locationInfo, null, 2)}`);
+									Console.debug(`body.locationInfo: ${JSON.stringify(body?.locationInfo, null, 2)}`);
 								}
 								const WeatherData = WeatherKit2.encode(Builder, "all", body);
 								Builder.finish(WeatherData);
@@ -292,7 +292,7 @@ async function HistoricalAirQuality(airQuality, Settings, enviroments) {
 	}
 	// ConvertAirQuality 现在是必要操作
 	historicalAirQuality = AirQuality.ConvertScale(historicalAirQuality, Settings);
-	Console.debug(`historicalAirQuality: ${JSON.stringify(historicalAirQuality, null, 2)}`);
+	//Console.debug(`historicalAirQuality: ${JSON.stringify(historicalAirQuality, null, 2)}`);
 	Console.info("✅ HistoricalAirQuality");
 	return historicalAirQuality;
 }
@@ -367,7 +367,7 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
 		case "ColorfulClouds": {
 			const dailysteps = forecastDaily.days?.length || 11;
 			const begin = forecastDaily.days?.[0]?.forecastStart || undefined;
-			Console.debug(`dailysteps: ${dailysteps}, begin: ${begin}`);
+			//Console.debug(`dailysteps: ${dailysteps}, begin: ${begin}`);
 			newForecastDaily = await enviroments.colorfulClouds.Daily(dailysteps, begin);
 			break;
 		}
@@ -402,7 +402,7 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
 		case "ColorfulClouds": {
 			const hourlysteps = forecastHourly.hours?.length || 273;
 			const begin = forecastHourly.hours?.[0]?.forecastStart || undefined;
-			Console.debug(`hourlysteps: ${hourlysteps}, begin: ${begin}`);
+			//Console.debug(`hourlysteps: ${hourlysteps}, begin: ${begin}`);
 			newForecastHourly = (await enviroments.colorfulClouds.Hourly(hourlysteps, begin)).forecastHourly;
 			break;
 		}
@@ -442,7 +442,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
 	if (newForecastNextHour?.metadata) {
 		newForecastNextHour.metadata = { ...forecastNextHour?.metadata, ...newForecastNextHour.metadata };
 		forecastNextHour = { ...forecastNextHour, ...newForecastNextHour };
-		//Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
+		Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
 	}
 	Console.info("✅ InjectForecastNextHour");
 	return forecastNextHour;
