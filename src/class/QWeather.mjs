@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "4.4.9";
+		this.Version = "4.4.10";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://${host}`;
 		this.headers = { "X-QW-Api-Key": token };
@@ -89,7 +89,7 @@ export default class QWeather {
 						metadata: {
 							attributionUrl: body?.fxLink,
 							expireTime: timeStamp + 60 * 60,
-							language: `${this.language}-${this.country}`,
+							language: "zh-CN", // `${this.language}-${this.country}`,
 							latitude: this.latitude,
 							longitude: this.longitude,
 							providerLogo: providerNameToLogo("和风天气", this.version),
@@ -149,7 +149,7 @@ export default class QWeather {
 						metadata: {
 							attributionUrl: body?.fxLink,
 							expireTime: timeStamp + 60 * 60,
-							language: `${this.language}-${this.country}`,
+							language: "zh-CN", // `${this.language}-${this.country}`,
 							latitude: this.latitude,
 							longitude: this.longitude,
 							providerLogo: providerNameToLogo("和风天气", this.version),
@@ -206,7 +206,7 @@ export default class QWeather {
 						metadata: {
 							attributionUrl: request.url,
 							expireTime: timeStamp + 60 * 60,
-							language: `${this.language}-${this.country}`,
+							language: "zh-CN", // `${this.language}-${this.country}`,
 							latitude: this.latitude,
 							longitude: this.longitude,
 							providerLogo: providerNameToLogo("和风天气", this.version),
@@ -263,7 +263,7 @@ export default class QWeather {
 						metadata: {
 							attributionUrl: body?.fxLink,
 							expireTime: timeStamp + 60 * 60,
-							language: `${this.language}-${this.country}`, // body?.lang,
+							language: "zh-CN", // `${this.language}-${this.country}`, // body?.lang,
 							latitude: this.latitude,
 							longitude: this.longitude,
 							providerLogo: providerNameToLogo("和风天气", this.version),
@@ -337,7 +337,7 @@ export default class QWeather {
 						metadata: {
 							attributionUrl: body?.fxLink,
 							expireTime: timeStamp + 60 * 60,
-							language: `${this.language}-${this.country}`, // body?.lang,
+							language: "zh-CN", // `${this.language}-${this.country}`, // body?.lang,
 							latitude: this.latitude,
 							longitude: this.longitude,
 							providerLogo: providerNameToLogo("和风天气", this.version),
@@ -414,7 +414,7 @@ export default class QWeather {
 					const metadata = {
 						attributionUrl: body?.fxLink,
 						expireTime: timeStamp + 60 * 60,
-						language: `${this.language}-${this.country}`, // body?.lang,
+						language: "zh-CN", // `${this.language}-${this.country}`, // body?.lang,
 						latitude: this.latitude,
 						longitude: this.longitude,
 						providerLogo: providerNameToLogo("和风天气", this.version),
@@ -558,7 +558,7 @@ export default class QWeather {
 						metadata: {
 							attributionUrl: body?.fxLink,
 							expireTime: timeStamp + 60 * 60,
-							language: `${this.language}-${this.country}`, // body?.lang,
+							language: "zh-CN", // `${this.language}-${this.country}`, // body?.lang,
 							latitude: this.latitude,
 							longitude: this.longitude,
 							providerLogo: providerNameToLogo("和风天气", this.version),

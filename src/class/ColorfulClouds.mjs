@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(parameters, token) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.3.5";
+		this.Version = "3.3.6";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
 		this.headers = { Referer: "https://caiyunapp.com/" };
@@ -49,7 +49,7 @@ export default class ColorfulClouds {
 								const metadata = {
 									attributionUrl: "https://www.caiyunapp.com/h5",
 									expireTime: timeStamp + 60 * 60,
-									language: `${this.language}-${this.country}`,
+									language: "zh-CN",
 									latitude: body?.location?.[0],
 									longitude: body?.location?.[1],
 									providerLogo: providerNameToLogo("彩云天气", this.version),
@@ -126,7 +126,7 @@ export default class ColorfulClouds {
 							const metadata = {
 								attributionUrl: "https://www.caiyunapp.com/h5",
 								expireTime: timeStamp + 60 * 60,
-								language: `${this.language}-${this.country}`, // body?.lang,
+								language: "zh-CN", // `${this.language}-${this.country}`, // body?.lang,
 								latitude: body?.location?.[0],
 								longitude: body?.location?.[1],
 								providerLogo: providerNameToLogo("彩云天气", this.version),
@@ -205,7 +205,7 @@ export default class ColorfulClouds {
 							const metadata = {
 								attributionUrl: "https://www.caiyunapp.com/h5",
 								expireTime: timeStamp + 60 * 60,
-								language: `${this.language}-${this.country}`,
+								language: "zh-CN", // `${this.language}-${this.country}`,
 								latitude: body?.location?.[0],
 								longitude: body?.location?.[1],
 								providerLogo: providerNameToLogo("彩云天气", this.version),
@@ -301,7 +301,7 @@ export default class ColorfulClouds {
 							const metadata = {
 								attributionUrl: "https://www.caiyunapp.com/h5",
 								expireTime: timeStamp + 60 * 60,
-								language: `${this.language}-${this.country}`,
+								language: "zh-CN", // `${this.language}-${this.country}`,
 								latitude: body?.location?.[0],
 								longitude: body?.location?.[1],
 								providerLogo: providerNameToLogo("彩云天气", this.version),
