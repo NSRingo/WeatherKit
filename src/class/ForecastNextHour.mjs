@@ -66,15 +66,6 @@ export default class ForecastNextHour {
 					HEAVY: [11.33, 51.3],
 					STORM: [51.3, Number.MAX_VALUE],
 				},
-				/* 新标准不好用
-				"mmph": {
-					"NO": [0, 0.0606],
-					"LIGHT": [0.0606, 0.8989],
-					"MODERATE": [0.8989, 2.87],
-					"HEAVY": [2.87, 12.8638],
-					"STORM": [12.8638, Number.MAX_VALUE],
-				},
-				*/
 			},
 		},
 	};
@@ -136,22 +127,23 @@ export default class ForecastNextHour {
 						break;
 				}
 				minute.summaryCondition = precipitationType;
-			} else if (minute.perceivedPrecipitationIntensity > 0) {
-				// 小于 0.1 苹果天气显示为无降水
+			} else if (minute.precipitationIntensity > 1) {
+				// ✅ precipitationIntensity 小于 1, 苹果天气显示为无降水
+				// 小雨，可以感知到
+				switch (precipitationType) {
+					case "RAIN":
+						minute.condition = "DRIZZLE";
+						break;
+					case "SNOW":
+						minute.condition = "FLURRIES";
+						break;
+					default:
+						minute.condition = precipitationType;
+						break;
+				}
+				minute.summaryCondition = precipitationType;
+			} else {
 				if (minute.precipitationChance > 35) {
-					// 小雨，可以感知到
-					switch (precipitationType) {
-						case "RAIN":
-							minute.condition = "DRIZZLE";
-							break;
-						case "SNOW":
-							minute.condition = "FLURRIES";
-							break;
-						default:
-							minute.condition = precipitationType;
-							break;
-					}
-				} else {
 					// 可能降水
 					switch (precipitationType) {
 						case "RAIN":
@@ -164,12 +156,12 @@ export default class ForecastNextHour {
 							minute.condition = `POSSIBLE_${precipitationType}`;
 							break;
 					}
+					minute.summaryCondition = precipitationType;
+				} else {
+					// precipitationIntensity 小于 1, 苹果天气显示为无降水
+					minute.condition = "CLEAR";
+					minute.summaryCondition = "CLEAR";
 				}
-				minute.summaryCondition = precipitationType;
-			} else {
-				// 小于 0.1 苹果天气显示为无降水
-				minute.condition = "CLEAR";
-				minute.summaryCondition = "CLEAR";
 			}
 			Console.debug(`minutes[${i}]`, JSON.stringify(minute, null, 2));
 			return minute;
