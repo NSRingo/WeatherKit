@@ -1,4 +1,4 @@
-import { $app, Console, done, Lodash as _ } from "@nsnanocat/util";
+import { $app, Console, done, Lodash as _, Storage } from "@nsnanocat/util";
 import database from "./function/database.mjs";
 import setENV from "./function/setENV.mjs";
 // 构造回复数据
@@ -8,11 +8,6 @@ let $response = undefined;
 // 解构URL
 const url = new URL($request.url);
 Console.info(`url: ${url.toJSON()}`);
-// 获取连接参数
-const METHOD = $request.method,
-	HOST = url.hostname,
-	PATH = url.pathname;
-Console.info(`METHOD: ${METHOD}, HOST: ${HOST}, PATH: ${PATH}`);
 // 解析格式
 const FORMAT = ($request.headers?.["Content-Type"] ?? $request.headers?.["content-type"])?.split(";")?.[0];
 Console.info(`FORMAT: ${FORMAT}`);
@@ -25,7 +20,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 	// 创建空数据
 	let body = {};
 	// 方法判断
-	switch (METHOD) {
+	switch ($request.method) {
 		case "POST":
 		case "PUT":
 		case "PATCH":
@@ -76,7 +71,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 				case "application/grpc+proto":
 				case "application/octet-stream": {
 					//Console.debug(`$request: ${JSON.stringify($request, null, 2)}`);
-					let rawBody = $app === "Quantumult X" ? new Uint8Array($request.bodyBytes ?? []) : $request.body ?? new Uint8Array();
+					let rawBody = $app === "Quantumult X" ? new Uint8Array($request.bodyBytes ?? []) : ($request.body ?? new Uint8Array());
 					//Console.debug(`isBuffer? ${ArrayBuffer.isView(rawBody)}: ${JSON.stringify(rawBody, null, 2)}`);
 					// 写入二进制数据
 					$request.body = rawBody;
@@ -91,17 +86,29 @@ Console.info(`FORMAT: ${FORMAT}`);
 			delete $request?.headers?.["If-None-Match"];
 			delete $request?.headers?.["if-none-match"];
 			// 主机判断
-			switch (HOST) {
+			switch (url.hostname) {
 				case "weatherkit.apple.com":
 					// 路径判断
 					switch (true) {
-						case PATH.startsWith("/api/v2/weather/"):
+						case url.pathname.startsWith("/api/v2/weather/"): {
+							// 解决 macOS 天气 app 如果使用国际版 Maps 时，country 丢失不显示未来一小时降水的问题
+							switch (true) {
+								case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
+								case $request.headers["user-agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
+									if (url.searchParams.has("country")) {
+									} else {
+										const gcc = Storage.getItem("@iRingo.Location.Caches")?.pep?.gcc;
+										if (gcc) url.searchParams.set("country", gcc);
+									}
+									break;
+							}
 							let dataSets = url.searchParams.get("dataSets")?.split(",");
 							if (dataSets) {
-								dataSets = dataSets?.filter(item => Settings.DataSets?.includes(item));
+								dataSets = dataSets?.filter(dataSet => Settings.DataSets?.includes(dataSet));
 								url.searchParams.set("dataSets", dataSets?.join(","));
 							}
 							break;
+						}
 					}
 					break;
 			}
