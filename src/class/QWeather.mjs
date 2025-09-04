@@ -298,7 +298,7 @@ export default class QWeather {
 					forecastNextHour.forecastEnd = minuteStemp + 60 * forecastNextHour.minutes.length;
 					forecastNextHour.minutes = ForecastNextHour.Minute(forecastNextHour.minutes, body?.summary, "mmph");
 					forecastNextHour.summary = ForecastNextHour.Summary(forecastNextHour.minutes);
-					forecastNextHour.condition = ForecastNextHour.Condition(forecastNextHour.minutes);
+					forecastNextHour.condition = ForecastNextHour.Condition(forecastNextHour.minutes, forecastNextHour.summary);
 					break;
 				}
 				case "204":
