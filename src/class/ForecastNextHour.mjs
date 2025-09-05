@@ -97,6 +97,7 @@ export default class ForecastNextHour {
 
 		minutes = minutes.map((minute, i) => {
 			// 根据precipitationIntensity来猜测生成perceivedPrecipitationIntensity
+			minute.precipitationIntensity = Math.trunc(minute.precipitationIntensity * 1000000) / 1000000;
 			minute.perceivedPrecipitationIntensity = ForecastNextHour.#ConvertPrecipitationIntensity(minute.precipitationIntensity, units);
 			// 然后根据perceivedPrecipitationIntensity和precipitationChance来猜测生成condition和summaryCondition
 			if (minute.perceivedPrecipitationIntensity > 2) {
@@ -130,7 +131,7 @@ export default class ForecastNextHour {
 				minute.summaryCondition = precipitationType;
 				minute.clear = false;
 			} else if (minute.perceivedPrecipitationIntensity > 0.1) {
-				// ✅ perceivedPrecipitationIntensity 小于 0.1, 苹果天气显示为无降水
+				// ❓ perceivedPrecipitationIntensity 小于 0.1, 苹果天气显示为无降水
 				// 小雨，可以感知到
 				switch (precipitationType) {
 					case "RAIN":
@@ -526,6 +527,10 @@ export default class ForecastNextHour {
 			// 根据强度计算感知强度，在2-3之间
 			perceivedPrecipitationIntensity = 2 + Math.min(1, (precipitationIntensity - Range.HEAVY[0]) / (Range.HEAVY[1] - Range.HEAVY[0]));
 		}
+
+		// 使用Math.trunc保留一位小数（性能最快，截断不四舍五入）
+		perceivedPrecipitationIntensity = Math.trunc(perceivedPrecipitationIntensity * 1000) / 1000;
+
 		//Console.debug(`perceivedPrecipitationIntensity: ${perceivedPrecipitationIntensity}`);
 		//Console.info(`✅ ConvertPrecipitationIntensity`);
 		return perceivedPrecipitationIntensity;
