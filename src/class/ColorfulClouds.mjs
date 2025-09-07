@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(parameters, token) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.3.6";
+		this.Version = "3.3.7";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
 		this.headers = { Referer: "https://caiyunapp.com/" };
@@ -73,6 +73,18 @@ export default class ColorfulClouds {
 									//primaryPollutant: "NOT_AVAILABLE", // 交给 AirQuality.ConvertScale 计算
 									//scale: "HJ6332012", // 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
 								};
+								switch (this.country) {
+									case "CN":
+									case "HK":
+									case "MO":
+									case "TW":
+										this.airQuality.scale = "HJ6332012";
+										break;
+									case "US":
+									default:
+										this.airQuality.scale = "EPA_NowCast";
+										break;
+								}
 								this.currentWeather = {
 									metadata: metadata,
 									cloudCover: Math.round(body?.result?.realtime?.cloudrate * 100),
@@ -193,7 +205,6 @@ export default class ColorfulClouds {
 			headers: this.headers,
 		};
 		if (begin) request.url += `&begin=${begin}`;
-		let airQuality;
 		let forecastHourly;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
@@ -215,7 +226,7 @@ export default class ColorfulClouds {
 								temporarilyUnavailable: false,
 								sourceType: "STATION",
 							};
-							airQuality = {
+							this.airQuality = {
 								metadata: metadata,
 								categoryIndex: -1, // 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
 								index: {
@@ -229,6 +240,18 @@ export default class ColorfulClouds {
 								//primaryPollutant: "NOT_AVAILABLE", // 交给 AirQuality.ConvertScale 计算
 								//scale: "HJ6332012", // 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
 							};
+							switch (this.country) {
+								case "CN":
+								case "HK":
+								case "MO":
+								case "TW":
+									this.airQuality.scale = "HJ6332012";
+									break;
+								case "US":
+								default:
+									this.airQuality.scale = "EPA_NowCast";
+									break;
+							}
 							forecastHourly = {
 								metadata: metadata,
 								hours: [],
@@ -277,10 +300,10 @@ export default class ColorfulClouds {
 		} catch (error) {
 			Console.error(`Hourly: ${error}`);
 		} finally {
-			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+			//Console.debug(`airQuality: ${JSON.stringify(this.airQuality, null, 2)}`);
 			Console.info("✅ Hourly");
 		}
-		return { airQuality, forecastHourly };
+		return { airQuality: this.airQuality, forecastHourly };
 	}
 
 	async Daily(dailysteps = 10, begin = undefined) {

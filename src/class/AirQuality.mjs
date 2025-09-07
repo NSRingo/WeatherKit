@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.8.3";
+	static Version = "2.8.4";
 	static Author = "Virgil Clyne & Wordless Echo";
 
 	/**
@@ -33,7 +33,6 @@ export default class AirQuality {
 					airQuality.scale = AirQuality.#Config.Scales[targetScale]?.scale;
 					airQuality.index = airQuality?.index?.[airQuality.scale];
 					airQuality.categoryIndex = AirQuality.CategoryIndex(airQuality?.index, airQuality.scale);
-					airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[airQuality.scale].significant;
 				}
 				// 就算标准相同，也要重新计算显著性
 				airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[targetScale].significant;
@@ -51,7 +50,6 @@ export default class AirQuality {
 					airQuality.scale = AirQuality.#Config.Scales[targetScale]?.scale;
 					airQuality.index = airQuality?.index?.[airQuality.scale];
 					airQuality.categoryIndex = AirQuality.CategoryIndex(airQuality?.index, airQuality.scale);
-					airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.#Config.Scales[airQuality.scale].significant;
 				}
 				// [空气质量] 需要修改的标准 (ReplaceScales) 包含的标准才进行转换
 				if (Settings?.AQI?.Local?.ReplaceScales.includes(sourceScale)) {
