@@ -16,6 +16,7 @@
 [Rule]
 DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
 DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
+DOMAIN,tether.edge.apple,REJECT-DROP
 
 [Script]
 http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ requires-body=1, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js, tag=🌤 WeatherKit.api.v1.availability.response, argument={{{scriptParams}}}
