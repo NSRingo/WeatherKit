@@ -161,7 +161,7 @@ export default class ForecastNextHour {
 				minute.condition = "CLEAR";
 				minute.summaryCondition = "CLEAR";
 			}
-			Console.debug(`minutes[${i}]`, JSON.stringify(minute, null, 2));
+			//Console.debug(`minutes[${i}]`, JSON.stringify(minute, null, 2));
 			return minute;
 		});
 
