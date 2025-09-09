@@ -118,7 +118,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									// InjectAirQuality
 									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(body.airQuality, Settings, enviroments);
 									// CompareAirQuality
-									body.airQuality = await CompareAirQuality(body.airQuality, Settings, enviroments);
+									if (body?.airQuality) body.airQuality = await CompareAirQuality(body.airQuality, Settings, enviroments);
 									// Convert units that does not supported in Apple Weather
 									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.ConvertUnits(body.airQuality.pollutants);
 									// ProviderLogo
