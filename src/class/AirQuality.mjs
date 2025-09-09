@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.8.4";
+	static Version = "2.8.5";
 	static Author = "Virgil Clyne & Wordless Echo";
 
 	/**
@@ -104,9 +104,11 @@ export default class AirQuality {
 	static ComparisonTrend(todayAQI, yesterdayAQI) {
 		Console.info("☑️ ComparisonTrend", `todayAQI: ${todayAQI}`, `yesterdayAQI: ${yesterdayAQI}`);
 		let trend = "UNKNOWN";
-		if (isNaN(todayAQI - yesterdayAQI)) trend = "UNKNOWN";
+		const diff = Number(todayAQI) - Number(yesterdayAQI);
+		if (Number.isNaN(diff))
+			trend = "UNKNOWN"; // 非数值 → 未知
 		else
-			switch (todayAQI - yesterdayAQI) {
+			switch (diff) {
 				case 10:
 				case 9:
 				case 8:
@@ -138,7 +140,7 @@ export default class AirQuality {
 					trend = "UNKNOWN";
 					break;
 				default:
-					switch (Boolean(todayAQI - yesterdayAQI)) {
+					switch (diff > 0) {
 						case true:
 							trend = "MUCH_WORSE";
 							break;
