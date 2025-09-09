@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
-	Version = "v1.6.0";
+	Version = "v1.6.1";
 	Author = "iRingo";
 
 	static #Configs = {
@@ -250,8 +250,8 @@ export default class ForecastNextHour {
 				const CLEAR = summaries[0]; // CLEAR 时期
 				// CLEAR 期间显示为 CLEAR
 				Conditions.push({
-					beginCondition: CLEAR.beginCondition,
-					endCondition: CLEAR.endCondition,
+					beginCondition: CLEAR.maxCondition,
+					endCondition: CLEAR.maxCondition,
 					forecastToken: "CLEAR",
 					parameters: [],
 					startTime: CLEAR.startTime,
@@ -264,8 +264,8 @@ export default class ForecastNextHour {
 				const CONSTANT = summaries[0]; // CONSTANT 时期
 				// CONSTANT 期间显示为 CONSTANT
 				Conditions.push({
-					beginCondition: CONSTANT.beginCondition,
-					endCondition: CONSTANT.endCondition,
+					beginCondition: CONSTANT.maxCondition,
+					endCondition: CONSTANT.maxCondition,
 					forecastToken: "CONSTANT",
 					parameters: [],
 					startTime: CONSTANT.startTime, // CONSTANT 期间
@@ -279,8 +279,8 @@ export default class ForecastNextHour {
 				const START = summaries[1]; // CONSTANT 时期
 				// CLEAR 期间显示为 START
 				Conditions.push({
-					beginCondition: START.beginCondition,
-					endCondition: START.endCondition,
+					beginCondition: START.maxCondition,
+					endCondition: START.maxCondition,
 					forecastToken: "START",
 					parameters: [{ date: START.startTime, type: "FIRST_AT" }], // 降水开始时
 					startTime: CLEAR.startTime, // CLEAR 期间
@@ -288,8 +288,8 @@ export default class ForecastNextHour {
 				});
 				// START 期间显示为 CONSTANT
 				Conditions.push({
-					beginCondition: START.beginCondition,
-					endCondition: START.beginCondition,
+					beginCondition: START.maxCondition,
+					endCondition: START.maxCondition,
 					forecastToken: "CONSTANT",
 					parameters: [],
 					startTime: START.startTime, // START 期间
@@ -303,8 +303,8 @@ export default class ForecastNextHour {
 				const CLEAR = summaries[1]; // CLEAR 时期
 				// STOP 期间显示为 STOP
 				Conditions.push({
-					beginCondition: STOP.beginCondition,
-					endCondition: STOP.endCondition,
+					beginCondition: STOP.maxCondition,
+					endCondition: STOP.maxCondition,
 					forecastToken: "STOP",
 					parameters: [{ date: STOP.endTime, type: "FIRST_AT" }], // 降水结束时
 					startTime: STOP.startTime, // STOP 期间
@@ -312,8 +312,8 @@ export default class ForecastNextHour {
 				});
 				// CLEAR 期间显示为 CLEAR
 				Conditions.push({
-					beginCondition: CLEAR.beginCondition,
-					endCondition: CLEAR.beginCondition,
+					beginCondition: CLEAR.maxCondition,
+					endCondition: CLEAR.maxCondition,
 					forecastToken: "CLEAR",
 					parameters: [],
 					startTime: CLEAR.startTime, // CLEAR 期间
@@ -328,8 +328,8 @@ export default class ForecastNextHour {
 				const START = summaries[2]; // START 时期
 				// STOP 期间显示为 STOP_START
 				Conditions.push({
-					beginCondition: STOP.beginCondition, // 第一次降水降水开始时
-					endCondition: START.endCondition, // 第一次降水降水结束时
+					beginCondition: STOP.maxCondition, // 第一次降水降水开始时
+					endCondition: START.maxCondition, // 第一次降水降水结束时
 					forecastToken: "STOP_START",
 					parameters: [
 						{ date: STOP.endTime, type: "FIRST_AT" }, // 第一次降水结束时
@@ -340,8 +340,8 @@ export default class ForecastNextHour {
 				});
 				// CLEAR 期间显示为 START
 				Conditions.push({
-					beginCondition: START.beginCondition,
-					endCondition: START.beginCondition,
+					beginCondition: START.maxCondition,
+					endCondition: START.maxCondition,
 					forecastToken: "START",
 					parameters: [{ date: START.startTime, type: "FIRST_AT" }],
 					startTime: CLEAR.startTime, // CLEAR 期间
@@ -349,8 +349,8 @@ export default class ForecastNextHour {
 				});
 				// START 期间显示为 CONSTANT
 				Conditions.push({
-					beginCondition: START.beginCondition,
-					endCondition: START.beginCondition,
+					beginCondition: START.maxCondition,
+					endCondition: START.maxCondition,
 					forecastToken: "CONSTANT",
 					parameters: [],
 					startTime: START.startTime, // START 期间
@@ -365,8 +365,8 @@ export default class ForecastNextHour {
 				const CLEAR2 = summaries[2]; // CLEAR 时期
 				// CLEAR1 期间显示为 START_STOP
 				Conditions.push({
-					beginCondition: STOP.beginCondition, // STOP 的开始天气
-					endCondition: STOP.endCondition, // STOP 的结束天气
+					beginCondition: STOP.maxCondition, // STOP 的开始天气
+					endCondition: STOP.maxCondition, // STOP 的结束天气
 					forecastToken: "START_STOP",
 					parameters: [
 						{ date: STOP.startTime, type: "FIRST_AT" },
@@ -377,8 +377,8 @@ export default class ForecastNextHour {
 				});
 				// STOP 期间显示为 STOP
 				Conditions.push({
-					beginCondition: STOP.beginCondition, // STOP 的开始天气
-					endCondition: STOP.endCondition, // STOP 的结束天气
+					beginCondition: STOP.maxCondition, // STOP 的开始天气
+					endCondition: STOP.maxCondition, // STOP 的结束天气
 					forecastToken: "STOP",
 					parameters: [{ date: STOP.endTime, type: "FIRST_AT" }],
 					startTime: STOP.startTime, // STOP 期间
@@ -386,8 +386,8 @@ export default class ForecastNextHour {
 				});
 				// CLEAR2 期间显示为 CLEAR
 				Conditions.push({
-					beginCondition: CLEAR2.endCondition, // CLEAR2 时期
-					endCondition: CLEAR2.endCondition, // CLEAR2 时期
+					beginCondition: CLEAR2.maxCondition, // CLEAR2 时期
+					endCondition: CLEAR2.maxCondition, // CLEAR2 时期
 					forecastToken: "CLEAR",
 					parameters: [],
 					startTime: CLEAR2.startTime, // CLEAR2 期间
@@ -403,8 +403,8 @@ export default class ForecastNextHour {
 				const CLEAR2 = summaries[3]; // CLEAR 时期 2
 				// STOP1 期间显示为 STOP_START
 				Conditions.push({
-					beginCondition: STOP1.beginCondition, // STOP1 的开始天气
-					endCondition: STOP2.beginCondition, // STOP2 的开始天气
+					beginCondition: STOP1.maxCondition, // STOP1 的开始天气
+					endCondition: STOP2.maxCondition, // STOP2 的开始天气
 					forecastToken: "STOP_START",
 					parameters: [
 						{ date: STOP1.endTime, type: "FIRST_AT" }, // STOP1 结束
@@ -415,8 +415,8 @@ export default class ForecastNextHour {
 				});
 				// CLEAR1 期间显示为 START_STOP
 				Conditions.push({
-					beginCondition: STOP2.beginCondition, // STOP 时期 2
-					endCondition: STOP2.endCondition, // STOP 时期 2
+					beginCondition: STOP2.maxCondition, // STOP 时期 2
+					endCondition: STOP2.maxCondition, // STOP 时期 2
 					forecastToken: "START_STOP",
 					parameters: [
 						{ date: STOP2.startTime, type: "FIRST_AT" }, // STOP2 开始
@@ -427,8 +427,8 @@ export default class ForecastNextHour {
 				});
 				// STOP2 期间显示为 STOP
 				Conditions.push({
-					beginCondition: STOP2.beginCondition, // STOP 时期
-					endCondition: STOP2.endCondition, // STOP 时期
+					beginCondition: STOP2.maxCondition, // STOP 时期
+					endCondition: STOP2.maxCondition, // STOP 时期
 					forecastToken: "STOP",
 					parameters: [{ date: STOP2.endTime, type: "FIRST_AT" }],
 					startTime: STOP2.startTime, // STOP2 期间
@@ -436,8 +436,8 @@ export default class ForecastNextHour {
 				});
 				// CLEAR2 期间显示为 CLEAR
 				Conditions.push({
-					beginCondition: CLEAR2.beginCondition, // CLEAR 时期
-					endCondition: CLEAR2.beginCondition, // CLEAR 时期
+					beginCondition: CLEAR2.maxCondition, // CLEAR 时期
+					endCondition: CLEAR2.maxCondition, // CLEAR 时期
 					forecastToken: "CLEAR",
 					parameters: [],
 					startTime: CLEAR2.startTime, // CLEAR2 期间
@@ -453,8 +453,8 @@ export default class ForecastNextHour {
 				const START2 = summaries[3]; // START2 时期
 				// CLEAR1 期间显示为 START_STOP
 				Conditions.push({
-					beginCondition: START1.beginCondition, // START1 的开始天气
-					endCondition: START1.endCondition, // START1 的结束天气
+					beginCondition: START1.maxCondition, // START1 的开始天气
+					endCondition: START1.maxCondition, // START1 的结束天气
 					forecastToken: "START_STOP",
 					parameters: [
 						{ date: START1.startTime, type: "FIRST_AT" }, // CLEAR1 结束
@@ -465,8 +465,8 @@ export default class ForecastNextHour {
 				});
 				// START1 期间显示为 STOP_START
 				Conditions.push({
-					beginCondition: START1.endCondition, // START1 的结束天气
-					endCondition: START2.beginCondition, // START2 的开始天气
+					beginCondition: START1.maxCondition, // START1 的结束天气
+					endCondition: START2.maxCondition, // START2 的开始天气
 					forecastToken: "STOP_START",
 					parameters: [
 						{ date: START1.endTime, type: "FIRST_AT" }, // START1 结束
@@ -477,8 +477,8 @@ export default class ForecastNextHour {
 				});
 				// CLEAR2 期间显示为 START
 				Conditions.push({
-					beginCondition: START2.beginCondition, // START2.beginCondition, // START2 的开始天气
-					endCondition: START2.beginCondition, // START2 的开始天气
+					beginCondition: START2.maxCondition, // START2.beginCondition, // START2 的开始天气
+					endCondition: START2.maxCondition, // START2 的开始天气
 					forecastToken: "START",
 					parameters: [{ date: START2.startTime, type: "FIRST_AT" }],
 					startTime: CLEAR2.startTime, // CLEAR2 期间
@@ -486,8 +486,8 @@ export default class ForecastNextHour {
 				});
 				// START2 期间显示为 CONSTANT
 				Conditions.push({
-					beginCondition: START2.beginCondition, // START2 时期
-					endCondition: START2.beginCondition, // START2 时期
+					beginCondition: START2.maxCondition, // START2 时期
+					endCondition: START2.maxCondition, // START2 时期
 					forecastToken: "CONSTANT",
 					parameters: [],
 					startTime: START2.startTime, // START2 期间
