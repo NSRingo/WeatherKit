@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(parameters, token) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.3.7";
+		this.Version = "3.3.8";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
 		this.headers = { Referer: "https://caiyunapp.com/" };
@@ -175,7 +175,7 @@ export default class ColorfulClouds {
 							forecastNextHour.forecastEnd = minuteStemp + 60 * forecastNextHour.minutes.length;
 							forecastNextHour.minutes = ForecastNextHour.Minute(forecastNextHour.minutes, body?.result?.minutely?.description, "mmph");
 							forecastNextHour.summary = ForecastNextHour.Summary(forecastNextHour.minutes);
-							forecastNextHour.condition = ForecastNextHour.Condition(forecastNextHour.minutes);
+							forecastNextHour.condition = ForecastNextHour.Condition(forecastNextHour.summary);
 							break;
 						}
 						case "error":

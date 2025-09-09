@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "4.4.10";
+		this.Version = "4.4.11";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://${host}`;
 		this.headers = { "X-QW-Api-Key": token };
@@ -298,7 +298,7 @@ export default class QWeather {
 					forecastNextHour.forecastEnd = minuteStemp + 60 * forecastNextHour.minutes.length;
 					forecastNextHour.minutes = ForecastNextHour.Minute(forecastNextHour.minutes, body?.summary, "mmph");
 					forecastNextHour.summary = ForecastNextHour.Summary(forecastNextHour.minutes);
-					forecastNextHour.condition = ForecastNextHour.Condition(forecastNextHour.minutes);
+					forecastNextHour.condition = ForecastNextHour.Condition(forecastNextHour.summary);
 					break;
 				}
 				case "204":
