@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
-	Version = "v1.6.1";
+	Version = "v1.6.2";
 	Author = "iRingo";
 
 	static #Configs = {
@@ -182,8 +182,8 @@ export default class ForecastNextHour {
 			startTime: 0,
 			precipitationChance: 0,
 			precipitationIntensity: 0,
-			beginCondition: "",
-			endCondition: "",
+			//beginCondition: "",
+			//endCondition: "",
 			maxCondition: "",
 			clear: true,
 		};
@@ -197,14 +197,14 @@ export default class ForecastNextHour {
 					Summary.condition = minute.summaryCondition; // condition 只关心降水类型，不关心具体强弱描述
 					Summary.precipitationChance = minute.precipitationChance;
 					Summary.precipitationIntensity = minute.precipitationIntensity;
-					Summary.beginCondition = minute.condition;
-					Summary.endCondition = "";
+					//Summary.beginCondition = minute.condition;
+					//Summary.endCondition = "";
 					Summary.maxCondition = minute.condition;
 					Summary.clear = minute.clear;
 					break;
 				case Length - 1: // 最后一个
 					Summary.endTime = 0; // ⚠️空值必须写零！
-					Summary.endCondition = minute.condition;
+					//Summary.endCondition = minute.condition;
 					Summary.clear = minute.clear;
 					Console.debug(`Summaries[${i}]`, JSON.stringify({ ...minute, ...Summary }, null, 2));
 					Summaries.push({ ...Summary });
@@ -213,7 +213,7 @@ export default class ForecastNextHour {
 					if (minute.summaryCondition !== previousMinute.summaryCondition) {
 						// 结束当前summary
 						Summary.endTime = minute.startTime;
-						Summary.endCondition = previousMinute.condition;
+						//Summary.endCondition = previousMinute.condition;
 						Console.debug(`Summaries[${i}]`, JSON.stringify({ ...previousMinute, ...Summary }, null, 2));
 						Summaries.push({ ...Summary });
 
@@ -222,8 +222,8 @@ export default class ForecastNextHour {
 						Summary.condition = minute.summaryCondition; // condition 只关心降水类型，不关心具体强弱描述
 						Summary.precipitationChance = minute.precipitationChance;
 						Summary.precipitationIntensity = minute.precipitationIntensity;
-						Summary.beginCondition = minute.condition;
-						Summary.endCondition = ""; // 重置
+						//Summary.beginCondition = minute.condition;
+						//Summary.endCondition = ""; // 重置
 						Summary.maxCondition = minute.condition; // 重置
 						Summary.clear = minute.clear;
 					} else {
