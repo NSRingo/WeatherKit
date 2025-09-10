@@ -173,7 +173,7 @@ export default class ColorfulClouds {
 							};
 							forecastNextHour.minutes.length = Math.min(85, forecastNextHour.minutes.length);
 							forecastNextHour.forecastEnd = minuteStemp + 60 * forecastNextHour.minutes.length;
-							forecastNextHour.minutes = ForecastNextHour.Minute(forecastNextHour.minutes, body?.result?.minutely?.description, "mmph");
+							forecastNextHour.minutes = ForecastNextHour.Minute(forecastNextHour.minutes, body?.result?.minutely?.description, "precipitation");
 							forecastNextHour.summary = ForecastNextHour.Summary(forecastNextHour.minutes);
 							forecastNextHour.condition = ForecastNextHour.Condition(forecastNextHour.summary);
 							break;
