@@ -2,7 +2,7 @@ import { Console } from "@nsnanocat/util";
 
 export default class ForecastNextHour {
 	Name = "ForecastNextHour";
-	Version = "v1.6.2";
+	Version = "v1.6.3";
 	Author = "iRingo";
 
 	static #Configs = {
@@ -46,7 +46,7 @@ export default class ForecastNextHour {
 				LIGHT: 1,
 				MODERATE: 2,
 				HEAVY: 3,
-				STORM: 4,
+				EXTREME: 4,
 			},
 			Range: {
 				/**
@@ -57,14 +57,21 @@ export default class ForecastNextHour {
 					LIGHT: [0.031, 0.25],
 					MODERATE: [0.25, 0.35],
 					HEAVY: [0.35, 0.48],
-					STORM: [0.48, Number.MAX_VALUE],
+					EXTREME: [0.48, Number.MAX_VALUE],
 				},
 				mmph: {
 					NO: [0, 0.08],
 					LIGHT: [0.08, 3.44],
 					MODERATE: [3.44, 11.33],
 					HEAVY: [11.33, 51.3],
-					STORM: [51.3, Number.MAX_VALUE],
+					EXTREME: [51.3, Number.MAX_VALUE],
+				},
+				precipitation: {
+					NO: [0, 0.01],
+					LIGHT: [0.01, 0.6],
+					MODERATE: [0.6, 1.65],
+					HEAVY: [1.65, 8.0],
+					EXTREME: [8.0, 205.0],
 				},
 			},
 		},
@@ -113,6 +120,7 @@ export default class ForecastNextHour {
 						minute.condition = precipitationType;
 						break;
 				}
+
 				minute.summaryCondition = precipitationType;
 				minute.clear = false;
 			} else if (minute.perceivedPrecipitationIntensity > 1) {
