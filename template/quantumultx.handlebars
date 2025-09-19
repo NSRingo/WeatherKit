@@ -8,6 +8,11 @@
 #!date = {{now "yyyy-MM-dd HH:mm:ss"}}
 #!version = {{@package 'version'}}
 
+#[filter_local]
+host, weather-analytics-events.apple.com, reject
+host-suffix, tthr.apple.com, reject
+host, tether.edge.apple, reject
+
 #[rewrite_local]
 # 🌤 WeatherKit.api.v1.availability.response
 ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
@@ -15,8 +20,6 @@
 ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ url script-request-header https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/request.bundle.js
 # 🌤 WeatherKit.api.v2.weather.response
 ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
-# 🌤 Weather Analytics
-^https?:\/\/weather-analytics-events\.apple\.com\/ url reject
 
 #[mitm]
-hostname = weatherkit.apple.com, weather-analytics-events.apple.com, *.tthr.apple.com, tether.edge.apple
+hostname = weatherkit.apple.com
