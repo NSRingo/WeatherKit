@@ -90,33 +90,50 @@ Console.info(`FORMAT: ${FORMAT}`);
 									qWeather: new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host),
 									waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
 								};
+
+								const weatherTargets = new RegExp(Settings?.Weather?.Targets || '$.^');
+								const nextHourTargets = new RegExp(Settings?.NextHour?.Targets || '$.^');
+
+								if (weatherTargets.test(parameters.country)) {
+									if (url.searchParams.get("dataSets").includes("currentWeather")) {
+										body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
+										if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
+									}
+									if (url.searchParams.get("dataSets").includes("forecastDaily")) {
+										body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
+										if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
+									}
+									if (url.searchParams.get("dataSets").includes("forecastHourly")) {
+										body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
+										if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
+									}
+								}
+
+								if (nextHourTargets.test(parameters.country)) {
+									if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
+										if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
+										if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
+									}
+								}
+
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
-									// FixPollutantUnits
-									body.airQuality = AirQuality.FixUnits(body.airQuality);
-									// InjectAirQuality
-									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(body.airQuality, Settings, enviroments);
-									// CompareAirQuality
-									if (body?.airQuality) body.airQuality = await CompareAirQuality(body.airQuality, Settings, enviroments);
-									// Convert units that does not supported in Apple Weather
-									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.ConvertUnits(body.airQuality.pollutants);
-									// ProviderLogo
-									if (body?.airQuality?.metadata?.providerName && !body?.airQuality?.metadata?.providerLogo) body.airQuality.metadata.providerLogo = providerNameToLogo(body?.airQuality?.metadata?.providerName, "v2");
-								}
-								if (url.searchParams.get("dataSets").includes("currentWeather")) {
-									body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
-									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
-								}
-								if (url.searchParams.get("dataSets").includes("forecastDaily")) {
-									body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
-									if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
-								}
-								if (url.searchParams.get("dataSets").includes("forecastHourly")) {
-									body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
-									if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
-								}
-								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
-									if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
-									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
+									if (Settings?.AirQuality?.FixQWeatherCo) {
+										// FixPollutantUnits
+										body.airQuality = AirQuality.FixUnits(body.airQuality);
+									}
+
+									const PollutantsAndComparisonTargets = new RegExp(
+										Settings?.AirQuality?.PollutantsAndComparisonTargets || '$.^');
+									if (PollutantsAndComparisonTargets.test(parameters.country)) {
+										// InjectAirQuality
+										body.airQuality = await InjectAirQuality(body.airQuality, Settings, enviroments);
+										// CompareAirQuality
+										if (body?.airQuality) body.airQuality = await CompareAirQuality(body.airQuality, Settings, enviroments);
+										// Convert units that does not supported in Apple Weather
+										if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.ConvertUnits(body.airQuality.pollutants);
+										// ProviderLogo
+										if (body?.airQuality?.metadata?.providerName && !body?.airQuality?.metadata?.providerLogo) body.airQuality.metadata.providerLogo = providerNameToLogo(body?.airQuality?.metadata?.providerName, "v2");
+									}
 								}
 								const WeatherData = WeatherKit2.encode(Builder, "all", body);
 								Builder.finish(WeatherData);
@@ -156,7 +173,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 async function InjectAirQuality(airQuality, Settings, enviroments) {
 	Console.info("☑️ InjectAirQuality");
 	let newAirQuality;
-	switch (Settings?.AQI?.Provider) {
+	switch (Settings?.AirQuality?.PollutantProvider) {
 		case "WeatherKit":
 			break;
 		case "QWeather": {

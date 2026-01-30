@@ -1,21 +1,30 @@
 export default {
 	WeatherKit: {
 		Settings: {
-			DataSets: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
+			DataSets: {
+				Targets: "CN|HK|MO|TW",
+				Value: [
+					"airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour",
+					"locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges",
+				],
+			},
 			Weather: {
+				Targets: "CN",
 				Provider: "WeatherKit",
 			},
 			NextHour: {
+				Targets: "*",
 				Provider: "ColorfulClouds",
 			},
-			AQI: {
-				Provider: "ColorfulClouds",
-				ReplaceProviders: ["QWeather"],
-				ComparisonProvider: "Auto",
-				Local: {
-					Scale: "EPA_NowCast",
-					ReplaceScales: ["HJ6332012"],
-					ConvertUnits: false,
+			AirQuality: {
+				FixQWeatherCo: true,
+				PollutantsAndComparisonTargets: "CN|HK|MO|TW",
+				PollutantsProvider: "ColorfulClouds",
+				ComparisonProvider: "QWeatherPollutants",
+				Index: {
+					Targets: ["HJ6332012"],
+					Provider: "iRingo",
+					iRingoCalculatingMethod: "UBA",
 				},
 			},
 			API: {

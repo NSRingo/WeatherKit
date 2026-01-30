@@ -1,31 +1,49 @@
 export interface Settings {
-    /**
-     * [数据集]
-     *
-     * 选中的数据集会被包含在请求中。
-     *
-     * @remarks
-     *
-     * Possible values:
-     * - `'airQuality'` - 空气质量
-     * - `'currentWeather'` - 当前天气
-     * - `'forecastDaily'` - 每日预报
-     * - `'forecastHourly'` - 每小时预报
-     * - `'forecastNextHour'` - 未来一小时降水强度
-     * - `'locationInfo'` - 位置信息
-     * - `'news'` - 新闻
-     * - `'historicalComparisons'` - 历史对比
-     * - `'weatherAlerts'` - 天气预警
-     * - `'weatherChanges'` - 天气变化
-     *
-     * @defaultValue ["airQuality","currentWeather","forecastDaily","forecastHourly","forecastNextHour","locationInfo","news","historicalComparisons","weatherAlerts","weatherChanges"]
-     */
-    DataSets?: ('airQuality' | 'currentWeather' | 'forecastDaily' | 'forecastHourly' | 'forecastNextHour' | 'locationInfo' | 'news' | 'historicalComparisons' | 'weatherAlerts' | 'weatherChanges')[];
+    DataSets: {
+        /**
+         * [数据集] 修改地区
+         *
+         * 正则表达式，只修改指定地区的数据集。
+         *
+         * @defaultValue "CN|HK|MO|TW"
+         */
+        Targets: string;
+        /**
+         * [数据集]
+         *
+         * 选中的数据集会被包含在请求中。
+         *
+         * @remarks
+         *
+         * Possible values:
+         * - `'airQuality'` - 空气质量
+         * - `'currentWeather'` - 当前天气
+         * - `'forecastDaily'` - 每日预报
+         * - `'forecastHourly'` - 每小时预报
+         * - `'forecastNextHour'` - 未来一小时降水强度
+         * - `'locationInfo'` - 位置信息
+         * - `'news'` - 新闻
+         * - `'historicalComparisons'` - 历史对比
+         * - `'weatherAlerts'` - 天气预警
+         * - `'weatherChanges'` - 天气变化
+         *
+         * @defaultValue ["airQuality","currentWeather","forecastDaily","forecastHourly","forecastNextHour","locationInfo","news","historicalComparisons","weatherAlerts","weatherChanges"]
+         */
+        Value?: ('airQuality' | 'currentWeather' | 'forecastDaily' | 'forecastHourly' | 'forecastNextHour' | 'locationInfo' | 'news' | 'historicalComparisons' | 'weatherAlerts' | 'weatherChanges')[];
+    },
     Weather?: {
+        /**
+         * [天气] 替换地区
+         *
+         * 正则表达式，只替换指定地区的天气。
+         *
+         * @defaultValue "CN"
+         */
+        Targets: string;
         /**
          * [天气] 数据源
          *
-         * 始终会使用选定的数据源，替换天气数据。
+         * 使用选定的数据源替换天气数据。
          *
          * @remarks
          *
@@ -40,14 +58,22 @@ export interface Settings {
     };
     NextHour?: {
         /**
+         * [未来一小时降水强度] 填补地区
+         *
+         * 正则表达式，只填补指定地区的未来一小时降水强度。
+         *
+         * @defaultValue "*"
+         */
+        Targets: string;
+        /**
          * [未来一小时降水强度] 数据源
          *
-         * 始终会使用选定的数据源，填补无降水监测地区的数据。
+         * 使用选定的数据源填充未来一小时降水强度的数据。
          *
          * @remarks
          *
          * Possible values:
-         * - `'WeatherKit'` - WeatherKit (不进行替换)
+         * - `'WeatherKit'` - WeatherKit (不进行填补)
          * - `'ColorfulClouds'` - 彩云天气
          * - `'QWeather'` - 和风天气
          *
@@ -55,60 +81,60 @@ export interface Settings {
          */
         Provider?: 'WeatherKit' | 'ColorfulClouds' | 'QWeather';
     };
-    AQI?: {
+    AirQuality?: {
         /**
-         * [空气质量] 数据源
+         * [空气质量 - 污染物] 修复和风天气的一氧化碳数据
          *
-         * 始终会使用选定的数据源，填补无空气质量监测地区的数据。
+         * 和风天气错误地将mg/m3单位的CO数据当作µg/m3单位，导致CO数据偏小。
+         *
+         * @defaultValue true
+         */
+        FixQWeatherCo: boolean;
+        /**
+         * [空气质量 - 污染物和对比昨日] 填补地区
+         *
+         * 正则表达式，只填补指定地区的数据。
+         *
+         * @defaultValue "CN|HK|MO|TW"
+         */
+        PollutantsAndComparisonTargets: string;
+        /**
+         * [空气质量 - 污染物] 数据源
+         *
+         * 使用选定的数据源填充污染物数据。
          *
          * @remarks
          *
          * Possible values:
-         * - `'WeatherKit'` - WeatherKit (不进行替换)
+         * - `'WeatherKit'` - WeatherKit (不进行填补)
          * - `'ColorfulClouds'` - 彩云天气
          * - `'QWeather'` - 和风天气
-         * - `'WAQI'` - The World Air Quality Project
          *
          * @defaultValue "ColorfulClouds"
          */
-        Provider?: 'WeatherKit' | 'ColorfulClouds' | 'QWeather' | 'WAQI';
+        PollutantProvider?: 'WeatherKit' | 'ColorfulClouds' | 'QWeather';
         /**
-         * [空气质量] 需要替换的供应商
+         * [空气质量 - 对比昨日] 数据源
          *
-         * 选中的空气质量数据源会被替换。
+         * 使用选定的数据源填补对比昨日的数据。
          *
          * @remarks
          *
          * Possible values:
-         * - `'QWeather'` - 和风天气
-         * - `'BreezoMeter'` - BreezoMeter
-         * - `'TWC'` - The Weather Channel
+         * - `'WeatherKit'` - WeatherKit (不进行填补)
+         * - `'QWeatherPollutants'` - 和风天气（污染物模式）
+         * - `'QWeatherCnIndex'` - 和风天气（空气指数模式）
+         * - `'ColorfulCloudsUsIndex'` - 彩云天气（空气指数模式，美标，2018年9月版，EPA-454/B-18-007）
+         * - `'ColorfulCloudsCnIndex'` - 彩云天气（空气指数模式，国标，2012年2月版，HJ 633—2012）
          *
-         * @defaultValue ["QWeather"]
+         * @defaultValue "QWeatherPollutants"
          */
-        ReplaceProviders?: ('QWeather' | 'BreezoMeter' | 'TWC')[];
-        /**
-         * [空气质量] 对比昨日数据源
-         *
-         * 始终会使用选定的数据源，填补无对比昨日地区的数据。
-         *
-         * @remarks
-         *
-         * Possible values:
-         * - `'Auto'` - 自动选择 (与[空气质量] 数据源一致)
-         * - `'WeatherKit'` - WeatherKit (不进行替换)
-         * - `'ColorfulClouds'` - 彩云天气
-         * - `'QWeather'` - 和风天气
-         * - `'WAQI'` - The World Air Quality Project
-         *
-         * @defaultValue "Auto"
-         */
-        ComparisonProvider?: 'Auto' | 'WeatherKit' | 'ColorfulClouds' | 'QWeather' | 'WAQI';
-        Local?: {
+        ComparisonProvider?: 'WeatherKit' | 'QWeatherPollutants' | 'QWeatherCnIndex' | 'ColorfulCloudsUsIndex' | 'ColorfulCloudsCnIndex';
+        Index: {
             /**
-             * [空气质量] 需要修改的标准
+             * [空气质量 - 空气指数] 替换目标
              *
-             * 选中的空气质量标准会被替换。请注意各国监测的污染物种类可能有所不同，转换算法或API未必适合当地。
+             * 只替换指定标准的空气指数。
              *
              * @remarks
              *
@@ -118,31 +144,41 @@ export interface Settings {
              *
              * @defaultValue ["HJ6332012"]
              */
-            ReplaceScales?: ('HJ6332012' | 'EPA_NowCast')[];
+            Targets?: ('HJ6332012' | 'EPA_NowCast')[];
             /**
-             * [空气质量] 本地替换算法
+             * [空气质量 - 空气指数] 数据源
              *
-             * 本地替换时使用的算法
+             * 使用选定的数据源填补污染物数据。
              *
              * @remarks
              *
              * Possible values:
-             * - `'NONE'` - None (不进行替换)
-             * - `'EPA_NowCast'` - 美国 (EPA NowCast)
-             * - `'WAQI_InstantCast'` - WAQI InstantCast
+             * - `'WeatherKit'` - WeatherKit (不进行填补)
+             * - `'iRingo'` - iRingo内置算法
+             * - `'ColorfulCloudsUs'` - 彩云天气（美标，2018年9月版，EPA-454/B-18-007）
+             * - `'ColorfulCloudsCn'` - 彩云天气（国标，2012年2月版，HJ 633—2012）
+             * - `'QWeather'` - 和风天气
+             * - `'WAQI'` - The World Air Quality Project
              *
-             * @defaultValue "EPA_NowCast"
+             * @defaultValue "iRingo"
              */
-            Scale?: 'NONE' | 'EPA_NowCast' | 'WAQI_InstantCast';
+            Provider?: 'WeatherKit' | 'iRingo' | 'ColorfulCloudsUs' | 'ColorfulCloudsCn' | 'QWeather' | 'WAQI';
             /**
-             * [空气质量] 转换污染物计量单位
+             * [空气质量 - 空气指数 - iRingo内置算法]
              *
-             * 将污染物数据替换为转换单位后的数据，方便对照转换后的标准。（不推荐。不同单位互转可能会损失精度，导致数值偏大）
+             * 使用内置算法，通过污染物数据本地计算空气指数。
              *
-             * @defaultValue false
+             * @remarks
+             *
+             * Possible values:
+             * - `'UBA'` - 德国LQI（2025年8月）
+             * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
+             * - `'WAQI_InstantCast_US'` - WAQI InstantCast US（EPA-454/B-24-002）
+             *
+             * @defaultValue "UBA"
              */
-            ConvertUnits?: boolean;
-        };
+            iRingoCalculatingMethod?: 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US';
+        },
     };
     API?: {
         ColorfulClouds?: {
