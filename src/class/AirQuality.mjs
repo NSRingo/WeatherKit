@@ -32,7 +32,7 @@ export default class AirQuality {
 				if (typeof airQuality.index === "object") {
 					airQuality.scale = AirQuality.Config.Scales[targetScale]?.scale;
 					airQuality.index = airQuality?.index?.[airQuality.scale];
-					airQuality.categoryIndex = AirQuality.CategoryIndex(airQuality?.index, airQuality.scale);
+					airQuality.categoryIndex = AirQuality.categoryIndex(airQuality?.index, airQuality.scale);
 				}
 				// 就算标准相同，也要重新计算显著性
 				airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.Config.Scales[targetScale].significant;
@@ -49,7 +49,7 @@ export default class AirQuality {
 				if (typeof airQuality.index === "object") {
 					airQuality.scale = AirQuality.Config.Scales[targetScale]?.scale;
 					airQuality.index = airQuality?.index?.[airQuality.scale];
-					airQuality.categoryIndex = AirQuality.CategoryIndex(airQuality?.index, airQuality.scale);
+					airQuality.categoryIndex = AirQuality.categoryIndex(airQuality?.index, airQuality.scale);
 				}
 				// [空气质量] 需要修改的标准 (ReplaceScales) 包含的标准才进行转换
 				if (Settings?.AQI?.Local?.ReplaceScales.includes(sourceScale)) {
@@ -62,7 +62,7 @@ export default class AirQuality {
 						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.index = index;
 						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.scale = AirQuality.Config.Scales[targetScale].scale;
 						airQuality.primaryPollutant = primaryPollutant || "NOT_AVAILABLE";
-						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.categoryIndex = AirQuality.CategoryIndex(index, targetScale);
+						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.categoryIndex = AirQuality.categoryIndex(index, targetScale);
 						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.metadata.providerName += `\nConverted using ${targetScale}`;
 					}
 				}
@@ -83,75 +83,34 @@ export default class AirQuality {
 		return airQuality;
 	}
 
-	static CategoryIndex(aqi = Number(), scale = "WAQI_InstantCast") {
-		switch (typeof aqi) {
-			case "number":
-				break;
-			case "string":
-				aqi = Number.parseInt(aqi, 10);
-				break;
-		}
-		Console.info("☑️ CategoryIndex", `aqi: ${aqi}`);
-		let categoryIndex;
-		for (const [key, value] of Object.entries(AirQuality.Config.Scales[scale].categoryIndex)) {
-			categoryIndex = Number.parseInt(key, 10);
-			if (aqi >= value[0] && aqi <= value[1]) break;
-		}
-		Console.info("✅ CategoryIndex", `categoryIndex: ${categoryIndex}`);
+	static categoryIndex(index, scale) {
+		Console.info("☑️ categoryIndex", `index: ${index}`);
+		const { categoryIndex } = scale.categories.ranges.find(({ range }) => {
+			const [min, max] = range;
+			return index >= min && index <= max;
+		});
+		Console.info("✅ categoryIndex", `categoryIndex: ${categoryIndex}`);
 		return categoryIndex;
 	}
 
-	static ComparisonTrend(todayAQI, yesterdayAQI) {
-		Console.info("☑️ ComparisonTrend", `todayAQI: ${todayAQI}`, `yesterdayAQI: ${yesterdayAQI}`);
-		let trend = "UNKNOWN";
-		const diff = Number(todayAQI) - Number(yesterdayAQI);
-		if (Number.isNaN(diff))
-			trend = "UNKNOWN"; // 非数值 → 未知
-		else
-			switch (diff) {
-				case 10:
-				case 9:
-				case 8:
-				case 7:
-				case 6:
-				case 5:
-				case 4:
-					trend = "WORSE";
-					break;
-				case 3:
-				case 2:
-				case 1:
-				case 0:
-				case -1:
-				case -2:
-				case -3:
-					trend = "SAME";
-					break;
-				case -4:
-				case -5:
-				case -6:
-				case -7:
-				case -8:
-				case -9:
-				case -10:
-					trend = "BETTER";
-					break;
-				case null:
-					trend = "UNKNOWN";
-					break;
-				default:
-					switch (diff > 0) {
-						case true:
-							trend = "MUCH_WORSE";
-							break;
-						case false:
-							trend = "MUCH_BETTER";
-							break;
-					}
-					break;
+	static compareCategoryIndex(todayCategoryIndex, yesterdayCategoryIndex) {
+		Console.info("☑️ compareCategoryIndex", `todayCategoryIndex: ${todayCategoryIndex}`, `yesterdayCategoryIndex: ${yesterdayCategoryIndex}`);
+
+		const diff = Number(todayCategoryIndex) - Number(yesterdayCategoryIndex);
+
+		if (Number.isNaN(diff)) {
+			Console.warn("⚠️ compareCategoryIndex", `Invalid categoryIndex`);
+			return "UNKNOWN";
+		} else {
+			Console.info("✅ compareCategoryIndex");
+			if (diff === 0) {
+				return "SAME";
+			} else if (diff > 0) {
+				return "WORSE";
+			} else {
+				return "BETTER";
 			}
-		Console.info("✅ ComparisonTrend", `trend: ${trend}`);
-		return trend;
+		}
 	}
 
 	static ConvertUnits(pollutants = []) {
@@ -327,7 +286,7 @@ export default class AirQuality {
 		});
 
 		const primaryPollutant = aqis.reduce((previous, current) => (previous.index > current.index ? previous : current));
-		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
+		const categoryIndex = AirQuality.categoryIndex(primaryPollutant.index, scale);
 
 		Console.info("✅ pollutantsToUsLikeAirQuality");
 		return {
