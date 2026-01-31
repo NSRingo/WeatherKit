@@ -83,7 +83,7 @@ export default class AirQuality {
 		return airQuality;
 	}
 
-	static categoryIndex(index, scale) {
+	static categoryIndex = (index, scale) => {
 		Console.info("☑️ categoryIndex", `index: ${index}`);
 		const { categoryIndex } = scale.categories.ranges.find(({ range }) => {
 			const [min, max] = range;
@@ -93,7 +93,7 @@ export default class AirQuality {
 		return categoryIndex;
 	}
 
-	static compareCategoryIndex(todayCategoryIndex, yesterdayCategoryIndex) {
+	static compareCategoryIndex = (todayCategoryIndex, yesterdayCategoryIndex) => {
 		Console.info("☑️ compareCategoryIndex", `todayCategoryIndex: ${todayCategoryIndex}`, `yesterdayCategoryIndex: ${yesterdayCategoryIndex}`);
 
 		const diff = Number(todayCategoryIndex) - Number(yesterdayCategoryIndex);
