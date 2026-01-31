@@ -171,6 +171,7 @@ export default defineConfig({
 				{ key: "UBA", label: "德国LQI（2025年8月）" },
 				{ key: "EU_EAQI", label: "欧盟EAQI（ETC HE Report 2024/17）" },
 				{ key: "WAQI_InstantCast_US", label: "WAQI InstantCast（美标，2024年5月版，EPA-454/B-24-002）" },
+				{ key: "WAQI_InstantCast_CN", label: "WAQI InstantCast（国标，2012年2月版，HJ 633—2012）" },
 			],
 			description: "使用内置算法，通过污染物数据本地计算空气指数。",
 		},

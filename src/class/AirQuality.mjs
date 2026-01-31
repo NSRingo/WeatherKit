@@ -207,417 +207,751 @@ export default class AirQuality {
 
 	static #Config = {
 		Scales: {
-			HJ6332012: {
-				/**
-				 * China AQI standard.
-				 * [环境空气质量指数（AQI）技术规定（试行）]{@link https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/jcffbz/201203/W020120410332725219541.pdf}
-				 * @type aqiStandard
-				 */
-				scale: "HJ6332012",
-				categoryIndex: {
-					"-1": [Number.MIN_VALUE, -1], // INVALID
-					1: [0, 50], // GOOD
-					2: [51, 100], // MODERATE
-					3: [101, 150], // UNHEALTHY_FOR_SENSITIVE
-					4: [151, 200], // UNHEALTHY
-					5: [201, 300], // VERY_UNHEALTHY
-					6: [301, 500], // HAZARDOUS
-					7: [500, Number.MAX_VALUE], // OVER_RANGE
+			/**
+			 * LQI (DE) - Der Luftqualitätsindex (LQI) des Umweltbundesamtes
+			 * Germany Air Quality Index
+			 * [Der Luftqualitätsindex - LQI | Umweltbundesamt]{@link https://www.umweltbundesamt.de/themen/luft/luftqualitaet/der-luftqualitaetsindex-lqi}
+			 * [Überarbeitung des UBA LQI nach der Herausgabe der WHO AQG 2021]{@link https://www.umweltbundesamt.de/system/files/medien/11850/publikationen/08_2025_uug.pdf}
+			 */
+			UBA: {
+				weatherKitScale: {
+					name: "UBA",
+					version: "2414",
 				},
-				significant: 3,
+				categories: {
+					significantIndex: 4, // schlecht
+					ranges: [
+						{ categoryIndex: 1, indexes: [1, 1] }, // sehr gut
+						{ categoryIndex: 2, indexes: [2, 2] }, // gut
+						{ categoryIndex: 3, indexes: [3, 3] }, // mäßig
+						{ categoryIndex: 4, indexes: [4, 4] }, // schlecht
+						{ categoryIndex: 5, indexes: [5, 5] }, // sehr schlecht
+					],
+				},
 				pollutants: {
-					SO2_24H: {
+					NO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0, 50], // GOOD
-							2: [51, 150], // MODERATE
-							3: [151, 475], // UNHEALTHY_FOR_SENSITIVE
-							4: [476, 800], // UNHEALTHY
-							5: [801, 1600], // VERY_UNHEALTHY
-							6: [1601, 2100], // HAZARDOUS
-							7: [2101, 2602], // OVER_RANGE
+							min: { index: 1, amount: 0 },
+							max: { index: 5, amount: Number.MAX_VALUE },
+							value: [
+								{ indexes: [1, 1], amounts: [0, 10] }, // sehr gut
+								{ indexes: [2, 2], amounts: [11, 30] }, // gut
+								{ indexes: [3, 3], amounts: [31, 60] }, // mäßig
+								{ indexes: [4, 4], amounts: [61, 100] }, // schlecht
+								{ indexes: [5, 5], amounts: [101, Number.MAX_VALUE] }, // sehr schlecht
+							],
+						},
+					},
+					PM10: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 1, amount: 0 },
+							max: { index: 5, amount: Number.MAX_VALUE },
+							value: [
+								{ indexes: [1, 1], amounts: [0, 9] }, // sehr gut
+								{ indexes: [2, 2], amounts: [10, 27] }, // gut
+								{ indexes: [3, 3], amounts: [28, 54] }, // mäßig
+								{ indexes: [4, 4], amounts: [55, 90] }, // schlecht
+								{ indexes: [5, 5], amounts: [91, Number.MAX_VALUE] }, // sehr schlecht
+							],
+						},
+					},
+					PM2_5: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 1, amount: 0 },
+							max: { index: 5, amount: Number.MAX_VALUE },
+							value: [
+								{ indexes: [1, 1], amounts: [0, 5] }, // sehr gut
+								{ indexes: [2, 2], amounts: [6, 15] }, // gut
+								{ indexes: [3, 3], amounts: [16, 30] }, // mäßig
+								{ indexes: [4, 4], amounts: [31, 50] }, // schlecht
+								{ indexes: [5, 5], amounts: [51, Number.MAX_VALUE] }, // sehr schlecht
+							],
+						},
+					},
+					O3: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 1, amount: 0 },
+							max: { index: 5, amount: Number.MAX_VALUE },
+							value: [
+								{ indexes: [1, 1], amounts: [0, 24] }, // sehr gut
+								{ indexes: [2, 2], amounts: [25, 72] }, // gut
+								{ indexes: [3, 3], amounts: [73, 144] }, // mäßig
+								{ indexes: [4, 4], amounts: [145, 240] }, // schlecht
+								{ indexes: [5, 5], amounts: [241, Number.MAX_VALUE] }, // sehr schlecht
+							],
 						},
 					},
 					SO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0, 150], // GOOD
-							2: [151, 500], // MODERATE
-							3: [501, 650], // UNHEALTHY_FOR_SENSITIVE
-							4: [651, 800], // UNHEALTHY
-							// 二氧化硫（SO2）1小时平均浓度高于800 ug/m3的，不再进行其空气质量分指数计算，二氧化硫（SO2）空气质量分指数按24小时平均浓度计算的分指数报告。
+							min: { index: 1, amount: 0 },
+							max: { index: 5, amount: Number.MAX_VALUE },
+							value: [
+								{ indexes: [1, 1], amounts: [0, 10] }, // sehr gut
+								{ indexes: [2, 2], amounts: [11, 30] }, // gut
+								{ indexes: [3, 3], amounts: [31, 60] }, // mäßig
+								{ indexes: [4, 4], amounts: [61, 100] }, // schlecht
+								{ indexes: [5, 5], amounts: [101, Number.MAX_VALUE] }, // sehr schlecht
+							],
+						},
+					},
+				},
+			},
+			/**
+			 * EAQI (EU) - European Air Quality Index
+			 * [ETC HE Report 2024/17: EEA´s revision of the European air quality index bands]{@link https://www.eionet.europa.eu/etcs/etc-he/products/etc-he-products/etc-he-reports/etc-he-report-2024-17-eeas-revision-of-the-european-air-quality-index-bands}
+			 */
+			EU_EAQI: {
+				weatherKitScale: {
+					name: "EU.EAQI",
+					version: "2414",
+				},
+				categories: {
+					significantIndex: 4, // Poor
+					ranges: [
+						{ categoryIndex: 1, indexes: [1, 1] }, // Good
+						{ categoryIndex: 2, indexes: [2, 2] }, // Fair
+						{ categoryIndex: 3, indexes: [3, 3] }, // Moderate
+						{ categoryIndex: 4, indexes: [4, 4] }, // Poor
+						{ categoryIndex: 5, indexes: [5, 5] }, // Very Poor
+						{ categoryIndex: 6, indexes: [6, 6] }, // Extremely Poor
+					],
+				},
+				pollutants: {
+					PM2_5: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 1, amount: 0 },
+							max: { index: 6, amount: Number.MAX_VALUE },
+							value: [
+								{ indexes: [1, 1], amounts: [0, 5] }, // Good
+								{ indexes: [2, 2], amounts: [6, 15] }, // Fair
+								{ indexes: [3, 3], amounts: [16, 50] }, // Moderate
+								{ indexes: [4, 4], amounts: [51, 90] }, // Poor
+								{ indexes: [5, 5], amounts: [91, 140] }, // Very Poor
+								{ indexes: [6, 6], amounts: [141, Number.MAX_VALUE] }, // Extremely Poor
+							],
+						},
+					},
+					PM10: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 1, amount: 0 },
+							max: { index: 6, amount: Number.MAX_VALUE },
+							value: [
+								{ indexes: [1, 1], amounts: [0, 15] }, // Good
+								{ indexes: [2, 2], amounts: [16, 45] }, // Fair
+								{ indexes: [3, 3], amounts: [46, 120] }, // Moderate
+								{ indexes: [4, 4], amounts: [121, 195] }, // Poor
+								{ indexes: [5, 5], amounts: [196, 270] }, // Very Poor
+								{ indexes: [6, 6], amounts: [271, Number.MAX_VALUE] }, // Extremely Poor
+							],
+						},
+					},
+					O3: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 1, amount: 0 },
+							max: { index: 6, amount: Number.MAX_VALUE },
+							value: [
+								{ indexes: [1, 1], amounts: [0, 60] }, // Good
+								{ indexes: [2, 2], amounts: [61, 100] }, // Fair
+								{ indexes: [3, 3], amounts: [101, 120] }, // Moderate
+								{ indexes: [4, 4], amounts: [121, 160] }, // Poor
+								{ indexes: [5, 5], amounts: [161, 180] }, // Very Poor
+								{ indexes: [6, 6], amounts: [181, Number.MAX_VALUE] }, // Extremely Poor
+							],
+						},
+					},
+					NO2: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 1, amount: 0 },
+							max: { index: 6, amount: Number.MAX_VALUE },
+							value: [
+								{ indexes: [1, 1], amounts: [0, 10] }, // Good
+								{ indexes: [2, 2], amounts: [11, 25] }, // Fair
+								{ indexes: [3, 3], amounts: [26, 60] }, // Moderate
+								{ indexes: [4, 4], amounts: [61, 100] }, // Poor
+								{ indexes: [5, 5], amounts: [101, 150] }, // Very Poor
+								{ indexes: [6, 6], amounts: [151, Number.MAX_VALUE] }, // Extremely Poor
+							],
+						},
+					},
+					SO2: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 1, amount: 0 },
+							max: { index: 6, amount: Number.MAX_VALUE },
+							value: [
+								{ indexes: [1, 1], amounts: [0, 20] }, // Good
+								{ indexes: [2, 2], amounts: [21, 40] }, // Fair
+								{ indexes: [3, 3], amounts: [41, 125] }, // Moderate
+								{ indexes: [4, 4], amounts: [126, 190] }, // Poor
+								{ indexes: [5, 5], amounts: [191, 275] }, // Very Poor
+								{ indexes: [6, 6], amounts: [276, Number.MAX_VALUE] }, // Extremely Poor
+							],
+						},
+					},
+				},
+			},
+			/**
+			 * China AQI standard.
+			 * [环境空气质量指数（AQI）技术规定（试行）]{@link https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/jcffbz/201203/t20120302_224166.shtml}
+			 */
+			HJ6332012: {
+				weatherKitScale: {
+					name: "HJ6332012",
+					version: "2414",
+				},
+				categories: {
+					significantIndex: 3, // 轻度污染
+					ranges: [
+						{ categoryIndex: 1, indexes: [0, 50] }, // 优
+						{ categoryIndex: 2, indexes: [51, 100] }, // 良
+						{ categoryIndex: 3, indexes: [101, 150] }, // 轻度污染
+						{ categoryIndex: 4, indexes: [151, 200] }, // 中度污染
+						{ categoryIndex: 5, indexes: [201, 300] }, // 重度污染
+						{ categoryIndex: 6, indexes: [301, 500] }, // 严重污染
+					],
+				},
+				pollutants: {
+					SO2_24H: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 2602 },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 50] },
+								{ indexes: [51, 100], amounts: [51, 150] },
+								{ indexes: [101, 150], amounts: [151, 475] },
+								{ indexes: [151, 200], amounts: [476, 800] },
+								{ indexes: [201, 300], amounts: [801, 1600] },
+								{ indexes: [301, 400], amounts: [1601, 2100] },
+								{ indexes: [401, 500], amounts: [2101, 2602] },
+							],
+						},
+					},
+					SO2: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 0, amount: 0 },
+							max: { index: 200, amount: 800 },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 150] },
+								{ indexes: [51, 100], amounts: [151, 500] },
+								{ indexes: [101, 150], amounts: [501, 650] },
+								{ indexes: [151, 200], amounts: [651, 800] },
+								// 二氧化硫（SO2）1小时平均浓度高于800 ug/m3的，不再进行其空气质量分指数计算，二氧化硫（SO2）空气质量分指数按24小时平均浓度计算的分指数报告。
+							],
 						},
 					},
 					NO2_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0, 40], // GOOD
-							2: [41, 80], // MODERATE
-							3: [81, 180], // UNHEALTHY_FOR_SENSITIVE
-							4: [181, 280], // UNHEALTHY
-							5: [281, 565], // VERY_UNHEALTHY
-							6: [566, 750], // HAZARDOUS
-							7: [751, 940], // OVER_RANGE
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 940 },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 40] },
+								{ indexes: [51, 100], amounts: [41, 80] },
+								{ indexes: [101, 150], amounts: [81, 180] },
+								{ indexes: [151, 200], amounts: [181, 280] },
+								{ indexes: [201, 300], amounts: [281, 565] },
+								{ indexes: [301, 400], amounts: [566, 750] },
+								{ indexes: [401, 500], amounts: [751, 940] },
+							],
 						},
 					},
 					NO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0, 100], // GOOD
-							2: [101, 200], // MODERATE
-							3: [201, 700], // UNHEALTHY_FOR_SENSITIVE
-							4: [701, 1200], // UNHEALTHY
-							5: [1201, 2340], // VERY_UNHEALTHY
-							6: [2341, 3090], // HAZARDOUS
-							7: [3091, 3840], // OVER_RANGE
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 3840 },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 100] },
+								{ indexes: [51, 100], amounts: [101, 200] },
+								{ indexes: [101, 150], amounts: [201, 700] },
+								{ indexes: [151, 200], amounts: [701, 1200] },
+								{ indexes: [201, 300], amounts: [1201, 2340] },
+								{ indexes: [301, 400], amounts: [2341, 3090] },
+								{ indexes: [401, 500], amounts: [3091, 3840] },
+							],
 						},
-					},
-					PM10: {
-						units: "MICROGRAMS_PER_CUBIC_METER",
-						// 国标仅有单位
 					},
 					PM10_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0, 50], // GOOD
-							2: [51, 150], // MODERATE
-							3: [151, 250], // UNHEALTHY_FOR_SENSITIVE
-							4: [251, 350], // UNHEALTHY
-							5: [351, 420], // VERY_UNHEALTHY
-							6: [421, 500], // HAZARDOUS
-							7: [501, 600], // OVER_RANGE
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 600 },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 50] },
+								{ indexes: [51, 100], amounts: [51, 150] },
+								{ indexes: [101, 150], amounts: [151, 250] },
+								{ indexes: [151, 200], amounts: [251, 350] },
+								{ indexes: [201, 300], amounts: [351, 420] },
+								{ indexes: [301, 400], amounts: [421, 500] },
+								{ indexes: [401, 500], amounts: [501, 600] },
+							],
 						},
 					},
 					CO_24H: {
 						units: "MILLIGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0, 2], // GOOD
-							2: [3, 4], // MODERATE
-							3: [5, 14], // UNHEALTHY_FOR_SENSITIVE
-							4: [15, 24], // UNHEALTHY
-							5: [25, 36], // VERY_UNHEALTHY
-							6: [37, 48], // HAZARDOUS
-							7: [49, 60], // OVER_RANGE
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 60 },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 2] },
+								{ indexes: [51, 100], amounts: [3, 4] },
+								{ indexes: [101, 150], amounts: [5, 14] },
+								{ indexes: [151, 200], amounts: [15, 24] },
+								{ indexes: [201, 300], amounts: [25, 36] },
+								{ indexes: [301, 400], amounts: [37, 48] },
+								{ indexes: [401, 500], amounts: [49, 60] },
+							],
 						},
 					},
 					CO: {
 						units: "MILLIGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0, 5], // GOOD
-							2: [6, 10], // MODERATE
-							3: [11, 35], // UNHEALTHY_FOR_SENSITIVE
-							4: [36, 60], // UNHEALTHY
-							5: [61, 90], // VERY_UNHEALTHY
-							6: [91, 120], // HAZARDOUS
-							7: [121, 150], // OVER_RANGE
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 150 },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 5] },
+								{ indexes: [51, 100], amounts: [6, 10] },
+								{ indexes: [101, 150], amounts: [11, 35] },
+								{ indexes: [151, 200], amounts: [36, 60] },
+								{ indexes: [201, 300], amounts: [61, 90] },
+								{ indexes: [301, 400], amounts: [91, 120] },
+								{ indexes: [401, 500], amounts: [121, 150] },
+							],
 						},
 					},
 					OZONE: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0, 160], // GOOD
-							2: [161, 200], // MODERATE
-							3: [201, 300], // UNHEALTHY_FOR_SENSITIVE
-							4: [301, 400], // UNHEALTHY
-							5: [401, 800], // VERY_UNHEALTHY
-							6: [801, 1000], // HAZARDOUS
-							7: [1001, 1200], // OVER_RANGE
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 1200 },
+							value: [
+								{ index: [0, 50], amount: [0, 160] },
+								{ index: [51, 100], amount: [161, 200] },
+								{ index: [101, 150], amount: [201, 300] },
+								{ index: [151, 200], amount: [301, 400] },
+								{ index: [201, 300], amount: [401, 800] },
+								{ index: [301, 400], amount: [801, 1000] },
+								{ index: [401, 500], amount: [1001, 1200] },
+							],
 						},
 					},
 					OZONE_8H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0, 100], // GOOD
-							2: [101, 160], // MODERATE
-							3: [161, 215], // UNHEALTHY_FOR_SENSITIVE
-							4: [216, 265], // UNHEALTHY
-							5: [266, 800], // VERY_UNHEALTHY
-							// 臭氧（O3）8小时平均浓度值高于800 ug/m3的，不再进行其空气质量分指数计算，臭氧（O3）空气质量分指数按1小时平均浓度计算的分指数报告。
+							min: { index: 0, amount: 0 },
+							max: { index: 300, amount: 800 },
+							value: [
+								{ index: [0, 50], amount: [0, 100] },
+								{ index: [51, 100], amount: [101, 160] },
+								{ index: [101, 150], amount: [161, 215] },
+								{ index: [151, 200], amount: [216, 265] },
+								{ index: [201, 300], amount: [266, 800] },
+								// 臭氧（O3）8小时平均浓度值高于800 ug/m3的，不再进行其空气质量分指数计算，臭氧（O3）空气质量分指数按1小时平均浓度计算的分指数报告。
+							],
 						},
-					},
-					PM2_5: {
-						units: "MICROGRAMS_PER_CUBIC_METER",
-						// 国标仅有单位
 					},
 					PM2_5_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0, 35], // GOOD
-							2: [36, 75], // MODERATE
-							3: [76, 115], // UNHEALTHY_FOR_SENSITIVE
-							4: [116, 150], // UNHEALTHY
-							5: [151, 250], // VERY_UNHEALTHY
-							6: [251, 350], // HAZARDOUS
-							7: [351, 500], // OVER_RANGE
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 500 },
+							value: [
+								{ index: [0, 50], amount: [0, 35] },
+								{ index: [51, 100], amount: [36, 75] },
+								{ index: [101, 150], amount: [76, 115] },
+								{ index: [151, 200], amount: [116, 150] },
+								{ index: [201, 300], amount: [151, 250] },
+								{ index: [301, 400], amount: [251, 350] },
+								{ index: [401, 500], amount: [351, 500] },
+							],
 						},
 					},
 				},
 			},
+			/**
+			 * US AQI standard, not equal to NowCast.
+			 * [Technical Assistance Document for the Reporting of Daily Air Quality – the Air Quality Index (AQI) (EPA 454/B-24-002, May 2024)]{@link https://document.airnow.gov/technical-assistance-document-for-the-reporting-of-daily-air-quailty.pdf}
+			 */
 			EPA_NowCast: {
-				/**
-				 * US AQI standard, not equal to NowCast.
-				 * [Technical Assistance Document for the Reporting of Daily Air Quality – the Air Quality Index (AQI) (EPA 454/B-24-002, May 2024)]{@link https://document.airnow.gov/technical-assistance-document-for-the-reporting-of-daily-air-quailty.pdf}
-				 * @type aqiStandard
-				 */
-				scale: "EPA_NowCast",
-				categoryIndex: {
-					"-1": [Number.MIN_VALUE, -1], // INVALID
-					1: [0, 50], // GOOD
-					2: [51, 100], // MODERATE
-					3: [101, 150], // UNHEALTHY_FOR_SENSITIVE
-					4: [151, 200], // UNHEALTHY
-					5: [201, 300], // VERY_UNHEALTHY
-					6: [301, 500], // HAZARDOUS
-					7: [500, Number.MAX_VALUE], // OVER_RANGE
+				weatherKitScale: {
+					name: "EPA_NowCast",
+					version: "2414",
 				},
-				significant: 3,
+				categories: {
+					significantIndex: 3, // Unhealthy for Sensitive Groups
+					ranges: [
+						{ categoryIndex: 1, indexes: [0, 50] }, // Good
+						{ categoryIndex: 2, indexes: [51, 100] }, // Moderate
+						{ categoryIndex: 3, indexes: [101, 150] }, // Unhealthy for Sensitive Groups
+						{ categoryIndex: 4, indexes: [151, 200] }, // Unhealthy
+						{ categoryIndex: 5, indexes: [201, 300] }, // Very Unhealthy
+						{ categoryIndex: 6, indexes: [301, Number.MAX_SAFE_INTEGER] }, // Hazardous
+					],
+				},
 				pollutants: {
 					OZONE_8H: {
 						units: "PARTS_PER_MILLION",
-						ppxToXGM3: 1.97, // 48 g/mol
 						ranges: {
-							1: [0, 0.054], // GOOD
-							2: [0.055, 0.07], // MODERATE
-							3: [0.071, 0.085], // UNHEALTHY_FOR_SENSITIVE
-							4: [0.086, 0.105], // UNHEALTHY
-							5: [0.106, 0.2], // VERY_UNHEALTHY
-							// 8-hour O3 values do not define higher AQI values (≥ 301).
-							// AQI values of 301 or higher are calculated with 1-hour O3 concentrations.
+							min: { index: 0, amount: 0 },
+							max: { index: 300, amount: 0.2 },
+							value: [
+								{ index: [0, 50], value: [0, 0.054] }, // Good
+								{ index: [51, 100], value: [0.055, 0.07] }, // Moderate
+								{ index: [101, 150], value: [0.071, 0.085] }, // Unhealthy for Sensitive Groups
+								{ index: [151, 200], value: [0.086, 0.105] }, // Unhealthy
+								{ index: [201, 300], value: [0.106, 0.2] }, // Very Unhealthy
+								// Note 2:
+								// 8-hour O3 values do not define higher AQI values (≥ 301).
+								// AQI values of 301 or higher are calculated with 1-hour O3 concentrations.
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [0.201, Number.MAX_VALUE] }, // Hazardous
+							],
 						},
 					},
 					OZONE: {
 						units: "PARTS_PER_MILLION",
-						ppxToXGM3: 1.97, // 48 g/mol
 						ranges: {
-							// Areas are generally required to report the AQI based on 8-hour O3 values. However,
-							// there are a small number of areas where an AQI based on 1-hour O3 values would be more precautionary.
-							// In these cases, in addition to calculating the 8-hour O3 index value,
-							// the 1-hour O3 value may be calculated, and the maximum of the two values reported.
-							3: [0.125, 0.164], // UNHEALTHY_FOR_SENSITIVE
-							4: [0.165, 0.204], // UNHEALTHY
-							5: [0.205, 0.404], // VERY_UNHEALTHY
-							6: [0.405, 0.604], // HAZARDOUS
+							min: { index: 101, amount: 0.125 },
+							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							value: [
+								// Note 1:
+								// Areas are generally required to report the AQI based on 8-hour O3 values. However,
+								// there are a small number of areas where an AQI based on 1-hour O3 values would be more precautionary.
+								// In these cases, in addition to calculating the 8-hour O3 index value,
+								// the 1-hour O3 value may be calculated, and the maximum of the two values reported.
+								{ index: [101, 150], value: [0.125, 0.164] }, // Unhealthy for Sensitive Groups
+								{ index: [151, 200], value: [0.165, 0.204] }, // Unhealthy
+								{ index: [201, 300], value: [0.205, 0.404] }, // Very Unhealthy
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [0.405, Number.MAX_VALUE] }, // Hazardous
+							],
 						},
 					},
-					PM2_5: {
+					PM2_5_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0.0, 9.0], // GOOD
-							2: [9.1, 35.4], // MODERATE
-							3: [35.5, 55.4], // UNHEALTHY_FOR_SENSITIVE
-							4: [55.5, 125.4], // UNHEALTHY
-							5: [125.5, 225.4], // VERY_UNHEALTHY
-							6: [225.5, 325.4], // HAZARDOUS
+							min: { index: 0, amount: 0 },
+							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							value: [
+								{ index: [0, 50], value: [0.0, 9.0] }, // Good
+								{ index: [51, 100], value: [9.1, 35.4] }, // Moderate
+								{ index: [101, 150], value: [35.5, 55.4] }, // Unhealthy for Sensitive Groups
+								// Note 3 of PM2.5 can be found in EPA 454/B-18-007:
+								// If a different SHL for PM2.5 is promulgated, these numbers will change accordingly.
+								//
+								// It is believed that they forgot to remove this note
+								{ index: [151, 200], value: [55.5, 125.4] }, // Unhealthy
+								{ index: [201, 300], value: [125.5, 225.4] }, // Very Unhealthy
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [225.5, Number.MAX_VALUE] }, // Hazardous
+							],
 						},
 					},
-					PM10: {
+					PM10_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0, 54], // GOOD
-							2: [55, 154], // MODERATE
-							3: [155, 254], // UNHEALTHY_FOR_SENSITIVE
-							4: [255, 354], // UNHEALTHY
-							5: [355, 424], // VERY_UNHEALTHY
-							6: [425, 604], // HAZARDOUS
+							min: { index: 0, amount: 0 },
+							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							value: [
+								{ index: [0, 50], value: [0, 54] }, // Good
+								{ index: [51, 100], value: [55, 154] }, // Moderate
+								{ index: [101, 150], value: [155, 254] }, // Unhealthy for Sensitive Groups
+								{ index: [151, 200], value: [255, 354] }, // Unhealthy
+								{ index: [201, 300], value: [355, 424] }, // Very Unhealthy
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [425, Number.MAX_VALUE] }, // Hazardous
+							],
 						},
 					},
 					CO_8H: {
 						units: "PARTS_PER_MILLION",
-						ppxToXGM3: 1.14, // 28 g/mol
 						ranges: {
-							1: [0.0, 4.4], // GOOD
-							2: [4.5, 9.4], // MODERATE
-							3: [9.5, 12.4], // UNHEALTHY_FOR_SENSITIVE
-							4: [12.5, 15.4], // UNHEALTHY
-							5: [15.5, 30.4], // VERY_UNHEALTHY
-							6: [30.5, 50.4], // HAZARDOUS
-						},
-					},
-					CO: {
-						units: "PARTS_PER_MILLION",
-						ppxToXGM3: 1.14, // 28 g/mol
-						ranges: {
-							1: [0.0, 4.4], // GOOD
-							2: [4.5, 9.4], // MODERATE
-							3: [9.5, 12.4], // UNHEALTHY_FOR_SENSITIVE
-							4: [12.5, 15.4], // UNHEALTHY
-							5: [15.5, 30.4], // VERY_UNHEALTHY
-							6: [30.5, 50.4], // HAZARDOUS
+							min: { index: 0, amount: 0 },
+							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							value: [
+								{ index: [0, 50], value: [0.0, 4.4] }, // Good
+								{ index: [51, 100], value: [4.5, 9.4] }, // Moderate
+								{ index: [101, 150], value: [9.5, 12.4] }, // Unhealthy for Sensitive Groups
+								{ index: [151, 200], value: [12.5, 15.4] }, // Unhealthy
+								{ index: [201, 300], value: [15.5, 30.4] }, // Very Unhealthy
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [30.5, Number.MAX_VALUE] }, // Hazardous
+							],
 						},
 					},
 					SO2: {
 						units: "PARTS_PER_BILLION",
-						ppxToXGM3: 2.62, // 64 g/mol
 						ranges: {
-							1: [0, 35], // GOOD
-							2: [36, 75], // MODERATE
-							3: [76, 185], // UNHEALTHY_FOR_SENSITIVE
-							4: [186, 304], // UNHEALTHY
-							// 1-hour SO2 values do not define higher AQI values (≥ 200).
-							// AQI values of 200 or greater are calculated with 24-hour SO2 concentrations.
-						},
-					},
-					SO2_24H: {
-						units: "PARTS_PER_BILLION",
-						ppxToXGM3: -1,
-						ranges: {
-							5: [305, 604], // VERY_UNHEALTHY
-							6: [605, 1004], // HAZARDOUS
-						},
-					},
-					// NOT FOR CALCULATION
-					//
-					// EPA strengthened the primary standard for SO2 in 2010.
-					// Because there was not enough health information to inform changing the upper end of the AQI for SO2,
-					// the upper end continues to use the 24-hour average SO2 concentration.
-					// The lower end of the AQI uses the daily max 1-hour SO2 concentration.
-					//
-					// If you have a daily max 1-hour SO2 concentration below 305 ppb,
-					// then use the breakpoints in Table 6 to calculate the AQI value.
-					//
-					// If you have a 24-hour average SO2 concentration greater than or equal to 305 ppb,
-					// then use the breakpoints in Table 6 to calculate the AQI value.
-					// If you have a 24-hour value in this range,
-					// it will always result in a higher AQI value than a 1-hour value would.
-					//
-					// On rare occasions, you could have a day where the daily max 1-hour concentration is at or above 305 ppb
-					// but when you try to use the 24-hour average to calculate the AQI value,
-					// you find that the 24-hour concentration is not above 305 ppb.
-					// If this happens, use 200 for the lower and upper AQI breakpoints (ILo and IHi) in Equation 1
-					// to calculate the AQI value based on the daily max 1-hour value.
-					// This effectively fixes the AQI value at 200 exactly,
-					// which ensures that you get the highest possible AQI value associated with your 1-hour concentration
-					// on such days.
-					SO2_MAX_1H: {
-						units: "PARTS_PER_BILLION",
-						ppxToXGM3: -1,
-						ranges: {
-							5: [305, 604], // VERY_UNHEALTHY
-							6: [605, Number.MAX_VALUE], // HAZARDOUS
+							min: { index: 0, amount: 0 },
+							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							value: [
+								{ index: [0, 50], value: [0, 35] }, // Good
+								{ index: [51, 100], value: [36, 75] }, // Moderate
+								{ index: [101, 150], value: [76, 185] }, // Unhealthy for Sensitive Groups
+								{ index: [151, 200], value: [186, 304] }, // Unhealthy
+								// Note 3 of SO2:
+								// 1-hour SO2 values do not define higher AQI values (≥ 200).
+								// AQI values of 200 or greater are calculated with 24-hour SO2 concentrations.
+								//
+								// It is believed that they forgot to remove this note
+								{ index: [201, 300], value: [305, 604] }, // Very Unhealthy
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [605, Number.MAX_VALUE] }, // Hazardous
+							],
 						},
 					},
 					NO2: {
 						units: "PARTS_PER_BILLION",
-						ppxToXGM3: 1.88, // 46 g/mol
 						ranges: {
-							1: [0, 53], // GOOD
-							2: [54, 100], // MODERATE
-							3: [101, 360], // UNHEALTHY_FOR_SENSITIVE
-							4: [361, 649], // UNHEALTHY
-							5: [650, 1249], // VERY_UNHEALTHY
-							6: [1250, 2049], // HAZARDOUS
+							min: { index: 0, amount: 0 },
+							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							value: [
+								{ index: [0, 50], value: [0, 53] }, // Good
+								{ index: [51, 100], value: [54, 100] }, // Moderate
+								{ index: [101, 150], value: [101, 360] }, // Unhealthy for Sensitive Groups
+								{ index: [151, 200], value: [361, 649] }, // Unhealthy
+								{ index: [201, 300], value: [650, 1249] }, // Very Unhealthy
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [1250, Number.MAX_VALUE] }, // Hazardous
+							],
 						},
 					},
 				},
 			},
-			WAQI_InstantCast: {
-				/**
-				 * WAQI InstantCast.
-				 * [A Beginner's Guide to Air Quality Instant-Cast and Now-Cast.]{@link https://aqicn.org/faq/2015-03-15/air-quality-nowcast-a-beginners-guide/}
-				 * [Ozone AQI Scale update]{@link https://aqicn.org/faq/2016-08-10/ozone-aqi-scale-update/}
-				 * @type aqiStandard
-				 */
-				scale: "EPA_NowCast",
-				categoryIndex: {
-					"-1": [Number.MIN_VALUE, -1], // INVALID
-					1: [0, 50], // GOOD
-					2: [51, 100], // MODERATE
-					3: [101, 150], // UNHEALTHY_FOR_SENSITIVE
-					4: [151, 200], // UNHEALTHY
-					5: [201, 300], // VERY_UNHEALTHY
-					6: [301, 500], // HAZARDOUS
-					7: [500, Number.MAX_VALUE], // OVER_RANGE
+			/**
+			 * WAQI InstantCast in EPA_NowCast. Basically is a method to calculate indexes based on 1-hour pollutants.
+			 * [A Beginner's Guide to Air Quality Instant-Cast and Now-Cast.]{@link https://aqicn.org/faq/2015-03-15/air-quality-nowcast-a-beginners-guide/}
+			 * [Ozone AQI Scale update]{@link https://aqicn.org/faq/2016-08-10/ozone-aqi-scale-update/}
+			 */
+			WAQI_InstantCast_US: {
+				weatherKitScale: {
+					name: "EPA_NowCast",
+					version: "2414",
 				},
-				significant: 3,
+				categories: {
+					significantIndex: 3, // Unhealthy for Sensitive Groups
+					ranges: [
+						{ categoryIndex: 1, indexes: [0, 50] }, // Good
+						{ categoryIndex: 2, indexes: [51, 100] }, // Moderate
+						{ categoryIndex: 3, indexes: [101, 150] }, // Unhealthy for Sensitive Groups
+						{ categoryIndex: 4, indexes: [151, 200] }, // Unhealthy
+						{ categoryIndex: 5, indexes: [201, 300] }, // Very Unhealthy
+						{ categoryIndex: 6, indexes: [301, Number.MAX_SAFE_INTEGER] }, // Hazardous
+					],
+				},
+				// Eventually we will convert it to ppb
 				pollutants: {
+					// [Ozone AQI Scale update](https://aqicn.org/faq/2016-08-10/ozone-aqi-scale-update/)
 					OZONE: {
 						units: "PARTS_PER_BILLION",
-						ppxToXGM3: 1.97,
 						ranges: {
-							1: [0, 61.5], // GOOD
-							2: [62.5, 100.5], // MODERATE
-							3: [101.5, 151.5], // UNHEALTHY_FOR_SENSITIVE
-							4: [152.5, 204], // UNHEALTHY
-							5: [205, 404], // VERY_UNHEALTHY
-							6: [405, 605], // HAZARDOUS
+							min: { index: 0, amount: 0 },
+							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							value: [
+								{ index: [0, 50], value: [0, 61.5] }, // Good
+								{ index: [51, 100], value: [62.5, 100.5] }, // Moderate
+								{ index: [101, 150], value: [101.5, 151.5] }, // Unhealthy for Sensitive Groups
+								{ index: [151, 200], value: [152.5, 204] }, // Unhealthy
+								{ index: [201, 300], value: [205, 404] }, // Very Unhealthy
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [405, Number.MAX_VALUE] }, // Hazardous
+							],
 						},
 					},
 					SO2: {
 						units: "PARTS_PER_BILLION",
-						ppxToXGM3: 2.62,
 						ranges: {
-							1: [0, 35], // GOOD
-							2: [36, 75], // MODERATE
-							3: [76, 185], // UNHEALTHY_FOR_SENSITIVE
-							4: [186, 304], // UNHEALTHY
-						},
-					},
-					SO2_MAX_1H: {
-						units: "PARTS_PER_BILLION",
-						ppxToXGM3: -1,
-						ranges: {
-							5: [305, 604], // VERY_UNHEALTHY
-							6: [605, Number.MAX_VALUE], // HAZARDOUS
+							min: { index: 0, amount: 0 },
+							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							value: [
+								{ index: [0, 50], value: [0, 35] }, // Good
+								{ index: [51, 100], value: [36, 75] }, // Moderate
+								{ index: [101, 150], value: [76, 185] }, // Unhealthy for Sensitive Groups
+								{ index: [151, 200], value: [186, 304] }, // Unhealthy
+								{ index: [201, 300], value: [305, 604] }, // Very Unhealthy
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [605, Number.MAX_VALUE] }, // Hazardous
+							],
 						},
 					},
 					NO2: {
 						units: "PARTS_PER_BILLION",
-						ppxToXGM3: 1.88,
 						ranges: {
-							1: [0, 53], // GOOD
-							2: [54, 100], // MODERATE
-							3: [101, 360], // UNHEALTHY_FOR_SENSITIVE
-							4: [361, 649], // UNHEALTHY
-							5: [650, 1249], // VERY_UNHEALTHY
-							6: [1250, 2049], // HAZARDOUS
+							min: { index: 0, amount: 0 },
+							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							value: [
+								{ index: [0, 50], value: [0, 53] }, // Good
+								{ index: [51, 100], value: [54, 100] }, // Moderate
+								{ index: [101, 150], value: [101, 360] }, // Unhealthy for Sensitive Groups
+								{ index: [151, 200], value: [361, 649] }, // Unhealthy
+								{ index: [201, 300], value: [650, 1249] }, // Very Unhealthy
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [1250, Number.MAX_VALUE] }, // Hazardous
+							],
 						},
 					},
 					PM2_5: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0.0, 9.0], // GOOD
-							2: [9.1, 35.4], // MODERATE
-							3: [35.5, 55.4], // UNHEALTHY_FOR_SENSITIVE
-							4: [55.5, 125.4], // UNHEALTHY
-							5: [125.5, 225.4], // VERY_UNHEALTHY
-							6: [225.5, 325.4], // HAZARDOUS
+							min: { index: 0, amount: 0 },
+							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							value: [
+								{ index: [0, 50], value: [0.0, 9.0] }, // Good
+								{ index: [51, 100], value: [9.1, 35.4] }, // Moderate
+								{ index: [101, 150], value: [35.5, 55.4] }, // Unhealthy for Sensitive Groups
+								{ index: [151, 200], value: [55.5, 125.4] }, // Unhealthy
+								{ index: [201, 300], value: [125.5, 225.4] }, // Very Unhealthy
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [225.5, Number.MAX_VALUE] }, // Hazardous
+							],
 						},
 					},
 					PM10: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
-						ppxToXGM3: -1,
 						ranges: {
-							1: [0, 54], // GOOD
-							2: [55, 154], // MODERATE
-							3: [155, 254], // UNHEALTHY_FOR_SENSITIVE
-							4: [255, 354], // UNHEALTHY
-							5: [355, 424], // VERY_UNHEALTHY
-							6: [425, 604], // HAZARDOUS
+							min: { index: 0, amount: 0 },
+							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							value: [
+								{ index: [0, 50], value: [0, 54] }, // Good
+								{ index: [51, 100], value: [55, 154] }, // Moderate
+								{ index: [101, 150], value: [155, 254] }, // Unhealthy for Sensitive Groups
+								{ index: [151, 200], value: [255, 354] }, // Unhealthy
+								{ index: [201, 300], value: [355, 424] }, // Very Unhealthy
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [425, Number.MAX_VALUE] }, // Hazardous
+							],
 						},
 					},
 					CO: {
-						units: "PARTS_PER_MILLION",
-						ppxToXGM3: 1.14,
+						units: "PARTS_PER_BILLION",
 						ranges: {
-							1: [0.0, 4.4], // GOOD
-							2: [4.5, 9.4], // MODERATE
-							3: [9.5, 12.4], // UNHEALTHY_FOR_SENSITIVE
-							4: [12.5, 15.4], // UNHEALTHY
-							5: [15.5, 30.4], // VERY_UNHEALTHY
-							6: [30.5, 50.4], // HAZARDOUS
+							min: { index: 0, amount: 0 },
+							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							value: [
+								{ index: [0, 50], value: [0.0, 4400] }, // Good
+								{ index: [51, 100], value: [4401, 9400] }, // Moderate
+								{ index: [101, 150], value: [9401, 12400] }, // Unhealthy for Sensitive Groups
+								{ index: [151, 200], value: [12401, 15400] }, // Unhealthy
+								{ index: [201, 300], value: [15401, 30400] }, // Very Unhealthy
+								{ index: [301, Number.MAX_SAFE_INTEGER], value: [30401, Number.MAX_VALUE] }, // Hazardous
+							],
+						},
+					},
+				},
+			},
+			/**
+			 * WAQI InstantCast in HJ6332012. Basically is a method to calculate indexes based on 1-hour pollutants.
+			 */
+			WAQI_InstantCast_CN: {
+				weatherKitScale: {
+					name: "HJ6332012",
+					version: "2414",
+				},
+				categories: {
+					significantIndex: 3, // 轻度污染
+					ranges: [
+						{ categoryIndex: 1, indexes: [0, 50] }, // 优
+						{ categoryIndex: 2, indexes: [51, 100] }, // 良
+						{ categoryIndex: 3, indexes: [101, 150] }, // 轻度污染
+						{ categoryIndex: 4, indexes: [151, 200] }, // 中度污染
+						{ categoryIndex: 5, indexes: [201, 300] }, // 重度污染
+						{ categoryIndex: 6, indexes: [301, 500] }, // 严重污染
+					],
+				},
+				pollutants: {
+					SO2: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 2602 },
+							value: [
+								{ index: [0, 50], value: [0, 150] },
+								{ index: [51, 100], value: [151, 500] },
+								{ index: [101, 150], value: [501, 650] },
+								{ index: [151, 200], value: [651, 800] },
+								{ index: [201, 300], value: [801, 1600] },
+								{ index: [301, 400], value: [1601, 2100] },
+								{ index: [401, 500], value: [2101, 2602] },
+							],
+						},
+					},
+					NO2: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 3840 },
+							value: [
+								{ index: [0, 50], value: [0, 100] },
+								{ index: [51, 100], value: [101, 200] },
+								{ index: [101, 150], value: [201, 700] },
+								{ index: [151, 200], value: [701, 1200] },
+								{ index: [201, 300], value: [1201, 2340] },
+								{ index: [301, 400], value: [2341, 3090] },
+								{ index: [401, 500], value: [3091, 3840] },
+							],
+						},
+					},
+					PM10: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 600 },
+							value: [
+								{ index: [0, 50], value: [0, 50] },
+								{ index: [51, 100], value: [51, 150] },
+								{ index: [101, 150], value: [151, 250] },
+								{ index: [151, 200], value: [251, 350] },
+								{ index: [201, 300], value: [351, 420] },
+								{ index: [301, 400], value: [421, 500] },
+								{ index: [401, 500], value: [501, 600] },
+							],
+						},
+					},
+					CO: {
+						units: "MILLIGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 150 },
+							value: [
+								{ index: [0, 50], value: [0, 5] },
+								{ index: [51, 100], value: [6, 10] },
+								{ index: [101, 150], value: [11, 35] },
+								{ index: [151, 200], value: [36, 60] },
+								{ index: [201, 300], value: [61, 90] },
+								{ index: [301, 400], value: [91, 120] },
+								{ index: [401, 500], value: [121, 150] },
+							],
+						},
+					},
+					OZONE: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 1200 },
+							value: [
+								{ index: [0, 50], value: [0, 160] },
+								{ index: [51, 100], value: [161, 200] },
+								{ index: [101, 150], value: [201, 300] },
+								{ index: [151, 200], value: [301, 400] },
+								{ index: [201, 300], value: [401, 800] },
+								{ index: [301, 400], value: [801, 1000] },
+								{ index: [401, 500], value: [1001, 1200] },
+							],
+						},
+					},
+					PM2_5: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						ranges: {
+							min: { index: 0, amount: 0 },
+							max: { index: 500, amount: 500 },
+							value: [
+								{ index: [0, 50], value: [0, 35] },
+								{ index: [51, 100], value: [36, 75] },
+								{ index: [101, 150], value: [76, 115] },
+								{ index: [151, 200], value: [116, 150] },
+								{ index: [201, 300], value: [151, 250] },
+								{ index: [301, 400], value: [251, 350] },
+								{ index: [401, 500], value: [351, 500] },
+							],
 						},
 					},
 				},
@@ -643,6 +977,31 @@ export default class AirQuality {
 			PARTS_PER_BILLION: "ppb",
 			ppm: "PARTS_PER_MILLION",
 			PARTS_PER_MILLION: "ppm",
+		},
+		/**
+		 * Standard Conditions for Temperature and Pressure
+		 * [Ozone AQI: Using concentrations in milligrams or ppb?]{@link https://aqicn.org/faq/2015-09-06/ozone-aqi-using-concentrations-in-milligrams-or-ppb/}
+		 * [Understanding Units of Measurement - Terrie K. Boguski, P.E. (CHSR)]{@link https://cfpub.epa.gov/ncer_abstracts/index.cfm/fuseaction/display.files/fileid/14285}
+		 * 
+		 * (amount * 12.187 * molecularWeight) / (temperatureInCelsius + 273.15)
+		 * 
+		 * - 12.187 is the inverse of gas constant.
+		 * - 273.15 is the 0 celsius in kelvin.
+		 * - temperatureInCelsius is 25 in US, 20 in EU.
+		 */
+		STP: {
+			US: {
+				OZONE: 1.962, // 48 g/mol
+				SO2: 2.616, // 64 g/mol
+				NO2: 1.8802, // 46 g/mol
+				CO: 1.1445, // 28 g/mol
+			},
+			EU: {
+				OZONE: 1.9954, // 48 g/mol
+				SO2: 2.6606, // 64 g/mol
+				NO2: 1.9123, // 46 g/mol
+				CO: 1.164, // 28 g/mol
+			},
 		},
 	};
 

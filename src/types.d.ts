@@ -174,10 +174,11 @@ export interface Settings {
              * - `'UBA'` - 德国LQI（2025年8月）
              * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
              * - `'WAQI_InstantCast_US'` - WAQI InstantCast US（EPA-454/B-24-002）
+             * - `'WAQI_InstantCast_CN'` - WAQI InstantCast CN（HJ 633—2012）
              *
              * @defaultValue "UBA"
              */
-            iRingoCalculatingMethod?: 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US';
+            iRingoCalculatingMethod?: 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN';
         },
     };
     API?: {
