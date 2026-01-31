@@ -130,9 +130,9 @@ export default defineConfig({
 			options: [
 				{ key: "WeatherKit", label: "WeatherKit (不进行填补)" },
 				{ key: "QWeatherPollutants", label: "和风天气（污染物模式）" },
-				{ key: "QWeatherCnIndex", label: "和风天气（空气指数模式，国标，HJ633-2012）" },
-				{ key: "ColorfulCloudsUsIndex", label: "彩云天气（空气指数模式，美标，2018年9月版，EPA-454/B-18-007）" },
-				{ key: "ColorfulCloudsCnIndex", label: "彩云天气（空气指数模式，国标，2012年2月版，HJ 633—2012）" },
+				{ key: "QWeatherCNIndex", label: "和风天气（空气指数模式，国标，HJ633-2012）" },
+				{ key: "ColorfulCloudsUSIndex", label: "彩云天气（空气指数模式，美标，2018年9月版，EPA-454/B-18-007）" },
+				{ key: "ColorfulCloudsCNIndex", label: "彩云天气（空气指数模式，国标，2012年2月版，HJ 633—2012）" },
 			],
 			description: "使用选定的数据源填补对比昨日的数据。",
 		},
@@ -155,8 +155,8 @@ export default defineConfig({
 			options: [
 				{ key: "WeatherKit", label: "WeatherKit (不进行填补)" },
 				{ key: "iRingo", label: "iRingo内置算法" },
-				{ key: "ColorfulCloudsUs", label: "彩云天气（美标，2018年9月版，EPA-454/B-18-007）" },
-				{ key: "ColorfulCloudsCn", label: "彩云天气（国标，2012年2月版，HJ 633—2012）" },
+				{ key: "ColorfulCloudsUS", label: "彩云天气（美标，2018年9月版，EPA-454/B-18-007）" },
+				{ key: "ColorfulCloudsCN", label: "彩云天气（国标，2012年2月版，HJ 633—2012）" },
 				{ key: "QWeather", label: "和风天气" },
 				{ key: "WAQI", label: "The World Air Quality Project" },
 			],

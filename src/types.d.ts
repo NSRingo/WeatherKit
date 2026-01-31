@@ -123,13 +123,13 @@ export interface Settings {
          * Possible values:
          * - `'WeatherKit'` - WeatherKit (不进行填补)
          * - `'QWeatherPollutants'` - 和风天气（污染物模式）
-         * - `'QWeatherCnIndex'` - 和风天气（空气指数模式）
-         * - `'ColorfulCloudsUsIndex'` - 彩云天气（空气指数模式，美标，2018年9月版，EPA-454/B-18-007）
-         * - `'ColorfulCloudsCnIndex'` - 彩云天气（空气指数模式，国标，2012年2月版，HJ 633—2012）
+         * - `'QWeatherCNIndex'` - 和风天气（空气指数模式）
+         * - `'ColorfulCloudsUSIndex'` - 彩云天气（空气指数模式，美标，2018年9月版，EPA-454/B-18-007）
+         * - `'ColorfulCloudsCNIndex'` - 彩云天气（空气指数模式，国标，2012年2月版，HJ 633—2012）
          *
          * @defaultValue "QWeatherPollutants"
          */
-        ComparisonProvider?: 'WeatherKit' | 'QWeatherPollutants' | 'QWeatherCnIndex' | 'ColorfulCloudsUsIndex' | 'ColorfulCloudsCnIndex';
+        ComparisonProvider?: 'WeatherKit' | 'QWeatherPollutants' | 'QWeatherCNIndex' | 'ColorfulCloudsUSIndex' | 'ColorfulCloudsCNIndex';
         Index: {
             /**
              * [空气质量 - 空气指数] 替换目标
@@ -162,7 +162,7 @@ export interface Settings {
              *
              * @defaultValue "iRingo"
              */
-            Provider?: 'WeatherKit' | 'iRingo' | 'ColorfulCloudsUs' | 'ColorfulCloudsCn' | 'QWeather' | 'WAQI';
+            Provider?: 'WeatherKit' | 'iRingo' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather' | 'WAQI';
             /**
              * [空气质量 - 空气指数 - iRingo内置算法]
              *
