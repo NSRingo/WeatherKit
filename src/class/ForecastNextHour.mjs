@@ -87,6 +87,7 @@ export default class ForecastNextHour {
 		return weatherCondition;
 	}
 
+	// 根据描述文本猜测降水类型
 	static PrecipitationType(sentence) {
 		Console.info("☑️ PrecipitationType", `sentence: ${sentence}`);
 		let precipitationType = "CLEAR";
