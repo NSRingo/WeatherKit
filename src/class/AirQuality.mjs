@@ -205,6 +205,151 @@ export default class AirQuality {
 		}
 	}
 
+	static #pollutantsToEuLikeAirQuality(pollutants, scale = AirQuality.#Config.Scales.EU_EAQI) {
+		Console.info("☑️ pollutantsToEuLikeAirQuality");
+		const aqis = pollutants.map(pollutant => {
+			const MIN_INDEX = 1;
+
+			const { pollutantType, units } = pollutant;
+			const scaleForPollutant = scale.pollutants[pollutantType];
+			const requireConvertUnit = units !== scaleForPollutant.units;
+			const amount = requireConvertUnit
+				? AirQuality.#ConvertUnit(pollutant.amount, units, scaleForPollutant.units, AirQuality.#Config.STP.EU[pollutantType] || -1)
+				: pollutant.amount;
+
+			if (requireConvertUnit) {
+				Console.info(
+					"✅ pollutantsToEuLikeAirQuality",
+					`Convert ${pollutantType}: ${pollutant.amount} ${units} -> ${amount} ${scaleForPollutant.units}`
+				);
+			}
+
+			if (amount < scaleForPollutant.ranges.min.amount) {
+				Console.warn(
+					"⚠️ pollutantsToEuLikeAirQuality",
+					`Invalid amount of ${pollutantType}: ${amount} ${scaleForPollutant.units}, `
+						+ `should >= ${scaleForPollutant.ranges.min.amount}`,
+				);
+				return { pollutantType, index: MIN_INDEX };
+			}
+
+			const { indexes } = scaleForPollutant.ranges.value.find(({ amounts }) => {
+				const [minAmount, maxAmount] = amounts;
+				return amount >= minAmount && amount < maxAmount;
+			});
+
+			// minIndex === maxIndex === categoryIndex in EU-like scales
+			return { pollutantType, index: indexes[0] };
+		});
+
+		const primaryPollutant = aqis.reduce((previous, current) => (previous.index > current.index ? previous : current));
+
+		Console.info("✅ pollutantsToEuLikeAirQuality");
+		return {
+			index: primaryPollutant.index,
+			isSignificant: primaryPollutant.index >= scale.categories.significantIndex,
+			// categoryIndex === index in EU-like scales
+			categoryIndex: primaryPollutant.index,
+			pollutants,
+			primaryPollutant: primaryPollutant.pollutantType,
+			scale: scale.weatherKitScale.name + "." + scale.weatherKitScale.version,
+		};
+	}
+
+	static pollutantsToUba(pollutants) {
+		Console.info("☑️ pollutantsToUba");
+		return AirQuality.#pollutantsToEuLikeAirQuality(pollutants, AirQuality.#Config.Scales.UBA);
+	}
+
+	static pollutantsToEaqi(pollutants) {
+		Console.info("☑️ pollutantsToEaqi");
+		return AirQuality.#pollutantsToEuLikeAirQuality(pollutants, AirQuality.#Config.Scales.EU_EAQI);
+	}
+
+	static #pollutantsToUsLikeAirQuality(pollutants, scale = AirQuality.#Config.Scales.WAQI_InstantCast_US) {
+		Console.info("☑️ pollutantsToUsLikeAirQuality");
+		const aqis = pollutants.map(pollutant => {
+			const MIN_INDEX = 0;
+
+			const { pollutantType, units } = pollutant;
+			const scaleForPollutant = scale.pollutants[pollutantType];
+			const requireConvertUnit = units !== scaleForPollutant.units;
+			const amount = requireConvertUnit
+				? AirQuality.#ConvertUnit(pollutant.amount, units, scaleForPollutant.units, AirQuality.#Config.STP.US[pollutantType])
+				: pollutant.amount;
+
+			if (requireConvertUnit) {
+				Console.info(
+					"✅ pollutantsToUsLikeAirQuality",
+					`Convert ${pollutantType}: ${pollutant.amount} ${units} -> ${amount} ${scaleForPollutant.units}`
+				);
+			}
+
+			if (amount < scaleForPollutant.ranges.min.amount) {
+				Console.warn(
+					"⚠️ pollutantsToUsLikeAirQuality",
+					`Invalid amount ${amount} for ${pollutantType}, should >= ${scaleForPollutant.ranges.min.amount}`,
+				);
+				return { pollutantType, index: MIN_INDEX };
+			}
+
+			// For scales with max index
+			if (amount > scaleForPollutant.ranges.max.amount) {
+				const maxRange = scaleForPollutant.ranges.max;
+				const index = Math.round(
+					maxRange.index / maxRange.amount * amount
+					+ maxRange.index,
+				);
+				Console.warn(
+					"⚠️ pollutantsToUsLikeAirQuality",
+					`Over-range detected! ${pollutantType}: ${amount} ${scaleForPollutant.units}. `
+						+ `Actual index: ${index}`,
+				);
+				Console.warn("⚠️ pollutantsToUsLikeAirQuality", "Take care of yourself!");
+				return { pollutantType, index: maxRange.index };
+			}
+
+			const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
+				const [minAmount, maxAmount] = amounts;
+				return amount >= minAmount && amount < maxAmount;
+			});
+
+			const [minIndex, maxIndex] = indexes;
+			const [minAmount, maxAmount] = amounts;
+
+			return {
+				pollutantType,
+				index: Math.round(
+					(maxIndex - minIndex) / (maxAmount - minAmount) * (amount - minAmount)
+					+ minIndex,
+				),
+			};
+		});
+
+		const primaryPollutant = aqis.reduce((previous, current) => (previous.index > current.index ? previous : current));
+		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
+
+		Console.info("✅ pollutantsToUsLikeAirQuality");
+		return {
+			index: primaryPollutant.index,
+			isSignificant: categoryIndex >= scale.categories.significantIndex,
+			categoryIndex,
+			pollutants,
+			primaryPollutant: primaryPollutant.pollutantType,
+			scale: scale.weatherKitScale.name + "." + scale.weatherKitScale.version,
+		};
+	}
+
+	static pollutantsToWaqiInstantCastUs(pollutants) {
+		Console.info("☑️ pollutantsToWaqiInstantCastUs");
+		return AirQuality.#pollutantsToUsLikeAirQuality(pollutants, AirQuality.#Config.Scales.WAQI_InstantCast_US);
+	}
+
+	static pollutantsToWaqiInstantCastCn(pollutants) {
+		Console.info("☑️ pollutantsToWaqiInstantCastCn");
+		return AirQuality.#pollutantsToUsLikeAirQuality(pollutants, AirQuality.#Config.Scales.WAQI_InstantCast_CN);
+	}
+
 	static #Config = {
 		Scales: {
 			/**
