@@ -83,23 +83,27 @@ export default class MatchEnum {
 	}
 
 	conditionType() {
-		this.json?.forecastNextHour?.condition?.forEach((condition, i) => {
+		this.json?.forecastNextHour?.condition?.forEach(condition => {
 			const jsonValue = condition?.beginCondition;
-			const protoValue = this.proto?.forecastNextHour?.condition?.[i]?.beginCondition;
+			const jsonStartTime = condition?.startTime;
+			const protoCondition = this.proto?.forecastNextHour?.condition?.find(c => c?.startTime === jsonStartTime);
+			const protoValue = protoCondition?.beginCondition;
 			const protoEnumIndex = WK2.ConditionType[protoValue];
 			if (jsonValue !== protoValue) {
-				$notification.post("ConditionType", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
+				$notification.post("ConditionType", "", `startTime: ${jsonStartTime}\njson: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 			}
 		});
 	}
 
 	forecastToken() {
-		this.json?.forecastNextHour?.condition?.forEach((condition, i) => {
+		this.json?.forecastNextHour?.condition?.forEach(condition => {
 			const jsonValue = condition?.forecastToken;
-			const protoValue = this.proto?.forecastNextHour?.condition?.[i]?.forecastToken;
+			const jsonStartTime = condition?.startTime;
+			const protoCondition = this.proto?.forecastNextHour?.condition?.find(c => c?.startTime === jsonStartTime);
+			const protoValue = protoCondition?.forecastToken;
 			const protoEnumIndex = WK2.ForecastToken[protoValue];
 			if (jsonValue !== protoValue) {
-				$notification.post("ForecastToken", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
+				$notification.post("ForecastToken", "", `startTime: ${jsonStartTime}\njson: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 			}
 		});
 	}
