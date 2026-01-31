@@ -1,10 +1,21 @@
 import { Console, fetch } from "@nsnanocat/util";
 import * as WK2 from "../proto/apple/wk2.js";
 
+/**
+ * MatchEnum - 用于比对 JSON 接口和 Flatbuffer 接口的枚举值是否一致
+ *
+ * 变量命名约定：
+ * - jsonValue: JSON 接口返回的枚举字符串值，如 "RAIN", "MINOR"
+ * - protoValue: Flatbuffer 接口返回的枚举字符串值，如 "RAIN", "MINOR"
+ * - protoEnumIndex: 枚举的数字索引，如 WK2.Severity["MINOR"] = 4
+ *
+ * 比较逻辑：jsonValue 与 protoValue 进行字符串比较
+ * 通知格式：json: {jsonValue} / proto: {protoEnumIndex}-{protoValue}
+ */
 export default class MatchEnum {
 	constructor(proto) {
 		this.Name = "MatchEnum";
-		this.Version = "0.0.2";
+		this.Version = "0.0.3";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.request = $request;
 		this.json = {};
@@ -25,26 +36,26 @@ export default class MatchEnum {
 	airQuality() {
 		const jsonTime = this.json?.airQuality?.metadata?.reportedTime;
 		const protoTime = this.proto?.airQuality?.metadata?.reportedTime;
-		const jsonCode = this.json?.airQuality?.previousDayComparison;
-		const protoCode = this.proto?.airQuality?.previousDayComparison;
-		const protoID = WK2.ComparisonTrend[protoCode];
-		if (jsonCode !== protoCode) {
-			$notification.post("ComparisonTrend", "", `reportedTime: ${jsonTime}-${protoTime}\njson: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+		const jsonValue = this.json?.airQuality?.previousDayComparison;
+		const protoValue = this.proto?.airQuality?.previousDayComparison;
+		const protoEnumIndex = WK2.ComparisonTrend[protoValue];
+		if (jsonValue !== protoValue) {
+			$notification.post("ComparisonTrend", "", `reportedTime: ${jsonTime}-${protoTime}\njson: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 		}
 		this.json?.airQuality?.pollutants?.forEach(pollutant => {
-			const jsonCode = pollutant?.pollutantType;
-			const protoID = WK2.PollutantType[pollutant?.pollutantType];
-			const protoCode = WK2.PollutantType[protoID];
-			if (jsonCode !== protoCode) {
-				$notification.post("PollutantType", "", `json: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+			const jsonValue = pollutant?.pollutantType;
+			const protoEnumIndex = WK2.PollutantType[pollutant?.pollutantType];
+			const protoValue = WK2.PollutantType[protoEnumIndex];
+			if (jsonValue !== protoValue) {
+				$notification.post("PollutantType", "", `json: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 			}
 		});
 		this.json?.airQuality?.pollutants?.forEach(pollutant => {
-			const jsonCode = pollutant?.units;
-			const protoID = WK2.UnitType[pollutant?.units];
-			const protoCode = WK2.UnitType[protoID];
-			if (jsonCode !== protoCode) {
-				$notification.post("UnitType", "", `json: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+			const jsonValue = pollutant?.units;
+			const protoEnumIndex = WK2.UnitType[pollutant?.units];
+			const protoValue = WK2.UnitType[protoEnumIndex];
+			if (jsonValue !== protoValue) {
+				$notification.post("UnitType", "", `json: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 			}
 		});
 	}
@@ -52,110 +63,110 @@ export default class MatchEnum {
 	weatherCondition() {
 		const jsonTime = this.json?.currentWeather?.metadata?.reportedTime;
 		const protoTime = this.proto?.currentWeather?.metadata?.reportedTime;
-		const jsonCode = this.json?.currentWeather?.conditionCode;
-		const protoCode = this.proto?.currentWeather?.conditionCode;
-		const protoID = WK2.WeatherCondition[protoCode];
-		if (jsonCode !== protoCode) {
-			$notification.post("WeatherCondition", "", `reportedTime: ${jsonTime}-${protoTime}\njson: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+		const jsonValue = this.json?.currentWeather?.conditionCode;
+		const protoValue = this.proto?.currentWeather?.conditionCode;
+		const protoEnumIndex = WK2.WeatherCondition[protoValue];
+		if (jsonValue !== protoValue) {
+			$notification.post("WeatherCondition", "", `reportedTime: ${jsonTime}-${protoTime}\njson: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 		}
 	}
 
 	pressureTrend() {
 		const jsonTime = this.json?.currentWeather?.metadata?.reportedTime;
 		const protoTime = this.proto?.currentWeather?.metadata?.reportedTime;
-		const jsonCode = this.json?.currentWeather?.pressureTrend;
-		const protoCode = this.proto?.currentWeather?.pressureTrend;
-		const protoID = WK2.PressureTrend[protoCode];
-		if (jsonCode !== protoCode) {
-			$notification.post("PressureTrend", "", `reportedTime: ${jsonTime}-${protoTime}\njson: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+		const jsonValue = this.json?.currentWeather?.pressureTrend;
+		const protoValue = this.proto?.currentWeather?.pressureTrend;
+		const protoEnumIndex = WK2.PressureTrend[protoValue];
+		if (jsonValue !== protoValue) {
+			$notification.post("PressureTrend", "", `reportedTime: ${jsonTime}-${protoTime}\njson: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 		}
 	}
 
 	conditionType() {
 		this.json?.forecastNextHour?.condition?.forEach((condition, i) => {
-			const jsonCode = condition?.beginCondition;
-			const protoID = WK2.ConditionType[this.json?.forecastNextHour?.condition?.[i]?.beginCondition];
-			const protoCode = WK2.ConditionType[protoID];
-			if (jsonCode !== protoCode) {
-				$notification.post("ConditionType", "", `json[${i}]: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+			const jsonValue = condition?.beginCondition;
+			const protoValue = this.proto?.forecastNextHour?.condition?.[i]?.beginCondition;
+			const protoEnumIndex = WK2.ConditionType[protoValue];
+			if (jsonValue !== protoValue) {
+				$notification.post("ConditionType", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 			}
 		});
 	}
 
 	forecastToken() {
 		this.json?.forecastNextHour?.condition?.forEach((condition, i) => {
-			const jsonCode = condition?.forecastToken;
-			const protoID = WK2.ForecastToken[condition?.forecastToken];
-			const protoCode = WK2.ForecastToken[protoID];
-			if (jsonCode !== protoCode) {
-				$notification.post("ForecastToken", "", `json[${i}]: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+			const jsonValue = condition?.forecastToken;
+			const protoValue = this.proto?.forecastNextHour?.condition?.[i]?.forecastToken;
+			const protoEnumIndex = WK2.ForecastToken[protoValue];
+			if (jsonValue !== protoValue) {
+				$notification.post("ForecastToken", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 			}
 		});
 	}
 
 	severity() {
-		this.json?.weatherAlerts?.alerts?.forEach(alert => {
-			const jsonCode = alert?.severity;
-			const protoID = WK2.Severity[alert?.severity];
-			const protoCode = WK2.Severity[protoID];
-			if (jsonCode !== protoCode) {
-				$notification.post("Severity", "", `json: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+		this.json?.weatherAlerts?.alerts?.forEach((alert, i) => {
+			const jsonValue = alert?.severity;
+			const protoValue = this.proto?.weatherAlerts?.alerts?.[i]?.severity;
+			const protoEnumIndex = WK2.Severity[protoValue];
+			if (jsonValue !== protoValue) {
+				$notification.post("Severity", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 			}
 		});
 	}
 
 	significanceType() {
-		this.json?.weatherAlerts?.alerts?.forEach(alert => {
-			const jsonCode = alert?.significance;
-			const protoID = WK2.SignificanceType[alert?.significance];
-			const protoCode = WK2.SignificanceType[protoID];
-			if (jsonCode !== protoCode) {
-				$notification.post("SignificanceType", "", `json: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+		this.json?.weatherAlerts?.alerts?.forEach((alert, i) => {
+			const jsonValue = alert?.significance;
+			const protoValue = this.proto?.weatherAlerts?.alerts?.[i]?.significance;
+			const protoEnumIndex = WK2.SignificanceType[protoValue];
+			if (jsonValue !== protoValue) {
+				$notification.post("SignificanceType", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 			}
 		});
 	}
 
 	urgency() {
-		this.json?.weatherAlerts?.alerts?.forEach(alert => {
-			const jsonCode = alert?.urgency;
-			const protoID = WK2.Urgency[alert?.urgency];
-			const protoCode = WK2.Urgency[protoID];
-			if (jsonCode !== protoCode) {
-				$notification.post("Urgency", "", `json: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+		this.json?.weatherAlerts?.alerts?.forEach((alert, i) => {
+			const jsonValue = alert?.urgency;
+			const protoValue = this.proto?.weatherAlerts?.alerts?.[i]?.urgency;
+			const protoEnumIndex = WK2.Urgency[protoValue];
+			if (jsonValue !== protoValue) {
+				$notification.post("Urgency", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 			}
 		});
 	}
 
 	certainty() {
-		this.json?.weatherAlerts?.alerts?.forEach(alert => {
-			const jsonCode = alert?.certainty;
-			const protoID = WK2.Certainty[alert?.certainty];
-			const protoCode = WK2.Certainty[protoID];
-			if (jsonCode !== protoCode) {
-				$notification.post("Certainty", "", `json: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+		this.json?.weatherAlerts?.alerts?.forEach((alert, i) => {
+			const jsonValue = alert?.certainty;
+			const protoValue = this.proto?.weatherAlerts?.alerts?.[i]?.certainty;
+			const protoEnumIndex = WK2.Certainty[protoValue];
+			if (jsonValue !== protoValue) {
+				$notification.post("Certainty", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 			}
 		});
 	}
 
 	importanceType() {
-		this.json?.weatherAlerts?.alerts?.forEach(alert => {
-			const jsonCode = alert?.importance;
-			const protoID = WK2.ImportanceType[alert?.importance];
-			const protoCode = WK2.ImportanceType[protoID];
-			if (jsonCode !== protoCode) {
-				$notification.post("ImportanceType", "", `json: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+		this.json?.weatherAlerts?.alerts?.forEach((alert, i) => {
+			const jsonValue = alert?.importance;
+			const protoValue = this.proto?.weatherAlerts?.alerts?.[i]?.importance;
+			const protoEnumIndex = WK2.ImportanceType[protoValue];
+			if (jsonValue !== protoValue) {
+				$notification.post("ImportanceType", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 			}
 		});
 	}
 
 	responseType() {
-		this.json?.weatherAlerts?.alerts?.forEach(alert => {
-			alert?.responses?.forEach(response => {
-				const jsonCode = response;
-				const protoID = WK2.ResponseType[response];
-				const protoCode = WK2.ResponseType[protoID];
-				if (jsonCode !== protoCode) {
-					$notification.post("ResponseType", "", `json: ${jsonCode}\nproto: ${protoID}-${protoCode}`);
+		this.json?.weatherAlerts?.alerts?.forEach((alert, i) => {
+			alert?.responses?.forEach((response, j) => {
+				const jsonValue = response;
+				const protoValue = this.proto?.weatherAlerts?.alerts?.[i]?.responses?.[j];
+				const protoEnumIndex = WK2.ResponseType[protoValue];
+				if (jsonValue !== protoValue) {
+					$notification.post("ResponseType", "", `json[${i}][${j}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
 				}
 			});
 		});
