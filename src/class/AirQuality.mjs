@@ -177,34 +177,32 @@ export default class AirQuality {
 	}
 
 	/**
-	 * 修复 WeatherKit 特定供应商的污染物单位
-	 * 主要修复 WeatherKit 数据源错误标注 和风天气/QWeather 提供商的 CO 单位问题
-	 * @param {Object} airQuality - 空气质量数据对象
-	 * @param {Array} airQuality.pollutants - 污染物数组
-	 * @param {Object} airQuality.metadata - 空气质量元数据
-	 * @param {string} airQuality.metadata.providerName - 数据提供商名称
+	 * 修复和风天气一氧化碳（CO）数据过小的问题。
+	 * 和风天气的CO数据单位实际上为mg/m3，将数值乘1000转为WeatherKit的µg/m3单位。
 	 */
-	static FixUnits(airQuality) {
-		Console.info("☑️ FixUnits");
+	static fixQWeatherCo = (airQuality) => {
+		Console.info("☑️ fixQWeatherCo");
+		if (!Array.isArray(airQuality?.pollutants)) {
+			Console.warn("⚠️ fixQWeatherCo", "airQuality.pollutants is invalid");
+			return [];
+		}
+
+		Console.info("✅ fixQWeatherCo");
 		switch (airQuality?.metadata?.providerName) {
 			case "和风天气":
 			case "QWeather":
-				airQuality.pollutants = airQuality?.pollutants?.map(pollutant => {
-					switch (pollutant.pollutantType) {
-						case "CO": // Fix CO amount units
-							pollutant.units = "MILLIGRAMS_PER_CUBIC_METER";
-							break;
-						default:
-							break;
-					}
-					return pollutant;
+				return airQuality.pollutants.map((pollutant) => {
+					const { pollutantType, amount } = pollutant;
+					return {
+						...pollutant,
+						amount: pollutantType === "CO"
+							? AirQuality.#ConvertUnit(amount, "MILLIGRAMS_PER_CUBIC_METER", "MICROGRAMS_PER_CUBIC_METER")
+							: amount,
+					};
 				});
-				break;
 			default:
-				break;
+				return airQuality.pollutants;
 		}
-		Console.info("✅ FixUnits");
-		return airQuality;
 	}
 
 	static #Config = {
