@@ -91,8 +91,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 									waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
 								};
 
-								const weatherTargets = new RegExp(Settings?.Weather?.Targets || '$.^');
-								const nextHourTargets = new RegExp(Settings?.NextHour?.Targets || '$.^');
+								const weatherTargets = new RegExp(Settings?.Weather?.Targets || '(?!)');
+								const nextHourTargets = new RegExp(Settings?.NextHour?.Targets || '(?!)');
 
 								if (weatherTargets.test(parameters.country)) {
 									if (url.searchParams.get("dataSets").includes("currentWeather")) {
@@ -121,7 +121,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 										AirQuality.FixQWeatherCO(body.airQuality);
 									}
 
-									const CurrentFill = new RegExp(Settings?.AirQuality?.Current?.Fill || '$.^');
+									const CurrentFill = new RegExp(Settings?.AirQuality?.Current?.Fill || '(?!)');
 									if (CurrentFill.test(parameters.country)) {
 										// InjectPollutants
 										await InjectPollutants(body.airQuality, Settings, enviroments);
