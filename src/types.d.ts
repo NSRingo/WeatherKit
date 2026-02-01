@@ -166,22 +166,6 @@ export interface Settings {
              * @defaultValue false
              */
             ReplaceWhenCurrentChange?: boolean;
-            /**
-             * [空气质量 - 对比昨日 - 今日 - 空气质量指数] 数据源
-             *
-             * 用来被昨日空气质量指数对比的数据。
-             * “自动”会判断修改后的今日数据和昨日数据的空气质量标准是否相同，相同则使用修改后的今日数据，否则使用API自带数据。
-             *
-             * @remarks
-             *
-             * Possible values:
-             * - `'Auto'` - 自动
-             * - `'Current'` - 修改后的今日数据
-             * - `'API'` - API自带数据
-             *
-             * @defaultValue "Auto"
-             */
-            TodayIndexProvider?: 'Auto' | 'Current' | 'API',
             Yesterday?: {
                 /**
                  * [空气质量 - 对比昨日 - 昨日 - 污染物] 数据源

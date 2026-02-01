@@ -154,18 +154,6 @@ export default defineConfig({
 			description: "即使已有对比昨日数据，当今日空气质量指数发生变化时，替换对比昨日数据。",
 		},
 		{
-			key: "AirQuality.Comparison.TodayIndexProvider",
-			name: "[空气质量 - 对比昨日] 今日空气质量指数数据源",
-			defaultValue: "Auto",
-			type: "string",
-			options: [
-				{ key: "Auto", label: "自动" },
-				{ key: "Current", label: "修改后的今日数据" },
-				{ key: "API", label: "API自带数据" },
-			],
-			description: "用来被昨日空气质量指数对比的数据。“自动”会判断修改后的今日数据和昨日数据的空气质量标准是否相同，相同则使用修改后的今日数据，否则使用API自带数据。",
-		},
-		{
 			key: "AirQuality.Comparison.Yesterday.PollutantsProvider",
 			name: "[空气质量 - 对比昨日 - 昨日 - 污染物] 数据源",
 			defaultValue: "QWeather",

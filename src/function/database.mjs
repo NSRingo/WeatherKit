@@ -30,7 +30,6 @@ export default {
 				Comparison: {
 					Fill: "CN|HK|MO|TW",
 					ReplaceWhenCurrentChange: false,
-					TodayIndexProvider: "Auto",
 					Yesterday: {
 						PollutantProvider: "QWeather",
 						IndexProvider: "ColorfulCloudsUS",
