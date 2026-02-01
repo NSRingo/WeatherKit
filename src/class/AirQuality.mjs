@@ -146,10 +146,10 @@ export default class AirQuality {
 			return [];
 		}
 
-		Console.info("✅ FixQWeatherCO");
 		switch (airQuality?.metadata?.providerName) {
 			case "和风天气":
 			case "QWeather":
+				Console.info("✅ FixQWeatherCO");
 				return airQuality.pollutants.map((pollutant) => {
 					const { pollutantType, amount } = pollutant;
 					return {
@@ -160,6 +160,7 @@ export default class AirQuality {
 					};
 				});
 			default:
+				Console.info("✅ FixQWeatherCO", `Provider ${airQuality?.metadata?.providerName} is not need to fix.`);
 				return airQuality.pollutants;
 		}
 	}
