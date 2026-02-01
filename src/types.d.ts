@@ -83,19 +83,19 @@ export interface Settings {
     };
     AirQuality?: {
         Current?: {
+            /**
+             * [空气质量 - 今日] 填补地区
+             *
+             * 正则表达式，只填补指定地区的今日空气质量数据。
+             *
+             * @defaultValue "CN|HK|MO|TW"
+             */
+            Fill?: string;
             Pollutants?: {
-                /**
-                 * [空气质量 - 今日 - 污染物] 填补地区
-                 *
-                 * 正则表达式，只填补指定地区的污染物。
-                 *
-                 * @defaultValue "CN|HK|MO|TW"
-                 */
-                Fill?: string;
                 /**
                  * [空气质量 - 今日 - 污染物] 数据源
                  *
-                 * 使用选定的数据源填充污染物数据。
+                 * 使用选定的数据源填补污染物数据。
                  *
                  * @remarks
                  *

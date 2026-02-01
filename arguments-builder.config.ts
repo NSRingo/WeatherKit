@@ -97,11 +97,11 @@ export default defineConfig({
 			description: "使用选定的数据源填充未来一小时降水强度的数据。",
 		},
 		{
-			key: "AirQuality.Current.Pollutants.Fill",
-			name: "[空气质量 - 今日 - 污染物] 填补地区",
+			key: "AirQuality.Current.Fill",
+			name: "[空气质量 - 今日] 填补地区",
 			defaultValue: "CN|HK|MO|TW",
 			type: "string",
-			description: "正则表达式，只填补指定地区的污染物。",
+			description: "正则表达式，只填补指定地区的今日空气质量数据。",
 		},
 		{
 			key: "AirQuality.Current.Pollutants.Provider",

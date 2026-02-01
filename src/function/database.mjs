@@ -18,8 +18,8 @@ export default {
 			},
 			AirQuality: {
 				Current: {
+					Fill: "CN|HK|MO|TW",
 					Pollutants: {
-						Fill: "CN|HK|MO|TW",
 						Provider: "ColorfulClouds",
 					},
 					Index: {
