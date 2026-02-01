@@ -89,7 +89,7 @@ export interface Settings {
          *
          * @defaultValue true
          */
-        FixQWeatherCo: boolean;
+        FixQWeatherCO: boolean;
         /**
          * [空气质量 - 污染物和对比昨日] 填补地区
          *
