@@ -118,14 +118,12 @@ Console.info(`FORMAT: ${FORMAT}`);
 
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
 									if (Array.isArray(body?.airQuality?.pollutants)) {
-										if (Settings?.AirQuality?.FixQWeatherCO) {
-											AirQuality.FixQWeatherCO(body.airQuality);
-										}
+										AirQuality.FixQWeatherCO(body.airQuality);
 									}
 
-									const PollutantsAndComparisonTargets = new RegExp(
-										Settings?.AirQuality?.PollutantsAndComparisonTargets || '$.^');
-									if (PollutantsAndComparisonTargets.test(parameters.country)) {
+									const PollutantsFill = new RegExp(
+										Settings?.AirQuality?.Current?.Pollutants?.Fill || '$.^');
+									if (PollutantsFill.test(parameters.country)) {
 										// InjectPollutants
 										await InjectPollutants(body.airQuality, Settings, enviroments);
 										// InjectAirQuality
@@ -168,7 +166,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 
 async function InjectPollutants(airQuality, Settings, enviroments) {
 	Console.info("☑️ InjectPollutants");
-	switch (Settings?.AirQuality?.PollutantProvider) {
+	switch (Settings?.AirQuality?.Current?.Pollutants?.Provider) {
 		case "WeatherKit": {
 			break;
 		}
@@ -196,7 +194,7 @@ async function InjectPollutants(airQuality, Settings, enviroments) {
 async function InjectAirQuality(airQuality, Settings, enviroments) {
 	Console.info("☑️ InjectAirQuality");
 	let newAirQuality;
-	switch (Settings?.AirQuality?.PollutantProvider) {
+	switch (Settings?.AirQuality?.Current?.Index?.Provider) {
 		case "WeatherKit":
 			break;
 		case "QWeather": {

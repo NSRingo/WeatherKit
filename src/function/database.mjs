@@ -17,15 +17,26 @@ export default {
 				Provider: "ColorfulClouds",
 			},
 			AirQuality: {
-				FixQWeatherCO: true,
-				PollutantsAndComparisonTargets: "CN|HK|MO|TW",
-				PollutantsProvider: "ColorfulClouds",
-				ComparisonProvider: "QWeatherPollutants",
-				Index: {
-					Targets: ["HJ6332012"],
-					Provider: "iRingo",
-					iRingoCalculatingMethod: "UBA",
+				Current: {
+					Pollutants: {
+						Fill: "CN|HK|MO|TW",
+						Provider: "ColorfulClouds",
+					},
+					Index: {
+						Replace: ["HJ6332012"],
+						Provider: "iRingo",
+					},
 				},
+				Comparison: {
+					Fill: "CN|HK|MO|TW",
+					ReplaceWhenCurrentChange: false,
+					Yesterday: {
+						IndexProvider: "ColorfulCloudsUS",
+						PollutantProvider: "QWeather",
+					},
+					TodayIndexProvider: "Auto",
+				},
+				iRingoAlgorithm: "UBA",
 			},
 			API: {
 				WAQI: {

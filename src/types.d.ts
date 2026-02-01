@@ -1,13 +1,13 @@
 export interface Settings {
     DataSets: {
         /**
-         * [数据集] 修改地区
+         * [数据集] 替换地区
          *
-         * 正则表达式，只修改指定地区的数据集。
+         * 正则表达式，只替换指定地区的数据集。
          *
          * @defaultValue "CN|HK|MO|TW"
          */
-        Targets: string;
+        Replace?: string;
         /**
          * [数据集]
          *
@@ -39,7 +39,7 @@ export interface Settings {
          *
          * @defaultValue "CN"
          */
-        Targets: string;
+        Replace?: string;
         /**
          * [天气] 数据源
          *
@@ -64,7 +64,7 @@ export interface Settings {
          *
          * @defaultValue "*"
          */
-        Targets: string;
+        Fill?: string;
         /**
          * [未来一小时降水强度] 数据源
          *
@@ -82,104 +82,156 @@ export interface Settings {
         Provider?: 'WeatherKit' | 'ColorfulClouds' | 'QWeather';
     };
     AirQuality?: {
-        /**
-         * [空气质量 - 污染物] 修复和风天气的一氧化碳数据
-         *
-         * 和风天气错误地将mg/m3单位的CO数据当作µg/m3单位，导致CO数据偏小。
-         *
-         * @defaultValue true
-         */
-        FixQWeatherCO: boolean;
-        /**
-         * [空气质量 - 污染物和对比昨日] 填补地区
-         *
-         * 正则表达式，只填补指定地区的数据。
-         *
-         * @defaultValue "CN|HK|MO|TW"
-         */
-        PollutantsAndComparisonTargets: string;
-        /**
-         * [空气质量 - 污染物] 数据源
-         *
-         * 使用选定的数据源填充污染物数据。
-         *
-         * @remarks
-         *
-         * Possible values:
-         * - `'WeatherKit'` - WeatherKit (不进行填补)
-         * - `'ColorfulClouds'` - 彩云天气
-         * - `'QWeather'` - 和风天气
-         *
-         * @defaultValue "ColorfulClouds"
-         */
-        PollutantProvider?: 'WeatherKit' | 'ColorfulClouds' | 'QWeather';
-        /**
-         * [空气质量 - 对比昨日] 数据源
-         *
-         * 使用选定的数据源填补对比昨日的数据。
-         *
-         * @remarks
-         *
-         * Possible values:
-         * - `'WeatherKit'` - WeatherKit (不进行填补)
-         * - `'QWeatherPollutants'` - 和风天气（污染物模式）
-         * - `'QWeatherCNIndex'` - 和风天气（空气指数模式）
-         * - `'ColorfulCloudsUSIndex'` - 彩云天气（空气指数模式，美标，2018年9月版，EPA-454/B-18-007）
-         * - `'ColorfulCloudsCNIndex'` - 彩云天气（空气指数模式，国标，2012年2月版，HJ 633—2012）
-         *
-         * @defaultValue "QWeatherPollutants"
-         */
-        ComparisonProvider?: 'WeatherKit' | 'QWeatherPollutants' | 'QWeatherCNIndex' | 'ColorfulCloudsUSIndex' | 'ColorfulCloudsCNIndex';
-        Index: {
-            /**
-             * [空气质量 - 空气指数] 替换目标
-             *
-             * 只替换指定标准的空气指数。
-             *
-             * @remarks
-             *
-             * Possible values:
-             * - `'HJ6332012'` - 中国 (HJ 633—2012)
-             * - `'EPA_NowCast'` - 美国 (EPA NowCast)
-             *
-             * @defaultValue ["HJ6332012"]
-             */
-            Targets?: ('HJ6332012' | 'EPA_NowCast')[];
-            /**
-             * [空气质量 - 空气指数] 数据源
-             *
-             * 使用选定的数据源填补污染物数据。
-             *
-             * @remarks
-             *
-             * Possible values:
-             * - `'WeatherKit'` - WeatherKit (不进行填补)
-             * - `'iRingo'` - iRingo内置算法
-             * - `'ColorfulCloudsUs'` - 彩云天气（美标，2018年9月版，EPA-454/B-18-007）
-             * - `'ColorfulCloudsCn'` - 彩云天气（国标，2012年2月版，HJ 633—2012）
-             * - `'QWeather'` - 和风天气
-             * - `'WAQI'` - The World Air Quality Project
-             *
-             * @defaultValue "iRingo"
-             */
-            Provider?: 'WeatherKit' | 'iRingo' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather' | 'WAQI';
-            /**
-             * [空气质量 - 空气指数 - iRingo内置算法]
-             *
-             * 使用内置算法，通过污染物数据本地计算空气指数。
-             *
-             * @remarks
-             *
-             * Possible values:
-             * - `'UBA'` - 德国LQI（2025年8月）
-             * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
-             * - `'WAQI_InstantCast_US'` - WAQI InstantCast US（EPA-454/B-24-002）
-             * - `'WAQI_InstantCast_CN'` - WAQI InstantCast CN（HJ 633—2012）
-             *
-             * @defaultValue "UBA"
-             */
-            iRingoCalculatingMethod?: 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN';
+        Current?: {
+            Pollutants?: {
+                /**
+                 * [空气质量 - 今日 - 污染物] 填补地区
+                 *
+                 * 正则表达式，只填补指定地区的污染物。
+                 *
+                 * @defaultValue "CN|HK|MO|TW"
+                 */
+                Fill?: string;
+                /**
+                 * [空气质量 - 今日 - 污染物] 数据源
+                 *
+                 * 使用选定的数据源填充污染物数据。
+                 *
+                 * @remarks
+                 *
+                 * Possible values:
+                 * - `'ColorfulClouds'` - 彩云天气
+                 * - `'QWeather'` - 和风天气
+                 *
+                 * @defaultValue "ColorfulClouds"
+                 */
+                Provider?: 'ColorfulClouds' | 'QWeather';
+                // Units?: {
+                //     Ugm3ToUSPpb?: string;
+                //     Ugm3ToEUPpb?: string;
+                //     EUppbToUgm3?: string;
+                //     USppbToUgm3?: string;
+                // },
+            },
+            Index?: {
+                /**
+                 * [空气质量 - 今日 - 空气质量指数] 替换目标
+                 *
+                 * 替换指定标准的空气质量指数。
+                 *
+                 * @remarks
+                 *
+                 * Possible values:
+                 * - `'HJ6332012'` - 中国 (HJ 633—2012)
+                 * - `'EPA_NowCast'` - 美国 (EPA NowCast)
+                 *
+                 * @defaultValue ["HJ6332012"]
+                 */
+                Replace?: string;
+                /**
+                 * [空气质量 - 今日 - 空气质量指数] 数据源
+                 *
+                 * 使用选定的数据源填补和替换空气质量指数。
+                 * 彩云天气（美标）为2018年9月版（EPA-454/B-18-007），
+                 * WAQI是基于2018年9月版美标（EPA-454/B-18-007）的InstantCast。
+                 *
+                 * @remarks
+                 *
+                 * Possible values:
+                 * - `'iRingo'` - iRingo内置算法
+                 * - `'ColorfulCloudsUS'` - 彩云天气（美标）
+                 * - `'ColorfulCloudsCN'` - 彩云天气（国标）
+                 * - `'QWeather'` - 和风天气
+                 * - `'WAQI'` - The World Air Quality Project（InstantCast）
+                 *
+                 * @defaultValue "iRingo"
+                 */
+                Provider?: 'iRingo' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather' | 'WAQI';
+            }
         },
+        Comparison?: {
+            /**
+             * [空气质量 - 对比昨日] 填补地区
+             *
+             * 正则表达式，只填补指定地区的对比昨日数据。
+             *
+             * @defaultValue "CN|HK|MO|TW"
+             */
+            Fill?: string;
+            /**
+             * [空气质量 - 对比昨日] 数据变化时替换
+             *
+             * 即使已有对比昨日数据，当今日空气质量指数发生变化时，替换对比昨日数据。
+             *
+             * @defaultValue false
+             */
+            ReplaceWhenCurrentChange?: boolean;
+            Yesterday?: {
+                /**
+                 * [空气质量 - 对比昨日 - 昨日 - 空气质量指数] 数据源
+                 *
+                 * 用来和今日空气质量指数对比的数据。
+                 * iRingo内置算法需要昨日污染物数据，
+                 * 彩云天气（美标）为2018年9月版（EPA-454/B-18-007）。
+                 *
+                 * @remarks
+                 *
+                 * Possible values:
+                 * - `'iRingo'` - iRingo内置算法
+                 * - `'ColorfulCloudsUS'` - 彩云天气（美标）
+                 * - `'ColorfulCloudsCN'` - 彩云天气（国标）
+                 * - `'QWeather'` - 和风天气
+                 *
+                 * @defaultValue "ColorfulCloudsUS"
+                 */
+                IndexProvider?: 'iRingo' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather';
+                /**
+                 * [空气质量 - 对比昨日 - 昨日 - 污染物] 数据源
+                 *
+                 * 为iRingo内置算法提供污染物数据，计算出昨日的空气质量指数。
+                 *
+                 * @remarks
+                 *
+                 * Possible values:
+                 * - `'QWeather'` - 和风天气
+                 *
+                 * @defaultValue "QWeather"
+                 */
+                PollutantsProvider?: 'QWeather';
+            },
+            /**
+             * [空气质量 - 对比昨日] 今日空气质量指数数据源
+             *
+             * 用来被昨日空气质量指数对比的数据。
+             * “自动”会判断修改后的今日数据和昨日数据的空气质量标准是否相同，相同则使用修改后的今日数据，否则使用API自带数据。
+             *
+             * @remarks
+             *
+             * Possible values:
+             * - `'Auto'` - 自动
+             * - `'Current'` - 修改后的今日数据
+             * - `'API'` - API自带数据
+             *
+             * @defaultValue "Auto"
+             */
+            TodayIndexProvider?: 'Auto' | 'Current' | 'API',
+        },
+        /**
+         * [空气质量 - iRingo内置算法] 算法
+         *
+         * 使用内置算法，通过污染物数据本地计算空气指数。
+         *
+         * @remarks
+         *
+         * Possible values:
+         * - `'UBA'` - 德国LQI（2025年8月）
+         * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
+         * - `'WAQI_InstantCast_US'` - 美标WAQI InstantCast（EPA-454/B-24-002）
+         * - `'WAQI_InstantCast_CN'` - 国标WAQI InstantCast（HJ 633—2012）
+         *
+         * @defaultValue "UBA"
+         */
+        iRingoAlgorithm?: 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN';
     };
     API?: {
         ColorfulClouds?: {
