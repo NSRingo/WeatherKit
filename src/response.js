@@ -126,6 +126,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 									const PollutantsAndComparisonTargets = new RegExp(
 										Settings?.AirQuality?.PollutantsAndComparisonTargets || '$.^');
 									if (PollutantsAndComparisonTargets.test(parameters.country)) {
+										// InjectPollutants
+										await InjectPollutants(body.airQuality, Settings, enviroments);
 										// InjectAirQuality
 										body.airQuality = await InjectAirQuality(body.airQuality, Settings, enviroments);
 										// CompareAirQuality
@@ -163,6 +165,26 @@ Console.info(`FORMAT: ${FORMAT}`);
 })()
 	.catch(e => Console.error(e))
 	.finally(() => done($response));
+
+async function InjectPollutants(airQuality, Settings, enviroments) {
+	Console.info("☑️ InjectPollutants");
+	switch (Settings?.AirQuality?.PollutantProvider) {
+		case "WeatherKit": {
+			break;
+		}
+		case "QWeather": {
+			// TODO: upgrade to new API https://dev.qweather.com/docs/api/air-quality/air-current/
+			airQuality.pollutants = (await enviroments.qWeather.AirNow()).pollutants;
+			break;
+		}
+		case "ColorfulClouds":
+		default: {
+			airQuality.pollutants = await enviroments.colorfulClouds.Pollutants();
+			break;
+		}
+	}
+	Console.info("✅ InjectPollutants");
+}
 
 /**
  * 注入空气质量数据
