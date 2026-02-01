@@ -152,7 +152,7 @@ export default class ColorfulClouds {
 		return forecastNextHour;
 	}
 
-	async Hourly(hourlysteps = 273, begin = undefined) {
+	async #Hourly(hourlysteps = 273, begin = undefined) {
 		Console.info("☑️ Hourly");
 		const request = {
 			url: `${this.endpoint}/hourly?hourlysteps=${hourlysteps}`,
@@ -165,80 +165,8 @@ export default class ColorfulClouds {
 				case "ok":
 					switch (body?.result?.hourly?.status) {
 						case "ok": {
-							const timeStamp = (Date.now() / 1000) | 0;
-							const metadata = {
-								attributionUrl: "https://www.caiyunapp.com/h5",
-								expireTime: timeStamp + 60 * 60,
-								language: "zh-CN", // `${this.language}-${this.country}`,
-								latitude: body?.location?.[0],
-								longitude: body?.location?.[1],
-								providerLogo: providerNameToLogo("彩云天气", this.version),
-								providerName: "彩云天气",
-								readTime: timeStamp,
-								reportedTime: body?.server_time,
-								temporarilyUnavailable: false,
-								sourceType: "STATION",
-							};
-							this.airQuality = {
-								metadata: metadata,
-								categoryIndex: -1, // 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
-								index: {
-									// 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
-									HJ6332012: body?.result?.hourly?.air_quality?.aqi?.[0]?.value?.chn,
-									EPA_NowCast: body?.result?.hourly?.air_quality?.aqi?.[0]?.value?.usa,
-								},
-								isSignificant: false, // 交给 AirQuality.ConvertScale 计算
-								//pollutants: [],
-								//previousDayComparison: "UNKNOWN",
-								//primaryPollutant: "NOT_AVAILABLE", // 交给 AirQuality.ConvertScale 计算
-								//scale: "HJ6332012", // 交给 AirQuality.ConvertScale 选择使用哪个标准的数值
-							};
-							switch (this.country) {
-								case "CN":
-								case "HK":
-								case "MO":
-								case "TW":
-									this.airQuality.scale = "HJ6332012";
-									break;
-								case "US":
-								default:
-									this.airQuality.scale = "EPA_NowCast";
-									break;
-							}
-							forecastHourly = {
-								metadata: metadata,
-								hours: [],
-							};
-							for (let i = 0; i < hourlysteps; i++) {
-								forecastHourly.hours.push({
-									cloudCover: body?.result?.hourly?.cloudrate?.[i]?.value,
-									// cloudCoverHighAltPct: 0, // Not given
-									// cloudCoverLowAltPct: 0, // Not given
-									// cloudCoverMidAltPct: 0, // Not given
-									conditionCode: Weather.ConvertWeatherCode(body?.result?.hourly?.skycon?.[i]?.value),
-									// daylight: false, // Not given
-									forecastStart: (new Date(body?.result?.hourly?.skycon?.[i]?.datetime).getTime() / 1000) | 0,
-									humidity: Math.round(body?.result?.hourly?.humidity?.[i]?.value * 100),
-									// perceivedPrecipitationIntensity: "", // Not given
-									precipitationAmount: body?.result?.hourly?.precipitation?.[i]?.value,
-									precipitationChance: body?.result?.hourly?.precipitation?.[i]?.probability,
-									// precipitationIntensity: 0, // Not given
-									// precipitationType: "", // Not given
-									pressure: body?.result?.hourly?.pressure?.[i]?.value / 100,
-									// pressureTrend: "", // Not given
-									// snowfallAmount: 0, // Not given
-									// snowfallIntensity: 0, // Not given
-									temperature: body?.result?.hourly?.temperature?.[i]?.value,
-									temperatureApparent: body?.result?.hourly?.apparent_temperature?.[i]?.value,
-									// temperatureDewPoint: 0, // Not given
-									// uvIndex: 0, // Not given
-									visibility: body?.result?.hourly?.visibility?.[i]?.value * 1000,
-									windDirection: body?.result?.hourly?.wind?.[i]?.direction,
-									// windGust: 0, // Not given
-									windSpeed: body?.result?.hourly?.wind?.[i]?.speed,
-								});
-							}
-							break;
+							Console.info("✅ Hourly");
+							return body;
 						}
 						case "error":
 						case undefined:
@@ -256,7 +184,7 @@ export default class ColorfulClouds {
 			//Console.debug(`airQuality: ${JSON.stringify(this.airQuality, null, 2)}`);
 			Console.info("✅ Hourly");
 		}
-		return { airQuality: this.airQuality, forecastHourly };
+		return {};
 	}
 
 	async Daily(dailysteps = 10, begin = undefined) {
@@ -555,6 +483,73 @@ export default class ColorfulClouds {
 			visibility: realtime.result.realtime.visibility * 1000,
 			windDirection: realtime.result.realtime.wind.direction,
 			windSpeed: realtime.result.realtime.wind.speed,
+		};
+	}
+
+	async CompareYesterdayIndex(useUsa = true) {
+		Console.info("☑️ CompareYesterdayIndex");
+		const realtime = await this.#RealTime();
+		const yesterdayHourly = await this.#Hourly(1, (Date.now() - 864e5) / 1000);
+
+		if (!realtime.result || !yesterdayHourly.result) {
+			Console.error("❌ CompareYesterdayIndex", "Failed to get realtime or hourly data");
+			return "UNKNOWN";
+		}
+
+		const todayIndexes = realtime.result.realtime.air_quality.aqi;
+		const yesterdayIndexes = yesterdayHourly.result.hourly.air_quality.aqi[0].value;
+
+		const todayIndex = useUsa ? todayIndexes.usa : todayIndexes.chn;
+		const yesterdayIndex = useUsa ? yesterdayIndexes.usa : yesterdayIndexes.chn;
+
+		const scale = useUsa ? AirQuality.Config.Scales.EPA_NowCast : AirQuality.Config.Scales.HJ6332012;
+		const todayCategoryIndex = AirQuality.CategoryIndex(todayIndex, scale);
+		const yesterdayCategoryIndex = AirQuality.CategoryIndex(yesterdayIndex, scale);
+
+		Console.info("✅ CompareYesterdayIndex");
+		return AirQuality.CompareCategoryIndex(todayCategoryIndex, yesterdayCategoryIndex);
+	}
+
+	async ForecastHourly() {
+		Console.info("☑️ ForecastHourly");
+		const hourly = await this.#Hourly();
+		if (!hourly.result) {
+			Console.error("❌ ForecastHourly", "Failed to get hourly data");
+			return {
+				metadata: this.#Metadata(undefined, undefined, true),
+			}
+		}
+
+		Console.info("✅ ForecastHourly");
+		return {
+			metadata: this.#Metadata(hourly.result.server_time, hourly.location),
+			hours: Array.from({ length: hourly.result.hourly.skycon.length }, (_, i) => ({
+				cloudCover: hourly.result.hourly.cloudrate[i].value,
+				// cloudCoverHighAltPct: 0, // Not given
+				// cloudCoverLowAltPct: 0, // Not given
+				// cloudCoverMidAltPct: 0, // Not given
+				conditionCode: Weather.ConvertWeatherCode(hourly.result.hourly.skycon[i].value),
+				// daylight: false, // Not given
+				forecastStart: (new Date(hourly.result.hourly.skycon[i].datetime).getTime() / 1000) | 0,
+				humidity: Math.round(hourly.result.hourly.humidity[i].value * 100),
+				// perceivedPrecipitationIntensity: "", // Not given
+				precipitationAmount: hourly.result.hourly.precipitation[i].value,
+				precipitationChance: hourly.result.hourly.precipitation[i].probability,
+				// precipitationIntensity: 0, // Not given
+				// precipitationType: "", // Not given
+				pressure: hourly.result.hourly.pressure[i].value / 100,
+				// pressureTrend: "", // Not given
+				// snowfallAmount: 0, // Not given
+				// snowfallIntensity: 0, // Not given
+				temperature: hourly.result.hourly.temperature[i].value,
+				temperatureApparent: hourly.result.hourly.apparent_temperature[i].value,
+				// temperatureDewPoint: 0, // Not given
+				// uvIndex: 0, // Not given
+				visibility: hourly.result.hourly.visibility[i].value * 1000,
+				windDirection: hourly.result.hourly.wind[i].direction,
+				// windGust: 0, // Not given
+				windSpeed: hourly.result.hourly.wind[i].speed,
+			})),
 		};
 	}
 }
