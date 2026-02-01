@@ -121,9 +121,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 										AirQuality.FixQWeatherCO(body.airQuality);
 									}
 
-									const PollutantsFill = new RegExp(
-										Settings?.AirQuality?.Current?.Pollutants?.Fill || '$.^');
-									if (PollutantsFill.test(parameters.country)) {
+									const CurrentFill = new RegExp(Settings?.AirQuality?.Current?.Fill || '$.^');
+									if (CurrentFill.test(parameters.country)) {
 										// InjectPollutants
 										await InjectPollutants(body.airQuality, Settings, enviroments);
 										// InjectAirQuality
