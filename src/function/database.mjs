@@ -30,11 +30,11 @@ export default {
 				Comparison: {
 					Fill: "CN|HK|MO|TW",
 					ReplaceWhenCurrentChange: false,
-					Yesterday: {
-						IndexProvider: "ColorfulCloudsUS",
-						PollutantProvider: "QWeather",
-					},
 					TodayIndexProvider: "Auto",
+					Yesterday: {
+						PollutantProvider: "QWeather",
+						IndexProvider: "ColorfulCloudsUS",
+					},
 				},
 				iRingoAlgorithm: "UBA",
 			},
