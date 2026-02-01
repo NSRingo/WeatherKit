@@ -119,7 +119,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
 									if (Array.isArray(body?.airQuality?.pollutants)) {
 										if (Settings?.AirQuality?.FixQWeatherCO) {
-											body.airQuality.pollutants = AirQuality.FixQWeatherCO(body.airQuality);
+											AirQuality.FixQWeatherCO(body.airQuality);
 										}
 									}
 
