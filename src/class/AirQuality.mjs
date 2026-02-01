@@ -143,14 +143,13 @@ export default class AirQuality {
 		Console.info("☑️ FixQWeatherCO");
 		if (!Array.isArray(airQuality?.pollutants)) {
 			Console.warn("⚠️ FixQWeatherCO", "airQuality.pollutants is invalid");
-			return [];
+			return;
 		}
 
 		switch (airQuality?.metadata?.providerName) {
 			case "和风天气":
-			case "QWeather":
-				Console.info("✅ FixQWeatherCO");
-				return airQuality.pollutants.map((pollutant) => {
+			case "QWeather": {
+				airQuality.pollutants = airQuality.pollutants.map((pollutant) => {
 					const { pollutantType, amount } = pollutant;
 					return {
 						...pollutant,
@@ -159,9 +158,13 @@ export default class AirQuality {
 							: amount,
 					};
 				});
-			default:
+				Console.info("✅ FixQWeatherCO");
+				break;
+			}
+			default: {
 				Console.info("✅ FixQWeatherCO", `Provider ${airQuality?.metadata?.providerName} is not need to fix.`);
-				return airQuality.pollutants;
+				break;
+			}
 		}
 	}
 
