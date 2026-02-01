@@ -117,8 +117,10 @@ Console.info(`FORMAT: ${FORMAT}`);
 								}
 
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
-									if (Settings?.AirQuality?.FixQWeatherCo) {
-										body.airQuality.pollutants = AirQuality.FixQWeatherCo(body.airQuality);
+									if (Array.isArray(body?.airQuality?.pollutants)) {
+										if (Settings?.AirQuality?.FixQWeatherCo) {
+											body.airQuality.pollutants = AirQuality.FixQWeatherCo(body.airQuality);
+										}
 									}
 
 									const PollutantsAndComparisonTargets = new RegExp(
