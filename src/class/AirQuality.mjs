@@ -32,7 +32,7 @@ export default class AirQuality {
 				if (typeof airQuality.index === "object") {
 					airQuality.scale = AirQuality.Config.Scales[targetScale]?.scale;
 					airQuality.index = airQuality?.index?.[airQuality.scale];
-					airQuality.categoryIndex = AirQuality.categoryIndex(airQuality?.index, airQuality.scale);
+					airQuality.categoryIndex = AirQuality.CategoryIndex(airQuality?.index, airQuality.scale);
 				}
 				// 就算标准相同，也要重新计算显著性
 				airQuality.isSignificant = airQuality?.categoryIndex >= AirQuality.Config.Scales[targetScale].significant;
@@ -49,7 +49,7 @@ export default class AirQuality {
 				if (typeof airQuality.index === "object") {
 					airQuality.scale = AirQuality.Config.Scales[targetScale]?.scale;
 					airQuality.index = airQuality?.index?.[airQuality.scale];
-					airQuality.categoryIndex = AirQuality.categoryIndex(airQuality?.index, airQuality.scale);
+					airQuality.categoryIndex = AirQuality.CategoryIndex(airQuality?.index, airQuality.scale);
 				}
 				// [空气质量] 需要修改的标准 (ReplaceScales) 包含的标准才进行转换
 				if (Settings?.AQI?.Local?.ReplaceScales.includes(sourceScale)) {
@@ -62,7 +62,7 @@ export default class AirQuality {
 						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.index = index;
 						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.scale = AirQuality.Config.Scales[targetScale].scale;
 						airQuality.primaryPollutant = primaryPollutant || "NOT_AVAILABLE";
-						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.categoryIndex = AirQuality.categoryIndex(index, targetScale);
+						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.categoryIndex = AirQuality.CategoryIndex(index, targetScale);
 						if (Settings?.AQI?.Local?.Scale !== "NONE") airQuality.metadata.providerName += `\nConverted using ${targetScale}`;
 					}
 				}
@@ -83,26 +83,26 @@ export default class AirQuality {
 		return airQuality;
 	}
 
-	static categoryIndex = (index, scale) => {
-		Console.info("☑️ categoryIndex", `index: ${index}`);
+	static CategoryIndex(index, scale) {
+		Console.info("☑️ CategoryIndex", `index: ${index}`);
 		const { categoryIndex } = scale.categories.ranges.find(({ range }) => {
 			const [min, max] = range;
 			return index >= min && index <= max;
 		});
-		Console.info("✅ categoryIndex", `categoryIndex: ${categoryIndex}`);
+		Console.info("✅ CategoryIndex", `categoryIndex: ${categoryIndex}`);
 		return categoryIndex;
 	}
 
-	static compareCategoryIndex = (todayCategoryIndex, yesterdayCategoryIndex) => {
-		Console.info("☑️ compareCategoryIndex", `todayCategoryIndex: ${todayCategoryIndex}`, `yesterdayCategoryIndex: ${yesterdayCategoryIndex}`);
+	static CompareCategoryIndex(todayCategoryIndex, yesterdayCategoryIndex) {
+		Console.info("☑️ CompareCategoryIndex", `todayCategoryIndex: ${todayCategoryIndex}`, `yesterdayCategoryIndex: ${yesterdayCategoryIndex}`);
 
 		const diff = Number(todayCategoryIndex) - Number(yesterdayCategoryIndex);
 
 		if (Number.isNaN(diff)) {
-			Console.warn("⚠️ compareCategoryIndex", `Invalid categoryIndex`);
+			Console.warn("⚠️ CompareCategoryIndex", `Invalid categoryIndex`);
 			return "UNKNOWN";
 		} else {
-			Console.info("✅ compareCategoryIndex");
+			Console.info("✅ CompareCategoryIndex");
 			if (diff === 0) {
 				return "SAME";
 			} else if (diff > 0) {
@@ -139,14 +139,14 @@ export default class AirQuality {
 	 * 修复和风天气一氧化碳（CO）数据过小的问题。
 	 * 和风天气的CO数据单位实际上为mg/m3，将数值乘1000转为WeatherKit的µg/m3单位。
 	 */
-	static fixQWeatherCo = (airQuality) => {
-		Console.info("☑️ fixQWeatherCo");
+	static FixQWeatherCo(airQuality) {
+		Console.info("☑️ FixQWeatherCo");
 		if (!Array.isArray(airQuality?.pollutants)) {
-			Console.warn("⚠️ fixQWeatherCo", "airQuality.pollutants is invalid");
+			Console.warn("⚠️ FixQWeatherCo", "airQuality.pollutants is invalid");
 			return [];
 		}
 
-		Console.info("✅ fixQWeatherCo");
+		Console.info("✅ FixQWeatherCo");
 		switch (airQuality?.metadata?.providerName) {
 			case "和风天气":
 			case "QWeather":
@@ -164,8 +164,8 @@ export default class AirQuality {
 		}
 	}
 
-	static #pollutantsToEuLikeAirQuality(pollutants, scale = this.Config.Scales.EU_EAQI) {
-		Console.info("☑️ pollutantsToEuLikeAirQuality");
+	static #PollutantsToEuLikeAirQuality(pollutants, scale = this.Config.Scales.EU_EAQI) {
+		Console.info("☑️ PollutantsToEuLikeAirQuality");
 		const aqis = pollutants.map(pollutant => {
 			const MIN_INDEX = 1;
 
@@ -178,14 +178,14 @@ export default class AirQuality {
 
 			if (requireConvertUnit) {
 				Console.info(
-					"✅ pollutantsToEuLikeAirQuality",
+					"✅ PollutantsToEuLikeAirQuality",
 					`Convert ${pollutantType}: ${pollutant.amount} ${units} -> ${amount} ${scaleForPollutant.units}`
 				);
 			}
 
 			if (amount < scaleForPollutant.ranges.min.amount) {
 				Console.warn(
-					"⚠️ pollutantsToEuLikeAirQuality",
+					"⚠️ PollutantsToEuLikeAirQuality",
 					`Invalid amount of ${pollutantType}: ${amount} ${scaleForPollutant.units}, `
 						+ `should >= ${scaleForPollutant.ranges.min.amount}`,
 				);
@@ -203,7 +203,7 @@ export default class AirQuality {
 
 		const primaryPollutant = aqis.reduce((previous, current) => (previous.index > current.index ? previous : current));
 
-		Console.info("✅ pollutantsToEuLikeAirQuality");
+		Console.info("✅ PollutantsToEuLikeAirQuality");
 		return {
 			index: primaryPollutant.index,
 			isSignificant: primaryPollutant.index >= scale.categories.significantIndex,
@@ -215,18 +215,18 @@ export default class AirQuality {
 		};
 	}
 
-	static pollutantsToUba(pollutants) {
-		Console.info("☑️ pollutantsToUba");
-		return AirQuality.#pollutantsToEuLikeAirQuality(pollutants, this.Config.Scales.UBA);
+	static PollutantsToUba(pollutants) {
+		Console.info("☑️ PollutantsToUba");
+		return AirQuality.#PollutantsToEuLikeAirQuality(pollutants, this.Config.Scales.UBA);
 	}
 
-	static pollutantsToEaqi(pollutants) {
-		Console.info("☑️ pollutantsToEaqi");
-		return AirQuality.#pollutantsToEuLikeAirQuality(pollutants, this.Config.Scales.EU_EAQI);
+	static PollutantsToEaqi(pollutants) {
+		Console.info("☑️ PollutantsToEaqi");
+		return AirQuality.#PollutantsToEuLikeAirQuality(pollutants, this.Config.Scales.EU_EAQI);
 	}
 
-	static #pollutantsToUsLikeAirQuality(pollutants, scale = this.Config.Scales.WAQI_InstantCast_US) {
-		Console.info("☑️ pollutantsToUsLikeAirQuality");
+	static #PollutantsToUsLikeAirQuality(pollutants, scale = this.Config.Scales.WAQI_InstantCast_US) {
+		Console.info("☑️ PollutantsToUsLikeAirQuality");
 		const aqis = pollutants.map(pollutant => {
 			const MIN_INDEX = 0;
 
@@ -239,14 +239,14 @@ export default class AirQuality {
 
 			if (requireConvertUnit) {
 				Console.info(
-					"✅ pollutantsToUsLikeAirQuality",
+					"✅ PollutantsToUsLikeAirQuality",
 					`Convert ${pollutantType}: ${pollutant.amount} ${units} -> ${amount} ${scaleForPollutant.units}`
 				);
 			}
 
 			if (amount < scaleForPollutant.ranges.min.amount) {
 				Console.warn(
-					"⚠️ pollutantsToUsLikeAirQuality",
+					"⚠️ PollutantsToUsLikeAirQuality",
 					`Invalid amount ${amount} for ${pollutantType}, should >= ${scaleForPollutant.ranges.min.amount}`,
 				);
 				return { pollutantType, index: MIN_INDEX };
@@ -260,11 +260,11 @@ export default class AirQuality {
 					+ maxRange.index,
 				);
 				Console.warn(
-					"⚠️ pollutantsToUsLikeAirQuality",
+					"⚠️ PollutantsToUsLikeAirQuality",
 					`Over-range detected! ${pollutantType}: ${amount} ${scaleForPollutant.units}. `
 						+ `Actual index: ${index}`,
 				);
-				Console.warn("⚠️ pollutantsToUsLikeAirQuality", "Take care of yourself!");
+				Console.warn("⚠️ PollutantsToUsLikeAirQuality", "Take care of yourself!");
 				return { pollutantType, index: maxRange.index };
 			}
 
@@ -286,9 +286,9 @@ export default class AirQuality {
 		});
 
 		const primaryPollutant = aqis.reduce((previous, current) => (previous.index > current.index ? previous : current));
-		const categoryIndex = AirQuality.categoryIndex(primaryPollutant.index, scale);
+		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
 
-		Console.info("✅ pollutantsToUsLikeAirQuality");
+		Console.info("✅ PollutantsToUsLikeAirQuality");
 		return {
 			index: primaryPollutant.index,
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
@@ -299,14 +299,14 @@ export default class AirQuality {
 		};
 	}
 
-	static pollutantsToWaqiInstantCastUs(pollutants) {
-		Console.info("☑️ pollutantsToWaqiInstantCastUs");
-		return AirQuality.#pollutantsToUsLikeAirQuality(pollutants, this.Config.Scales.WAQI_InstantCast_US);
+	static PollutantsToWaqiInstantCastUs(pollutants) {
+		Console.info("☑️ PollutantsToWaqiInstantCastUs");
+		return AirQuality.#PollutantsToUsLikeAirQuality(pollutants, this.Config.Scales.WAQI_InstantCast_US);
 	}
 
-	static pollutantsToWaqiInstantCastCn(pollutants) {
-		Console.info("☑️ pollutantsToWaqiInstantCastCn");
-		return AirQuality.#pollutantsToUsLikeAirQuality(pollutants, this.Config.Scales.WAQI_InstantCast_CN);
+	static PollutantsToWaqiInstantCastCn(pollutants) {
+		Console.info("☑️ PollutantsToWaqiInstantCastCn");
+		return AirQuality.#PollutantsToUsLikeAirQuality(pollutants, this.Config.Scales.WAQI_InstantCast_CN);
 	}
 
 	static Config = {
