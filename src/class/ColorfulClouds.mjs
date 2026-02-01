@@ -14,9 +14,11 @@ export default class ColorfulClouds {
 		this.version = parameters.version;
 		this.language = parameters.language;
 		this.country = parameters.country;
-		this.airQuality;
-		this.currentWeather;
 	}
+
+	#cache = {
+		realtime: {},
+	};
 
 	#Config = {
 		Pollutants: {
@@ -481,5 +483,25 @@ export default class ColorfulClouds {
 		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
 		Console.info("✅ CreatePollutants");
 		return pollutants;
+	}
+
+	#Metadata(
+		reportedTime,
+		location = [this.parameters.latitude, this.parameters.longitude],
+		temporarilyUnavailable = false,
+	) {
+		const timeStamp = Math.trunc(Date.now() / 1000);
+		return {
+			longitude: location[1],
+			providerName: "彩云天气",
+			reportedTime: reportedTime ?? timeStamp,
+			latitude: location[0],
+			expireTime: timeStamp + 60 * 60,
+			attributionUrl: "https://www.caiyunapp.com/h5",
+			providerLogo: providerNameToLogo("彩云天气", this.version),
+			temporarilyUnavailable,
+			readTime: timeStamp,
+			sourceType: "MODELED",
+		};
 	}
 }
