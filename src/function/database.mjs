@@ -17,7 +17,7 @@ export default {
 				Provider: "ColorfulClouds",
 			},
 			AirQuality: {
-				FixQWeatherCo: true,
+				FixQWeatherCO: true,
 				PollutantsAndComparisonTargets: "CN|HK|MO|TW",
 				PollutantsProvider: "ColorfulClouds",
 				ComparisonProvider: "QWeatherPollutants",

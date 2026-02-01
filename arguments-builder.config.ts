@@ -97,7 +97,7 @@ export default defineConfig({
 			description: "使用选定的数据源填充未来一小时降水强度的数据。",
 		},
 		{
-			key: "AirQuality.FixQWeatherCo",
+			key: "AirQuality.FixQWeatherCO",
 			name: "[空气质量 - 污染物] 修复和风天气的一氧化碳数据",
 			defaultValue: true,
 			type: "boolean",

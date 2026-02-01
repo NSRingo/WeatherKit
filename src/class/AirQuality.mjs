@@ -139,14 +139,14 @@ export default class AirQuality {
 	 * 修复和风天气一氧化碳（CO）数据过小的问题。
 	 * 和风天气的CO数据单位实际上为mg/m3，将数值乘1000转为WeatherKit的µg/m3单位。
 	 */
-	static FixQWeatherCo(airQuality) {
-		Console.info("☑️ FixQWeatherCo");
+	static FixQWeatherCO(airQuality) {
+		Console.info("☑️ FixQWeatherCO");
 		if (!Array.isArray(airQuality?.pollutants)) {
-			Console.warn("⚠️ FixQWeatherCo", "airQuality.pollutants is invalid");
+			Console.warn("⚠️ FixQWeatherCO", "airQuality.pollutants is invalid");
 			return [];
 		}
 
-		Console.info("✅ FixQWeatherCo");
+		Console.info("✅ FixQWeatherCO");
 		switch (airQuality?.metadata?.providerName) {
 			case "和风天气":
 			case "QWeather":
