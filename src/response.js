@@ -91,8 +91,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 									waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
 								};
 
-								const weatherTargets = new RegExp(Settings?.Weather?.Targets || '(?!)');
-								const nextHourTargets = new RegExp(Settings?.NextHour?.Targets || '(?!)');
+								const weatherTargets = new RegExp(Settings?.Weather?.Replace || '(?!)');
+								const nextHourTargets = new RegExp(Settings?.NextHour?.Fill || '(?!)');
 
 								if (weatherTargets.test(parameters.country)) {
 									if (url.searchParams.get("dataSets").includes("currentWeather")) {
@@ -166,9 +166,6 @@ Console.info(`FORMAT: ${FORMAT}`);
 async function InjectPollutants(airQuality, Settings, enviroments) {
 	Console.info("☑️ InjectPollutants");
 	switch (Settings?.AirQuality?.Current?.Pollutants?.Provider) {
-		case "WeatherKit": {
-			break;
-		}
 		case "QWeather": {
 			// TODO: upgrade to new API https://dev.qweather.com/docs/api/air-quality/air-current/
 			airQuality.pollutants = (await enviroments.qWeather.AirNow()).pollutants;
