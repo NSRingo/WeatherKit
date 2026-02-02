@@ -141,8 +141,8 @@ export interface Settings {
                  * - `'iRingo'` - iRingo内置算法
                  * - `'ColorfulCloudsUS'` - 彩云天气（美标）
                  * - `'ColorfulCloudsCN'` - 彩云天气（国标）
-                 * - `'QWeather'` - 和风天气
-                 * - `'WAQI'` - The World Air Quality Project（InstantCast）
+                 * - `'QWeather'` - 和风天气（国标）
+                 * - `'WAQI'` - The World Air Quality Project（美标InstantCast）
                  *
                  * @defaultValue "iRingo"
                  */
@@ -193,7 +193,7 @@ export interface Settings {
                  * - `'iRingo'` - iRingo内置算法
                  * - `'ColorfulCloudsUS'` - 彩云天气（美标）
                  * - `'ColorfulCloudsCN'` - 彩云天气（国标）
-                 * - `'QWeather'` - 和风天气
+                 * - `'QWeather'` - 和风天气（国标）
                  *
                  * @defaultValue "ColorfulCloudsUS"
                  */
