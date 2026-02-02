@@ -168,7 +168,7 @@ export default class AirQuality {
 		}
 	}
 
-	static #PollutantsToEULike(pollutants, scale = this.Config.Scales.EU_EAQI) {
+	static PollutantsToEULike(pollutants, scale = this.Config.Scales.EU_EAQI) {
 		Console.info("☑️ PollutantsToEULike");
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
 			Console.warn("⚠️ PollutantsToEULike", "pollutants is invalid");
@@ -224,17 +224,7 @@ export default class AirQuality {
 		};
 	}
 
-	static PollutantsToUBA(pollutants) {
-		Console.info("☑️ PollutantsToUBA");
-		return AirQuality.#PollutantsToEULike(pollutants, this.Config.Scales.UBA);
-	}
-
-	static PollutantsToEAQI(pollutants) {
-		Console.info("☑️ PollutantsToEAQI");
-		return AirQuality.#PollutantsToEULike(pollutants, this.Config.Scales.EU_EAQI);
-	}
-
-	static #PollutantsToInstantCastLike(pollutants, scale = this.Config.Scales.WAQI_InstantCast_US) {
+	static PollutantsToInstantCastLike(pollutants, scale = this.Config.Scales.WAQI_InstantCast_US) {
 		Console.info("☑️ PollutantsToInstantCastLike");
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
 			Console.warn("⚠️ PollutantsToInstantCastLike", "pollutants is invalid");
@@ -311,16 +301,6 @@ export default class AirQuality {
 			primaryPollutant: primaryPollutant.pollutantType,
 			scale: scale.weatherKitScale.name + "." + scale.weatherKitScale.version,
 		};
-	}
-
-	static PollutantsToInstantCastUS(pollutants) {
-		Console.info("☑️ PollutantsToInstantCastUS");
-		return AirQuality.#PollutantsToInstantCastLike(pollutants, this.Config.Scales.WAQI_InstantCast_US);
-	}
-
-	static PollutantsToInstantCastCN(pollutants) {
-		Console.info("☑️ PollutantsToInstantCastCN");
-		return AirQuality.#PollutantsToInstantCastLike(pollutants, this.Config.Scales.WAQI_InstantCast_CN);
 	}
 
 	static Config = {
