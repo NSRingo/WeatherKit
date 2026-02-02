@@ -326,44 +326,6 @@ export default class ColorfulClouds {
 		return forecastDaily;
 	}
 
-	/**
-	 * 创建苹果格式的污染物对象
-	 * @link https://docs.caiyunapp.com/weather-api/v2/v2.6/1-realtime.html
-	 * @param {Object} pollutantsObj - 污染物对象
-	 * @returns {Object} 修复后的污染物对象
-	 */
-	#CreatePollutants(pollutantsObj = {}) {
-		Console.info("☑️ CreatePollutants");
-		const pollutants = [];
-		for (const [key, value] of Object.entries(pollutantsObj)) {
-			switch (key) {
-				case "co":
-					pollutants.push({
-						amount: value ?? -1,
-						pollutantType: this.#Config.Pollutants[key],
-						units: "MILLIGRAMS_PER_CUBIC_METER",
-					});
-					break;
-				case "no":
-				case "no2":
-				case "so2":
-				case "o3":
-				case "nox":
-				case "pm25":
-				case "pm10":
-					pollutants.push({
-						amount: value ?? -1,
-						pollutantType: this.#Config.Pollutants[key],
-						units: "MICROGRAMS_PER_CUBIC_METER",
-					});
-					break;
-			}
-		}
-		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
-		Console.info("✅ CreatePollutants");
-		return pollutants;
-	}
-
 	#Metadata(
 		reportedTime,
 		location = [this.parameters.latitude, this.parameters.longitude],
@@ -384,16 +346,27 @@ export default class ColorfulClouds {
 		};
 	}
 
+	/**
+	 * 创建WeatherKit格式的污染物对象
+	 * @link https://docs.caiyunapp.com/weather-api/v2/v2.6/1-realtime.html
+	 * @returns {Promise<{amount: number, pollutantType: string, units: string}[]>}
+	 */
 	async Pollutants() {
 		Console.info("☑️ Pollutants");
 		const realtime = await this.#RealTime();
-		if (!realtime.result) {
-			Console.error("❌ Pollutants", "Failed to get realtime data");
+		const airQuality = realtime?.result?.realtime?.air_quality;
+		if (!airQuality || airQuality?.description?.usa === "") {
+			Console.error("❌ Pollutants", `Failed to get air_quality data`);
 			return [];
 		}
 
 		Console.info("✅ Pollutants");
-		return AirQuality.ConvertUnits(this.#CreatePollutants(realtime.result.realtime.air_quality));
+		const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
+		return Object.entries(airQuality).map(([name, amount]) => ({
+			amount: name === 'co' ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
+			pollutantType: this.#Config.Pollutants[name],
+			units: ugm3,
+		}));
 	}
 
 	async AirQuality(useUsa = true, forcePrimaryPollutant = false) {
