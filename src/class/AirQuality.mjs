@@ -173,7 +173,7 @@ export default class AirQuality {
 		return lastDotIndex === -1 ? scale : scale.substring(0, lastDotIndex);
 	}
 
-	static PollutantsToEULike(pollutants, scale = this.Config.Scales.EU_EAQI) {
+	static PollutantsToEULike(pollutants, scale = AirQuality.Config.Scales.EU_EAQI) {
 		Console.info("☑️ PollutantsToEULike");
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
 			Console.warn("⚠️ PollutantsToEULike", "pollutants is invalid");
@@ -237,7 +237,7 @@ export default class AirQuality {
 		};
 	}
 
-	static PollutantsToInstantCastLike(pollutants, scale = this.Config.Scales.WAQI_InstantCast_US) {
+	static PollutantsToInstantCastLike(pollutants, scale = AirQuality.Config.Scales.WAQI_InstantCast_US) {
 		Console.info("☑️ PollutantsToInstantCastLike");
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
 			Console.warn("⚠️ PollutantsToInstantCastLike", "pollutants is invalid");
