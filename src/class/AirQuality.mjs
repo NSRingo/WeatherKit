@@ -168,6 +168,8 @@ export default class AirQuality {
 		}
 	}
 
+	static ToWeatherKitScale = ({ name, version }) => name + "." + version;
+
 	static PollutantsToEULike(pollutants, scale = this.Config.Scales.EU_EAQI) {
 		Console.info("☑️ PollutantsToEULike");
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
@@ -220,7 +222,7 @@ export default class AirQuality {
 			categoryIndex: primaryPollutant.index,
 			pollutants,
 			primaryPollutant: primaryPollutant.pollutantType,
-			scale: scale.weatherKitScale.name + "." + scale.weatherKitScale.version,
+			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 		};
 	}
 
@@ -299,7 +301,7 @@ export default class AirQuality {
 			categoryIndex,
 			pollutants,
 			primaryPollutant: primaryPollutant.pollutantType,
-			scale: scale.weatherKitScale.name + "." + scale.weatherKitScale.version,
+			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 		};
 	}
 

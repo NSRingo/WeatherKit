@@ -454,7 +454,7 @@ export default class ColorfulClouds {
 				index,
 				isSignificant: categoryIndex >= scale.categories.significantIndex,
 				primaryPollutant: !forcePrimaryPollutant && maxIaqi.index < 50 ? "NOT_AVAILABLE" : maxIaqi.pollutantType,
-				scale: scale.weatherKitScale.name + "." + scale.weatherKitScale.version,
+				scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 			};
 		}
 	}
