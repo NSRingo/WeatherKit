@@ -142,6 +142,16 @@ Console.info(`FORMAT: ${FORMAT}`);
 										// ProviderLogo
 										if (body?.airQuality?.metadata?.providerName && !body?.airQuality?.metadata?.providerLogo) body.airQuality.metadata.providerLogo = providerNameToLogo(body?.airQuality?.metadata?.providerName, "v2");
 									}
+
+									const ComparisonFill = new RegExp(Settings?.AirQuality?.Comparison?.Fill || '(?!)');
+									if (ComparisonFill.test(parameters.country)) {
+										if (body?.airQuality) {
+											const previousDayComparison = body.airQuality?.previousDayComparison;
+											if (!previousDayComparison || previousDayComparison === 'UNKNOWN') {
+												// TODO
+											}
+										}
+									}
 								}
 								const WeatherData = WeatherKit2.encode(Builder, "all", body);
 								Builder.finish(WeatherData);
