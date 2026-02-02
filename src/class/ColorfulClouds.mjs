@@ -459,28 +459,20 @@ export default class ColorfulClouds {
 		};
 	}
 
-	async CompareYesterdayIndex(useUsa = true) {
-		Console.info("☑️ CompareYesterdayIndex");
-		const realtime = await this.#RealTime();
+	async YesterdayCategoryIndex(useUsa = true) {
+		Console.info("☑️ YesterdayCategoryIndex");
 		const yesterdayHourly = await this.#Hourly(1, (Date.now() - 864e5) / 1000);
 
-		if (!realtime.result || !yesterdayHourly.result) {
-			Console.error("❌ CompareYesterdayIndex", "Failed to get realtime or hourly data");
+		if (!yesterdayHourly.result) {
+			Console.error("❌ YesterdayCategoryIndex", "Failed to get hourly data");
 			return "UNKNOWN";
 		}
 
-		const todayIndexes = realtime.result.realtime.air_quality.aqi;
-		const yesterdayIndexes = yesterdayHourly.result.hourly.air_quality.aqi[0].value;
-
-		const todayIndex = useUsa ? todayIndexes.usa : todayIndexes.chn;
-		const yesterdayIndex = useUsa ? yesterdayIndexes.usa : yesterdayIndexes.chn;
-
-		const scale = useUsa ? AirQuality.Config.Scales.EPA_NowCast : AirQuality.Config.Scales.HJ6332012;
-		const todayCategoryIndex = AirQuality.CategoryIndex(todayIndex, scale);
-		const yesterdayCategoryIndex = AirQuality.CategoryIndex(yesterdayIndex, scale);
-
-		Console.info("✅ CompareYesterdayIndex");
-		return AirQuality.CompareCategoryIndex(todayCategoryIndex, yesterdayCategoryIndex);
+		Console.info("✅ YesterdayCategoryIndex");
+		const { usa, chn } = yesterdayHourly.result.hourly.air_quality.aqi[0].value;
+		return useUsa
+			? AirQuality.CategoryIndex(usa, AirQuality.Config.Scales.EPA_NowCast)
+			: AirQuality.CategoryIndex(chn, AirQuality.Config.Scales.HJ6332012);
 	}
 
 	async ForecastHourly() {
