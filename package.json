@@ -51,7 +51,7 @@
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {
-		"@nsnanocat/util": "^1.8.10",
+		"@nsnanocat/util": "^2.0.0",
 		"flatbuffers": "^24.12.23",
 		"node-polyfill-webpack-plugin": "^4.1.0"
 	}
