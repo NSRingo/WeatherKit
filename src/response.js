@@ -125,8 +125,16 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (CurrentFill.test(parameters.country)) {
 										// InjectPollutants
 										await InjectPollutants(body.airQuality, Settings, enviroments);
-										// InjectAirQuality
-										body.airQuality = await InjectAirQuality(body.airQuality, Settings, enviroments);
+										// InjectIndex
+										if (
+											!body?.airQuality?.scale || (
+												Array.isArray(Settings.AirQuality.Current?.Index?.Replace)
+												&& Settings.AirQuality.Current?.Index?.Replace.includes(
+													AirQuality.GetNameFromScale(body.airQuality.scale))
+											)
+										) {
+											await InjectIndex(body.airQuality, Settings, enviroments);
+										}
 										// CompareAirQuality
 										if (body?.airQuality) body.airQuality = await CompareAirQuality(body.airQuality, Settings, enviroments);
 										// Convert units that does not supported in Apple Weather
@@ -187,19 +195,44 @@ async function InjectPollutants(airQuality, Settings, enviroments) {
  * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 注入后的空气质量数据
  */
-async function InjectAirQuality(airQuality, Settings, enviroments) {
-	Console.info("☑️ InjectAirQuality");
+async function InjectIndex(airQuality, Settings, enviroments) {
+	Console.info("☑️ InjectIndex");
 	let newAirQuality;
 	switch (Settings?.AirQuality?.Current?.Index?.Provider) {
-		case "WeatherKit":
-			break;
 		case "QWeather": {
+			// TODO: upgrade to new API https://dev.qweather.com/docs/api/air-quality/air-current/
 			newAirQuality = await enviroments.qWeather.AirNow();
 			break;
 		}
-		case "ColorfulClouds":
+		case "ColorfulCloudsUS":
+		case "ColorfulCloudsCN": {
+			newAirQuality = await enviroments.colorfulClouds.AirQuality(
+				Settings.AirQuality.Current.Index.Provider === "ColorfulCloudsUS",
+			);
+			break;
+		}
+		case "iRingo":
 		default: {
-			newAirQuality = (await enviroments.colorfulClouds.RealTime()).airQuality;
+			switch (Settings.AirQuality?.iRingoAlgorithm) {
+				case "EU_EAQI": {
+					newAirQuality = AirQuality.PollutantsToEULike(airQuality.pollutants);
+					break;
+				}
+				case "WAQI_InstantCast_US": {
+					newAirQuality = AirQuality.PollutantsToInstantCastLike(airQuality.pollutants);
+					break;
+				}
+				case "WAQI_InstantCast_CN": {
+					newAirQuality = AirQuality.PollutantsToInstantCastLike(
+						airQuality.pollutants, AirQuality.Config.Scales.WAQI_InstantCast_CN);
+					break;
+				}
+				case "UBA":
+				default: {
+					newAirQuality = AirQuality.PollutantsToUBA(airQuality.pollutants, AirQuality.Config.Scales.UBA);
+					break;
+				}
+			}
 			break;
 		}
 		case "WAQI": {
@@ -216,15 +249,18 @@ async function InjectAirQuality(airQuality, Settings, enviroments) {
 			break;
 		}
 	}
-	if (newAirQuality?.metadata) {
-		newAirQuality.metadata = { ...airQuality?.metadata, ...newAirQuality.metadata };
-		airQuality = { ...airQuality, ...newAirQuality };
-		if (!airQuality?.pollutants) airQuality.pollutants = [];
+
+	if (newAirQuality.index) {
+		airQuality = {
+			...airQuality,
+			...newAirQuality,
+			metadata: airQuality.metadata,
+			pollutants: airQuality.pollutants,
+			previousDayComparison: Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange
+				? "UNKNOWN" : airQuality.previousDayComparison,
+		};
+		Console.info("✅ InjectIndex");
 	}
-	// ConvertAirQuality 现在是必要操作
-	airQuality = AirQuality.ConvertScale(airQuality, Settings);
-	Console.info("✅ InjectAirQuality");
-	return airQuality;
 }
 
 /**
