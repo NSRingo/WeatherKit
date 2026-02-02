@@ -170,6 +170,11 @@ export default class AirQuality {
 
 	static #PollutantsToEULike(pollutants, scale = this.Config.Scales.EU_EAQI) {
 		Console.info("☑️ PollutantsToEULike");
+		if (!Array.isArray(pollutants) || pollutants.length === 0) {
+			Console.warn("⚠️ PollutantsToEULike", "pollutants is invalid");
+			return {};
+		}
+
 		const aqis = pollutants.map(pollutant => {
 			const MIN_INDEX = 1;
 
@@ -231,6 +236,11 @@ export default class AirQuality {
 
 	static #PollutantsToInstantCastLike(pollutants, scale = this.Config.Scales.WAQI_InstantCast_US) {
 		Console.info("☑️ PollutantsToInstantCastLike");
+		if (!Array.isArray(pollutants) || pollutants.length === 0) {
+			Console.warn("⚠️ PollutantsToInstantCastLike", "pollutants is invalid");
+			return {};
+		}
+
 		const aqis = pollutants.map(pollutant => {
 			const MIN_INDEX = 0;
 
