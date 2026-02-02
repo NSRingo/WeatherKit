@@ -139,10 +139,10 @@ export interface Settings {
                  *
                  * Possible values:
                  * - `'iRingo'` - iRingo内置算法
-                 * - `'ColorfulCloudsUS'` - 彩云天气（美标）
-                 * - `'ColorfulCloudsCN'` - 彩云天气（国标）
-                 * - `'QWeather'` - 和风天气（国标）
-                 * - `'WAQI'` - The World Air Quality Project（美标InstantCast）
+                 * - `'ColorfulCloudsUS'` - 彩云天气（美标，EPA 454/B-18-007）
+                 * - `'ColorfulCloudsCN'` - 彩云天气（国标，HJ 633—2012）
+                 * - `'QWeather'` - 和风天气（国标，HJ 633—2012）
+                 * - `'WAQI'` - The World Air Quality Project（美标InstantCast，EPA 454/B-18-007）
                  *
                  * @defaultValue "iRingo"
                  */
@@ -191,9 +191,9 @@ export interface Settings {
                  *
                  * Possible values:
                  * - `'iRingo'` - iRingo内置算法
-                 * - `'ColorfulCloudsUS'` - 彩云天气（美标）
-                 * - `'ColorfulCloudsCN'` - 彩云天气（国标）
-                 * - `'QWeather'` - 和风天气（国标）
+                 * - `'ColorfulCloudsUS'` - 彩云天气（美标，EPA 454/B-18-007）
+                 * - `'ColorfulCloudsCN'` - 彩云天气（国标，HJ 633—2012）
+                 * - `'QWeather'` - 和风天气（国标，HJ 633—2012）
                  *
                  * @defaultValue "ColorfulCloudsUS"
                  */
@@ -208,7 +208,7 @@ export interface Settings {
          * @remarks
          *
          * Possible values:
-         * - `'UBA'` - 德国LQI（2025年8月）
+         * - `'UBA'` - 德国LQI（FB001846）
          * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
          * - `'WAQI_InstantCast_US'` - 美标WAQI InstantCast（EPA-454/B-24-002）
          * - `'WAQI_InstantCast_CN'` - 国标WAQI InstantCast（HJ 633—2012）
