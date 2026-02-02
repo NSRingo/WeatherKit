@@ -169,6 +169,10 @@ export default class AirQuality {
 	}
 
 	static ToWeatherKitScale = ({ name, version }) => name + "." + version;
+	static GetNameFromScale(scale) {
+		const lastDotIndex = scale.lastIndexOf(".");
+		return lastDotIndex === -1 ? scale : scale.substring(0, lastDotIndex);
+	}
 
 	static PollutantsToEULike(pollutants, scale = this.Config.Scales.EU_EAQI) {
 		Console.info("☑️ PollutantsToEULike");
