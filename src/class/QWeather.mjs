@@ -42,6 +42,59 @@ export default class QWeather {
 		},
 	};
 
+	// Codes by Claude AI
+	GetLocationID(locations, lat, lng) {
+		const { gridSize, grid } = locations;
+
+		// Haversine距离计算
+		const distance = (lat1, lng1, lat2, lng2) => {
+			const R = 6371; // 地球半径(km)
+			const dLat = (lat2 - lat1) * Math.PI / 180;
+			const dLng = (lng2 - lng1) * Math.PI / 180;
+			const a = Math.sin(dLat/2) ** 2 +
+				Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+				Math.sin(dLng/2) ** 2;
+			return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+		}
+
+		const getNearbyGridKeys = (lat, lng, radius = 2) => {
+			const centerX = Math.floor(lng / gridSize);
+			const centerY = Math.floor(lat / gridSize);
+			const keys = [];
+
+			for (let dx = -radius; dx <= radius; dx++) {
+				for (let dy = -radius; dy <= radius; dy++) {
+					keys.push(`${centerX + dx},${centerY + dy}`);
+				}
+			}
+
+			return keys;
+		}
+
+		const findNearestFast = (lat, lng) => {
+			const keys = getNearbyGridKeys(lat, lng, 2);
+			let nearest = null;
+			let minDist = Infinity;
+
+			for (const key of keys) {
+				const locations = grid[key];
+				if (!locations) continue;
+		
+				for (const loc of locations) {
+					const dist = distance(lat, lng, loc.lat, loc.lng);
+					if (dist < minDist) {
+						minDist = dist;
+						nearest = loc;
+					}
+				}
+			}
+
+			return nearest;
+		}
+
+		return findNearestFast(lat, lng)?.id;
+	}
+
 	async GeoAPI(path = "city/lookup") {
 		Console.info("☑️ GeoAPI");
 		const request = {
