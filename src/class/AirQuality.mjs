@@ -118,11 +118,11 @@ export default class AirQuality {
 		pollutants = pollutants.map(pollutant => {
 			switch (pollutant.units) {
 				case "PARTS_PER_MILLION":
-					pollutant.amount = AirQuality.#ConvertUnit(pollutant.amount, pollutant.units, "PARTS_PER_BILLION"); // Will not convert to Xg/m3
+					pollutant.amount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, "PARTS_PER_BILLION"); // Will not convert to Xg/m3
 					pollutant.units = "PARTS_PER_BILLION";
 					break;
 				case "MILLIGRAMS_PER_CUBIC_METER":
-					pollutant.amount = AirQuality.#ConvertUnit(pollutant.amount, pollutant.units, "MICROGRAMS_PER_CUBIC_METER"); // Will not convert to Xg/m3
+					pollutant.amount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, "MICROGRAMS_PER_CUBIC_METER"); // Will not convert to Xg/m3
 					pollutant.units = "MICROGRAMS_PER_CUBIC_METER";
 					break;
 				default:
@@ -154,7 +154,7 @@ export default class AirQuality {
 					return {
 						...pollutant,
 						amount: pollutantType === "CO"
-							? AirQuality.#ConvertUnit(amount, "MILLIGRAMS_PER_CUBIC_METER", "MICROGRAMS_PER_CUBIC_METER")
+							? AirQuality.ConvertUnit(amount, "MILLIGRAMS_PER_CUBIC_METER", "MICROGRAMS_PER_CUBIC_METER")
 							: amount,
 					};
 				});
@@ -188,7 +188,7 @@ export default class AirQuality {
 			const scaleForPollutant = scale.pollutants[pollutantType];
 			const requireConvertUnit = units !== scaleForPollutant.units;
 			const amount = requireConvertUnit
-				? AirQuality.#ConvertUnit(
+				? AirQuality.ConvertUnit(
 					pollutant.amount,
 					units,
 					scaleForPollutant.units,
@@ -249,7 +249,7 @@ export default class AirQuality {
 			const scaleForPollutant = scale.pollutants[pollutantType];
 			const requireConvertUnit = units !== scaleForPollutant.units;
 			const amount = requireConvertUnit
-				? AirQuality.#ConvertUnit(
+				? AirQuality.ConvertUnit(
 					pollutant.amount,
 					units,
 					scaleForPollutant.units,
@@ -1124,7 +1124,7 @@ export default class AirQuality {
 		pollutants = pollutants.map(pollutant => {
 			// Convert unit based on standard
 			const PollutantStandard = AirQuality.Config.Scales[scale].pollutants[pollutant.pollutantType];
-			pollutant.convertedAmount = AirQuality.#ConvertUnit(pollutant.amount, pollutant.units, PollutantStandard.units, PollutantStandard.ppxToXGM3);
+			pollutant.convertedAmount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, PollutantStandard.units, PollutantStandard.ppxToXGM3);
 			pollutant.convertedUnits = PollutantStandard.units;
 			pollutant = { ...PollutantStandard, ...pollutant };
 			// Calculate AQI for each pollutant
@@ -1144,99 +1144,87 @@ export default class AirQuality {
 		return pollutants;
 	}
 
-	static #ConvertUnit(amount, unitFrom, unitTo, ppxToXGM3Value = -1) {
+	static ConvertUnit(amount, from, to, stpConversionFactor = -1) {
 		Console.info("☑️ ConvertUnit");
-		Console.debug(`form: ${amount} ${AirQuality.Config.Units[unitFrom]}`);
-		Console.debug(`ppxToXGM3Value: ${ppxToXGM3Value}`);
-		if (amount < 0) amount = -1;
-		else
-			switch (unitFrom) {
-				case "PARTS_PER_MILLION":
-					switch (unitTo) {
-						case "PARTS_PER_MILLION":
-							break;
-						case "PARTS_PER_BILLION":
-							amount = amount * 1000;
-							break;
-						case "MILLIGRAMS_PER_CUBIC_METER":
-							amount = amount * ppxToXGM3Value;
-							break;
-						case "MICROGRAMS_PER_CUBIC_METER": {
-							const inPpb = AirQuality.#ConvertUnit(amount, unitFrom, "PARTS_PER_BILLION", ppxToXGM3Value);
-							amount = inPpb * ppxToXGM3Value;
-							break;
-						}
-						default:
-							amount = -1;
-							break;
+		Console.debug(`Convert ${amount} ${AirQuality.Config.Units[from]} to ${AirQuality.Config.Units[to]} with ${stpConversionFactor}`);
+		if (amount < 0) {
+			Console.warn("⚠️ ConvertUnit", `Amount ${amount} < 0`);
+			return -1;
+		}
+
+		switch (from) {
+			case "PARTS_PER_MILLION":
+				switch (to) {
+					case "PARTS_PER_MILLION":
+						return -1;
+					case "PARTS_PER_BILLION":
+						return amount * 1000;
+					case "MILLIGRAMS_PER_CUBIC_METER":
+						return amount * stpConversionFactor;
+					case "MICROGRAMS_PER_CUBIC_METER": {
+						const inPpb = AirQuality.ConvertUnit(amount, from, "PARTS_PER_BILLION", stpConversionFactor);
+						return inPpb * stpConversionFactor;
 					}
-					break;
-				case "PARTS_PER_BILLION":
-					switch (unitTo) {
-						case "PARTS_PER_BILLION":
-							break;
-						case "PARTS_PER_MILLION":
-							amount = amount * 0.001;
-							break;
-						case "MILLIGRAMS_PER_CUBIC_METER": {
-							const inPpm = AirQuality.#ConvertUnit(amount, unitFrom, "PARTS_PER_MILLION", ppxToXGM3Value);
-							amount = inPpm * ppxToXGM3Value;
-							break;
-						}
-						case "MICROGRAMS_PER_CUBIC_METER":
-							amount = amount * ppxToXGM3Value;
-							break;
-						default:
-							amount = -1;
-							break;
+					default:
+						return -1;
+				}
+			case "PARTS_PER_BILLION":
+				switch (to) {
+					case "PARTS_PER_BILLION":
+						return -1;
+					case "PARTS_PER_MILLION":
+						return amount * 0.001;
+					case "MILLIGRAMS_PER_CUBIC_METER": {
+						const inPpm = AirQuality.ConvertUnit(amount, from, "PARTS_PER_MILLION", stpConversionFactor);
+						return inPpm * stpConversionFactor;
 					}
-					break;
-				case "MILLIGRAMS_PER_CUBIC_METER":
-					switch (unitTo) {
-						case "MILLIGRAMS_PER_CUBIC_METER":
-							break;
-						case "MICROGRAMS_PER_CUBIC_METER":
-							amount = amount * 1000;
-							break;
-						case "PARTS_PER_MILLION":
-							amount = amount / ppxToXGM3Value;
-							break;
-						case "PARTS_PER_BILLION": {
-							const inUgM3 = AirQuality.#ConvertUnit(amount, unitFrom, "MICROGRAMS_PER_CUBIC_METER", ppxToXGM3Value);
-							amount = inUgM3 / ppxToXGM3Value;
-							break;
-						}
-						default:
-							amount = -1;
-							break;
+					case "MICROGRAMS_PER_CUBIC_METER":
+						return amount * stpConversionFactor;
+					default:
+						return -1;
+				}
+			case "MILLIGRAMS_PER_CUBIC_METER":
+				switch (to) {
+					case "MILLIGRAMS_PER_CUBIC_METER":
+						return -1;
+					case "MICROGRAMS_PER_CUBIC_METER":
+						return amount * 1000;
+					case "PARTS_PER_MILLION":
+						return amount / stpConversionFactor;
+					case "PARTS_PER_BILLION": {
+						const inUgM3 = AirQuality.ConvertUnit(
+							amount,
+							from,
+							"MICROGRAMS_PER_CUBIC_METER",
+							stpConversionFactor,
+						);
+						return inUgM3 / stpConversionFactor;
 					}
-					break;
-				case "MICROGRAMS_PER_CUBIC_METER":
-					switch (unitTo) {
-						case "MICROGRAMS_PER_CUBIC_METER":
-							break;
-						case "MILLIGRAMS_PER_CUBIC_METER":
-							amount = amount * 0.001;
-							break;
-						case "PARTS_PER_MILLION": {
-							const inMgM3 = AirQuality.#ConvertUnit(amount, unitFrom, "MILLIGRAMS_PER_CUBIC_METER", ppxToXGM3Value);
-							amount = inMgM3 / ppxToXGM3Value;
-							break;
-						}
-						case "PARTS_PER_BILLION":
-							amount = amount / ppxToXGM3Value;
-							break;
-						default:
-							amount = -1;
-							break;
+					default:
+						return -1;
+				}
+			case "MICROGRAMS_PER_CUBIC_METER":
+				switch (to) {
+					case "MICROGRAMS_PER_CUBIC_METER":
+						return -1;
+					case "MILLIGRAMS_PER_CUBIC_METER":
+						return amount * 0.001;
+					case "PARTS_PER_MILLION": {
+						const inMgM3 = AirQuality.ConvertUnit(
+							amount,
+							from,
+							"MILLIGRAMS_PER_CUBIC_METER",
+							stpConversionFactor,
+						);
+						return inMgM3 / stpConversionFactor;
 					}
-					break;
-				default:
-					amount = -1;
-					break;
-			}
-		Console.debug(`to: ${amount} ${AirQuality.Config.Units[unitTo]}`);
-		Console.info("✅ ConvertUnit");
-		return amount;
+					case "PARTS_PER_BILLION":
+						return amount / stpConversionFactor;
+					default:
+						return -1;
+				}
+			default:
+				return -1;
+		}
 	}
 }
