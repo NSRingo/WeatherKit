@@ -151,18 +151,17 @@ export default class AirQuality {
 			case "QWeather": {
 				airQuality.pollutants = airQuality.pollutants.map((pollutant) => {
 					const { pollutantType, amount } = pollutant;
+					const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
 					return {
 						...pollutant,
-						amount: pollutantType === "CO"
-							? AirQuality.ConvertUnit(amount, "MILLIGRAMS_PER_CUBIC_METER", "MICROGRAMS_PER_CUBIC_METER")
-							: amount,
+						amount: pollutantType === "CO" ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
 					};
 				});
 				Console.info("✅ FixQWeatherCO");
 				break;
 			}
 			default: {
-				Console.info("✅ FixQWeatherCO", `Provider ${airQuality?.metadata?.providerName} is not need to fix.`);
+				Console.info("✅ FixQWeatherCO", `Provider ${airQuality?.metadata?.providerName} is no need to fix.`);
 				break;
 			}
 		}
@@ -197,17 +196,20 @@ export default class AirQuality {
 				: pollutant.amount;
 
 			if (requireConvertUnit) {
+				const friendlyUnits = AirQuality.Config.Units.Friendly;
 				Console.info(
 					"✅ PollutantsToEULike",
-					`Convert ${pollutantType}: ${pollutant.amount} ${units} -> ${amount} ${scaleForPollutant.units}`
+					`Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units]}`
+						+ ` -> ${amount} ${friendlyUnits[scaleForPollutant.units]}`,
 				);
 			}
 
 			if (amount < scaleForPollutant.ranges.min.amount) {
 				Console.warn(
 					"⚠️ PollutantsToEULike",
-					`Invalid amount of ${pollutantType}: ${amount} ${scaleForPollutant.units}, `
-						+ `should >= ${scaleForPollutant.ranges.min.amount}`,
+					`Invalid amount of ${pollutantType}: ${amount}`
+						+ ` ${AirQuality.Config.Units.Friendly[scaleForPollutant.units]},`
+						+ ` should >= ${scaleForPollutant.ranges.min.amount}`,
 				);
 				return { pollutantType, index: MIN_INDEX };
 			}
@@ -258,16 +260,20 @@ export default class AirQuality {
 				: pollutant.amount;
 
 			if (requireConvertUnit) {
+				const friendlyUnits = AirQuality.Config.Units.Friendly;
 				Console.info(
 					"✅ PollutantsToInstantCastLike",
-					`Convert ${pollutantType}: ${pollutant.amount} ${units} -> ${amount} ${scaleForPollutant.units}`
+					`Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units]}`
+						+ ` -> ${amount} ${friendlyUnits[scaleForPollutant.units]}`,
 				);
 			}
 
 			if (amount < scaleForPollutant.ranges.min.amount) {
 				Console.warn(
 					"⚠️ PollutantsToInstantCastLike",
-					`Invalid amount ${amount} for ${pollutantType}, should >= ${scaleForPollutant.ranges.min.amount}`,
+					`Invalid amount of ${pollutantType}: ${amount}`
+						+ ` ${AirQuality.Config.Units.Friendly[scaleForPollutant.units]},`
+						+ ` should >= ${scaleForPollutant.ranges.min.amount}`,
 				);
 				return { pollutantType, index: MIN_INDEX };
 			}
@@ -279,10 +285,11 @@ export default class AirQuality {
 					maxRange.index / maxRange.amount * amount
 					+ maxRange.index,
 				);
+				const friendlyUnits = AirQuality.Config.Units.Friendly;
 				Console.warn(
 					"⚠️ PollutantsToInstantCastLike",
-					`Over-range detected! ${pollutantType}: ${amount} ${scaleForPollutant.units}. `
-						+ `Actual index: ${index}`,
+					`Over-range detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`
+						+ ` Actual index: ${index}`,
 				);
 				Console.warn("⚠️ PollutantsToInstantCastLike", "Take care of yourself!");
 				return { pollutantType, index: maxRange.index };
@@ -1083,14 +1090,18 @@ export default class AirQuality {
 			other: "NOT_AVAILABLE",
 		},
 		Units: {
-			MICROGRAMS_PER_CUBIC_METER: "μg/m3",
-			"μg/m3": "MICROGRAMS_PER_CUBIC_METER",
-			MILLIGRAMS_PER_CUBIC_METER: "mg/m3",
-			"mg/m3": "MILLIGRAMS_PER_CUBIC_METER",
-			ppb: "PARTS_PER_BILLION",
-			PARTS_PER_BILLION: "ppb",
-			ppm: "PARTS_PER_MILLION",
-			PARTS_PER_MILLION: "ppm",
+			WeatherKit: {
+				ugm3: "MICROGRAMS_PER_CUBIC_METER",
+				mgm3: "MILLIGRAMS_PER_CUBIC_METER",
+				ppb: "PARTS_PER_BILLION",
+				ppm: "PARTS_PER_MILLION",
+			},
+			Friendly: {
+				MICROGRAMS_PER_CUBIC_METER: "μg/m3",
+				MILLIGRAMS_PER_CUBIC_METER: "mg/m3",
+				PARTS_PER_BILLION: "ppb",
+				PARTS_PER_MILLION: "ppm",
+			},
 		},
 		/**
 		 * Standard Conditions for Temperature and Pressure
@@ -1146,79 +1157,71 @@ export default class AirQuality {
 
 	static ConvertUnit(amount, from, to, stpConversionFactor = -1) {
 		Console.info("☑️ ConvertUnit");
-		Console.debug(`Convert ${amount} ${AirQuality.Config.Units[from]} to ${AirQuality.Config.Units[to]} with ${stpConversionFactor}`);
+		const friendlyUnits = AirQuality.Config.Units.Friendly;
+		Console.debug(`Convert ${amount} ${friendlyUnits[from]} to ${friendlyUnits[to]} with ${stpConversionFactor}`);
 		if (amount < 0) {
 			Console.warn("⚠️ ConvertUnit", `Amount ${amount} < 0`);
 			return -1;
 		}
 
+		const { ugm3, mgm3, ppb, ppm } = AirQuality.Config.Units.WeatherKit;
 		switch (from) {
-			case "PARTS_PER_MILLION":
+			case ppm:
 				switch (to) {
-					case "PARTS_PER_MILLION":
+					case ppm:
 						return -1;
-					case "PARTS_PER_BILLION":
+					case ppb:
 						return amount * 1000;
-					case "MILLIGRAMS_PER_CUBIC_METER":
+					case mgm3:
 						return amount * stpConversionFactor;
-					case "MICROGRAMS_PER_CUBIC_METER": {
-						const inPpb = AirQuality.ConvertUnit(amount, from, "PARTS_PER_BILLION", stpConversionFactor);
+					case ugm3: {
+						const inPpb = AirQuality.ConvertUnit(amount, from, ppb, stpConversionFactor);
 						return inPpb * stpConversionFactor;
 					}
 					default:
 						return -1;
 				}
-			case "PARTS_PER_BILLION":
+			case ppb:
 				switch (to) {
-					case "PARTS_PER_BILLION":
+					case ppb:
 						return -1;
-					case "PARTS_PER_MILLION":
+					case ppm:
 						return amount * 0.001;
-					case "MILLIGRAMS_PER_CUBIC_METER": {
-						const inPpm = AirQuality.ConvertUnit(amount, from, "PARTS_PER_MILLION", stpConversionFactor);
+					case mgm3: {
+						const inPpm = AirQuality.ConvertUnit(amount, from, ppm, stpConversionFactor);
 						return inPpm * stpConversionFactor;
 					}
-					case "MICROGRAMS_PER_CUBIC_METER":
+					case ugm3:
 						return amount * stpConversionFactor;
 					default:
 						return -1;
 				}
-			case "MILLIGRAMS_PER_CUBIC_METER":
+			case mgm3:
 				switch (to) {
-					case "MILLIGRAMS_PER_CUBIC_METER":
+					case mgm3:
 						return -1;
-					case "MICROGRAMS_PER_CUBIC_METER":
+					case ugm3:
 						return amount * 1000;
-					case "PARTS_PER_MILLION":
+					case ppm:
 						return amount / stpConversionFactor;
-					case "PARTS_PER_BILLION": {
-						const inUgM3 = AirQuality.ConvertUnit(
-							amount,
-							from,
-							"MICROGRAMS_PER_CUBIC_METER",
-							stpConversionFactor,
-						);
+					case ppb: {
+						const inUgM3 = AirQuality.ConvertUnit(amount, from, ugm3, stpConversionFactor);
 						return inUgM3 / stpConversionFactor;
 					}
 					default:
 						return -1;
 				}
-			case "MICROGRAMS_PER_CUBIC_METER":
+			case ugm3:
 				switch (to) {
-					case "MICROGRAMS_PER_CUBIC_METER":
+					case ugm3:
 						return -1;
-					case "MILLIGRAMS_PER_CUBIC_METER":
+					case mgm3:
 						return amount * 0.001;
-					case "PARTS_PER_MILLION": {
-						const inMgM3 = AirQuality.ConvertUnit(
-							amount,
-							from,
-							"MILLIGRAMS_PER_CUBIC_METER",
-							stpConversionFactor,
-						);
+					case ppm: {
+						const inMgM3 = AirQuality.ConvertUnit(amount, from, mgm3, stpConversionFactor);
 						return inMgM3 / stpConversionFactor;
 					}
-					case "PARTS_PER_BILLION":
+					case ppb:
 						return amount / stpConversionFactor;
 					default:
 						return -1;
