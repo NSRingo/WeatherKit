@@ -100,15 +100,15 @@ export default class AirQuality {
 
 		if (Number.isNaN(diff)) {
 			Console.warn("⚠️ CompareCategoryIndex", `Invalid categoryIndex`);
-			return "UNKNOWN";
+			return AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
 		} else {
 			Console.info("✅ CompareCategoryIndex");
 			if (diff === 0) {
-				return "SAME";
+				return AirQuality.Config.CompareCategoryIndexes.SAME;
 			} else if (diff > 0) {
-				return "WORSE";
+				return AirQuality.Config.CompareCategoryIndexes.WORSE;
 			} else {
-				return "BETTER";
+				return AirQuality.Config.CompareCategoryIndexes.BETTER;
 			}
 		}
 	}
@@ -1088,6 +1088,12 @@ export default class AirQuality {
 			pm25: "PM2_5",
 			pm10: "PM10",
 			other: "NOT_AVAILABLE",
+		},
+		CompareCategoryIndexes: {
+			BETTER: "BETTER",
+			SAME: "SAME",
+			UNKNOWN: "UNKNOWN",
+			WORSE: "WORSE",
 		},
 		Units: {
 			WeatherKit: {

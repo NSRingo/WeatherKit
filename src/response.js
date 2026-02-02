@@ -257,7 +257,7 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 			metadata: airQuality.metadata,
 			pollutants: airQuality.pollutants,
 			previousDayComparison: Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange
-				? "UNKNOWN" : airQuality.previousDayComparison,
+				? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : airQuality.previousDayComparison,
 		};
 		Console.info("✅ InjectIndex");
 	}
