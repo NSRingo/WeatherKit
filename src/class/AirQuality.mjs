@@ -188,7 +188,12 @@ export default class AirQuality {
 			const scaleForPollutant = scale.pollutants[pollutantType];
 			const requireConvertUnit = units !== scaleForPollutant.units;
 			const amount = requireConvertUnit
-				? AirQuality.#ConvertUnit(pollutant.amount, units, scaleForPollutant.units, AirQuality.Config.STP.EU[pollutantType] || -1)
+				? AirQuality.#ConvertUnit(
+					pollutant.amount,
+					units,
+					scaleForPollutant.units,
+					AirQuality.Config.STP_ConversionFactor.EU[pollutantType] || -1,
+				)
 				: pollutant.amount;
 
 			if (requireConvertUnit) {
@@ -244,7 +249,12 @@ export default class AirQuality {
 			const scaleForPollutant = scale.pollutants[pollutantType];
 			const requireConvertUnit = units !== scaleForPollutant.units;
 			const amount = requireConvertUnit
-				? AirQuality.#ConvertUnit(pollutant.amount, units, scaleForPollutant.units, AirQuality.Config.STP.US[pollutantType])
+				? AirQuality.#ConvertUnit(
+					pollutant.amount,
+					units,
+					scaleForPollutant.units,
+					AirQuality.Config.STP_ConversionFactor.US[pollutantType] || -1,
+				)
 				: pollutant.amount;
 
 			if (requireConvertUnit) {
@@ -1093,7 +1103,7 @@ export default class AirQuality {
 		 * - 273.15 is the 0 celsius in kelvin.
 		 * - temperatureInCelsius is 25 in US, 20 in EU.
 		 */
-		STP: {
+		STP_ConversionFactor: {
 			US: {
 				OZONE: 1.962, // 48 g/mol
 				SO2: 2.616, // 64 g/mol
