@@ -280,6 +280,23 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 
 async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Settings, Caches, enviroments) {
 	Console.info("☑️ InjectPreviousDayComparison");
+	const isHJ6332012 = (currentIndexProvider, currentScale, Settings) => {
+		switch (currentIndexProvider) {
+			case 'iRingo':
+				return Settings?.AirQuality?.iRingoAlgorithm === 'WAQI_InstantCast_CN';
+			case 'QWeather':
+			case 'ColorfulCloudsCN': {
+				return true;
+			}
+			case 'WeatherKit': {
+				return AirQuality.GetNameFromScale(currentScale)
+					=== AirQuality.Config.Scales.HJ6332012.weatherKitScale.name;
+			}
+			default: {
+				return false;
+			}
+		}
+	};
 	const injectColorfulClouds = async (useUsa, currentCategoryIndex) => {
 		const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(useUsa);
 		airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
@@ -355,34 +372,13 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 		}
 		case "ColorfulCloudsCN": {
 			// Use injected AQI or ColorfulClouds AQI depends on data source
-			switch (currentIndexProvider) {
-				case 'QWeather':
-				case 'ColorfulCloudsCN': {
-					await injectColorfulClouds(false, airQuality.categoryIndex);
-					break;
-				}
-				case 'iRingo': {
-					if (Settings.AirQuality?.iRingoAlgorithm === 'WAQI_InstantCast_CN') {
-						await injectColorfulClouds(false, airQuality.categoryIndex);
-					} else {
-						await injectColorfulClouds(false);
-					}
-					break;
-				}
-				case 'WeatherKit': {
-					if (AirQuality.GetNameFromScale(airQuality?.scale)
-						=== AirQuality.Config.Scales.HJ6332012.weatherKitScale.name) {
-						await injectColorfulClouds(false, airQuality.categoryIndex);
-					} else {
-						await injectColorfulClouds(false);
-					}
-					break;
-				}
-				default: {
-					await injectColorfulClouds(false);
-					break;
-				}
-			}
+			const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(false);
+			airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
+				isHJ6332012(currentIndexProvider, airQuality?.scale, Settings)
+					? airQuality?.categoryIndex
+					: (await enviroments.colorfulClouds.AirQuality(false)).categoryIndex,
+				yesterdayCategoryIndex,
+			);
 			break;
 		}
 		case "ColorfulCloudsUS":
