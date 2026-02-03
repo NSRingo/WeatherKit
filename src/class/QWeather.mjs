@@ -257,7 +257,7 @@ export default class QWeather {
 						categoryIndex: Number.parseInt(body?.now?.level, 10),
 						index: Number.parseInt(body?.now?.aqi, 10),
 						isSignificant: false,
-						pollutants: this.#CreatePollutants(body?.now),
+						pollutants: this.#CreatePollutantsV7(body?.now),
 						previousDayComparison: "UNKNOWN",
 						primaryPollutant: this.#Config.Pollutants[body?.now?.primary] || "NOT_AVAILABLE",
 						scale: "HJ6332012",
@@ -636,40 +636,17 @@ export default class QWeather {
 		return forecastDaily;
 	}
 
-	async HistoricalAir(locationID = new Number(), date = time("yyyyMMdd", Date.now() - 24 * 60 * 60 * 1000)) {
+	async #HistoricalAir(locationID = new Number(), date = time("yyyyMMdd", Date.now() - 24 * 60 * 60 * 1000)) {
 		Console.info("☑️ HistoricalAir", `locationID:${locationID}`, `date: ${date}`);
 		const request = {
 			url: `${this.endpoint}/v7/historical/air/?location=${locationID}&date=${date}`,
 			headers: this.headers,
 		};
-		let airQuality;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.code) {
 				case "200": {
-					const timeStamp = (Date.now() / 1000) | 0;
-					const Hour = new Date().getHours();
-					airQuality = {
-						metadata: {
-							attributionUrl: body?.fxLink,
-							expireTime: timeStamp + 60 * 60,
-							language: "zh-CN", // `${this.language}-${this.country}`, // body?.lang,
-							latitude: this.latitude,
-							longitude: this.longitude,
-							providerLogo: providerNameToLogo("和风天气", this.version),
-							providerName: "和风天气",
-							readTime: timeStamp,
-							reportedTime: timeStamp,
-							temporarilyUnavailable: false,
-							sourceType: "STATION",
-						},
-						categoryIndex: Number.parseInt(body?.airHourly?.[Hour]?.level, 10),
-						index: Number.parseInt(body?.airHourly?.[Hour]?.aqi, 10),
-						pollutants: this.#CreatePollutants(body?.airHourly?.[Hour]),
-						primaryPollutant: this.#Config.Pollutants[body?.airHourly?.[Hour]?.primary] || "NOT_AVAILABLE",
-						scale: "HJ6332012",
-					};
-					break;
+					return body;
 				}
 				case "204":
 				case "400":
@@ -688,7 +665,27 @@ export default class QWeather {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.info("✅ HistoricalAir");
 		}
-		return airQuality;
+		return {};
+	}
+
+	#Metadata(
+		attributionUrl = `https://www.qweather.com/`,
+		sourceType = "MODELED",
+		temporarilyUnavailable = false,
+	) {
+		const timeStamp = Date.now() / 1000;
+		return {
+			longitude: this.longitude,
+			providerName: "和风天气",
+			providerLogo: providerNameToLogo("和风天气", this.version),
+			reportedTime: timeStamp,
+			latitude: this.latitude,
+			expireTime: timeStamp + 60 * 60,
+			attributionUrl,
+			temporarilyUnavailable,
+			readTime: timeStamp,
+			sourceType,
+		};
 	}
 
 	/**
@@ -697,37 +694,34 @@ export default class QWeather {
 	 * @param {Object} pollutantsObj - 污染物对象
 	 * @returns {Object} 修复后的污染物对象
 	 */
-	#CreatePollutants(pollutantsObj = {}) {
-		Console.info("☑️ CreatePollutants");
-		const pollutants = [];
-		for (const [key, value] of Object.entries(pollutantsObj)) {
-			switch (key) {
-				case "co":
-					pollutants.push({
-						amount: Number.parseFloat(value ?? -1),
-						pollutantType: this.#Config.Pollutants[key],
-						units: "MILLIGRAMS_PER_CUBIC_METER",
-					});
-					break;
-				case "no":
-				case "no2":
-				case "so2":
-				case "o3":
-				case "nox":
-				case "pm25":
-				case "pm2p5":
-				case "pm10":
-					pollutants.push({
-						amount: Number.parseFloat(value ?? -1),
-						pollutantType: this.#Config.Pollutants[key],
-						units: "MICROGRAMS_PER_CUBIC_METER",
-					});
-					break;
-			}
+	#CreatePollutantsV7(pollutantsObj) {
+		Console.info("☑️ CreatePollutantsV7");
+
+		Console.info("✅ CreatePollutantsV7");
+		return Object.entries(pollutantsObj).filter(([name]) => this.#Config.Pollutants[name] !== undefined)
+			.map(([name, rawAmount]) => {
+				const amount = Number.parseFloat(rawAmount);
+
+				const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
+				return {
+					amount: name === 'co' ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
+					pollutantType: this.#Config.Pollutants[name],
+					units: ugm3,
+				};
+			});
+	}
+
+	async YesterdayPollutants(locationID) {
+		const historicalAir = await this.#HistoricalAir(locationID);
+		const hour = new Date().getHours();
+		return {
+			metadata: this.#Metadata(historicalAir.fxLink),
+			categoryIndex: Number.parseInt(historicalAir.airHourly[hour].level, 10),
+			index: Number.parseInt(historicalAir.airHourly[hour].aqi, 10),
+			pollutants: this.#CreatePollutantsV7(historicalAir.airHourly[hour]),
+			primaryPollutant: this.#Config.Pollutants[historicalAir.airHourly[hour].primary] || "NOT_AVAILABLE",
+			scale: AirQuality.ToWeatherKitScale(AirQuality.Config.Scales.HJ6332012.weatherKitScale),
 		}
-		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
-		Console.info("✅ CreatePollutants");
-		return pollutants;
 	}
 
 	#ConvertTimeStamp(fxDate, time) {
