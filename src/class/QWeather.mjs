@@ -625,7 +625,7 @@ export default class QWeather {
 	}
 
 	async #HistoricalAir(locationID = new Number(), date = time("yyyyMMdd", Date.now() - 24 * 60 * 60 * 1000)) {
-		Console.info("☑️ HistoricalAir", `locationID:${locationID}`, `date: ${date}`);
+		Console.info("☑️ HistoricalAir", `locationID: ${locationID}`, `date: ${date}`);
 		const request = {
 			url: `${this.endpoint}/v7/historical/air/?location=${locationID}&date=${date}`,
 			headers: this.headers,
@@ -699,9 +699,11 @@ export default class QWeather {
 			});
 	}
 
-	async YesterdayPollutants(locationID) {
+	async YesterdayAirQuality(locationID) {
+		Console.info("☑️ YesterdayAirQuality");
 		const historicalAir = await this.#HistoricalAir(locationID);
 		const hour = new Date().getHours();
+		Console.info("✅ YesterdayAirQuality");
 		return {
 			metadata: this.#Metadata(historicalAir.fxLink),
 			categoryIndex: Number.parseInt(historicalAir.airHourly[hour].level, 10),
