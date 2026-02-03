@@ -365,9 +365,7 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 				Settings,
 			);
 
-			if (algorithm === '') {
-				airQuality.previousDayComparison = AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
-			} else {
+			if (algorithm !== '') {
 				switch (Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider) {
 					case "QWeather": {
 						const locations = await QWeather.GetLocations(Caches?.qweather, setQWeatherCache);
