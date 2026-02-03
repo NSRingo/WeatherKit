@@ -304,9 +304,9 @@ async function InjectPreviousDayComparison(airQuality, Settings, Caches, envirom
 				}
 				case 'iRingo':
 				case 'WeatherKit': {
-					const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(false);
 					switch (AirQuality.GetNameFromScale(airQuality?.scale)) {
 						case AirQuality.Config.Scales.HJ6332012.weatherKitScale.name: {
+							const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(false);
 							airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
 								airQuality.index, yesterdayCategoryIndex);
 							break;
