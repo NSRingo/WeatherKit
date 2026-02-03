@@ -42,6 +42,48 @@ export default class QWeather {
 		},
 	};
 
+	static async GetLocations(Caches, Storage) {
+		Console.info("☑️ GetLocations");
+		const locations = Caches?.qweather?.locations;
+		// cache within 30 days
+		if (locations?.lastUpdated && locations.lastUpdated + 30 * 24 * 60 * 60 * 1000 > Date.now()) {
+			Console.info("✅ GetLocations", "Cache found!");
+			return locations.data;
+		} else {
+			Console.info("⚠️ GetLocations", "Cache not found or stale, fetching...");
+			const response = await fetch({
+				headers: locations?.etag ? { "If-None-Match": locations?.etag } : undefined,
+				url: 'https://raw.githubusercontent.com/NSRingo/WeatherKit/refs/heads/main/data/qweather-locations-grid.json',
+			});
+
+			if (response.status === 304) {
+				Console.info("✅ GetLocations", "Cache not modified");
+				Storage.setItem(
+					"@iRingo.WeatherKit.Caches",
+					{
+						...Caches,
+						qweather: { ...Caches?.qweather, locations: { ...locations, lastUpdated: Date.now() } },
+					},
+				);
+				return locations.data;
+			}
+
+			const newLocations = JSON.parse(response.body);
+			Storage.setItem(
+				"@iRingo.WeatherKit.Caches",
+				{
+					...Caches,
+					qweather: {
+						...Caches?.qweather,
+						locations: { etag: response.headers.get("ETag"), lastUpdated: Date.now(), data: newLocations },
+					},
+				},
+			);
+			Console.info("✅ GetLocations");
+			return newLocations;
+		}
+	}
+
 	// Codes by Claude AI
 	GetLocationID(locations, lat, lng) {
 		const { gridSize, grid } = locations;
