@@ -73,7 +73,7 @@ export default class QWeather {
 	}
 
 	// Codes by Claude AI
-	GetLocationID(locations, lat, lng) {
+	static GetLocationID(locations, lat, lng) {
 		const { gridSize, grid } = locations;
 
 		// Haversine距离计算
