@@ -1,4 +1,4 @@
-name: Build QWeather Location Grid
+name: Build QWeather Locations Grid
 
 on:
   workflow_dispatch:
