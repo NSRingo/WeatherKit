@@ -350,24 +350,34 @@ export default class ColorfulClouds {
 	/**
 	 * 创建WeatherKit格式的污染物对象
 	 * @link https://docs.caiyunapp.com/weather-api/v2/v2.6/1-realtime.html
-	 * @returns {Promise<{amount: number, pollutantType: string, units: string}[]>}
+	 * @returns {Array<{amount: number, pollutantType: string, units: string}>}
 	 */
-	async Pollutants() {
-		Console.info("☑️ Pollutants");
-		const realtime = await this.#RealTime();
-		const airQuality = realtime?.result?.realtime?.air_quality;
-		if (!airQuality || airQuality?.description?.usa === "") {
-			Console.error("❌ Pollutants", `Failed to get air_quality data`);
+	#CreatePollutants(realtimeAirQuality) {
+		Console.info("☑️ CreatePollutants");
+		if (realtimeAirQuality?.description?.usa === "") {
+			Console.error("❌ CreatePollutants", `Failed to get air_quality data`);
 			return [];
 		}
 
-		Console.info("✅ Pollutants");
+		Console.info("✅ CreatePollutants");
 		const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
-		return Object.entries(airQuality).map(([name, amount]) => ({
+		return Object.entries(realtimeAirQuality).map(([name, amount]) => ({
 			amount: name === 'co' ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
 			pollutantType: this.#Config.Pollutants[name],
 			units: ugm3,
 		}));
+	}
+
+	async Pollutants() {
+		Console.info("☑️ Pollutants");
+		const realtime = await this.#RealTime();
+		if (!realtime.result) {
+			Console.error("❌ Pollutants", "Failed to get realtime data");
+			return [];
+		}
+
+		Console.info("✅ Pollutants");
+		return this.#CreatePollutants(realtime.result.realtime.air_quality);
 	}
 
 	async AirQuality(useUsa = true, forcePrimaryPollutant = false) {
@@ -382,7 +392,7 @@ export default class ColorfulClouds {
 
 		const particularAirQuality = {
 			metadata: this.#Metadata(realtime.result.realtime.air_quality.obs_time, realtime.location),
-			pollutants: await this.Pollutants(),
+			pollutants: this.#CreatePollutants(realtime.result.realtime.air_quality),
 			previousDayComparison: "UNKNOWN",
 		};
 
