@@ -287,13 +287,64 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 			yesterdayCategoryIndex,
 		);
 	};
+	const setQWeatherCache = (qweatherCache) => {
+		Caches.qweather = qweatherCache;
+		Storage.setItem("@iRingo.WeatherKit.Caches", { ...Caches, qweather: qweatherCache });
+	};
+	const chooseAlogrithm = (currentIndexProvider, airQuality, Settings) => {
+		switch (currentIndexProvider) {
+			case 'iRingo':
+				return Settings?.AirQuality?.iRingoAlgorithm;
+			case 'QWeather':
+			case 'ColorfulCloudsCN': {
+				return 'WAQI_InstantCast_CN';
+			}
+			case 'WeatherKit': {
+				const currentScale = AirQuality.GetNameFromScale(airQuality?.scale);
+				const scales = AirQuality.Config.Scales;
+				if (currentScale === scales.HJ6332012.weatherKitScale.name) {
+					return 'WAQI_InstantCast_CN';
+				} else if (currentScale === scales.EPA_NowCast.weatherKitScale.name) {
+					return 'WAQI_InstantCast_US';
+				} else {
+					const supportedScales = [scales.EU_EAQI.weatherKitScale.name, scales.UBA.weatherKitScale.name];
+					if (supportedScales.includes(currentScale)) {
+						return currentScale;
+					}
+
+					return '';
+				}
+			}
+			default: {
+				return '';
+			}
+		}
+	}
 
 	switch (Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider) {
 		case "iRingo": {
-			switch (Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider) {
-				case "QWeather": {
-					// TODO
-					break;
+			const algorithm = chooseAlogrithm(
+				Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider,
+				airQuality,
+				Settings,
+			);
+
+			if (algorithm === '') {
+				airQuality.previousDayComparison = AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
+			} else {
+				switch (Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider) {
+					case "QWeather": {
+						const locations = await QWeather.GetLocations(Caches?.qweather, setQWeatherCache);
+						const { latitude, longitude } = enviroments.qWeather;
+						const locationID = QWeather.GetLocationID(locations, latitude, longitude);
+						const pollutants = await enviroments.qWeather.YesterdayAirQuality(locationID).pollutants;
+
+						const yesterdayCategoryIndex = GetAirQualityFromPollutants(pollutants, algorithm).categoryIndex;
+						airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
+							airQuality.categoryIndex, yesterdayCategoryIndex,
+						);
+						break;
+					}
 				}
 			}
 			break;
