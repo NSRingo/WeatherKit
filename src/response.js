@@ -277,6 +277,14 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 
 async function InjectPreviousDayComparison(airQuality, Settings, Caches, enviroments) {
 	Console.info("☑️ InjectPreviousDayComparison");
+	const injectColorfulClouds = async (useUsa, currentCategoryIndex) => {
+		const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(useUsa);
+		airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
+			currentCategoryIndex ?? (await enviroments.colorfulClouds.AirQuality(useUsa)).categoryIndex,
+			yesterdayCategoryIndex,
+		);
+	};
+
 	switch (Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider) {
 		case "iRingo": {
 			switch (Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider) {
@@ -292,32 +300,34 @@ async function InjectPreviousDayComparison(airQuality, Settings, Caches, envirom
 			break;
 		}
 		case "ColorfulCloudsCN": {
+			// Use injected AQI or ColorfulClouds AQI depends on data source
 			const currentIndexProvider = !CurrentFill.test(parameters.country)
 				? 'WeatherKit' : Settings?.AirQuality?.Current?.Index?.Provider;
 			switch (currentIndexProvider) {
 				case 'QWeather':
 				case 'ColorfulCloudsCN': {
-					const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(false);
-					airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
-						airQuality.index, yesterdayCategoryIndex);
+					await injectColorfulClouds(false, airQuality.categoryIndex);
 					break;
 				}
-				case 'iRingo':
-				case 'WeatherKit': {
-					switch (AirQuality.GetNameFromScale(airQuality?.scale)) {
-						case AirQuality.Config.Scales.HJ6332012.weatherKitScale.name: {
-							const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(false);
-							airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
-								airQuality.index, yesterdayCategoryIndex);
-							break;
-						}
+				case 'iRingo': {
+					if (Settings.AirQuality?.iRingoAlgorithm === 'WAQI_InstantCast_CN') {
+						await injectColorfulClouds(false, airQuality.categoryIndex);
+					} else {
+						await injectColorfulClouds(false);
 					}
+					break;
+				}
+				case 'WeatherKit': {
+					if (AirQuality.GetNameFromScale(airQuality?.scale)
+						=== AirQuality.Config.Scales.HJ6332012.weatherKitScale.name) {
+						await injectColorfulClouds(false, airQuality.categoryIndex);
+					} else {
+						await injectColorfulClouds(false);
+					}
+					break;
 				}
 				default: {
-					const currentAirQuality = await enviroments.colorfulClouds.AirQuality(false);
-					const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(false);
-					airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
-						currentAirQuality.categoryIndex, yesterdayCategoryIndex);
+					await injectColorfulClouds(false);
 					break;
 				}
 			}
@@ -331,17 +341,12 @@ async function InjectPreviousDayComparison(airQuality, Settings, Caches, envirom
 				// They are different and cannot be compared directly
 				case 'WAQI':
 				case 'ColorfulCloudsUS': {
-					const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(true);
-					airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
-						airQuality.index, yesterdayCategoryIndex);
+					await injectColorfulClouds(true, airQuality.categoryIndex);
 					break;
 				}
 				// Fallback to compare indexes from ColorfulClouds
 				default: {
-					const currentAirQuality = await enviroments.colorfulClouds.AirQuality(true);
-					const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(true);
-					airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
-						currentAirQuality.categoryIndex, yesterdayCategoryIndex);
+					await injectColorfulClouds(true);
 					break;
 				}
 			}
