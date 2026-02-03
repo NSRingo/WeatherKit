@@ -22,7 +22,7 @@ jobs:
           node-version: '25'
 
       - name: Build grid JSON
-        run: node scripts/build-location-grid.js
+        run: node scripts/build-qweather-locations-grid.js
 
       - name: Commit & push if changed
         run: |
