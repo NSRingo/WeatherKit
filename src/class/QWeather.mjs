@@ -1,4 +1,4 @@
-import { Console, fetch, Lodash as _, time } from "@nsnanocat/util";
+import { Console, fetch, Lodash as _, time, Storage } from "@nsnanocat/util";
 import Weather from "./Weather.mjs";
 import AirQuality from "../class/AirQuality.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
@@ -42,7 +42,7 @@ export default class QWeather {
 		},
 	};
 
-	static async GetLocations(Caches, Storage) {
+	static async GetLocations(Caches) {
 		Console.info("☑️ GetLocations");
 		const locations = Caches?.qweather?.locations;
 		// cache within 30 days
