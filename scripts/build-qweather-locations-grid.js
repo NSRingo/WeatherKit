@@ -7,9 +7,12 @@ const CSV_URL =
 function fetchCSV(url) {
   return new Promise((resolve, reject) => {
     https.get(url, res => {
-      let data = '';
-      res.on('data', chunk => (data += chunk));
-      res.on('end', () => resolve(data));
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        resolve(buffer.toString('utf8'));
+      });
     }).on('error', reject);
   });
 }
