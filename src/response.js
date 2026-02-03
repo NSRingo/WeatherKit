@@ -316,10 +316,10 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 			}
 		}
 	};
-	const injectColorfulClouds = async (useUsa, currentCategoryIndex) => {
+	const colorfulCloudsComparison = async (useUsa, useCurrent, currentCategoryIndex) => {
 		const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(useUsa);
-		airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
-			currentCategoryIndex ?? (await enviroments.colorfulClouds.AirQuality(useUsa)).categoryIndex,
+		return AirQuality.CompareCategoryIndexes(
+			useCurrent ? currentCategoryIndex : (await enviroments.colorfulClouds.AirQuality(useUsa)).categoryIndex,
 			yesterdayCategoryIndex,
 		);
 	};
@@ -391,24 +391,20 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 		}
 		case "ColorfulCloudsCN": {
 			// Use injected AQI or ColorfulClouds AQI depends on data source
-			const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(false);
-			airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
-				isHJ6332012(currentIndexProvider, airQuality?.scale, Settings)
-					? airQuality?.categoryIndex
-					: (await enviroments.colorfulClouds.AirQuality(false)).categoryIndex,
-				yesterdayCategoryIndex,
+			airQuality.previousDayComparison = colorfulCloudsComparison(
+				false,
+				isHJ6332012(currentIndexProvider, airQuality?.scale, Settings),
+				airQuality?.categoryIndex,
 			);
 			break;
 		}
 		case "ColorfulCloudsUS":
 		default: {
-			const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(true);
-			airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
-				isEPA454_B18007(currentIndexProvider)
-					? airQuality?.categoryIndex
-					: (await enviroments.colorfulClouds.AirQuality(true)).categoryIndex,
-				yesterdayCategoryIndex,
-			);
+			airQuality.previousDayComparison = colorfulCloudsComparison(
+				true,
+				isEPA454_B18007(currentIndexProvider),
+				airQuality?.categoryIndex,
+			)
 			break;
 		}
 	}
