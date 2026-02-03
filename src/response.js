@@ -1,4 +1,4 @@
-import { $app, Console, done, Lodash as _, Storage } from "@nsnanocat/util";
+import { $app, Console, done, Lodash as _ } from "@nsnanocat/util";
 import database from "./function/database.mjs";
 import setENV from "./function/setENV.mjs";
 import * as flatbuffers from "flatbuffers";
