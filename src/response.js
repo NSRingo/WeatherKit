@@ -298,7 +298,7 @@ async function InjectPreviousDayComparison(airQuality, Settings, Caches, envirom
 				case 'QWeather':
 				case 'ColorfulCloudsCN': {
 					const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(false);
-					airQuality.previousDayComparison = AirQuality.CompareCategoryIndex(
+					airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
 						airQuality.index, yesterdayCategoryIndex);
 					break;
 				}
@@ -307,7 +307,7 @@ async function InjectPreviousDayComparison(airQuality, Settings, Caches, envirom
 					const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(false);
 					switch (AirQuality.GetNameFromScale(airQuality?.scale)) {
 						case AirQuality.Config.Scales.HJ6332012.weatherKitScale.name: {
-							airQuality.previousDayComparison = AirQuality.CompareCategoryIndex(
+							airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
 								airQuality.index, yesterdayCategoryIndex);
 							break;
 						}
@@ -316,7 +316,7 @@ async function InjectPreviousDayComparison(airQuality, Settings, Caches, envirom
 				default: {
 					const currentAirQuality = await enviroments.colorfulClouds.AirQuality(false);
 					const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(false);
-					airQuality.previousDayComparison = AirQuality.CompareCategoryIndex(
+					airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
 						currentAirQuality.categoryIndex, yesterdayCategoryIndex);
 					break;
 				}
@@ -332,7 +332,7 @@ async function InjectPreviousDayComparison(airQuality, Settings, Caches, envirom
 				case 'WAQI':
 				case 'ColorfulCloudsUS': {
 					const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(true);
-					airQuality.previousDayComparison = AirQuality.CompareCategoryIndex(
+					airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
 						airQuality.index, yesterdayCategoryIndex);
 					break;
 				}
@@ -340,7 +340,7 @@ async function InjectPreviousDayComparison(airQuality, Settings, Caches, envirom
 				default: {
 					const currentAirQuality = await enviroments.colorfulClouds.AirQuality(true);
 					const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(true);
-					airQuality.previousDayComparison = AirQuality.CompareCategoryIndex(
+					airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
 						currentAirQuality.categoryIndex, yesterdayCategoryIndex);
 					break;
 				}
