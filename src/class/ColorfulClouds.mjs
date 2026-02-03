@@ -332,11 +332,12 @@ export default class ColorfulClouds {
 		temporarilyUnavailable = false,
 	) {
 		const timeStamp = Math.trunc(Date.now() / 1000);
+		const [latitude, longitude] = location;
 		return {
-			longitude: location[1],
+			longitude,
 			providerName: "彩云天气",
 			reportedTime: reportedTime ?? timeStamp,
-			latitude: location[0],
+			latitude,
 			expireTime: timeStamp + 60 * 60,
 			attributionUrl: "https://www.caiyunapp.com/h5",
 			providerLogo: providerNameToLogo("彩云天气", this.version),
