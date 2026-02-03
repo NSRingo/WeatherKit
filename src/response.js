@@ -297,6 +297,17 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 			}
 		}
 	};
+	const isEPA454_B18007 = (currentIndexProvider) => {
+		switch (currentIndexProvider) {
+			case 'WAQI':
+			case 'ColorfulCloudsUS': {
+				return true;
+			}
+			default: {
+				return false;
+			}
+		}
+	};
 	const injectColorfulClouds = async (useUsa, currentCategoryIndex) => {
 		const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(useUsa);
 		airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
@@ -383,21 +394,13 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 		}
 		case "ColorfulCloudsUS":
 		default: {
-			const currentIndexProvider = Settings?.AirQuality?.Current?.Index?.Provider;
-			switch (currentIndexProvider) {
-				// Data in EPA_NowCast from WeatherKit and iRingo is EPA-454/B-24-002
-				// They are different and cannot be compared directly
-				case 'WAQI':
-				case 'ColorfulCloudsUS': {
-					await injectColorfulClouds(true, airQuality.categoryIndex);
-					break;
-				}
-				// Fallback to compare indexes from ColorfulClouds
-				default: {
-					await injectColorfulClouds(true);
-					break;
-				}
-			}
+			const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(true);
+			airQuality.previousDayComparison = AirQuality.CompareCategoryIndexes(
+				isEPA454_B18007(currentIndexProvider)
+					? airQuality?.categoryIndex
+					: (await enviroments.colorfulClouds.AirQuality(true)).categoryIndex,
+				yesterdayCategoryIndex,
+			);
 			break;
 		}
 	}
