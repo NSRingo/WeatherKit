@@ -122,19 +122,21 @@ Console.info(`FORMAT: ${FORMAT}`);
 									}
 
 									const CurrentFill = new RegExp(Settings?.AirQuality?.Current?.Fill || '(?!)');
-									if (CurrentFill.test(parameters.country)) {
+									const isCurrentFill = CurrentFill.test(parameters.country);
+									if (isCurrentFill) {
 										// InjectPollutants
 										await InjectPollutants(body.airQuality, Settings, enviroments);
-										// InjectIndex
-										if (
-											!body?.airQuality?.scale || (
-												Array.isArray(Settings.AirQuality.Current?.Index?.Replace)
-												&& Settings.AirQuality.Current?.Index?.Replace.includes(
-													AirQuality.GetNameFromScale(body.airQuality.scale))
-											)
-										) {
-											await InjectIndex(body.airQuality, Settings, enviroments);
-										}
+									}
+
+									// InjectIndex
+									const needFillIndex = isCurrentFill && !body?.airQuality?.scale;
+									const scaleReplaceList = Array.isArray(Settings.AirQuality.Current?.Index?.Replace)
+										? Settings.AirQuality.Current?.Index?.Replace : [];
+									const needReplaceIndex = scaleReplaceList.includes(
+										AirQuality.GetNameFromScale(body.airQuality.scale));
+									const needInjectIndex = needFillIndex || needReplaceIndex;
+									if (needInjectIndex) {
+										await InjectIndex(body.airQuality, Settings, enviroments);
 									}
 
 									const ComparisonFill = new RegExp(Settings?.AirQuality?.Comparison?.Fill || '(?!)');
@@ -145,8 +147,10 @@ Console.info(`FORMAT: ${FORMAT}`);
 												!previousDayComparison
 												|| previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN
 											) {
+												const currentIndexProvider = needInjectIndex
+													? 'WeatherKit' : Settings.AirQuality.Current?.Index?.Provider;
 												await InjectPreviousDayComparison(
-													body.airQuality, Settings, Caches, enviroments);
+													body.airQuality, currentIndexProvider, Settings, Caches, enviroments);
 											}
 										}
 									}
@@ -274,7 +278,7 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 	}
 }
 
-async function InjectPreviousDayComparison(airQuality, Settings, Caches, enviroments) {
+async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Settings, Caches, enviroments) {
 	Console.info("☑️ InjectPreviousDayComparison");
 	const injectColorfulClouds = async (useUsa, currentCategoryIndex) => {
 		const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(useUsa);
@@ -300,8 +304,6 @@ async function InjectPreviousDayComparison(airQuality, Settings, Caches, envirom
 		}
 		case "ColorfulCloudsCN": {
 			// Use injected AQI or ColorfulClouds AQI depends on data source
-			const currentIndexProvider = !CurrentFill.test(parameters.country)
-				? 'WeatherKit' : Settings?.AirQuality?.Current?.Index?.Provider;
 			switch (currentIndexProvider) {
 				case 'QWeather':
 				case 'ColorfulCloudsCN': {
