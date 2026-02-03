@@ -280,6 +280,10 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 
 async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Settings, Caches, enviroments) {
 	Console.info("☑️ InjectPreviousDayComparison");
+	/**
+	 * HJ 633—2012
+	 * [环境空气质量指数（AQI）技术规定（试行）_中华人民共和国生态环境部]{@link https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/jcffbz/201203/t20120302_224166.shtml}
+	 */
 	const isHJ6332012 = (currentIndexProvider, currentScale, Settings) => {
 		switch (currentIndexProvider) {
 			case 'iRingo':
@@ -297,6 +301,10 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 			}
 		}
 	};
+	/**
+	 * EPA 454/B-18-007
+	 * [Technical Assistance Document for the Reporting of Daily Air Quality – the Air Quality Index (AQI)]{@link https://www.airnow.gov/sites/default/files/2020-05/aqi-technical-assistance-document-sept2018.pdf}
+	 */
 	const isEPA454_B18007 = (currentIndexProvider) => {
 		switch (currentIndexProvider) {
 			case 'WAQI':
