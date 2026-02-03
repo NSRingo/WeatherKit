@@ -200,6 +200,24 @@ async function InjectPollutants(airQuality, Settings, enviroments) {
 	Console.info("✅ InjectPollutants");
 }
 
+function GetAirQualityFromPollutants(pollutants, algorithmSetting) {
+	switch (algorithmSetting) {
+		case "EU_EAQI": {
+			return AirQuality.PollutantsToEULike(pollutants);
+		}
+		case "WAQI_InstantCast_US": {
+			return AirQuality.PollutantsToInstantCastLike(pollutants);
+		}
+		case "WAQI_InstantCast_CN": {
+			return AirQuality.PollutantsToInstantCastLike(pollutants, AirQuality.Config.Scales.WAQI_InstantCast_CN);
+		}
+		case "UBA":
+		default: {
+			return AirQuality.PollutantsToEULike(pollutants, AirQuality.Config.Scales.UBA);
+		}
+	}
+}
+
 /**
  * 注入空气质量数据
  * @param {any} airQuality - 空气质量数据对象
@@ -225,26 +243,7 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 		}
 		case "iRingo":
 		default: {
-			switch (Settings.AirQuality?.iRingoAlgorithm) {
-				case "EU_EAQI": {
-					newAirQuality = AirQuality.PollutantsToEULike(airQuality.pollutants);
-					break;
-				}
-				case "WAQI_InstantCast_US": {
-					newAirQuality = AirQuality.PollutantsToInstantCastLike(airQuality.pollutants);
-					break;
-				}
-				case "WAQI_InstantCast_CN": {
-					newAirQuality = AirQuality.PollutantsToInstantCastLike(
-						airQuality.pollutants, AirQuality.Config.Scales.WAQI_InstantCast_CN);
-					break;
-				}
-				case "UBA":
-				default: {
-					newAirQuality = AirQuality.PollutantsToUBA(airQuality.pollutants, AirQuality.Config.Scales.UBA);
-					break;
-				}
-			}
+			newAirQuality = GetAirQualityFromPollutants(airQuality.pollutants, Settings.AirQuality.iRingoAlgorithm);
 			break;
 		}
 		case "WAQI": {
