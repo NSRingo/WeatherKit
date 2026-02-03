@@ -93,16 +93,16 @@ export default class AirQuality {
 		return categoryIndex;
 	}
 
-	static CompareCategoryIndex(todayCategoryIndex, yesterdayCategoryIndex) {
-		Console.info("☑️ CompareCategoryIndex", `todayCategoryIndex: ${todayCategoryIndex}`, `yesterdayCategoryIndex: ${yesterdayCategoryIndex}`);
+	static CompareCategoryIndexes(todayCategoryIndex, yesterdayCategoryIndex) {
+		Console.info("☑️ CompareCategoryIndexes", `todayCategoryIndex: ${todayCategoryIndex}`, `yesterdayCategoryIndex: ${yesterdayCategoryIndex}`);
 
 		const diff = Number(todayCategoryIndex) - Number(yesterdayCategoryIndex);
 
 		if (Number.isNaN(diff)) {
-			Console.warn("⚠️ CompareCategoryIndex", `Invalid categoryIndex`);
+			Console.warn("⚠️ CompareCategoryIndexes", `Invalid categoryIndex`);
 			return AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
 		} else {
-			Console.info("✅ CompareCategoryIndex");
+			Console.info("✅ CompareCategoryIndexes");
 			if (diff === 0) {
 				return AirQuality.Config.CompareCategoryIndexes.SAME;
 			} else if (diff > 0) {
