@@ -360,7 +360,7 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 			Storage.setItem("@iRingo.WeatherKit.Caches", { ...Caches, qweather: qweatherCache });
 		};
 
-		const locationsGrid = await QWeather.GetLocations(Caches?.qweather, setQWeatherCache);
+		const locationsGrid = await QWeather.GetLocationsGrid(Caches?.qweather, setQWeatherCache);
 		const { latitude, longitude } = enviroments.qWeather;
 		const locationID = QWeather.GetLocationID(locationsGrid, latitude, longitude);
 		const yesterdayAirQuality = await enviroments.qWeather.YesterdayAirQuality(locationID);
