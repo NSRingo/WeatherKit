@@ -16,6 +16,7 @@ export default class QWeather {
 		this.latitude = parameters.latitude;
 		this.longitude = parameters.longitude;
 		this.country = parameters.country;
+		this.stations;
 	}
 
 	#Config = {
@@ -273,7 +274,7 @@ export default class QWeather {
 		return airQuality;
 	}
 
-	async AirQualityCurrent() {
+	async #AirQualityCurrent() {
 		Console.info("☑️ AirQualityCurrent");
 		const request = {
 			url: `${this.endpoint}/airquality/v1/current/${this.latitude}/${this.longitude}`,
@@ -284,37 +285,10 @@ export default class QWeather {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.error) {
 				case undefined: {
-					const timeStamp = (Date.now() / 1000) | 0;
-					airQuality = {
-						metadata: {
-							attributionUrl: request.url,
-							expireTime: timeStamp + 60 * 60,
-							language: "zh-CN", // `${this.language}-${this.country}`,
-							latitude: this.latitude,
-							longitude: this.longitude,
-							providerLogo: providerNameToLogo("和风天气", this.version),
-							providerName: "和风天气",
-							readTime: timeStamp,
-							reportedTime: timeStamp,
-							temporarilyUnavailable: false,
-							sourceType: "STATION",
-							stationID: body?.stations?.[0]?.id,
-						},
-						categoryIndex: Number.parseInt(body?.indexes?.[0]?.level, 10),
-						index: body?.indexes?.[0]?.aqi,
-						isSignificant: false,
-						pollutants: body?.pollutants?.map(pollutant => {
-							pollutant.pollutantType = this.#Config.Pollutants[pollutant?.code];
-							pollutant.amount = pollutant?.concentration?.value;
-							pollutant.units = this.#Config.Units[pollutant?.concentration?.unit];
-							return pollutant;
-						}),
-						previousDayComparison: "UNKNOWN",
-						primaryPollutant: this.#Config.Pollutants[body?.indexes?.[0]?.primaryPollutant?.code] || "NOT_AVAILABLE",
-						scale: "HJ6332012",
-					};
-					if (body?.stations?.[0]?.name) airQuality.metadata.providerName += `\n数据源: ${body?.stations?.[0]?.name}检测站`;
-					break;
+					if (Array.isArray(body.stations)) {
+						this.stations = body.stations;
+					}
+					return body;
 				}
 				default:
 					throw Error(JSON.stringify(body?.error, null, 2));
@@ -676,6 +650,29 @@ export default class QWeather {
 		};
 	}
 
+	#CreatePollutants(pollutantsObj) {
+		Console.info("☑️ CreatePollutants");
+
+		Console.info("✅ CreatePollutants");
+		// TODO: what is ppmC?
+		return pollutantsObj.filter((pollutant) => pollutant.concentration.unit !== "ppmC")
+			.map(({ code, concentration }) => {
+				const { value, unit } = concentration;
+				const pollutantType = this.#Config.Pollutants[code];
+
+				const friendlyUnits = AirQuality.Config.Units.Friendly;
+				const { ugm3, mgm3, ppb, ppm } = AirQuality.Config.Units.WeatherKit;
+				switch (unit) {
+					case friendlyUnits.MILLIGRAMS_PER_CUBIC_METER:
+						return { pollutantType, amount: AirQuality.ConvertUnit(value, mgm3, ugm3), units: ugm3 };
+					case friendlyUnits.PARTS_PER_MILLION:
+						return { pollutantType, amount: AirQuality.ConvertUnit(value, ppm, ppb), units: ppb };
+					default:
+						return { pollutantType, amount: value, units: this.#Config.Units[unit] };
+				};
+			});
+	}
+
 	/**
 	 * 创建苹果格式的污染物对象
 	 * @link https://dev.qweather.com/docs/resource/unit/
@@ -697,6 +694,120 @@ export default class QWeather {
 					units: ugm3,
 				};
 			});
+	}
+
+	async AirQuality(forcePrimaryPollutant = false) {
+		const findSupportedIndex = (indexes) => {
+			const supportedCodes = ['cn-mee', 'cn-mee-1h', 'eu-eea', 'us-epa', 'us-epa-nc'];
+			for (const index of indexes) {
+				if (supportedCodes.includes(index.code)) {
+					return index;
+				}
+			}
+
+			return {};
+		};
+
+		const indexCodeToScale = (code) => {
+			switch (code) {
+				// We don't need calcualtion so they are same
+				case 'cn-mee':
+				case 'cn-mee-1h':
+					return AirQuality.Config.Scales.HJ6332012;
+				case 'us-epa':
+				case 'us-epa-nc':
+					return AirQuality.Config.Scales.EPA_NowCast;
+				case 'eu-eea':
+					return AirQuality.Config.Scales.EU_EAQI;
+				default:
+					return {};
+			}
+		};
+
+		const getPrimaryPollutant = (scaleCode, pollutants) => {
+			Console.info("☑️ getPrimaryPollutant", `scaleCode = ${scaleCode}`);
+			if (pollutants.length === 0) {
+				Console.warn("⚠️ getPrimaryPollutant", "pollutants is empty!");
+				return "NOT_AVAILABLE";
+			}
+
+			const pollutantIndexes = pollutants.map((pollutant) => {
+				const pollutantType = this.#Config.Pollutants[pollutant.code];
+				for (const index of pollutant.subIndexes) {
+					if (index.code === scaleCode) {
+						return { pollutantType, aqi: index.aqi };
+					}
+				}
+
+				Console.warn("⚠️ getPrimaryPollutant", `No index of ${pollutantType} found for required scale`);
+				return { pollutantType, aqi: -1 };
+			});
+			const primaryPollutant = pollutantIndexes.reduce(
+				(previous, current) => previous.aqi > current.aqi ? previous : current,
+			);
+
+			if (primaryPollutant.aqi < 0) {
+				Console.warn("⚠️ getPrimaryPollutant", "No any valid sub-index");
+				return "NOT_AVAILABLE";
+			}
+
+			Console.info("✅ getPrimaryPollutant");
+			return primaryPollutant.pollutantType;
+		};
+
+		Console.info("☑️ AirQuality");
+		const airQualityCurrent = await this.#AirQualityCurrent();
+
+		const particularAirQuality = {
+			pollutants: this.#CreatePollutants(airQualityCurrent.pollutants),
+			previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
+		};
+
+		const supportedIndex = findSupportedIndex(airQualityCurrent.indexes);
+		const scale = indexCodeToScale(supportedIndex?.code);
+
+		if (!supportedIndex?.code || !scale?.categories) {
+			Console.error("❌ AirQuality", "No supported index found");
+			Console.debug(
+				"airQualityCurrent.indexes[].code = "
+					+ `${JSON.stringify(airQualityCurrent.indexes?.map(({ code }) => code))}`
+			);
+			return {
+				metadata: this.#Metadata(
+					// TODO: &lang=zh
+					`https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`,
+					undefined,
+					true,
+				),
+				...particularAirQuality,
+			};
+		}
+
+		const categoryIndex = Number.parseInt(supportedIndex.level, 10);
+		const apiPrimaryPollutant = this.#Config.Pollutants[supportedIndex.primaryPollutant.code] || "NOT_AVAILABLE";
+
+		if (!forcePrimaryPollutant && apiPrimaryPollutant === "NOT_AVAILABLE") {
+			Console.warn(
+				"⚠️ AirQuality",
+				"Max index of pollutants is less than 50, primaryPollutant will be NOT_AVAILABLE.",
+			);
+		}
+
+		Console.info("✅ AirQuality");
+		return {
+			metadata: this.#Metadata(
+				// TODO: &lang=zh
+				`https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`,
+			),
+			categoryIndex,
+			index: supportedIndex.aqi,
+			isSignificant: categoryIndex >= scale.categories.significantIndex,
+			...particularAirQuality,
+			primaryPollutant: forcePrimaryPollutant && apiPrimaryPollutant === "NOT_AVAILABLE"
+				? getPrimaryPollutant(supportedIndex.code, airQualityCurrent.pollutants)
+				: apiPrimaryPollutant,
+			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
+		}
 	}
 
 	async YesterdayAirQuality(locationID) {
