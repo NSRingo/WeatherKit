@@ -142,11 +142,13 @@ Console.info(`FORMAT: ${FORMAT}`);
 									const ComparisonFill = new RegExp(Settings?.AirQuality?.Comparison?.Fill || '(?!)');
 									if (ComparisonFill.test(parameters.country)) {
 										if (body?.airQuality) {
+											const { UNKNOWN } = AirQuality.Config.CompareCategoryIndexes;
+											if (!body.airQuality?.previousDayComparison) {
+												body.airQuality.previousDayComparison = UNKNOWN;
+											}
+
 											const previousDayComparison = body.airQuality?.previousDayComparison;
-											if (
-												!previousDayComparison
-												|| previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN
-											) {
+											if (previousDayComparison === UNKNOWN) {
 												const currentIndexProvider = needInjectIndex
 													? 'WeatherKit' : Settings.AirQuality.Current?.Index?.Provider;
 												await InjectPreviousDayComparison(
