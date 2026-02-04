@@ -411,10 +411,10 @@ export default class ColorfulClouds {
 			];
 			const maxIaqi = chnIaqi.reduce((a, b) => a.index > b.index ? a : b);
 
-			if (!forcePrimaryPollutant && maxIaqi.index < 50) {
+			if (!forcePrimaryPollutant && maxIaqi.index <= 50) {
 				Console.warn(
 					"⚠️ AirQuality",
-					`Max index of pollutants ${maxIaqi.pollutantType} = ${maxIaqi.index} is less than 50, `
+					`Max index of pollutants ${maxIaqi.pollutantType} = ${maxIaqi.index} is <= 50, `
 						+ "primaryPollutant will be NOT_AVAILABLE.",
 				);
 			}
@@ -425,7 +425,7 @@ export default class ColorfulClouds {
 				categoryIndex,
 				index,
 				isSignificant: categoryIndex >= scale.categories.significantIndex,
-				primaryPollutant: !forcePrimaryPollutant && maxIaqi.index < 50 ? "NOT_AVAILABLE" : maxIaqi.pollutantType,
+				primaryPollutant: !forcePrimaryPollutant && maxIaqi.index <= 50 ? "NOT_AVAILABLE" : maxIaqi.pollutantType,
 				scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 			};
 		}
