@@ -789,7 +789,7 @@ export default class QWeather {
 		if (!forcePrimaryPollutant && apiPrimaryPollutant === "NOT_AVAILABLE") {
 			Console.warn(
 				"⚠️ AirQuality",
-				"Max index of pollutants is less than 50, primaryPollutant will be NOT_AVAILABLE.",
+				"Max index of pollutants is <= 50, primaryPollutant will be NOT_AVAILABLE.",
 			);
 		}
 
