@@ -191,8 +191,7 @@ async function InjectPollutants(airQuality, Settings, enviroments) {
 	Console.info("☑️ InjectPollutants");
 	switch (Settings?.AirQuality?.Current?.Pollutants?.Provider) {
 		case "QWeather": {
-			// TODO: upgrade to new API https://dev.qweather.com/docs/api/air-quality/air-current/
-			airQuality.pollutants = (await enviroments.qWeather.AirNow()).pollutants;
+			airQuality.pollutants = (await enviroments.qWeather.AirQuality()).pollutants;
 			break;
 		}
 		case "ColorfulClouds":
@@ -234,8 +233,7 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 	let newAirQuality;
 	switch (Settings?.AirQuality?.Current?.Index?.Provider) {
 		case "QWeather": {
-			// TODO: upgrade to new API https://dev.qweather.com/docs/api/air-quality/air-current/
-			newAirQuality = await enviroments.qWeather.AirNow();
+			newAirQuality = await enviroments.qWeather.AirQuality();
 			break;
 		}
 		case "ColorfulCloudsUS":
@@ -250,6 +248,7 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 			newAirQuality = GetAirQualityFromPollutants(airQuality.pollutants, Settings.AirQuality.iRingoAlgorithm);
 			break;
 		}
+		// TODO
 		case "WAQI": {
 			if (Settings?.API?.WAQI?.Token) {
 				newAirQuality = await enviroments.waqi.AQI2();
