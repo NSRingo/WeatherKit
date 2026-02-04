@@ -414,8 +414,8 @@ export default class ColorfulClouds {
 			if (!forcePrimaryPollutant && maxIaqi.index < 50) {
 				Console.warn(
 					"⚠️ AirQuality",
-					`Max index of ${maxIaqi.pollutantType} = ${maxIaqi.index} is less than 50, `
-						+ "primaryPollutant will be set to NOT_AVAILABLE.",
+					`Max index of pollutants ${maxIaqi.pollutantType} = ${maxIaqi.index} is less than 50, `
+						+ "primaryPollutant will be NOT_AVAILABLE.",
 				);
 			}
 
