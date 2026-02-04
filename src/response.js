@@ -315,13 +315,6 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 			}
 		}
 	};
-	const colorfulCloudsComparison = async (useUsa, useCurrent, currentCategoryIndex) => {
-		const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(useUsa);
-		return AirQuality.CompareCategoryIndexes(
-			useCurrent ? currentCategoryIndex : (await enviroments.colorfulClouds.AirQuality(useUsa)).categoryIndex,
-			yesterdayCategoryIndex,
-		);
-	};
 	const setQWeatherCache = (qweatherCache) => {
 		Caches.qweather = qweatherCache;
 		Storage.setItem("@iRingo.WeatherKit.Caches", { ...Caches, qweather: qweatherCache });
@@ -355,6 +348,14 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 			}
 		}
 	}
+
+	const colorfulCloudsComparison = async (useUsa, useCurrent, currentCategoryIndex) => {
+		const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(useUsa);
+		return AirQuality.CompareCategoryIndexes(
+			useCurrent ? currentCategoryIndex : (await enviroments.colorfulClouds.AirQuality(useUsa)).categoryIndex,
+			yesterdayCategoryIndex,
+		);
+	};
 
 	switch (Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider) {
 		case "iRingo": {
