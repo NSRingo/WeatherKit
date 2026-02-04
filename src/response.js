@@ -197,7 +197,7 @@ async function InjectPollutants(airQuality, Settings, enviroments) {
 		}
 		case "ColorfulClouds":
 		default: {
-			airQuality.pollutants = await enviroments.colorfulClouds.Pollutants();
+			airQuality.pollutants = (await enviroments.colorfulClouds.AirQuality()).pollutants;
 			break;
 		}
 	}
