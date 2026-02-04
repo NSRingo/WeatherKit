@@ -733,20 +733,20 @@ export default class QWeather {
 
 			const pollutantIndexes = pollutants.map((pollutant) => {
 				const pollutantType = this.#Config.Pollutants[pollutant.code];
-				for (const index of pollutant.subIndexes) {
-					if (index.code === scaleCode) {
-						return { pollutantType, aqi: index.aqi };
+				for (const subIndex of pollutant.subIndexes) {
+					if (subIndex.code === scaleCode) {
+						return { pollutantType, index: subIndex.aqi };
 					}
 				}
 
 				Console.warn("⚠️ getPrimaryPollutant", `No index of ${pollutantType} found for required scale`);
-				return { pollutantType, aqi: -1 };
+				return { pollutantType, index: -1 };
 			});
 			const primaryPollutant = pollutantIndexes.reduce(
-				(previous, current) => previous.aqi > current.aqi ? previous : current,
+				(previous, current) => previous.index > current.index ? previous : current,
 			);
 
-			if (primaryPollutant.aqi < 0) {
+			if (primaryPollutant.index < 0) {
 				Console.warn("⚠️ getPrimaryPollutant", "No any valid sub-index");
 				return "NOT_AVAILABLE";
 			}
