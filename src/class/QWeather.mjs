@@ -742,13 +742,28 @@ export default class QWeather {
 				Console.warn("⚠️ getPrimaryPollutant", `No index of ${pollutantType} found for required scale`);
 				return { pollutantType, index: -1 };
 			});
-			const primaryPollutant = pollutantIndexes.reduce(
-				(previous, current) => previous.index > current.index ? previous : current,
-			);
+			const primaryPollutants = pollutantIndexes.reduce((acc, item) => {
+				if (acc.length === 0 || item.index > acc[0].index) {
+					return [item];
+				} else if (item.index === acc[0].index) {
+					acc.push(item);
+				}
+				return acc;
+			}, []);
 
+			const primaryPollutant = primaryPollutants[0];
 			if (primaryPollutant.index < 0) {
 				Console.warn("⚠️ getPrimaryPollutant", "No any valid sub-index");
 				return "NOT_AVAILABLE";
+			}
+
+			if (primaryPollutants.length > 1) {
+				Console.warn(
+					"⚠️ getPrimaryPollutant",
+					"Multiple primary pollutants: "
+						+ JSON.stringify(primaryPollutants.map(({ pollutantType }) => pollutantType))
+						+ ". Use first one for WeatherKit.",
+				);
 			}
 
 			Console.info("✅ getPrimaryPollutant");
