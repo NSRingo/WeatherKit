@@ -368,18 +368,6 @@ export default class ColorfulClouds {
 		}));
 	}
 
-	async Pollutants() {
-		Console.info("☑️ Pollutants");
-		const realtime = await this.#RealTime();
-		if (!realtime.result) {
-			Console.error("❌ Pollutants", "Failed to get realtime data");
-			return [];
-		}
-
-		Console.info("✅ Pollutants");
-		return this.#CreatePollutants(realtime.result.realtime.air_quality);
-	}
-
 	async AirQuality(useUsa = true, forcePrimaryPollutant = false) {
 		Console.info("☑️ AirQuality");
 		const realtime = await this.#RealTime();
