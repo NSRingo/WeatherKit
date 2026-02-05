@@ -211,10 +211,10 @@ function GetAirQualityFromPollutants(pollutants, algorithmSetting) {
 			return AirQuality.PollutantsToEULike(pollutants);
 		}
 		case "WAQI_InstantCast_US": {
-			return AirQuality.PollutantsToInstantCastLike(pollutants);
+			return AirQuality.PollutantsToInstantCastUS(pollutants);
 		}
 		case "WAQI_InstantCast_CN": {
-			return AirQuality.PollutantsToInstantCastLike(pollutants, AirQuality.Config.Scales.WAQI_InstantCast_CN);
+			return AirQuality.PollutantsToInstantCastCN12(pollutants);
 		}
 		case "UBA":
 		default: {

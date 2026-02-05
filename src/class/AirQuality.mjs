@@ -236,78 +236,119 @@ export default class AirQuality {
 		};
 	}
 
-	static PollutantsToInstantCastLike(pollutants, scale = AirQuality.Config.Scales.WAQI_InstantCast_US) {
-		Console.info("☑️ PollutantsToInstantCastLike");
+	static FindPrimaryPollutants = (pollutantIndexes) => {
+		Console.info("☑️ FindPrimaryPollutants");
+
+		const overRangePollutants = pollutantIndexes.filter(({ index }) => index > 500);
+		if (overRangePollutants.length > 0) {
+			Console.warn(
+				"⚠️ FindPrimaryPollutants",
+				"Index > 500 detected! " + JSON.stringify(overRangePollutants.map(({ pollutantType }) => pollutantType)),
+			);
+			Console.warn("⚠️ FindPrimaryPollutants", "Take care of yourself!");
+			Console.info("✅ FindPrimaryPollutants");
+			return [...overRangePollutants].sort((a, b) => b.index - a.index);
+		}
+
+		const primaryPollutants = pollutantIndexes.reduce((list, pollutantIndex) => {
+			if (list.length === 0 || pollutantIndex.index > list[0].index) {
+				return [pollutantIndex];
+			} else if (pollutantIndex.index === list[0].index) {
+				list.push(pollutantIndex);
+			}
+			return list;
+		}, []);
+		if (primaryPollutants.length > 1) {
+			Console.warn(
+				"⚠️ AirQuality",
+				"Multiple primary pollutants: "
+					+ JSON.stringify(primaryPollutants.map(({ pollutantType }) => pollutantType)),
+			);
+		}
+
+		Console.info("✅ FindPrimaryPollutants");
+		return primaryPollutants;
+	};
+
+	static #PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) {
+		const friendlyUnits = AirQuality.Config.Units.Friendly;
+
+		const { pollutantType, units } = pollutant;
+		const requireConvertUnit = units !== scaleForPollutant.units;
+		const amount = requireConvertUnit
+			? AirQuality.ConvertUnit(
+				pollutant.amount,
+				units,
+				scaleForPollutant.units,
+				AirQuality.Config.STP_ConversionFactor.US[pollutantType] || -1,
+			)
+			: pollutant.amount;
+
+		if (requireConvertUnit) {
+			Console.info(
+				"✅ PollutantToInstantCastLikeIndex",
+				`Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units]}`
+					+ ` -> ${amount} ${friendlyUnits[scaleForPollutant.units]}`,
+			);
+		}
+
+		const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
+		if (amount < minValidAmount) {
+			Console.warn(
+				"⚠️ PollutantToInstantCastLikeIndex",
+				`Invalid amount of ${pollutantType}: ${amount}`
+					+ ` ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`,
+			);
+			return { pollutantType, index: scaleForPollutant.ranges.min.indexes[0] };
+		}
+
+		const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
+			const [minAmount, maxAmount] = amounts;
+			return amount >= minAmount && amount <= maxAmount;
+		});
+
+		const isOverRange = indexes[0] > scaleForPollutant.ranges.max.indexes[1];
+		if (isOverRange) {
+			Console.warn(
+				"⚠️ PollutantToInstantCastLikeIndex",
+				`Index > 500 detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`,
+			);
+			Console.warn("⚠️ PollutantToInstantCastLikeIndex", "Take care of yourself!");
+		}
+
+		// Use max range for calculation if over range
+		const [minIndex, maxIndex] = isOverRange ? scaleForPollutant.ranges.max.indexes : indexes;
+		const [minAmount, maxAmount] = isOverRange ? scaleForPollutant.ranges.max.amounts : amounts;
+
+		return {
+			pollutantType,
+			index: Math.round(
+				(maxIndex - minIndex) / (maxAmount - minAmount) * (amount - minAmount)
+				+ minIndex,
+			),
+		};
+	}
+
+	static PollutantsToInstantCastUS(pollutants) {
+		Console.info("☑️ PollutantsToInstantCastUS");
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
-			Console.warn("⚠️ PollutantsToInstantCastLike", "pollutants is invalid");
+			Console.warn("⚠️ PollutantsToInstantCastUS", "pollutants is invalid");
 			return {};
 		}
 
-		const aqis = pollutants.map(pollutant => {
-			const friendlyUnits = AirQuality.Config.Units.Friendly;
+		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
+		const indexes = pollutants.map(pollutant => this.#PollutantToInstantCastLikeIndex(
+			pollutant, scale.pollutants[pollutant.pollutantType],
+		));
 
-			const { pollutantType, units } = pollutant;
-			const scaleForPollutant = scale.pollutants[pollutantType];
-			const requireConvertUnit = units !== scaleForPollutant.units;
-			const amount = requireConvertUnit
-				? AirQuality.ConvertUnit(
-					pollutant.amount,
-					units,
-					scaleForPollutant.units,
-					AirQuality.Config.STP_ConversionFactor.US[pollutantType] || -1,
-				)
-				: pollutant.amount;
-
-			if (requireConvertUnit) {
-				Console.info(
-					"✅ PollutantsToInstantCastLike",
-					`Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units]}`
-						+ ` -> ${amount} ${friendlyUnits[scaleForPollutant.units]}`,
-				);
-			}
-
-			const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
-			if (amount < minValidAmount) {
-				Console.warn(
-					"⚠️ PollutantsToInstantCastLike",
-					`Invalid amount of ${pollutantType}: ${amount}`
-						+ ` ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`,
-				);
-				return { pollutantType, index: scaleForPollutant.ranges.min.indexes[0] };
-			}
-
-			const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
-				const [minAmount, maxAmount] = amounts;
-				return amount >= minAmount && amount <= maxAmount;
-			});
-
-			const isOverRange = indexes[0] > scaleForPollutant.ranges.max.indexes[1];
-			if (isOverRange) {
-				Console.warn(
-					"⚠️ PollutantsToInstantCastLike",
-					`Index > 500 detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`,
-				);
-				Console.warn("⚠️ PollutantsToInstantCastLike", "Take care of yourself!");
-			}
-
-			// Use max range for calculation if over range
-			const [minIndex, maxIndex] = isOverRange ? scaleForPollutant.ranges.max.indexes : indexes;
-			const [minAmount, maxAmount] = isOverRange ? scaleForPollutant.ranges.max.amounts : amounts;
-
-			return {
-				pollutantType,
-				index: Math.round(
-					(maxIndex - minIndex) / (maxAmount - minAmount) * (amount - minAmount)
-					+ minIndex,
-				),
-			};
-		});
-
-		const primaryPollutant = aqis.reduce((previous, current) => (previous.index > current.index ? previous : current));
+		const primaryPollutant = indexes.reduce(
+			(previous, current) => previous.index > current.index ? previous : current,
+		);
 		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
 
-		Console.info("✅ PollutantsToInstantCastLike");
+		Console.info("✅ PollutantsToInstantCastUS");
 		return {
+			// TODO: is it okay that index > 500 for WeatherKit?
 			index: primaryPollutant.index,
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
 			categoryIndex,
@@ -316,6 +357,51 @@ export default class AirQuality {
 			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 		};
 	}
+
+	static #PollutantsToInstantCastCN(
+		pollutants,
+		forcePrimaryPollutant = true,
+		// allowOverRange = true,
+		scale = AirQuality.Config.Scales.WAQI_InstantCast_CN,
+	) {
+		Console.info("☑️ PollutantsToInstantCastCN");
+		if (!Array.isArray(pollutants) || pollutants.length === 0) {
+			Console.warn("⚠️ PollutantsToInstantCastCN", "pollutants is invalid");
+			return {};
+		}
+
+		const indexes = pollutants.map(pollutant => this.#PollutantToInstantCastLikeIndex(
+			pollutant, scale.pollutants[pollutant.pollutantType],
+		));
+
+		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
+		const primaryPollutant = this.FindPrimaryPollutants(indexes)[0];
+		const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
+		if (isNotAvailable) {
+			Console.warn(
+				"⚠️ AirQuality",
+				`Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, `
+					+ "primaryPollutant will be NOT_AVAILABLE.",
+			);
+		}
+
+		Console.info("✅ PollutantsToInstantCastCN");
+		return {
+			// TODO: is it okay that index > 500 for WeatherKit?
+			// index: allowOverRange ? primaryPollutant.index : Math.min(primaryPollutant.index, 500),
+			index: primaryPollutant.index,
+			isSignificant: categoryIndex >= scale.categories.significantIndex,
+			categoryIndex,
+			pollutants,
+			primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : primaryPollutant.pollutantType,
+			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
+		};
+	}
+
+	static PollutantsToInstantCastCN12 = (pollutants) => this.#PollutantsToInstantCastCN(
+		pollutants,
+		AirQuality.Config.Scales.WAQI_InstantCast_CN,
+	);
 
 	static Config = {
 		Scales: {
