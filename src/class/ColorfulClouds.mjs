@@ -368,7 +368,7 @@ export default class ColorfulClouds {
 		}));
 	}
 
-	async AirQuality(useUsa = true, forcePrimaryPollutant = false) {
+	async AirQuality(useUsa = true, forcePrimaryPollutant = true) {
 		Console.info("☑️ AirQuality");
 		const realtime = await this.#RealTime();
 		if (!realtime.result) {
