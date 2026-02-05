@@ -409,26 +409,10 @@ export default class ColorfulClouds {
 				{ pollutantType: "NO2", index: realtime.result.realtime.air_quality.no2_iaqi_chn },
 				{ pollutantType: "CO", index: realtime.result.realtime.air_quality.co_iaqi_chn },
 			];
-			const maxIaqis = chnIaqi.reduce((acc, item) => {
-				if (acc.length === 0 || item.index > acc[0].index) {
-					return [item];
-				} else if (item.index === acc[0].index) {
-					acc.push(item);
-				}
-				return acc;
-			}, []);
 
-			if (maxIaqis.length > 1) {
-				Console.warn(
-					"⚠️ AirQuality",
-					"Multiple primary pollutants: "
-						+ JSON.stringify(maxIaqis.map(({ pollutantType }) => pollutantType))
-						+ ". Use first one for WeatherKit.",
-				);
-			}
-
-			const primaryPollutant = maxIaqis[0];
-			if (!forcePrimaryPollutant && primaryPollutant.index <= 50) {
+			const primaryPollutant = AirQuality.FindPrimaryPollutants(chnIaqi)[0];
+			const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
+			if (isNotAvailable) {
 				Console.warn(
 					"⚠️ AirQuality",
 					`Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, `
@@ -442,8 +426,7 @@ export default class ColorfulClouds {
 				categoryIndex,
 				index,
 				isSignificant: categoryIndex >= scale.categories.significantIndex,
-				primaryPollutant: !forcePrimaryPollutant && primaryPollutant.index <= 50
-					? "NOT_AVAILABLE" : primaryPollutant.pollutantType,
+				primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : primaryPollutant.pollutantType,
 				scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 			};
 		}
