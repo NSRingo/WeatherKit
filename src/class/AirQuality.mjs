@@ -215,7 +215,7 @@ export default class AirQuality {
 
 			const { indexes } = scaleForPollutant.ranges.value.find(({ amounts }) => {
 				const [minAmount, maxAmount] = amounts;
-				return amount >= minAmount && amount < maxAmount;
+				return amount >= minAmount && amount <= maxAmount;
 			});
 
 			// minIndex === maxIndex === categoryIndex in EU-like scales
@@ -278,7 +278,7 @@ export default class AirQuality {
 
 			const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
 				const [minAmount, maxAmount] = amounts;
-				return amount >= minAmount && amount < maxAmount;
+				return amount >= minAmount && amount <= maxAmount;
 			});
 
 			const isOverRange = indexes[0] > scaleForPollutant.ranges.max.indexes[1];
