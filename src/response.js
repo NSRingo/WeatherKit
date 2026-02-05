@@ -193,12 +193,14 @@ async function InjectPollutants(airQuality, Settings, enviroments) {
 	Console.info("☑️ InjectPollutants");
 	switch (Settings?.AirQuality?.Current?.Pollutants?.Provider) {
 		case "QWeather": {
-			airQuality.pollutants = (await enviroments.qWeather.AirQuality()).pollutants;
+			const { metadata, pollutants } = await enviroments.qWeather.AirQuality();
+			airQuality = { ...airQuality, metadata, pollutants };
 			break;
 		}
 		case "ColorfulClouds":
 		default: {
-			airQuality.pollutants = (await enviroments.colorfulClouds.AirQuality()).pollutants;
+			const { metadata, pollutants } = await enviroments.colorfulClouds.AirQuality();
+			airQuality = { ...airQuality, metadata, pollutants };
 			break;
 		}
 	}
