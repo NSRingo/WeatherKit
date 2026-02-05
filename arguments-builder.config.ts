@@ -140,6 +140,13 @@ export default defineConfig({
 			description: "使用选定的数据源填充空气质量指数数据。彩云天气（美标）为2018年9月版（EPA-454/B-18-007），WAQI是基于2018年9月版美标（EPA-454/B-18-007）的InstantCast。",
 		},
 		{
+			key: "AirQuality.Current.Index.ForceCNPrimaryPollutants",
+			name: "[空气质量 - 今日 - 空气质量指数] 强制显示国标主要污染物",
+			defaultValue: true,
+			type: "boolean",
+			description: "忽略国标（HJ 633—2012）的AQI > 50规定，始终将IAQI最大的空气污染物作为主要污染物。",
+		},
+		{
 			key: "AirQuality.Comparison.Fill",
 			name: "[空气质量 - 对比昨日] 填补地区",
 			defaultValue: "CN|HK|MO|TW",

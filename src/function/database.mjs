@@ -25,6 +25,7 @@ export default {
 					Index: {
 						Replace: ["HJ6332012"],
 						Provider: "iRingo",
+						ForceCNPrimaryPollutants: true,
 					},
 				},
 				Comparison: {
