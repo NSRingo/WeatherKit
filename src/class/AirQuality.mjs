@@ -181,7 +181,7 @@ export default class AirQuality {
 		}
 
 		const aqis = pollutants.map(pollutant => {
-			const MIN_INDEX = 1;
+			const friendlyUnits = AirQuality.Config.Units.Friendly;
 
 			const { pollutantType, units } = pollutant;
 			const scaleForPollutant = scale.pollutants[pollutantType];
@@ -196,7 +196,6 @@ export default class AirQuality {
 				: pollutant.amount;
 
 			if (requireConvertUnit) {
-				const friendlyUnits = AirQuality.Config.Units.Friendly;
 				Console.info(
 					"✅ PollutantsToEULike",
 					`Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units]}`
@@ -204,14 +203,14 @@ export default class AirQuality {
 				);
 			}
 
-			if (amount < scaleForPollutant.ranges.min.amount) {
+			const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
+			if (amount < minValidAmount) {
 				Console.warn(
 					"⚠️ PollutantsToEULike",
 					`Invalid amount of ${pollutantType}: ${amount}`
-						+ ` ${AirQuality.Config.Units.Friendly[scaleForPollutant.units]},`
-						+ ` should >= ${scaleForPollutant.ranges.min.amount}`,
+						+ ` ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`,
 				);
-				return { pollutantType, index: MIN_INDEX };
+				return { pollutantType, index: scaleForPollutant.ranges.min.indexes[0] };
 			}
 
 			const { indexes } = scaleForPollutant.ranges.value.find(({ amounts }) => {
@@ -245,7 +244,7 @@ export default class AirQuality {
 		}
 
 		const aqis = pollutants.map(pollutant => {
-			const MIN_INDEX = 0;
+			const friendlyUnits = AirQuality.Config.Units.Friendly;
 
 			const { pollutantType, units } = pollutant;
 			const scaleForPollutant = scale.pollutants[pollutantType];
@@ -260,7 +259,6 @@ export default class AirQuality {
 				: pollutant.amount;
 
 			if (requireConvertUnit) {
-				const friendlyUnits = AirQuality.Config.Units.Friendly;
 				Console.info(
 					"✅ PollutantsToInstantCastLike",
 					`Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units]}`
@@ -268,31 +266,14 @@ export default class AirQuality {
 				);
 			}
 
-			if (amount < scaleForPollutant.ranges.min.amount) {
+			const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
+			if (amount < minValidAmount) {
 				Console.warn(
 					"⚠️ PollutantsToInstantCastLike",
 					`Invalid amount of ${pollutantType}: ${amount}`
-						+ ` ${AirQuality.Config.Units.Friendly[scaleForPollutant.units]},`
-						+ ` should >= ${scaleForPollutant.ranges.min.amount}`,
+						+ ` ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`,
 				);
-				return { pollutantType, index: MIN_INDEX };
-			}
-
-			// For scales with max index
-			if (amount > scaleForPollutant.ranges.max.amount) {
-				const maxRange = scaleForPollutant.ranges.max;
-				const index = Math.round(
-					maxRange.index / maxRange.amount * amount
-					+ maxRange.index,
-				);
-				const friendlyUnits = AirQuality.Config.Units.Friendly;
-				Console.warn(
-					"⚠️ PollutantsToInstantCastLike",
-					`Over-range detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`
-						+ ` Actual index: ${index}`,
-				);
-				Console.warn("⚠️ PollutantsToInstantCastLike", "Take care of yourself!");
-				return { pollutantType, index: maxRange.index };
+				return { pollutantType, index: scaleForPollutant.ranges.min.indexes[0] };
 			}
 
 			const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
@@ -300,8 +281,18 @@ export default class AirQuality {
 				return amount >= minAmount && amount < maxAmount;
 			});
 
-			const [minIndex, maxIndex] = indexes;
-			const [minAmount, maxAmount] = amounts;
+			const isOverRange = indexes[0] > scaleForPollutant.ranges.max.indexes[1];
+			if (isOverRange) {
+				Console.warn(
+					"⚠️ PollutantsToInstantCastLike",
+					`Index > 500 detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`,
+				);
+				Console.warn("⚠️ PollutantsToInstantCastLike", "Take care of yourself!");
+			}
+
+			// Use max range for calculation if over range
+			const [minIndex, maxIndex] = isOverRange ? scaleForPollutant.ranges.max.indexes : indexes;
+			const [minAmount, maxAmount] = isOverRange ? scaleForPollutant.ranges.max.amounts : amounts;
 
 			return {
 				pollutantType,
@@ -353,70 +344,70 @@ export default class AirQuality {
 					NO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 1, amount: 0 },
-							max: { index: 5, amount: Number.MAX_VALUE },
+							min: { indexes: [1, 1], amounts: [0, 10] },
+							max: { indexes: [5, 5], amounts: [101, Infinity] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 10] }, // sehr gut
 								{ indexes: [2, 2], amounts: [11, 30] }, // gut
 								{ indexes: [3, 3], amounts: [31, 60] }, // mäßig
 								{ indexes: [4, 4], amounts: [61, 100] }, // schlecht
-								{ indexes: [5, 5], amounts: [101, Number.MAX_VALUE] }, // sehr schlecht
+								{ indexes: [5, 5], amounts: [101, Infinity] }, // sehr schlecht
 							],
 						},
 					},
 					PM10: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 1, amount: 0 },
-							max: { index: 5, amount: Number.MAX_VALUE },
+							min: { indexes: [1, 1], amounts: [0, 9] },
+							max: { indexes: [5, 5], amounts: [91, Infinity] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 9] }, // sehr gut
 								{ indexes: [2, 2], amounts: [10, 27] }, // gut
 								{ indexes: [3, 3], amounts: [28, 54] }, // mäßig
 								{ indexes: [4, 4], amounts: [55, 90] }, // schlecht
-								{ indexes: [5, 5], amounts: [91, Number.MAX_VALUE] }, // sehr schlecht
+								{ indexes: [5, 5], amounts: [91, Infinity] }, // sehr schlecht
 							],
 						},
 					},
 					PM2_5: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 1, amount: 0 },
-							max: { index: 5, amount: Number.MAX_VALUE },
+							min: { indexes: [1, 1], amounts: [0, 5] },
+							max: { indexes: [5, 5], amounts: [51, Infinity] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 5] }, // sehr gut
 								{ indexes: [2, 2], amounts: [6, 15] }, // gut
 								{ indexes: [3, 3], amounts: [16, 30] }, // mäßig
 								{ indexes: [4, 4], amounts: [31, 50] }, // schlecht
-								{ indexes: [5, 5], amounts: [51, Number.MAX_VALUE] }, // sehr schlecht
+								{ indexes: [5, 5], amounts: [51, Infinity] }, // sehr schlecht
 							],
 						},
 					},
 					O3: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 1, amount: 0 },
-							max: { index: 5, amount: Number.MAX_VALUE },
+							min: { indexes: [1, 1], amounts: [0, 24] },
+							max: { indexes: [5, 5], amounts: [241, Infinity] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 24] }, // sehr gut
 								{ indexes: [2, 2], amounts: [25, 72] }, // gut
 								{ indexes: [3, 3], amounts: [73, 144] }, // mäßig
 								{ indexes: [4, 4], amounts: [145, 240] }, // schlecht
-								{ indexes: [5, 5], amounts: [241, Number.MAX_VALUE] }, // sehr schlecht
+								{ indexes: [5, 5], amounts: [241, Infinity] }, // sehr schlecht
 							],
 						},
 					},
 					SO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 1, amount: 0 },
-							max: { index: 5, amount: Number.MAX_VALUE },
+							min: { indexes: [1, 1], amounts: [0, 10] },
+							max: { indexes: [5, 5], amounts: [101, Infinity] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 10] }, // sehr gut
 								{ indexes: [2, 2], amounts: [11, 30] }, // gut
 								{ indexes: [3, 3], amounts: [31, 60] }, // mäßig
 								{ indexes: [4, 4], amounts: [61, 100] }, // schlecht
-								{ indexes: [5, 5], amounts: [101, Number.MAX_VALUE] }, // sehr schlecht
+								{ indexes: [5, 5], amounts: [101, Infinity] }, // sehr schlecht
 							],
 						},
 					},
@@ -446,68 +437,68 @@ export default class AirQuality {
 					PM2_5: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 1, amount: 0 },
-							max: { index: 6, amount: Number.MAX_VALUE },
+							min: { indexes: [1, 1], amounts: [0, 5] },
+							max: { indexes: [6, 6], amounts: [141, Infinity] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 5] }, // Good
 								{ indexes: [2, 2], amounts: [6, 15] }, // Fair
 								{ indexes: [3, 3], amounts: [16, 50] }, // Moderate
 								{ indexes: [4, 4], amounts: [51, 90] }, // Poor
 								{ indexes: [5, 5], amounts: [91, 140] }, // Very Poor
-								{ indexes: [6, 6], amounts: [141, Number.MAX_VALUE] }, // Extremely Poor
+								{ indexes: [6, 6], amounts: [141, Infinity] }, // Extremely Poor
 							],
 						},
 					},
 					PM10: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 1, amount: 0 },
-							max: { index: 6, amount: Number.MAX_VALUE },
+							min: { indexes: [1, 1], amounts: [0, 15] },
+							max: { indexes: [6, 6], amounts: [271, Infinity] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 15] }, // Good
 								{ indexes: [2, 2], amounts: [16, 45] }, // Fair
 								{ indexes: [3, 3], amounts: [46, 120] }, // Moderate
 								{ indexes: [4, 4], amounts: [121, 195] }, // Poor
 								{ indexes: [5, 5], amounts: [196, 270] }, // Very Poor
-								{ indexes: [6, 6], amounts: [271, Number.MAX_VALUE] }, // Extremely Poor
+								{ indexes: [6, 6], amounts: [271, Infinity] }, // Extremely Poor
 							],
 						},
 					},
 					O3: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 1, amount: 0 },
-							max: { index: 6, amount: Number.MAX_VALUE },
+							min: { indexes: [1, 1], amounts: [0, 60] },
+							max: { indexes: [6, 6], amounts: [181, Infinity] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 60] }, // Good
 								{ indexes: [2, 2], amounts: [61, 100] }, // Fair
 								{ indexes: [3, 3], amounts: [101, 120] }, // Moderate
 								{ indexes: [4, 4], amounts: [121, 160] }, // Poor
 								{ indexes: [5, 5], amounts: [161, 180] }, // Very Poor
-								{ indexes: [6, 6], amounts: [181, Number.MAX_VALUE] }, // Extremely Poor
+								{ indexes: [6, 6], amounts: [181, Infinity] }, // Extremely Poor
 							],
 						},
 					},
 					NO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 1, amount: 0 },
-							max: { index: 6, amount: Number.MAX_VALUE },
+							min: { indexes: [1, 1], amounts: [0, 10] },
+							max: { indexes: [6, 6], amounts: [151, Infinity] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 10] }, // Good
 								{ indexes: [2, 2], amounts: [11, 25] }, // Fair
 								{ indexes: [3, 3], amounts: [26, 60] }, // Moderate
 								{ indexes: [4, 4], amounts: [61, 100] }, // Poor
 								{ indexes: [5, 5], amounts: [101, 150] }, // Very Poor
-								{ indexes: [6, 6], amounts: [151, Number.MAX_VALUE] }, // Extremely Poor
+								{ indexes: [6, 6], amounts: [151, Infinity] }, // Extremely Poor
 							],
 						},
 					},
 					SO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 1, amount: 0 },
-							max: { index: 6, amount: Number.MAX_VALUE },
+							min: { indexes: [1, 1], amounts: [0, 20] },
+							max: { indexes: [6, 6], amounts: [276, Infinity] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 20] }, // Good
 								{ indexes: [2, 2], amounts: [21, 40] }, // Fair
@@ -544,8 +535,8 @@ export default class AirQuality {
 					SO2_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 2602 },
+							min: { indexes: [0, 50], amounts: [0, 50] },
+							max: { indexes: [401, 500], amounts: [2101, 2602] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 50] },
 								{ indexes: [51, 100], amounts: [51, 150] },
@@ -560,8 +551,8 @@ export default class AirQuality {
 					SO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 200, amount: 800 },
+							min: { indexes: [0, 50], amounts: [0, 150] },
+							max: { indexes: [151, 200], amounts: [651, 800] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 150] },
 								{ indexes: [51, 100], amounts: [151, 500] },
@@ -574,8 +565,8 @@ export default class AirQuality {
 					NO2_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 940 },
+							min: { indexes: [0, 50], amounts: [0, 40] },
+							max: { indexes: [401, 500], amounts: [751, 940] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 40] },
 								{ indexes: [51, 100], amounts: [41, 80] },
@@ -590,8 +581,8 @@ export default class AirQuality {
 					NO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 3840 },
+							min: { indexes: [0, 50], amounts: [0, 100] },
+							max: { indexes: [401, 500], amounts: [3091, 3840] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 100] },
 								{ indexes: [51, 100], amounts: [101, 200] },
@@ -606,8 +597,8 @@ export default class AirQuality {
 					PM10_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 600 },
+							min: { indexes: [0, 50], amounts: [0, 50] },
+							max: { indexes: [401, 500], amounts: [501, 600] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 50] },
 								{ indexes: [51, 100], amounts: [51, 150] },
@@ -622,8 +613,8 @@ export default class AirQuality {
 					CO_24H: {
 						units: "MILLIGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 60 },
+							min: { indexes: [0, 50], amounts: [0, 2] },
+							max: { indexes: [401, 500], amounts: [49, 60] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 2] },
 								{ indexes: [51, 100], amounts: [3, 4] },
@@ -638,8 +629,8 @@ export default class AirQuality {
 					CO: {
 						units: "MILLIGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 150 },
+							min: { indexes: [0, 50], amounts: [0, 5] },
+							max: { indexes: [401, 500], amounts: [121, 150] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 5] },
 								{ indexes: [51, 100], amounts: [6, 10] },
@@ -654,30 +645,30 @@ export default class AirQuality {
 					OZONE: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 1200 },
+							min: { indexes: [0, 50], amounts: [0, 160] },
+							max: { indexes: [401, 500], amounts: [1001, 1200] },
 							value: [
-								{ index: [0, 50], amount: [0, 160] },
-								{ index: [51, 100], amount: [161, 200] },
-								{ index: [101, 150], amount: [201, 300] },
-								{ index: [151, 200], amount: [301, 400] },
-								{ index: [201, 300], amount: [401, 800] },
-								{ index: [301, 400], amount: [801, 1000] },
-								{ index: [401, 500], amount: [1001, 1200] },
+								{ indexes: [0, 50], amounts: [0, 160] },
+								{ indexes: [51, 100], amounts: [161, 200] },
+								{ indexes: [101, 150], amounts: [201, 300] },
+								{ indexes: [151, 200], amounts: [301, 400] },
+								{ indexes: [201, 300], amounts: [401, 800] },
+								{ indexes: [301, 400], amounts: [801, 1000] },
+								{ indexes: [401, 500], amounts: [1001, 1200] },
 							],
 						},
 					},
 					OZONE_8H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 300, amount: 800 },
+							min: { indexes: [0, 50], amounts: [0, 100] },
+							max: { indexes: [201, 300], amounts: [266, 800] },
 							value: [
-								{ index: [0, 50], amount: [0, 100] },
-								{ index: [51, 100], amount: [101, 160] },
-								{ index: [101, 150], amount: [161, 215] },
-								{ index: [151, 200], amount: [216, 265] },
-								{ index: [201, 300], amount: [266, 800] },
+								{ indexes: [0, 50], amounts: [0, 100] },
+								{ indexes: [51, 100], amounts: [101, 160] },
+								{ indexes: [101, 150], amounts: [161, 215] },
+								{ indexes: [151, 200], amounts: [216, 265] },
+								{ indexes: [201, 300], amounts: [266, 800] },
 								// 臭氧（O3）8小时平均浓度值高于800 ug/m3的，不再进行其空气质量分指数计算，臭氧（O3）空气质量分指数按1小时平均浓度计算的分指数报告。
 							],
 						},
@@ -685,16 +676,16 @@ export default class AirQuality {
 					PM2_5_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 500 },
+							min: { indexes: [0, 50], amounts: [0, 35] },
+							max: { indexes: [401, 500], amounts: [351, 500] },
 							value: [
-								{ index: [0, 50], amount: [0, 35] },
-								{ index: [51, 100], amount: [36, 75] },
-								{ index: [101, 150], amount: [76, 115] },
-								{ index: [151, 200], amount: [116, 150] },
-								{ index: [201, 300], amount: [151, 250] },
-								{ index: [301, 400], amount: [251, 350] },
-								{ index: [401, 500], amount: [351, 500] },
+								{ indexes: [0, 50], amounts: [0, 35] },
+								{ indexes: [51, 100], amounts: [36, 75] },
+								{ indexes: [101, 150], amounts: [76, 115] },
+								{ indexes: [151, 200], amounts: [116, 150] },
+								{ indexes: [201, 300], amounts: [151, 250] },
+								{ indexes: [301, 400], amounts: [251, 350] },
+								{ indexes: [401, 500], amounts: [351, 500] },
 							],
 						},
 					},
@@ -717,127 +708,133 @@ export default class AirQuality {
 						{ categoryIndex: 3, indexes: [101, 150] }, // Unhealthy for Sensitive Groups
 						{ categoryIndex: 4, indexes: [151, 200] }, // Unhealthy
 						{ categoryIndex: 5, indexes: [201, 300] }, // Very Unhealthy
-						{ categoryIndex: 6, indexes: [301, Number.MAX_SAFE_INTEGER] }, // Hazardous
+						{ categoryIndex: 6, indexes: [301, Infinity] }, // Hazardous
 					],
 				},
 				pollutants: {
 					OZONE_8H: {
 						units: "PARTS_PER_MILLION",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 300, amount: 0.2 },
+							min: { indexes: [0, 50], amounts: [0, 0.054] },
+							max: { indexes: [201, 300], amounts: [0.106, 0.2] },
 							value: [
-								{ index: [0, 50], value: [0, 0.054] }, // Good
-								{ index: [51, 100], value: [0.055, 0.07] }, // Moderate
-								{ index: [101, 150], value: [0.071, 0.085] }, // Unhealthy for Sensitive Groups
-								{ index: [151, 200], value: [0.086, 0.105] }, // Unhealthy
-								{ index: [201, 300], value: [0.106, 0.2] }, // Very Unhealthy
+								{ indexes: [0, 50], amounts: [0, 0.054] }, // Good
+								{ indexes: [51, 100], amounts: [0.055, 0.07] }, // Moderate
+								{ indexes: [101, 150], amounts: [0.071, 0.085] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [0.086, 0.105] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [0.106, 0.2] }, // Very Unhealthy
 								// Note 2:
 								// 8-hour O3 values do not define higher AQI values (≥ 301).
 								// AQI values of 301 or higher are calculated with 1-hour O3 concentrations.
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [0.201, Number.MAX_VALUE] }, // Hazardous
+								{ indexes: [301, Infinity], amounts: [0.201, Infinity] }, // Hazardous
 							],
 						},
 					},
 					OZONE: {
 						units: "PARTS_PER_MILLION",
 						ranges: {
-							min: { index: 101, amount: 0.125 },
-							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							min: { indexes: [101, 150], amounts: [0.125, 0.164] },
+							max: { indexes: [301, 500], amounts: [0.405, 0.604] },
 							value: [
 								// Note 1:
 								// Areas are generally required to report the AQI based on 8-hour O3 values. However,
 								// there are a small number of areas where an AQI based on 1-hour O3 values would be more precautionary.
 								// In these cases, in addition to calculating the 8-hour O3 index value,
 								// the 1-hour O3 value may be calculated, and the maximum of the two values reported.
-								{ index: [101, 150], value: [0.125, 0.164] }, // Unhealthy for Sensitive Groups
-								{ index: [151, 200], value: [0.165, 0.204] }, // Unhealthy
-								{ index: [201, 300], value: [0.205, 0.404] }, // Very Unhealthy
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [0.405, Number.MAX_VALUE] }, // Hazardous
+								{ indexes: [101, 150], amounts: [0.125, 0.164] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [0.165, 0.204] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [0.205, 0.404] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [0.405, 0.604] }, // Hazardous
+								{ indexes: [501, Infinity], amounts: [0.605, Infinity] }, // Hazardous
 							],
 						},
 					},
 					PM2_5_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							min: { indexes: [0, 50], amounts: [0.0, 9.0] },
+							max: { indexes: [301, 500], amounts: [225.5, 325.4] },
 							value: [
-								{ index: [0, 50], value: [0.0, 9.0] }, // Good
-								{ index: [51, 100], value: [9.1, 35.4] }, // Moderate
-								{ index: [101, 150], value: [35.5, 55.4] }, // Unhealthy for Sensitive Groups
+								{ indexes: [0, 50], amounts: [0.0, 9.0] }, // Good
+								{ indexes: [51, 100], amounts: [9.1, 35.4] }, // Moderate
+								{ indexes: [101, 150], amounts: [35.5, 55.4] }, // Unhealthy for Sensitive Groups
 								// Note 3 of PM2.5 can be found in EPA 454/B-18-007:
 								// If a different SHL for PM2.5 is promulgated, these numbers will change accordingly.
 								//
 								// It is believed that they forgot to remove this note
-								{ index: [151, 200], value: [55.5, 125.4] }, // Unhealthy
-								{ index: [201, 300], value: [125.5, 225.4] }, // Very Unhealthy
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [225.5, Number.MAX_VALUE] }, // Hazardous
+								{ indexes: [151, 200], amounts: [55.5, 125.4] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [125.5, 225.4] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [225.5, 325.4] }, // Hazardous
+								{ indexes: [501, Infinity], amounts: [325.5, Infinity] }, // Hazardous
 							],
 						},
 					},
 					PM10_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							min: { indexes: [0, 50], amounts: [0, 54] },
+							max: { indexes: [301, 500], amounts: [425, 604] },
 							value: [
-								{ index: [0, 50], value: [0, 54] }, // Good
-								{ index: [51, 100], value: [55, 154] }, // Moderate
-								{ index: [101, 150], value: [155, 254] }, // Unhealthy for Sensitive Groups
-								{ index: [151, 200], value: [255, 354] }, // Unhealthy
-								{ index: [201, 300], value: [355, 424] }, // Very Unhealthy
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [425, Number.MAX_VALUE] }, // Hazardous
+								{ indexes: [0, 50], amounts: [0, 54] }, // Good
+								{ indexes: [51, 100], amounts: [55, 154] }, // Moderate
+								{ indexes: [101, 150], amounts: [155, 254] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [255, 354] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [355, 424] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [425, 604] }, // Hazardous
+								{ indexes: [501, Infinity], amounts: [605, Infinity] }, // Hazardous
 							],
 						},
 					},
 					CO_8H: {
 						units: "PARTS_PER_MILLION",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							min: { indexes: [0, 50], amounts: [0.0, 4.4] },
+							max: { indexes: [301, 500], amounts: [425, 604] },
 							value: [
-								{ index: [0, 50], value: [0.0, 4.4] }, // Good
-								{ index: [51, 100], value: [4.5, 9.4] }, // Moderate
-								{ index: [101, 150], value: [9.5, 12.4] }, // Unhealthy for Sensitive Groups
-								{ index: [151, 200], value: [12.5, 15.4] }, // Unhealthy
-								{ index: [201, 300], value: [15.5, 30.4] }, // Very Unhealthy
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [30.5, Number.MAX_VALUE] }, // Hazardous
+								{ indexes: [0, 50], amounts: [0.0, 4.4] }, // Good
+								{ indexes: [51, 100], amounts: [4.5, 9.4] }, // Moderate
+								{ indexes: [101, 150], amounts: [9.5, 12.4] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [12.5, 15.4] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [15.5, 30.4] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [30.5, 50.4] }, // Hazardous
+								{ indexes: [501, Infinity], amounts: [50.5, Infinity] }, // Hazardous
 							],
 						},
 					},
 					SO2: {
 						units: "PARTS_PER_BILLION",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							min: { indexes: [0, 50], amounts: [0, 35] },
+							max: { indexes: [301, 500], amounts: [425, 1004] },
 							value: [
-								{ index: [0, 50], value: [0, 35] }, // Good
-								{ index: [51, 100], value: [36, 75] }, // Moderate
-								{ index: [101, 150], value: [76, 185] }, // Unhealthy for Sensitive Groups
-								{ index: [151, 200], value: [186, 304] }, // Unhealthy
+								{ indexes: [0, 50], amounts: [0, 35] }, // Good
+								{ indexes: [51, 100], amounts: [36, 75] }, // Moderate
+								{ indexes: [101, 150], amounts: [76, 185] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [186, 304] }, // Unhealthy
 								// Note 3 of SO2:
 								// 1-hour SO2 values do not define higher AQI values (≥ 200).
 								// AQI values of 200 or greater are calculated with 24-hour SO2 concentrations.
 								//
 								// It is believed that they forgot to remove this note
-								{ index: [201, 300], value: [305, 604] }, // Very Unhealthy
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [605, Number.MAX_VALUE] }, // Hazardous
+								{ indexes: [201, 300], amounts: [305, 604] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [605, 1004] }, // Hazardous
+								{ indexes: [501, Infinity], amounts: [1005, Infinity] }, // Hazardous
 							],
 						},
 					},
 					NO2: {
 						units: "PARTS_PER_BILLION",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							min: { indexes: [0, 50], amounts: [0, 53] },
+							max: { indexes: [301, 500], amounts: [1250, 2049] },
 							value: [
-								{ index: [0, 50], value: [0, 53] }, // Good
-								{ index: [51, 100], value: [54, 100] }, // Moderate
-								{ index: [101, 150], value: [101, 360] }, // Unhealthy for Sensitive Groups
-								{ index: [151, 200], value: [361, 649] }, // Unhealthy
-								{ index: [201, 300], value: [650, 1249] }, // Very Unhealthy
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [1250, Number.MAX_VALUE] }, // Hazardous
+								{ indexes: [0, 50], amounts: [0, 53] }, // Good
+								{ indexes: [51, 100], amounts: [54, 100] }, // Moderate
+								{ indexes: [101, 150], amounts: [101, 360] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [361, 649] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [650, 1249] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [1250, 2049] }, // Hazardous
+								{ indexes: [501, Infinity], amounts: [2050, Infinity] }, // Hazardous
 							],
 						},
 					},
@@ -861,7 +858,7 @@ export default class AirQuality {
 						{ categoryIndex: 3, indexes: [101, 150] }, // Unhealthy for Sensitive Groups
 						{ categoryIndex: 4, indexes: [151, 200] }, // Unhealthy
 						{ categoryIndex: 5, indexes: [201, 300] }, // Very Unhealthy
-						{ categoryIndex: 6, indexes: [301, Number.MAX_SAFE_INTEGER] }, // Hazardous
+						{ categoryIndex: 6, indexes: [301, Infinity] }, // Hazardous
 					],
 				},
 				// Eventually we will convert it to ppb
@@ -870,97 +867,105 @@ export default class AirQuality {
 					OZONE: {
 						units: "PARTS_PER_BILLION",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							min: { indexes: [0, 50], amounts: [0, 61.5] },
+							max: { indexes: [301, 500], amounts: [405, 605] },
 							value: [
-								{ index: [0, 50], value: [0, 61.5] }, // Good
-								{ index: [51, 100], value: [62.5, 100.5] }, // Moderate
-								{ index: [101, 150], value: [101.5, 151.5] }, // Unhealthy for Sensitive Groups
-								{ index: [151, 200], value: [152.5, 204] }, // Unhealthy
-								{ index: [201, 300], value: [205, 404] }, // Very Unhealthy
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [405, Number.MAX_VALUE] }, // Hazardous
-							],
-						},
-					},
-					SO2: {
-						units: "PARTS_PER_BILLION",
-						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
-							value: [
-								{ index: [0, 50], value: [0, 35] }, // Good
-								{ index: [51, 100], value: [36, 75] }, // Moderate
-								{ index: [101, 150], value: [76, 185] }, // Unhealthy for Sensitive Groups
-								{ index: [151, 200], value: [186, 304] }, // Unhealthy
-								{ index: [201, 300], value: [305, 604] }, // Very Unhealthy
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [605, Number.MAX_VALUE] }, // Hazardous
-							],
-						},
-					},
-					NO2: {
-						units: "PARTS_PER_BILLION",
-						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
-							value: [
-								{ index: [0, 50], value: [0, 53] }, // Good
-								{ index: [51, 100], value: [54, 100] }, // Moderate
-								{ index: [101, 150], value: [101, 360] }, // Unhealthy for Sensitive Groups
-								{ index: [151, 200], value: [361, 649] }, // Unhealthy
-								{ index: [201, 300], value: [650, 1249] }, // Very Unhealthy
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [1250, Number.MAX_VALUE] }, // Hazardous
+								{ indexes: [0, 50], amounts: [0, 61.5] }, // Good
+								{ indexes: [51, 100], amounts: [62.5, 100.5] }, // Moderate
+								{ indexes: [101, 150], amounts: [101.5, 151.5] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [152.5, 204] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [205, 404] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [405, 605] }, // Hazardous
+								{ indexes: [501, Infinity], amounts: [606, Infinity] }, // Hazardous
 							],
 						},
 					},
 					PM2_5: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							min: { indexes: [0, 50], amounts: [0.0, 9.0] },
+							max: { indexes: [301, 500], amounts: [225.5, 325.4] },
 							value: [
-								{ index: [0, 50], value: [0.0, 9.0] }, // Good
-								{ index: [51, 100], value: [9.1, 35.4] }, // Moderate
-								{ index: [101, 150], value: [35.5, 55.4] }, // Unhealthy for Sensitive Groups
-								{ index: [151, 200], value: [55.5, 125.4] }, // Unhealthy
-								{ index: [201, 300], value: [125.5, 225.4] }, // Very Unhealthy
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [225.5, Number.MAX_VALUE] }, // Hazardous
+								{ indexes: [0, 50], amounts: [0.0, 9.0] }, // Good
+								{ indexes: [51, 100], amounts: [9.1, 35.4] }, // Moderate
+								{ indexes: [101, 150], amounts: [35.5, 55.4] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [55.5, 125.4] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [125.5, 225.4] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [225.5, 325.4] }, // Hazardous
+								{ indexes: [501, Infinity], amounts: [325.5, Infinity] }, // Hazardous
 							],
 						},
 					},
 					PM10: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							min: { indexes: [0, 50], amounts: [0, 54] },
+							max: { indexes: [301, 500], amounts: [425, 604] },
 							value: [
-								{ index: [0, 50], value: [0, 54] }, // Good
-								{ index: [51, 100], value: [55, 154] }, // Moderate
-								{ index: [101, 150], value: [155, 254] }, // Unhealthy for Sensitive Groups
-								{ index: [151, 200], value: [255, 354] }, // Unhealthy
-								{ index: [201, 300], value: [355, 424] }, // Very Unhealthy
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [425, Number.MAX_VALUE] }, // Hazardous
+								{ indexes: [0, 50], amounts: [0, 54] }, // Good
+								{ indexes: [51, 100], amounts: [55, 154] }, // Moderate
+								{ indexes: [101, 150], amounts: [155, 254] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [255, 354] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [355, 424] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [425, 604] }, // Hazardous
+								{ indexes: [501, Infinity], amounts: [605, Infinity] }, // Hazardous
 							],
 						},
 					},
 					CO: {
 						units: "PARTS_PER_BILLION",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: Number.MAX_SAFE_INTEGER, amount: Number.MAX_VALUE },
+							min: { indexes: [0, 50], amounts: [0.0, 4.4] },
+							max: { indexes: [301, 500], amounts: [425, 604] },
 							value: [
-								{ index: [0, 50], value: [0.0, 4400] }, // Good
-								{ index: [51, 100], value: [4401, 9400] }, // Moderate
-								{ index: [101, 150], value: [9401, 12400] }, // Unhealthy for Sensitive Groups
-								{ index: [151, 200], value: [12401, 15400] }, // Unhealthy
-								{ index: [201, 300], value: [15401, 30400] }, // Very Unhealthy
-								{ index: [301, Number.MAX_SAFE_INTEGER], value: [30401, Number.MAX_VALUE] }, // Hazardous
+								{ indexes: [0, 50], amounts: [0.0, 4.4] }, // Good
+								{ indexes: [51, 100], amounts: [4.5, 9.4] }, // Moderate
+								{ indexes: [101, 150], amounts: [9.5, 12.4] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [12.5, 15.4] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [15.5, 30.4] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [30.5, 50.4] }, // Hazardous
+								{ indexes: [501, Infinity], amounts: [50.5, Infinity] }, // Hazardous
+							],
+						},
+					},
+					SO2: {
+						units: "PARTS_PER_BILLION",
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 35] },
+							max: { indexes: [301, 500], amounts: [425, 1004] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 35] }, // Good
+								{ indexes: [51, 100], amounts: [36, 75] }, // Moderate
+								{ indexes: [101, 150], amounts: [76, 185] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [186, 304] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [305, 604] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [605, 1004] }, // Hazardous
+								{ indexes: [501, Infinity], amounts: [1005, Infinity] }, // Hazardous
+							],
+						},
+					},
+					NO2: {
+						units: "PARTS_PER_BILLION",
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 53] },
+							max: { indexes: [301, 500], amounts: [1250, 2049] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 53] }, // Good
+								{ indexes: [51, 100], amounts: [54, 100] }, // Moderate
+								{ indexes: [101, 150], amounts: [101, 360] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [361, 649] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [650, 1249] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [1250, 2049] }, // Hazardous
+								{ indexes: [501, Infinity], amounts: [2050, Infinity] }, // Hazardous
 							],
 						},
 					},
 				},
 			},
 			/**
-			 * WAQI InstantCast in HJ6332012. Basically is a method to calculate indexes based on 1-hour pollutants.
+			 * WAQI InstantCast in HJ6332012.
+			 * Use 24-hour SO2 when > 800, 24-hour PM10 and PM2.5 as 1-hour.
+			 * 1-hour for others.
 			 */
 			WAQI_InstantCast_CN: {
 				weatherKitScale: {
@@ -982,96 +987,102 @@ export default class AirQuality {
 					SO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 2602 },
+							min: { indexes: [0, 50], amounts: [0, 150] },
+							max: { indexes: [401, 500], amounts: [2101, 2602] },
 							value: [
-								{ index: [0, 50], value: [0, 150] },
-								{ index: [51, 100], value: [151, 500] },
-								{ index: [101, 150], value: [501, 650] },
-								{ index: [151, 200], value: [651, 800] },
-								{ index: [201, 300], value: [801, 1600] },
-								{ index: [301, 400], value: [1601, 2100] },
-								{ index: [401, 500], value: [2101, 2602] },
+								{ indexes: [0, 50], amounts: [0, 150] },
+								{ indexes: [51, 100], amounts: [151, 500] },
+								{ indexes: [101, 150], amounts: [501, 650] },
+								{ indexes: [151, 200], amounts: [651, 800] },
+								{ indexes: [201, 300], amounts: [801, 1600] },
+								{ indexes: [301, 400], amounts: [1601, 2100] },
+								{ indexes: [401, 500], amounts: [2101, 2602] },
+								{ indexes: [501, Infinity], amounts: [2602, Infinity] },
 							],
 						},
 					},
 					NO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 3840 },
+							min: { indexes: [0, 50], amounts: [0, 100] },
+							max: { indexes: [401, 500], amounts: [3091, 3840] },
 							value: [
-								{ index: [0, 50], value: [0, 100] },
-								{ index: [51, 100], value: [101, 200] },
-								{ index: [101, 150], value: [201, 700] },
-								{ index: [151, 200], value: [701, 1200] },
-								{ index: [201, 300], value: [1201, 2340] },
-								{ index: [301, 400], value: [2341, 3090] },
-								{ index: [401, 500], value: [3091, 3840] },
+								{ indexes: [0, 50], amounts: [0, 100] },
+								{ indexes: [51, 100], amounts: [101, 200] },
+								{ indexes: [101, 150], amounts: [201, 700] },
+								{ indexes: [151, 200], amounts: [701, 1200] },
+								{ indexes: [201, 300], amounts: [1201, 2340] },
+								{ indexes: [301, 400], amounts: [2341, 3090] },
+								{ indexes: [401, 500], amounts: [3091, 3840] },
+								{ indexes: [501, Infinity], amounts: [3841, Infinity] },
 							],
 						},
 					},
 					PM10: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 600 },
+							min: { indexes: [0, 50], amounts: [0, 50] },
+							max: { indexes: [401, 500], amounts: [501, 600] },
 							value: [
-								{ index: [0, 50], value: [0, 50] },
-								{ index: [51, 100], value: [51, 150] },
-								{ index: [101, 150], value: [151, 250] },
-								{ index: [151, 200], value: [251, 350] },
-								{ index: [201, 300], value: [351, 420] },
-								{ index: [301, 400], value: [421, 500] },
-								{ index: [401, 500], value: [501, 600] },
+								{ indexes: [0, 50], amounts: [0, 50] },
+								{ indexes: [51, 100], amounts: [51, 150] },
+								{ indexes: [101, 150], amounts: [151, 250] },
+								{ indexes: [151, 200], amounts: [251, 350] },
+								{ indexes: [201, 300], amounts: [351, 420] },
+								{ indexes: [301, 400], amounts: [421, 500] },
+								{ indexes: [401, 500], amounts: [501, 600] },
+								{ indexes: [501, Infinity], amounts: [601, Infinity] },
 							],
 						},
 					},
 					CO: {
 						units: "MILLIGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 150 },
+							min: { indexes: [0, 50], amounts: [0, 5] },
+							max: { indexes: [401, 500], amounts: [121, 150] },
 							value: [
-								{ index: [0, 50], value: [0, 5] },
-								{ index: [51, 100], value: [6, 10] },
-								{ index: [101, 150], value: [11, 35] },
-								{ index: [151, 200], value: [36, 60] },
-								{ index: [201, 300], value: [61, 90] },
-								{ index: [301, 400], value: [91, 120] },
-								{ index: [401, 500], value: [121, 150] },
+								{ indexes: [0, 50], amounts: [0, 5] },
+								{ indexes: [51, 100], amounts: [6, 10] },
+								{ indexes: [101, 150], amounts: [11, 35] },
+								{ indexes: [151, 200], amounts: [36, 60] },
+								{ indexes: [201, 300], amounts: [61, 90] },
+								{ indexes: [301, 400], amounts: [91, 120] },
+								{ indexes: [401, 500], amounts: [121, 150] },
+								{ indexes: [501, Infinity], amounts: [151, Infinity] },
 							],
 						},
 					},
 					OZONE: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 1200 },
+							min: { indexes: [0, 50], amounts: [0, 160] },
+							max: { indexes: [401, 500], amounts: [1001, 1200] },
 							value: [
-								{ index: [0, 50], value: [0, 160] },
-								{ index: [51, 100], value: [161, 200] },
-								{ index: [101, 150], value: [201, 300] },
-								{ index: [151, 200], value: [301, 400] },
-								{ index: [201, 300], value: [401, 800] },
-								{ index: [301, 400], value: [801, 1000] },
-								{ index: [401, 500], value: [1001, 1200] },
+								{ indexes: [0, 50], amounts: [0, 160] },
+								{ indexes: [51, 100], amounts: [161, 200] },
+								{ indexes: [101, 150], amounts: [201, 300] },
+								{ indexes: [151, 200], amounts: [301, 400] },
+								{ indexes: [201, 300], amounts: [401, 800] },
+								{ indexes: [301, 400], amounts: [801, 1000] },
+								{ indexes: [401, 500], amounts: [1001, 1200] },
+								{ indexes: [501, Infinity], amounts: [1201, Infinity] },
 							],
 						},
 					},
 					PM2_5: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
-							min: { index: 0, amount: 0 },
-							max: { index: 500, amount: 500 },
+							min: { indexes: [0, 50], amounts: [0, 35] },
+							max: { indexes: [401, 500], amounts: [351, 500] },
 							value: [
-								{ index: [0, 50], value: [0, 35] },
-								{ index: [51, 100], value: [36, 75] },
-								{ index: [101, 150], value: [76, 115] },
-								{ index: [151, 200], value: [116, 150] },
-								{ index: [201, 300], value: [151, 250] },
-								{ index: [301, 400], value: [251, 350] },
-								{ index: [401, 500], value: [351, 500] },
+								{ indexes: [0, 50], amounts: [0, 35] },
+								{ indexes: [51, 100], amounts: [36, 75] },
+								{ indexes: [101, 150], amounts: [76, 115] },
+								{ indexes: [151, 200], amounts: [116, 150] },
+								{ indexes: [201, 300], amounts: [151, 250] },
+								{ indexes: [301, 400], amounts: [251, 350] },
+								{ indexes: [401, 500], amounts: [351, 500] },
+								{ indexes: [501, Infinity], amounts: [501, Infinity] },
 							],
 						},
 					},
