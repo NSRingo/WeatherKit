@@ -696,7 +696,7 @@ export default class QWeather {
 			});
 	}
 
-	async AirQuality(forcePrimaryPollutant = false) {
+	async AirQuality(forcePrimaryPollutant = true) {
 		const findSupportedIndex = (indexes) => {
 			const supportedCodes = ['cn-mee', 'cn-mee-1h', 'eu-eea', 'us-epa', 'us-epa-nc'];
 			for (const index of indexes) {
