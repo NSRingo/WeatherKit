@@ -147,6 +147,14 @@ export interface Settings {
                  * @defaultValue "iRingo"
                  */
                 Provider?: 'iRingo' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather' | 'WAQI';
+                /**
+                 * [空气质量 - 今日 - 空气质量指数] 强制显示国标主要污染物
+                 *
+                 * 忽略国标（HJ 633—2012）的AQI > 50规定，始终将IAQI最大的空气污染物作为主要污染物。
+                 *
+                 * @defaultValue true
+                 */
+                ForceCNPrimaryPollutants?: boolean;
             }
         },
         Comparison?: {
