@@ -190,11 +190,11 @@ async function InjectPollutants(Settings, enviroments) {
 	Console.info("✅ InjectPollutants");
 	switch (Settings?.AirQuality?.Current?.Pollutants?.Provider) {
 		case "QWeather": {
-			return await enviroments.qWeather.AirQuality();
+			return await enviroments.qWeather.CurrentAirQuality();
 		}
 		case "ColorfulClouds":
 		default: {
-			return await enviroments.colorfulClouds.AirQuality();
+			return await enviroments.colorfulClouds.CurrentAirQuality();
 		}
 	}
 }
@@ -228,11 +228,11 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 	Console.info("☑️ InjectIndex");
 	switch (Settings?.AirQuality?.Current?.Index?.Provider) {
 		case "QWeather": {
-			return await enviroments.qWeather.AirQuality();
+			return await enviroments.qWeather.CurrentAirQuality();
 		}
 		case "ColorfulCloudsUS":
 		case "ColorfulCloudsCN": {
-			return await enviroments.colorfulClouds.AirQuality(Settings.AirQuality.Current.Index.Provider === "ColorfulCloudsUS");
+			return await enviroments.colorfulClouds.CurrentAirQuality(Settings.AirQuality.Current.Index.Provider === "ColorfulCloudsUS");
 		}
 		case "iRingo":
 		default: {
@@ -327,7 +327,7 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 
 	const colorfulCloudsComparison = async (useUsa, useCurrent, currentCategoryIndex) => {
 		const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(useUsa);
-		return AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.colorfulClouds.AirQuality(useUsa)).categoryIndex, yesterdayCategoryIndex);
+		return AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.colorfulClouds.CurrentAirQuality(useUsa)).categoryIndex, yesterdayCategoryIndex);
 	};
 	const qweatherComparison = async (useCurrent, currentCategoryIndex, pollutantsToCategoryIndex) => {
 		const setQWeatherCache = qweatherCache => {
@@ -340,7 +340,7 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 		const locationID = QWeather.GetLocationID(locationsGrid, latitude, longitude);
 		const yesterdayAirQuality = await enviroments.qWeather.YesterdayAirQuality(locationID);
 
-		return AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.qWeather.AirQuality()).categoryIndex, pollutantsToCategoryIndex ? pollutantsToCategoryIndex(yesterdayAirQuality.pollutants) : yesterdayAirQuality.categoryIndex);
+		return AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.qWeather.CurrentAirQuality()).categoryIndex, pollutantsToCategoryIndex ? pollutantsToCategoryIndex(yesterdayAirQuality.pollutants) : yesterdayAirQuality.categoryIndex);
 	};
 
 	Console.info("✅ InjectPreviousDayComparison");

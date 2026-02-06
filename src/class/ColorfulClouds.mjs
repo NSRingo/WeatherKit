@@ -326,11 +326,7 @@ export default class ColorfulClouds {
 		return forecastDaily;
 	}
 
-	#Metadata(
-		reportedTime,
-		location = [this.parameters.latitude, this.parameters.longitude],
-		temporarilyUnavailable = false,
-	) {
+	#Metadata(reportedTime, location = [this.parameters.latitude, this.parameters.longitude], temporarilyUnavailable = false) {
 		const timeStamp = Math.trunc(Date.now() / 1000);
 		const [latitude, longitude] = location;
 		return {
@@ -362,20 +358,20 @@ export default class ColorfulClouds {
 		Console.info("✅ CreatePollutants");
 		const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
 		return Object.entries(realtimeAirQuality).map(([name, amount]) => ({
-			amount: name === 'co' ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
+			amount: name === "co" ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
 			pollutantType: this.#Config.Pollutants[name],
 			units: ugm3,
 		}));
 	}
 
-	async AirQuality(useUsa = true, forcePrimaryPollutant = true) {
-		Console.info("☑️ AirQuality");
+	async CurrentAirQuality(useUsa = true, forcePrimaryPollutant = true) {
+		Console.info("☑️ CurrentAirQuality");
 		const realtime = await this.#RealTime();
 		if (!realtime.result) {
-			Console.error("❌ AirQuality", "Failed to get realtime data");
+			Console.error("❌ CurrentAirQuality", "Failed to get realtime data");
 			return {
 				metadata: this.#Metadata(undefined, undefined, true),
-			}
+			};
 		}
 
 		const particularAirQuality = {
@@ -413,14 +409,10 @@ export default class ColorfulClouds {
 			const primaryPollutant = AirQuality.FindPrimaryPollutants(chnIaqi)[0];
 			const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
 			if (isNotAvailable) {
-				Console.warn(
-					"⚠️ AirQuality",
-					`Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, `
-						+ "primaryPollutant will be NOT_AVAILABLE.",
-				);
+				Console.warn("⚠️ CurrentAirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, ` + "primaryPollutant will be NOT_AVAILABLE.");
 			}
 
-			Console.info("✅ AirQuality");
+			Console.info("✅ CurrentAirQuality");
 			return {
 				...particularAirQuality,
 				categoryIndex,
@@ -439,7 +431,7 @@ export default class ColorfulClouds {
 			Console.error("❌ CurrentWeather", "Failed to get realtime data");
 			return {
 				metadata: this.#Metadata(undefined, undefined, true),
-			}
+			};
 		}
 
 		Console.info("✅ CurrentWeather");
@@ -470,9 +462,7 @@ export default class ColorfulClouds {
 
 		Console.info("✅ YesterdayCategoryIndex");
 		const { usa, chn } = yesterdayHourly.result.hourly.air_quality.aqi[0].value;
-		return useUsa
-			? AirQuality.CategoryIndex(usa, AirQuality.Config.Scales.EPA_NowCast)
-			: AirQuality.CategoryIndex(chn, AirQuality.Config.Scales.HJ6332012);
+		return useUsa ? AirQuality.CategoryIndex(usa, AirQuality.Config.Scales.EPA_NowCast) : AirQuality.CategoryIndex(chn, AirQuality.Config.Scales.HJ6332012);
 	}
 
 	async ForecastHourly() {
@@ -482,7 +472,7 @@ export default class ColorfulClouds {
 			Console.error("❌ ForecastHourly", "Failed to get hourly data");
 			return {
 				metadata: this.#Metadata(undefined, undefined, true),
-			}
+			};
 		}
 
 		Console.info("✅ ForecastHourly");
