@@ -127,7 +127,7 @@ export interface Settings {
                  *
                  * @defaultValue ["HJ6332012"]
                  */
-                Replace?: string;
+                Replace?: ('HJ6332012' | 'EPA_NowCast')[];
                 /**
                  * [空气质量 - 今日 - 空气质量指数] 数据源
                  *
