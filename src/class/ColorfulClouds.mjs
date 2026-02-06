@@ -351,7 +351,7 @@ export default class ColorfulClouds {
 	#CreatePollutants(realtimeAirQuality) {
 		Console.info("☑️ CreatePollutants");
 		if (realtimeAirQuality?.description?.usa === "") {
-			Console.error("❌ CreatePollutants", `Failed to get air_quality data`);
+			Console.error("CreatePollutants", `Failed to get air_quality data`);
 			return [];
 		}
 
@@ -368,7 +368,7 @@ export default class ColorfulClouds {
 		Console.info("☑️ CurrentAirQuality");
 		const realtime = await this.#RealTime();
 		if (!realtime.result) {
-			Console.error("❌ CurrentAirQuality", "Failed to get realtime data");
+			Console.error("CurrentAirQuality", "Failed to get realtime data");
 			return {
 				metadata: this.#Metadata(undefined, undefined, true),
 			};
@@ -428,7 +428,7 @@ export default class ColorfulClouds {
 		Console.info("☑️ CurrentWeather");
 		const realtime = await this.#RealTime();
 		if (!realtime.result) {
-			Console.error("❌ CurrentWeather", "Failed to get realtime data");
+			Console.error("CurrentWeather", "Failed to get realtime data");
 			return {
 				metadata: this.#Metadata(undefined, undefined, true),
 			};
@@ -456,7 +456,7 @@ export default class ColorfulClouds {
 		const yesterdayHourly = await this.#Hourly(1, (Date.now() - 864e5) / 1000);
 
 		if (!yesterdayHourly.result) {
-			Console.error("❌ YesterdayCategoryIndex", "Failed to get hourly data");
+			Console.error("YesterdayCategoryIndex", "Failed to get hourly data");
 			return "UNKNOWN";
 		}
 
@@ -469,7 +469,7 @@ export default class ColorfulClouds {
 		Console.info("☑️ ForecastHourly");
 		const hourly = await this.#Hourly();
 		if (!hourly.result) {
-			Console.error("❌ ForecastHourly", "Failed to get hourly data");
+			Console.error("ForecastHourly", "Failed to get hourly data");
 			return {
 				metadata: this.#Metadata(undefined, undefined, true),
 			};
