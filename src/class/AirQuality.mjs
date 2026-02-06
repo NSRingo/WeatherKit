@@ -325,8 +325,8 @@ export default class AirQuality {
 
 		const indexes = pollutants.map(pollutant => this.#PollutantToInstantCastLikeIndex(pollutant, scale.pollutants[pollutant.pollutantType]));
 
-		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
 		const primaryPollutant = this.FindPrimaryPollutants(indexes)[0];
+		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
 		const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
 		if (isNotAvailable) {
 			Console.warn("⚠️ AirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, ` + "primaryPollutant will be NOT_AVAILABLE.");
