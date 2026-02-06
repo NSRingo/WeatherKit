@@ -149,7 +149,7 @@ export default class AirQuality {
 		switch (airQuality?.metadata?.providerName) {
 			case "和风天气":
 			case "QWeather": {
-				airQuality.pollutants = airQuality.pollutants.map((pollutant) => {
+				airQuality.pollutants = airQuality.pollutants.map(pollutant => {
 					const { pollutantType, amount } = pollutant;
 					const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
 					return {
@@ -186,30 +186,15 @@ export default class AirQuality {
 			const { pollutantType, units } = pollutant;
 			const scaleForPollutant = scale.pollutants[pollutantType];
 			const requireConvertUnit = units !== scaleForPollutant.units;
-			const amount = requireConvertUnit
-				? AirQuality.ConvertUnit(
-					pollutant.amount,
-					units,
-					scaleForPollutant.units,
-					AirQuality.Config.STP_ConversionFactor.EU[pollutantType] || -1,
-				)
-				: pollutant.amount;
+			const amount = requireConvertUnit ? AirQuality.ConvertUnit(pollutant.amount, units, scaleForPollutant.units, AirQuality.Config.STP_ConversionFactor.EU[pollutantType] || -1) : pollutant.amount;
 
 			if (requireConvertUnit) {
-				Console.info(
-					"✅ PollutantsToEULike",
-					`Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units]}`
-						+ ` -> ${amount} ${friendlyUnits[scaleForPollutant.units]}`,
-				);
+				Console.info("✅ PollutantsToEULike", `Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units]}` + ` -> ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
 			}
 
 			const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
 			if (amount < minValidAmount) {
-				Console.warn(
-					"⚠️ PollutantsToEULike",
-					`Invalid amount of ${pollutantType}: ${amount}`
-						+ ` ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`,
-				);
+				Console.warn("⚠️ PollutantsToEULike", `Invalid amount of ${pollutantType}: ${amount}` + ` ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
 				return { pollutantType, index: scaleForPollutant.ranges.min.indexes[0] };
 			}
 
@@ -236,15 +221,12 @@ export default class AirQuality {
 		};
 	}
 
-	static FindPrimaryPollutants = (pollutantIndexes) => {
+	static FindPrimaryPollutants = pollutantIndexes => {
 		Console.info("☑️ FindPrimaryPollutants");
 
 		const overRangePollutants = pollutantIndexes.filter(({ index }) => index > 500);
 		if (overRangePollutants.length > 0) {
-			Console.warn(
-				"⚠️ FindPrimaryPollutants",
-				"Index > 500 detected! " + JSON.stringify(overRangePollutants.map(({ pollutantType }) => pollutantType)),
-			);
+			Console.warn("⚠️ FindPrimaryPollutants", "Index > 500 detected! " + JSON.stringify(overRangePollutants.map(({ pollutantType }) => pollutantType)));
 			Console.warn("⚠️ FindPrimaryPollutants", "Take care of yourself!");
 			Console.info("✅ FindPrimaryPollutants");
 			return [...overRangePollutants].sort((a, b) => b.index - a.index);
@@ -259,11 +241,7 @@ export default class AirQuality {
 			return list;
 		}, []);
 		if (primaryPollutants.length > 1) {
-			Console.warn(
-				"⚠️ AirQuality",
-				"Multiple primary pollutants: "
-					+ JSON.stringify(primaryPollutants.map(({ pollutantType }) => pollutantType)),
-			);
+			Console.warn("⚠️ AirQuality", "Multiple primary pollutants: " + JSON.stringify(primaryPollutants.map(({ pollutantType }) => pollutantType)));
 		}
 
 		Console.info("✅ FindPrimaryPollutants");
@@ -275,30 +253,15 @@ export default class AirQuality {
 
 		const { pollutantType, units } = pollutant;
 		const requireConvertUnit = units !== scaleForPollutant.units;
-		const amount = requireConvertUnit
-			? AirQuality.ConvertUnit(
-				pollutant.amount,
-				units,
-				scaleForPollutant.units,
-				AirQuality.Config.STP_ConversionFactor.US[pollutantType] || -1,
-			)
-			: pollutant.amount;
+		const amount = requireConvertUnit ? AirQuality.ConvertUnit(pollutant.amount, units, scaleForPollutant.units, AirQuality.Config.STP_ConversionFactor.US[pollutantType] || -1) : pollutant.amount;
 
 		if (requireConvertUnit) {
-			Console.info(
-				"✅ PollutantToInstantCastLikeIndex",
-				`Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units]}`
-					+ ` -> ${amount} ${friendlyUnits[scaleForPollutant.units]}`,
-			);
+			Console.info("✅ PollutantToInstantCastLikeIndex", `Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units]}` + ` -> ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
 		}
 
 		const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
 		if (amount < minValidAmount) {
-			Console.warn(
-				"⚠️ PollutantToInstantCastLikeIndex",
-				`Invalid amount of ${pollutantType}: ${amount}`
-					+ ` ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`,
-			);
+			Console.warn("⚠️ PollutantToInstantCastLikeIndex", `Invalid amount of ${pollutantType}: ${amount}` + ` ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
 			return { pollutantType, index: scaleForPollutant.ranges.min.indexes[0] };
 		}
 
@@ -309,10 +272,7 @@ export default class AirQuality {
 
 		const isOverRange = indexes[0] > scaleForPollutant.ranges.max.indexes[1];
 		if (isOverRange) {
-			Console.warn(
-				"⚠️ PollutantToInstantCastLikeIndex",
-				`Index > 500 detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`,
-			);
+			Console.warn("⚠️ PollutantToInstantCastLikeIndex", `Index > 500 detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
 			Console.warn("⚠️ PollutantToInstantCastLikeIndex", "Take care of yourself!");
 		}
 
@@ -322,10 +282,7 @@ export default class AirQuality {
 
 		return {
 			pollutantType,
-			index: Math.round(
-				(maxIndex - minIndex) / (maxAmount - minAmount) * (amount - minAmount)
-				+ minIndex,
-			),
+			index: Math.round(((maxIndex - minIndex) / (maxAmount - minAmount)) * (amount - minAmount) + minIndex),
 		};
 	}
 
@@ -337,13 +294,9 @@ export default class AirQuality {
 		}
 
 		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
-		const indexes = pollutants.map(pollutant => this.#PollutantToInstantCastLikeIndex(
-			pollutant, scale.pollutants[pollutant.pollutantType],
-		));
+		const indexes = pollutants.map(pollutant => this.#PollutantToInstantCastLikeIndex(pollutant, scale.pollutants[pollutant.pollutantType]));
 
-		const primaryPollutant = indexes.reduce(
-			(previous, current) => previous.index > current.index ? previous : current,
-		);
+		const primaryPollutant = indexes.reduce((previous, current) => (previous.index > current.index ? previous : current));
 		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
 
 		Console.info("✅ PollutantsToInstantCastUS");
@@ -370,19 +323,13 @@ export default class AirQuality {
 			return {};
 		}
 
-		const indexes = pollutants.map(pollutant => this.#PollutantToInstantCastLikeIndex(
-			pollutant, scale.pollutants[pollutant.pollutantType],
-		));
+		const indexes = pollutants.map(pollutant => this.#PollutantToInstantCastLikeIndex(pollutant, scale.pollutants[pollutant.pollutantType]));
 
 		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
 		const primaryPollutant = this.FindPrimaryPollutants(indexes)[0];
 		const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
 		if (isNotAvailable) {
-			Console.warn(
-				"⚠️ AirQuality",
-				`Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, `
-					+ "primaryPollutant will be NOT_AVAILABLE.",
-			);
+			Console.warn("⚠️ AirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, ` + "primaryPollutant will be NOT_AVAILABLE.");
 		}
 
 		Console.info("✅ PollutantsToInstantCastCN");
@@ -398,10 +345,7 @@ export default class AirQuality {
 		};
 	}
 
-	static PollutantsToInstantCastCN12 = (pollutants) => this.#PollutantsToInstantCastCN(
-		pollutants,
-		AirQuality.Config.Scales.WAQI_InstantCast_CN,
-	);
+	static PollutantsToInstantCastCN12 = pollutants => this.#PollutantsToInstantCastCN(pollutants, AirQuality.Config.Scales.WAQI_InstantCast_CN);
 
 	static Config = {
 		Scales: {
@@ -1210,9 +1154,9 @@ export default class AirQuality {
 		 * Standard Conditions for Temperature and Pressure
 		 * [Ozone AQI: Using concentrations in milligrams or ppb?]{@link https://aqicn.org/faq/2015-09-06/ozone-aqi-using-concentrations-in-milligrams-or-ppb/}
 		 * [Understanding Units of Measurement - Terrie K. Boguski, P.E. (CHSR)]{@link https://cfpub.epa.gov/ncer_abstracts/index.cfm/fuseaction/display.files/fileid/14285}
-		 * 
+		 *
 		 * (amount * 12.187 * molecularWeight) / (temperatureInCelsius + 273.15)
-		 * 
+		 *
 		 * - 12.187 is the inverse of gas constant.
 		 * - 273.15 is the 0 celsius in kelvin.
 		 * - temperatureInCelsius is 25 in US, 20 in EU.
