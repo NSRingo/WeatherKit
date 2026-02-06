@@ -805,6 +805,15 @@ export default class QWeather {
 	async YesterdayAirQuality(locationID) {
 		Console.info("☑️ YesterdayAirQuality");
 		const historicalAir = await this.#HistoricalAir(locationID);
+
+		if (!historicalAir.airHourly) {
+			Console.error("YesterdayAirQuality", `Failed to get HistoricalAir(${locationID})`);
+			return {
+				metadata: this.#Metadata(undefined, undefined, true),
+				pollutants: [],
+			};
+		}
+
 		const hour = new Date().getHours();
 		Console.info("✅ YesterdayAirQuality");
 		return {
