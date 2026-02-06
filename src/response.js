@@ -138,7 +138,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 									const isComparisonFill = ComparisonFill.test(parameters.country);
 									const previousDayComparison = injectedIndex.previousDayComparison;
 									const isUnknownComparison = !previousDayComparison || previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
-									const injectedPreviousDayComparison = isComparisonFill && isUnknownComparison ? await InjectPreviousDayComparison(injectedIndex, Settings, Caches, enviroments) : previousDayComparison;
+									const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
+									const injectedPreviousDayComparison = isComparisonFill && isUnknownComparison ? await InjectPreviousDayComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : previousDayComparison;
 
 									// metadata
 									const currentProviders = [injectedPollutants?.metadata?.providerName, injectedIndex?.metadata?.providerName].filter(provider => provider);
