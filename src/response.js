@@ -154,7 +154,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									const injectedPreviousDayComparison = isComparisonFill && isUnknownComparison ? await InjectPreviousDayComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : previousDayComparison;
 
 									// metadata
-									const currentProviders = [injectedPollutants?.metadata?.providerName, injectedIndex?.metadata?.providerName].filter(provider => provider);
+									const currentProviders = [body.airQuality?.metadata?.providerName, injectedPollutants?.metadata?.providerName, injectedIndex?.metadata?.providerName].filter(provider => provider);
 									const comparisonIndexProvider = Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider;
 									const comparisonProviders = [...(comparisonIndexProvider === "iRingo" ? [Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider] : []), comparisonIndexProvider].filter(provider => provider);
 									body.airQuality = {
