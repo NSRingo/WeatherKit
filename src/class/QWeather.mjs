@@ -278,7 +278,6 @@ export default class QWeather {
 			url: `${this.endpoint}/airquality/v1/current/${this.latitude}/${this.longitude}`,
 			headers: this.headers,
 		};
-		let airQuality;
 		try {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.error) {
@@ -297,7 +296,7 @@ export default class QWeather {
 			//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
 			Console.info("✅ AirQualityCurrent");
 		}
-		return airQuality;
+		return {};
 	}
 
 	async Minutely() {
