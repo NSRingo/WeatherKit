@@ -390,7 +390,7 @@ export default class ColorfulClouds {
 				index,
 				isSignificant: categoryIndex >= scale.categories.significantIndex,
 				primaryPollutant: "NOT_AVAILABLE",
-				scale: scale.weatherKitScale.name + "." + scale.weatherKitScale.version,
+				scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 			};
 		} else {
 			const scale = AirQuality.Config.Scales.HJ6332012;
