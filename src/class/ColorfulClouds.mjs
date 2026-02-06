@@ -409,7 +409,7 @@ export default class ColorfulClouds {
 			const primaryPollutant = AirQuality.FindPrimaryPollutants(chnIaqi)[0];
 			const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
 			if (isNotAvailable) {
-				Console.warn("⚠️ CurrentAirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, ` + "primaryPollutant will be NOT_AVAILABLE.");
+				Console.warn("⚠️ CurrentAirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, primaryPollutant will be NOT_AVAILABLE.`);
 			}
 
 			Console.info("✅ CurrentAirQuality");
