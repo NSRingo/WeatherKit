@@ -768,7 +768,7 @@ export default class QWeather {
 
 		if (!supportedIndex?.code || !scale?.categories) {
 			Console.error("❌ AirQuality", "No supported index found");
-			Console.debug("airQualityCurrent.indexes[].code = " + `${JSON.stringify(airQualityCurrent.indexes?.map(({ code }) => code))}`);
+			Console.debug(`airQualityCurrent.indexes[].code = ${JSON.stringify(airQualityCurrent.indexes?.map(({ code }) => code))}`);
 			return {
 				metadata: this.#Metadata(
 					// TODO: &lang=zh
