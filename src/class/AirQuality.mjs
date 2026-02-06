@@ -85,8 +85,8 @@ export default class AirQuality {
 
 	static CategoryIndex(index, scale) {
 		Console.info("☑️ CategoryIndex", `index: ${index}`);
-		const { categoryIndex } = scale.categories.ranges.find(({ range }) => {
-			const [min, max] = range;
+		const { categoryIndex } = scale.categories.ranges.find(({ indexes }) => {
+			const [min, max] = indexes;
 			return index >= min && index <= max;
 		});
 		Console.info("✅ CategoryIndex", `categoryIndex: ${categoryIndex}`);
