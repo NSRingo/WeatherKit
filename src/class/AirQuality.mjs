@@ -210,16 +210,17 @@ export default class AirQuality {
 				return { pollutantType, index: scaleForPollutant.ranges.min.indexes[0] };
 			}
 
-			const { indexes } = scaleForPollutant.ranges.value.find(({ amounts }) => {
+			const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
 				const [minAmount, maxAmount] = amounts;
 				return amount >= minAmount && amount <= maxAmount;
 			});
 
 			// minIndex === maxIndex === categoryIndex in EU-like scales
-			return { pollutantType, index: indexes[0] };
+			const [minAmount, maxAmount] = amounts;
+			return { pollutantType, index: indexes[0], percentage: amount / (maxAmount - minAmount) };
 		});
 
-		const primaryPollutant = aqis.reduce((previous, current) => (previous.index > current.index ? previous : current));
+		const primaryPollutant = aqis.reduce((previous, current) => (previous.index + previous.percentage > current.index + current.percentage ? previous : current));
 
 		Console.info("✅ PollutantsToEULike");
 		return {
