@@ -399,13 +399,13 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 10] },
-							max: { indexes: [5, 5], amounts: [101, Infinity] },
+							max: { indexes: [5, 5], amounts: [101, Number.POSITIVE_INFINITY] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 10] }, // sehr gut
 								{ indexes: [2, 2], amounts: [11, 30] }, // gut
 								{ indexes: [3, 3], amounts: [31, 60] }, // mäßig
 								{ indexes: [4, 4], amounts: [61, 100] }, // schlecht
-								{ indexes: [5, 5], amounts: [101, Infinity] }, // sehr schlecht
+								{ indexes: [5, 5], amounts: [101, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
 					},
@@ -413,13 +413,13 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 9] },
-							max: { indexes: [5, 5], amounts: [91, Infinity] },
+							max: { indexes: [5, 5], amounts: [91, Number.POSITIVE_INFINITY] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 9] }, // sehr gut
 								{ indexes: [2, 2], amounts: [10, 27] }, // gut
 								{ indexes: [3, 3], amounts: [28, 54] }, // mäßig
 								{ indexes: [4, 4], amounts: [55, 90] }, // schlecht
-								{ indexes: [5, 5], amounts: [91, Infinity] }, // sehr schlecht
+								{ indexes: [5, 5], amounts: [91, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
 					},
@@ -427,13 +427,13 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 5] },
-							max: { indexes: [5, 5], amounts: [51, Infinity] },
+							max: { indexes: [5, 5], amounts: [51, Number.POSITIVE_INFINITY] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 5] }, // sehr gut
 								{ indexes: [2, 2], amounts: [6, 15] }, // gut
 								{ indexes: [3, 3], amounts: [16, 30] }, // mäßig
 								{ indexes: [4, 4], amounts: [31, 50] }, // schlecht
-								{ indexes: [5, 5], amounts: [51, Infinity] }, // sehr schlecht
+								{ indexes: [5, 5], amounts: [51, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
 					},
@@ -441,13 +441,13 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 24] },
-							max: { indexes: [5, 5], amounts: [241, Infinity] },
+							max: { indexes: [5, 5], amounts: [241, Number.POSITIVE_INFINITY] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 24] }, // sehr gut
 								{ indexes: [2, 2], amounts: [25, 72] }, // gut
 								{ indexes: [3, 3], amounts: [73, 144] }, // mäßig
 								{ indexes: [4, 4], amounts: [145, 240] }, // schlecht
-								{ indexes: [5, 5], amounts: [241, Infinity] }, // sehr schlecht
+								{ indexes: [5, 5], amounts: [241, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
 					},
@@ -455,13 +455,13 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 10] },
-							max: { indexes: [5, 5], amounts: [101, Infinity] },
+							max: { indexes: [5, 5], amounts: [101, Number.POSITIVE_INFINITY] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 10] }, // sehr gut
 								{ indexes: [2, 2], amounts: [11, 30] }, // gut
 								{ indexes: [3, 3], amounts: [31, 60] }, // mäßig
 								{ indexes: [4, 4], amounts: [61, 100] }, // schlecht
-								{ indexes: [5, 5], amounts: [101, Infinity] }, // sehr schlecht
+								{ indexes: [5, 5], amounts: [101, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
 					},
@@ -492,14 +492,14 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 5] },
-							max: { indexes: [6, 6], amounts: [141, Infinity] },
+							max: { indexes: [6, 6], amounts: [141, Number.POSITIVE_INFINITY] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 5] }, // Good
 								{ indexes: [2, 2], amounts: [6, 15] }, // Fair
 								{ indexes: [3, 3], amounts: [16, 50] }, // Moderate
 								{ indexes: [4, 4], amounts: [51, 90] }, // Poor
 								{ indexes: [5, 5], amounts: [91, 140] }, // Very Poor
-								{ indexes: [6, 6], amounts: [141, Infinity] }, // Extremely Poor
+								{ indexes: [6, 6], amounts: [141, Number.POSITIVE_INFINITY] }, // Extremely Poor
 							],
 						},
 					},
@@ -507,14 +507,14 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 15] },
-							max: { indexes: [6, 6], amounts: [271, Infinity] },
+							max: { indexes: [6, 6], amounts: [271, Number.POSITIVE_INFINITY] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 15] }, // Good
 								{ indexes: [2, 2], amounts: [16, 45] }, // Fair
 								{ indexes: [3, 3], amounts: [46, 120] }, // Moderate
 								{ indexes: [4, 4], amounts: [121, 195] }, // Poor
 								{ indexes: [5, 5], amounts: [196, 270] }, // Very Poor
-								{ indexes: [6, 6], amounts: [271, Infinity] }, // Extremely Poor
+								{ indexes: [6, 6], amounts: [271, Number.POSITIVE_INFINITY] }, // Extremely Poor
 							],
 						},
 					},
@@ -522,14 +522,14 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 60] },
-							max: { indexes: [6, 6], amounts: [181, Infinity] },
+							max: { indexes: [6, 6], amounts: [181, Number.POSITIVE_INFINITY] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 60] }, // Good
 								{ indexes: [2, 2], amounts: [61, 100] }, // Fair
 								{ indexes: [3, 3], amounts: [101, 120] }, // Moderate
 								{ indexes: [4, 4], amounts: [121, 160] }, // Poor
 								{ indexes: [5, 5], amounts: [161, 180] }, // Very Poor
-								{ indexes: [6, 6], amounts: [181, Infinity] }, // Extremely Poor
+								{ indexes: [6, 6], amounts: [181, Number.POSITIVE_INFINITY] }, // Extremely Poor
 							],
 						},
 					},
@@ -537,14 +537,14 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 10] },
-							max: { indexes: [6, 6], amounts: [151, Infinity] },
+							max: { indexes: [6, 6], amounts: [151, Number.POSITIVE_INFINITY] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 10] }, // Good
 								{ indexes: [2, 2], amounts: [11, 25] }, // Fair
 								{ indexes: [3, 3], amounts: [26, 60] }, // Moderate
 								{ indexes: [4, 4], amounts: [61, 100] }, // Poor
 								{ indexes: [5, 5], amounts: [101, 150] }, // Very Poor
-								{ indexes: [6, 6], amounts: [151, Infinity] }, // Extremely Poor
+								{ indexes: [6, 6], amounts: [151, Number.POSITIVE_INFINITY] }, // Extremely Poor
 							],
 						},
 					},
@@ -552,7 +552,7 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 20] },
-							max: { indexes: [6, 6], amounts: [276, Infinity] },
+							max: { indexes: [6, 6], amounts: [276, Number.POSITIVE_INFINITY] },
 							value: [
 								{ indexes: [1, 1], amounts: [0, 20] }, // Good
 								{ indexes: [2, 2], amounts: [21, 40] }, // Fair
@@ -762,7 +762,7 @@ export default class AirQuality {
 						{ categoryIndex: 3, indexes: [101, 150] }, // Unhealthy for Sensitive Groups
 						{ categoryIndex: 4, indexes: [151, 200] }, // Unhealthy
 						{ categoryIndex: 5, indexes: [201, 300] }, // Very Unhealthy
-						{ categoryIndex: 6, indexes: [301, Infinity] }, // Hazardous
+						{ categoryIndex: 6, indexes: [301, Number.POSITIVE_INFINITY] }, // Hazardous
 					],
 				},
 				pollutants: {
@@ -780,7 +780,7 @@ export default class AirQuality {
 								// Note 2:
 								// 8-hour O3 values do not define higher AQI values (≥ 301).
 								// AQI values of 301 or higher are calculated with 1-hour O3 concentrations.
-								{ indexes: [301, Infinity], amounts: [0.201, Infinity] }, // Hazardous
+								{ indexes: [301, Number.POSITIVE_INFINITY], amounts: [0.201, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -799,7 +799,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [0.165, 0.204] }, // Unhealthy
 								{ indexes: [201, 300], amounts: [0.205, 0.404] }, // Very Unhealthy
 								{ indexes: [301, 500], amounts: [0.405, 0.604] }, // Hazardous
-								{ indexes: [501, Infinity], amounts: [0.605, Infinity] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [0.605, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -819,7 +819,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [55.5, 125.4] }, // Unhealthy
 								{ indexes: [201, 300], amounts: [125.5, 225.4] }, // Very Unhealthy
 								{ indexes: [301, 500], amounts: [225.5, 325.4] }, // Hazardous
-								{ indexes: [501, Infinity], amounts: [325.5, Infinity] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [325.5, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -835,7 +835,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [255, 354] }, // Unhealthy
 								{ indexes: [201, 300], amounts: [355, 424] }, // Very Unhealthy
 								{ indexes: [301, 500], amounts: [425, 604] }, // Hazardous
-								{ indexes: [501, Infinity], amounts: [605, Infinity] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [605, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -851,7 +851,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [12.5, 15.4] }, // Unhealthy
 								{ indexes: [201, 300], amounts: [15.5, 30.4] }, // Very Unhealthy
 								{ indexes: [301, 500], amounts: [30.5, 50.4] }, // Hazardous
-								{ indexes: [501, Infinity], amounts: [50.5, Infinity] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [50.5, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -872,7 +872,7 @@ export default class AirQuality {
 								// It is believed that they forgot to remove this note
 								{ indexes: [201, 300], amounts: [305, 604] }, // Very Unhealthy
 								{ indexes: [301, 500], amounts: [605, 1004] }, // Hazardous
-								{ indexes: [501, Infinity], amounts: [1005, Infinity] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [1005, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -888,7 +888,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [361, 649] }, // Unhealthy
 								{ indexes: [201, 300], amounts: [650, 1249] }, // Very Unhealthy
 								{ indexes: [301, 500], amounts: [1250, 2049] }, // Hazardous
-								{ indexes: [501, Infinity], amounts: [2050, Infinity] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [2050, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -912,7 +912,7 @@ export default class AirQuality {
 						{ categoryIndex: 3, indexes: [101, 150] }, // Unhealthy for Sensitive Groups
 						{ categoryIndex: 4, indexes: [151, 200] }, // Unhealthy
 						{ categoryIndex: 5, indexes: [201, 300] }, // Very Unhealthy
-						{ categoryIndex: 6, indexes: [301, Infinity] }, // Hazardous
+						{ categoryIndex: 6, indexes: [301, Number.POSITIVE_INFINITY] }, // Hazardous
 					],
 				},
 				// Eventually we will convert it to ppb
@@ -930,7 +930,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [152.5, 204] }, // Unhealthy
 								{ indexes: [201, 300], amounts: [205, 404] }, // Very Unhealthy
 								{ indexes: [301, 500], amounts: [405, 605] }, // Hazardous
-								{ indexes: [501, Infinity], amounts: [606, Infinity] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [606, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -946,7 +946,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [55.5, 125.4] }, // Unhealthy
 								{ indexes: [201, 300], amounts: [125.5, 225.4] }, // Very Unhealthy
 								{ indexes: [301, 500], amounts: [225.5, 325.4] }, // Hazardous
-								{ indexes: [501, Infinity], amounts: [325.5, Infinity] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [325.5, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -962,7 +962,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [255, 354] }, // Unhealthy
 								{ indexes: [201, 300], amounts: [355, 424] }, // Very Unhealthy
 								{ indexes: [301, 500], amounts: [425, 604] }, // Hazardous
-								{ indexes: [501, Infinity], amounts: [605, Infinity] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [605, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -978,7 +978,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [12.5, 15.4] }, // Unhealthy
 								{ indexes: [201, 300], amounts: [15.5, 30.4] }, // Very Unhealthy
 								{ indexes: [301, 500], amounts: [30.5, 50.4] }, // Hazardous
-								{ indexes: [501, Infinity], amounts: [50.5, Infinity] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [50.5, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -994,7 +994,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [186, 304] }, // Unhealthy
 								{ indexes: [201, 300], amounts: [305, 604] }, // Very Unhealthy
 								{ indexes: [301, 500], amounts: [605, 1004] }, // Hazardous
-								{ indexes: [501, Infinity], amounts: [1005, Infinity] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [1005, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -1010,7 +1010,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [361, 649] }, // Unhealthy
 								{ indexes: [201, 300], amounts: [650, 1249] }, // Very Unhealthy
 								{ indexes: [301, 500], amounts: [1250, 2049] }, // Hazardous
-								{ indexes: [501, Infinity], amounts: [2050, Infinity] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [2050, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -1051,7 +1051,7 @@ export default class AirQuality {
 								{ indexes: [201, 300], amounts: [801, 1600] },
 								{ indexes: [301, 400], amounts: [1601, 2100] },
 								{ indexes: [401, 500], amounts: [2101, 2602] },
-								{ indexes: [501, Infinity], amounts: [2602, Infinity] },
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [2602, Number.POSITIVE_INFINITY] },
 							],
 						},
 					},
@@ -1068,7 +1068,7 @@ export default class AirQuality {
 								{ indexes: [201, 300], amounts: [1201, 2340] },
 								{ indexes: [301, 400], amounts: [2341, 3090] },
 								{ indexes: [401, 500], amounts: [3091, 3840] },
-								{ indexes: [501, Infinity], amounts: [3841, Infinity] },
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [3841, Number.POSITIVE_INFINITY] },
 							],
 						},
 					},
@@ -1085,7 +1085,7 @@ export default class AirQuality {
 								{ indexes: [201, 300], amounts: [351, 420] },
 								{ indexes: [301, 400], amounts: [421, 500] },
 								{ indexes: [401, 500], amounts: [501, 600] },
-								{ indexes: [501, Infinity], amounts: [601, Infinity] },
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [601, Number.POSITIVE_INFINITY] },
 							],
 						},
 					},
@@ -1102,7 +1102,7 @@ export default class AirQuality {
 								{ indexes: [201, 300], amounts: [61, 90] },
 								{ indexes: [301, 400], amounts: [91, 120] },
 								{ indexes: [401, 500], amounts: [121, 150] },
-								{ indexes: [501, Infinity], amounts: [151, Infinity] },
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [151, Number.POSITIVE_INFINITY] },
 							],
 						},
 					},
@@ -1119,7 +1119,7 @@ export default class AirQuality {
 								{ indexes: [201, 300], amounts: [401, 800] },
 								{ indexes: [301, 400], amounts: [801, 1000] },
 								{ indexes: [401, 500], amounts: [1001, 1200] },
-								{ indexes: [501, Infinity], amounts: [1201, Infinity] },
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [1201, Number.POSITIVE_INFINITY] },
 							],
 						},
 					},
@@ -1136,7 +1136,7 @@ export default class AirQuality {
 								{ indexes: [201, 300], amounts: [151, 250] },
 								{ indexes: [301, 400], amounts: [251, 350] },
 								{ indexes: [401, 500], amounts: [351, 500] },
-								{ indexes: [501, Infinity], amounts: [501, Infinity] },
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [501, Number.POSITIVE_INFINITY] },
 							],
 						},
 					},

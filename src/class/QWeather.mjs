@@ -106,7 +106,7 @@ export default class QWeather {
 		const findNearestFast = (lat, lng) => {
 			const keys = getNearbyGridKeys(lat, lng, 2);
 			let nearest = null;
-			let minDist = Infinity;
+			let minDist = Number.POSITIVE_INFINITY;
 
 			for (const key of keys) {
 				const locations = grid[key];
