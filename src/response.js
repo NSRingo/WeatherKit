@@ -365,11 +365,12 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 			if (algorithm !== "") {
 				switch (Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider) {
 					case "QWeather": {
-						return await qweatherComparison(isHJ6332012(currentIndexProvider, airQuality?.scale, Settings), airQuality?.categoryIndex, pollutants => GetAirQualityFromPollutants(pollutants, algorithm).categoryIndex);
+						return await qweatherComparison(true, airQuality?.categoryIndex, pollutants => GetAirQualityFromPollutants(pollutants, algorithm).categoryIndex);
 					}
 				}
 			}
 
+			Console.warn("⚠️ InjectPreviousDayComparison: Unsupported scale of current air quality");
 			return UNKNOWN;
 		}
 		case "QWeather": {
