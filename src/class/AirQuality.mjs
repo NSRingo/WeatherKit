@@ -266,7 +266,7 @@ export default class AirQuality {
 		const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
 		if (amount < minValidAmount) {
 			Console.warn("⚠️ PollutantToInstantCastLikeIndex", `Invalid amount of ${pollutantType}: ${amount}` + ` ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
-			return { pollutantType, index: scaleForPollutant.ranges.min.indexes[0] };
+			return scaleForPollutant.ranges.min.indexes[0];
 		}
 
 		const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
@@ -284,10 +284,7 @@ export default class AirQuality {
 		const [minIndex, maxIndex] = isOverRange ? scaleForPollutant.ranges.max.indexes : indexes;
 		const [minAmount, maxAmount] = isOverRange ? scaleForPollutant.ranges.max.amounts : amounts;
 
-		return {
-			pollutantType,
-			index: Math.round(((maxIndex - minIndex) / (maxAmount - minAmount)) * (amount - minAmount) + minIndex),
-		};
+		return Math.round(((maxIndex - minIndex) / (maxAmount - minAmount)) * (amount - minAmount) + minIndex);
 	}
 
 	static PollutantsToInstantCastUS(pollutants) {
@@ -300,7 +297,10 @@ export default class AirQuality {
 		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
 		const indexes = pollutants.map(pollutant => {
 			const scaleForPollutant = scale.pollutants[pollutant.pollutantType];
-			return scaleForPollutant ? this.#PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) : { pollutantType: pollutant.pollutantType, index: -1 };
+			return {
+				pollutantType: pollutant.pollutantType,
+				index: scaleForPollutant ? this.#PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) : -1,
+			};
 		});
 
 		const primaryPollutant = indexes.reduce((previous, current) => (previous.index > current.index ? previous : current));
@@ -332,7 +332,10 @@ export default class AirQuality {
 
 		const indexes = pollutants.map(pollutant => {
 			const scaleForPollutant = scale.pollutants[pollutant.pollutantType];
-			return scaleForPollutant ? this.#PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) : { pollutantType: pollutant.pollutantType, index: -1 };
+			return {
+				pollutantType: pollutant.pollutantType,
+				index: scaleForPollutant ? this.#PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) : -1,
+			};
 		});
 
 		const primaryPollutant = this.FindPrimaryPollutants(indexes)[0];
