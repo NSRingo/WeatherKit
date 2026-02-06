@@ -167,7 +167,7 @@ export default class AirQuality {
 		}
 	}
 
-	static ToWeatherKitScale = ({ name, version }) => name + "." + version;
+	static ToWeatherKitScale = ({ name, version }) => `${name}.${version}`;
 	static GetNameFromScale(scale) {
 		Console.info("☑️ GetNameFromScale");
 		const lastDotIndex = scale?.lastIndexOf(".");
@@ -239,7 +239,7 @@ export default class AirQuality {
 
 		const overRangePollutants = pollutantIndexes.filter(({ index }) => index > 500);
 		if (overRangePollutants.length > 0) {
-			Console.warn("⚠️ FindPrimaryPollutants", "Index > 500 detected! " + JSON.stringify(overRangePollutants.map(({ pollutantType }) => pollutantType)));
+			Console.warn("⚠️ FindPrimaryPollutants", `Index > 500 detected! ${JSON.stringify(overRangePollutants.map(({ pollutantType }) => pollutantType))}`);
 			Console.warn("⚠️ FindPrimaryPollutants", "Take care of yourself!");
 			Console.info("✅ FindPrimaryPollutants");
 			return [...overRangePollutants].sort((a, b) => b.index - a.index);
@@ -254,7 +254,7 @@ export default class AirQuality {
 			return list;
 		}, []);
 		if (primaryPollutants.length > 1) {
-			Console.warn("⚠️ AirQuality", "Multiple primary pollutants: " + JSON.stringify(primaryPollutants.map(({ pollutantType }) => pollutantType)));
+			Console.warn("⚠️ AirQuality", `Multiple primary pollutants: ${JSON.stringify(primaryPollutants.map(({ pollutantType }) => pollutantType))}`);
 		}
 
 		Console.info("✅ FindPrimaryPollutants");
@@ -352,7 +352,7 @@ export default class AirQuality {
 		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
 		const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
 		if (isNotAvailable) {
-			Console.warn("⚠️ AirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, ` + "primaryPollutant will be NOT_AVAILABLE.");
+			Console.warn("⚠️ AirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, primaryPollutant will be NOT_AVAILABLE.`);
 		}
 
 		Console.info("✅ PollutantsToInstantCastCN");
