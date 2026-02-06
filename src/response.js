@@ -158,14 +158,14 @@ Console.info(`FORMAT: ${FORMAT}`);
 									const comparisonIndexProvider = Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider;
 									const comparisonProviders = [...(comparisonIndexProvider === "iRingo" ? [Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider] : []), comparisonIndexProvider].filter(provider => provider);
 									body.airQuality = {
+										...body.airQuality,
+										...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
 										metadata: {
 											...body.airQuality?.metadata,
 											providerName: [...currentProviders, ...comparisonProviders].join(", "),
 											...(currentProviders?.[0] ? { providerLogo: providerNameToLogo(currentProviders[0], "v2") } : {}),
 										},
-										...body.airQuality,
-										...injectedIndex,
-										...injectedPollutants,
+										...(injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable ? { pollutants: injectedPollutants.pollutants } : {}),
 										previousDayComparison: injectedPreviousDayComparison,
 									};
 								}
