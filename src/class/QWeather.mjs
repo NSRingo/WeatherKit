@@ -66,7 +66,7 @@ export default class QWeather {
 			const newLocationsGrid = JSON.parse(response.body);
 			setCache({
 				...qweatherCache,
-				locationsGrid: { etag: response.headers.get("ETag"), lastUpdated: Date.now(), data: newLocationsGrid },
+				locationsGrid: { etag: response.headers.ETag, lastUpdated: Date.now(), data: newLocationsGrid },
 			});
 			Console.info("✅ GetLocationsGrid");
 			return newLocationsGrid;
