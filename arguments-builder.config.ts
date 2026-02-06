@@ -128,7 +128,7 @@ export default defineConfig({
 		{
 			key: "AirQuality.Current.Index.Provider",
 			name: "[空气质量 - 今日 - 空气质量指数] 数据源",
-			defaultValue: "ColorfulClouds",
+			defaultValue: "iRingo",
 			type: "string",
 			options: [
 				{ key: "iRingo", label: "iRingo内置算法" },
@@ -173,7 +173,7 @@ export default defineConfig({
 		{
 			key: "AirQuality.Comparison.Yesterday.IndexProvider",
 			name: "[空气质量 - 对比昨日 - 昨日 - 空气质量指数] 数据源",
-			defaultValue: "ColorfulClouds",
+			defaultValue: "ColorfulCloudsUS",
 			type: "string",
 			options: [
 				{ key: "iRingo", label: "iRingo内置算法" },
@@ -186,7 +186,7 @@ export default defineConfig({
 		{
 			key: "AirQuality.iRingoAlgorithm",
 			name: "[空气质量 - iRingo内置算法] 算法",
-			defaultValue: "Auto",
+			defaultValue: "UBA",
 			type: "string",
 			options: [
 				{ key: "UBA", label: "德国LQI（FB001846）" },
