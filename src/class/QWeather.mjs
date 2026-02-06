@@ -16,8 +16,11 @@ export default class QWeather {
 		this.latitude = parameters.latitude;
 		this.longitude = parameters.longitude;
 		this.country = parameters.country;
-		this.stations;
 	}
+
+	#cache = {
+		airQualityCurrent: {},
+	};
 
 	#Config = {
 		Pollutants: {
@@ -274,6 +277,12 @@ export default class QWeather {
 
 	async #AirQualityCurrent() {
 		Console.info("☑️ AirQualityCurrent");
+
+		if (this.#cache.airQualityCurrent?.metadata?.tag && !this.#cache.airQualityCurrent?.error) {
+			Console.info("✅ AirQualityCurrent", "Using cache");
+			return this.#cache.airQualityCurrent;
+		}
+
 		const request = {
 			url: `${this.endpoint}/airquality/v1/current/${this.latitude}/${this.longitude}`,
 			headers: this.headers,
@@ -282,9 +291,7 @@ export default class QWeather {
 			const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
 			switch (body?.error) {
 				case undefined: {
-					if (Array.isArray(body.stations)) {
-						this.stations = body.stations;
-					}
+					this.#cache.airQualityCurrent = body;
 					return body;
 				}
 				default:
