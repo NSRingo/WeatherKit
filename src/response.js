@@ -117,6 +117,18 @@ Console.info(`FORMAT: ${FORMAT}`);
 								}
 
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
+									// BoxJS returns string if only one selected
+									const getReplaceScales = () => {
+										const replace = Settings?.AirQuality?.Current?.Index?.Replace;
+										if (!replace) {
+											return [];
+										} else if (Array.isArray(replace)) {
+											return replace;
+										} else {
+											return [replace];
+										}
+									};
+
 									if (Array.isArray(body?.airQuality?.pollutants)) {
 										AirQuality.FixQWeatherCO(body.airQuality);
 									}
@@ -128,7 +140,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 
 									// InjectIndex
 									const needFillIndex = isCurrentFill && !body?.airQuality?.scale;
-									const scaleReplaceList = Array.isArray(Settings.AirQuality.Current?.Index?.Replace) ? Settings.AirQuality.Current?.Index?.Replace : [];
+									const scaleReplaceList = getReplaceScales();
 									const needReplaceIndex = scaleReplaceList.includes(AirQuality.GetNameFromScale(body.airQuality.scale));
 									const needInjectIndex = needFillIndex || needReplaceIndex;
 									const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
