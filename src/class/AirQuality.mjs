@@ -169,8 +169,16 @@ export default class AirQuality {
 
 	static ToWeatherKitScale = ({ name, version }) => name + "." + version;
 	static GetNameFromScale(scale) {
+		Console.info("☑️ GetNameFromScale");
 		const lastDotIndex = scale.lastIndexOf(".");
-		return lastDotIndex === -1 ? scale : scale.substring(0, lastDotIndex);
+		if (lastDotIndex === -1) {
+			Console.warn("⚠️ GetNameFromScale", `Cannot find version part of ${scale}`);
+			return scale;
+		}
+
+		const scaleName = scale.substring(0, lastDotIndex);
+		Console.info("✅ GetNameFromScale", `scaleName: ${scaleName}`);
+		return scaleName;
 	}
 
 	static PollutantsToEULike(pollutants, scale = AirQuality.Config.Scales.EU_EAQI) {
