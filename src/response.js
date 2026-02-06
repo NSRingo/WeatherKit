@@ -130,40 +130,49 @@ Console.info(`FORMAT: ${FORMAT}`);
 										}
 									};
 
-									if (Array.isArray(body?.airQuality?.pollutants)) {
+									const isPollutantEmpty = !Array.isArray(body?.airQuality?.pollutants) || body.airQuality.pollutants.length === 0;
+									if (!isPollutantEmpty) {
 										AirQuality.FixQWeatherCO(body.airQuality);
 									}
 
 									// injectedPollutants
-									const CurrentFill = new RegExp(Settings?.AirQuality?.Current?.Fill || "(?!)");
-									const isCurrentFill = CurrentFill.test(country);
-									const injectedPollutants = isCurrentFill ? await InjectPollutants(Settings, enviroments) : body.airQuality;
+									const isCurrentFill = new RegExp(Settings?.AirQuality?.Current?.Fill || "(?!)").test(country);
+									const needPollutants = isCurrentFill && isPollutantEmpty;
+									const injectedPollutants = needPollutants ? await InjectPollutants(Settings, enviroments) : body.airQuality;
 
 									// InjectIndex
-									const needFillIndex = isCurrentFill && !body?.airQuality?.scale;
-									const scaleReplaceList = getReplaceScales();
-									const needInjectIndex = needFillIndex || scaleReplaceList.includes(AirQuality.GetNameFromScale(body.airQuality?.scale));
+									const needInjectIndex = needPollutants || getReplaceScales().includes(AirQuality.GetNameFromScale(body.airQuality?.scale));
 									const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
 
 									// injectedPreviousDayComparison
-									const ComparisonFill = new RegExp(Settings?.AirQuality?.Comparison?.Fill || "(?!)");
-									const isComparisonFill = ComparisonFill.test(country);
 									const previousDayComparison = injectedIndex.previousDayComparison;
 									const isUnknownComparison = !previousDayComparison || previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
 									const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
-									const injectedPreviousDayComparison = isComparisonFill && isUnknownComparison ? await InjectPreviousDayComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : previousDayComparison;
+
+									const isComparisonFill = new RegExp(Settings?.AirQuality?.Comparison?.Fill || "(?!)").test(country);
+									const needInjectComparison = isComparisonFill && isUnknownComparison;
+									const injectedPreviousDayComparison = needInjectComparison ? await InjectPreviousDayComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : previousDayComparison;
 
 									// metadata
-									const currentProviders = [body.airQuality?.metadata?.providerName, injectedPollutants?.metadata?.providerName, injectedIndex?.metadata?.providerName].filter(provider => provider);
+									const weatherKitProvider = body.airQuality?.metadata?.providerName;
+									const pollutantProvider = injectedPollutants?.metadata?.providerName;
+									const indexProvider = injectedIndex?.metadata?.providerName;
+									const comparisonPollutantProvider = Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider;
 									const comparisonIndexProvider = Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider;
-									const comparisonProviders = [...(comparisonIndexProvider === "iRingo" ? [Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider] : []), comparisonIndexProvider].filter(provider => provider);
+									const comparisonProviders = [...(comparisonIndexProvider === "iRingo" ? [comparisonPollutantProvider] : []), comparisonIndexProvider].filter(provider => provider);
+									const providers = [
+										...(weatherKitProvider ? [weatherKitProvider] : []),
+										...(needPollutants && pollutantProvider ? [`污染物：${pollutantProvider}`] : []),
+										...(needInjectIndex && indexProvider ? [`空气指数：${indexProvider}`] : []),
+										...(needInjectComparison && comparisonProviders.length > 0 ? [`对比昨日：${comparisonProviders.join("、")}`] : []),
+									];
 									body.airQuality = {
 										...body.airQuality,
 										...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
 										metadata: {
 											...(body.airQuality?.metadata ? body.airQuality.metadata : injectedPollutants?.metadata),
-											providerName: [...currentProviders, ...comparisonProviders].join(", "),
-											...(currentProviders?.[0] ? { providerLogo: providerNameToLogo(currentProviders[0], "v2") } : {}),
+											providerName: providers.join("、"),
+											...(providers?.[0] ? { providerLogo: providerNameToLogo(providers[0], "v2") } : {}),
 										},
 										...(injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable ? { pollutants: injectedPollutants.pollutants } : {}),
 										previousDayComparison: injectedPreviousDayComparison,
