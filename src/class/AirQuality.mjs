@@ -228,6 +228,7 @@ export default class AirQuality {
 			// categoryIndex === index in EU-like scales
 			categoryIndex: primaryPollutant.index,
 			pollutants,
+			metadata: { providerName: "iRingo", temporarilyUnavailable: false },
 			primaryPollutant: primaryPollutant.pollutantType,
 			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 		};
@@ -321,6 +322,7 @@ export default class AirQuality {
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
 			categoryIndex,
 			pollutants,
+			metadata: { providerName: "iRingo", temporarilyUnavailable: false },
 			primaryPollutant: primaryPollutant.pollutantType,
 			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 		};
@@ -361,6 +363,7 @@ export default class AirQuality {
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
 			categoryIndex,
 			pollutants,
+			metadata: { providerName: "iRingo", temporarilyUnavailable: false },
 			primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : primaryPollutant.pollutantType,
 			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 		};
