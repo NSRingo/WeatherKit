@@ -90,11 +90,12 @@ Console.info(`FORMAT: ${FORMAT}`);
 									qWeather: new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host),
 									waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
 								};
+								const country = url.searchParams.get("country");
 
 								const weatherTargets = new RegExp(Settings?.Weather?.Replace || "(?!)");
 								const nextHourTargets = new RegExp(Settings?.NextHour?.Fill || "(?!)");
 
-								if (weatherTargets.test(parameters.country)) {
+								if (weatherTargets.test(country)) {
 									if (url.searchParams.get("dataSets").includes("currentWeather")) {
 										body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
 										if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
@@ -109,7 +110,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									}
 								}
 
-								if (nextHourTargets.test(parameters.country)) {
+								if (nextHourTargets.test(country)) {
 									if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
 										if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
 										if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
@@ -135,7 +136,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 
 									// injectedPollutants
 									const CurrentFill = new RegExp(Settings?.AirQuality?.Current?.Fill || "(?!)");
-									const isCurrentFill = CurrentFill.test(parameters.country);
+									const isCurrentFill = CurrentFill.test(country);
 									const injectedPollutants = isCurrentFill ? await InjectPollutants(Settings, enviroments) : body.airQuality;
 
 									// InjectIndex
@@ -147,7 +148,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 
 									// injectedPreviousDayComparison
 									const ComparisonFill = new RegExp(Settings?.AirQuality?.Comparison?.Fill || "(?!)");
-									const isComparisonFill = ComparisonFill.test(parameters.country);
+									const isComparisonFill = ComparisonFill.test(country);
 									const previousDayComparison = injectedIndex.previousDayComparison;
 									const isUnknownComparison = !previousDayComparison || previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
 									const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
