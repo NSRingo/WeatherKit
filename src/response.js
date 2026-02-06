@@ -124,7 +124,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									// injectedPollutants
 									const CurrentFill = new RegExp(Settings?.AirQuality?.Current?.Fill || "(?!)");
 									const isCurrentFill = CurrentFill.test(parameters.country);
-									const injectedPollutants = isCurrentFill ? await InjectPollutants(body.airQuality, Settings, enviroments) : body.airQuality;
+									const injectedPollutants = isCurrentFill ? await InjectPollutants(Settings, enviroments) : body.airQuality;
 
 									// InjectIndex
 									const needFillIndex = isCurrentFill && !body?.airQuality?.scale;
