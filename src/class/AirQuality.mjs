@@ -185,6 +185,10 @@ export default class AirQuality {
 
 			const { pollutantType, units } = pollutant;
 			const scaleForPollutant = scale.pollutants[pollutantType];
+			if (!scaleForPollutant) {
+				return { pollutantType, index: -1 };
+			}
+
 			const requireConvertUnit = units !== scaleForPollutant.units;
 			const amount = requireConvertUnit ? AirQuality.ConvertUnit(pollutant.amount, units, scaleForPollutant.units, AirQuality.Config.STP_ConversionFactor.EU[pollutantType] || -1) : pollutant.amount;
 
@@ -294,7 +298,10 @@ export default class AirQuality {
 		}
 
 		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
-		const indexes = pollutants.map(pollutant => this.#PollutantToInstantCastLikeIndex(pollutant, scale.pollutants[pollutant.pollutantType]));
+		const indexes = pollutants.map(pollutant => {
+			const scaleForPollutant = scale.pollutants[pollutant.pollutantType];
+			return scaleForPollutant ? this.#PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) : { pollutantType: pollutant.pollutantType, index: -1 };
+		});
 
 		const primaryPollutant = indexes.reduce((previous, current) => (previous.index > current.index ? previous : current));
 		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
@@ -323,7 +330,10 @@ export default class AirQuality {
 			return {};
 		}
 
-		const indexes = pollutants.map(pollutant => this.#PollutantToInstantCastLikeIndex(pollutant, scale.pollutants[pollutant.pollutantType]));
+		const indexes = pollutants.map(pollutant => {
+			const scaleForPollutant = scale.pollutants[pollutant.pollutantType];
+			return scaleForPollutant ? this.#PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) : { pollutantType: pollutant.pollutantType, index: -1 };
+		});
 
 		const primaryPollutant = this.FindPrimaryPollutants(indexes)[0];
 		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
