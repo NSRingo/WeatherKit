@@ -170,8 +170,8 @@ export default class AirQuality {
 	static ToWeatherKitScale = ({ name, version }) => name + "." + version;
 	static GetNameFromScale(scale) {
 		Console.info("☑️ GetNameFromScale");
-		const lastDotIndex = scale.lastIndexOf(".");
-		if (lastDotIndex === -1) {
+		const lastDotIndex = scale?.lastIndexOf(".");
+		if (!scale || lastDotIndex === -1) {
 			Console.warn("⚠️ GetNameFromScale", `Cannot find version part of ${scale}`);
 			return scale;
 		}

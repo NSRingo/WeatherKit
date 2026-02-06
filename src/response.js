@@ -142,8 +142,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									// InjectIndex
 									const needFillIndex = isCurrentFill && !body?.airQuality?.scale;
 									const scaleReplaceList = getReplaceScales();
-									const needReplaceIndex = scaleReplaceList.includes(AirQuality.GetNameFromScale(body.airQuality.scale));
-									const needInjectIndex = needFillIndex || needReplaceIndex;
+									const needInjectIndex = needFillIndex || scaleReplaceList.includes(AirQuality.GetNameFromScale(body.airQuality?.scale));
 									const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
 
 									// injectedPreviousDayComparison
@@ -162,7 +161,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 										...body.airQuality,
 										...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
 										metadata: {
-											...body.airQuality?.metadata,
+											...(body.airQuality?.metadata ? body.airQuality.metadata : injectedPollutants?.metadata),
 											providerName: [...currentProviders, ...comparisonProviders].join(", "),
 											...(currentProviders?.[0] ? { providerLogo: providerNameToLogo(currentProviders[0], "v2") } : {}),
 										},
