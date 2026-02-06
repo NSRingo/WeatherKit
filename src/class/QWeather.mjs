@@ -54,7 +54,7 @@ export default class QWeather {
 			Console.info("⚠️ GetLocationsGrid", "Cache not found or stale, fetching...");
 			const response = await fetch({
 				headers: locationsGrid?.etag ? { "If-None-Match": locationsGrid?.etag } : undefined,
-				url: 'https://raw.githubusercontent.com/NSRingo/WeatherKit/refs/heads/main/data/qweather-locations-grid.json',
+				url: "https://raw.githubusercontent.com/NSRingo/WeatherKit/refs/heads/main/data/qweather-locations-grid.json",
 			});
 
 			if (response.status === 304) {
@@ -80,13 +80,11 @@ export default class QWeather {
 		// Haversine距离计算
 		const distance = (lat1, lng1, lat2, lng2) => {
 			const R = 6371; // 地球半径(km)
-			const dLat = (lat2 - lat1) * Math.PI / 180;
-			const dLng = (lng2 - lng1) * Math.PI / 180;
-			const a = Math.sin(dLat/2) ** 2 +
-				Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-				Math.sin(dLng/2) ** 2;
-			return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-		}
+			const dLat = ((lat2 - lat1) * Math.PI) / 180;
+			const dLng = ((lng2 - lng1) * Math.PI) / 180;
+			const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+			return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+		};
 
 		const getNearbyGridKeys = (lat, lng, radius = 2) => {
 			const centerX = Math.floor(lng / gridSize);
@@ -100,7 +98,7 @@ export default class QWeather {
 			}
 
 			return keys;
-		}
+		};
 
 		const findNearestFast = (lat, lng) => {
 			const keys = getNearbyGridKeys(lat, lng, 2);
@@ -110,7 +108,7 @@ export default class QWeather {
 			for (const key of keys) {
 				const locations = grid[key];
 				if (!locations) continue;
-		
+
 				for (const loc of locations) {
 					const dist = distance(lat, lng, loc.lat, loc.lng);
 					if (dist < minDist) {
@@ -121,7 +119,7 @@ export default class QWeather {
 			}
 
 			return nearest;
-		}
+		};
 
 		return findNearestFast(lat, lng)?.id;
 	}
@@ -630,11 +628,7 @@ export default class QWeather {
 		return {};
 	}
 
-	#Metadata(
-		attributionUrl = `https://www.qweather.com/`,
-		sourceType = "MODELED",
-		temporarilyUnavailable = false,
-	) {
+	#Metadata(attributionUrl = `https://www.qweather.com/`, sourceType = "MODELED", temporarilyUnavailable = false) {
 		const timeStamp = Date.now() / 1000;
 		return {
 			longitude: this.longitude,
@@ -655,7 +649,8 @@ export default class QWeather {
 
 		Console.info("✅ CreatePollutants");
 		// TODO: what is ppmC?
-		return pollutantsObj.filter((pollutant) => pollutant.concentration.unit !== "ppmC")
+		return pollutantsObj
+			.filter(pollutant => pollutant.concentration.unit !== "ppmC")
 			.map(({ code, concentration }) => {
 				const { value, unit } = concentration;
 				const pollutantType = this.#Config.Pollutants[code];
@@ -669,7 +664,7 @@ export default class QWeather {
 						return { pollutantType, amount: AirQuality.ConvertUnit(value, ppm, ppb), units: ppb };
 					default:
 						return { pollutantType, amount: value, units: this.#Config.Units[unit] };
-				};
+				}
 			});
 	}
 
@@ -683,13 +678,14 @@ export default class QWeather {
 		Console.info("☑️ CreatePollutantsV7");
 
 		Console.info("✅ CreatePollutantsV7");
-		return Object.entries(pollutantsObj).filter(([name]) => this.#Config.Pollutants[name] !== undefined)
+		return Object.entries(pollutantsObj)
+			.filter(([name]) => this.#Config.Pollutants[name] !== undefined)
 			.map(([name, rawAmount]) => {
 				const amount = Number.parseFloat(rawAmount);
 
 				const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
 				return {
-					amount: name === 'co' ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
+					amount: name === "co" ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
 					pollutantType: this.#Config.Pollutants[name],
 					units: ugm3,
 				};
@@ -697,8 +693,8 @@ export default class QWeather {
 	}
 
 	async AirQuality(forcePrimaryPollutant = true) {
-		const findSupportedIndex = (indexes) => {
-			const supportedCodes = ['cn-mee', 'cn-mee-1h', 'eu-eea', 'us-epa', 'us-epa-nc'];
+		const findSupportedIndex = indexes => {
+			const supportedCodes = ["cn-mee", "cn-mee-1h", "eu-eea", "us-epa", "us-epa-nc"];
 			for (const index of indexes) {
 				if (supportedCodes.includes(index.code)) {
 					return index;
@@ -708,16 +704,16 @@ export default class QWeather {
 			return {};
 		};
 
-		const indexCodeToScale = (code) => {
+		const indexCodeToScale = code => {
 			switch (code) {
 				// We don't need calcualtion so they are same
-				case 'cn-mee':
-				case 'cn-mee-1h':
+				case "cn-mee":
+				case "cn-mee-1h":
 					return AirQuality.Config.Scales.HJ6332012;
-				case 'us-epa':
-				case 'us-epa-nc':
+				case "us-epa":
+				case "us-epa-nc":
 					return AirQuality.Config.Scales.EPA_NowCast;
-				case 'eu-eea':
+				case "eu-eea":
 					return AirQuality.Config.Scales.EU_EAQI;
 				default:
 					return {};
@@ -731,7 +727,7 @@ export default class QWeather {
 				return "NOT_AVAILABLE";
 			}
 
-			const pollutantIndexes = pollutants.map((pollutant) => {
+			const pollutantIndexes = pollutants.map(pollutant => {
 				const pollutantType = this.#Config.Pollutants[pollutant.code];
 				for (const subIndex of pollutant.subIndexes) {
 					if (subIndex.code === scaleCode) {
@@ -766,10 +762,7 @@ export default class QWeather {
 
 		if (!supportedIndex?.code || !scale?.categories) {
 			Console.error("❌ AirQuality", "No supported index found");
-			Console.debug(
-				"airQualityCurrent.indexes[].code = "
-					+ `${JSON.stringify(airQualityCurrent.indexes?.map(({ code }) => code))}`
-			);
+			Console.debug("airQualityCurrent.indexes[].code = " + `${JSON.stringify(airQualityCurrent.indexes?.map(({ code }) => code))}`);
 			return {
 				metadata: this.#Metadata(
 					// TODO: &lang=zh
@@ -785,10 +778,7 @@ export default class QWeather {
 		const apiPrimaryPollutant = this.#Config.Pollutants[supportedIndex.primaryPollutant.code] || "NOT_AVAILABLE";
 
 		if (!forcePrimaryPollutant && apiPrimaryPollutant === "NOT_AVAILABLE") {
-			Console.warn(
-				"⚠️ AirQuality",
-				"Max index of pollutants is <= 50, primaryPollutant will be NOT_AVAILABLE.",
-			);
+			Console.warn("⚠️ AirQuality", "Max index of pollutants is <= 50, primaryPollutant will be NOT_AVAILABLE.");
 		}
 
 		Console.info("✅ AirQuality");
@@ -801,11 +791,9 @@ export default class QWeather {
 			index: supportedIndex.aqi,
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
 			...particularAirQuality,
-			primaryPollutant: forcePrimaryPollutant && apiPrimaryPollutant === "NOT_AVAILABLE"
-				? getPrimaryPollutant(supportedIndex.code, airQualityCurrent.pollutants)
-				: apiPrimaryPollutant,
+			primaryPollutant: forcePrimaryPollutant && apiPrimaryPollutant === "NOT_AVAILABLE" ? getPrimaryPollutant(supportedIndex.code, airQualityCurrent.pollutants) : apiPrimaryPollutant,
 			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
-		}
+		};
 	}
 
 	async YesterdayAirQuality(locationID) {
@@ -820,7 +808,7 @@ export default class QWeather {
 			pollutants: this.#CreatePollutantsV7(historicalAir.airHourly[hour]),
 			primaryPollutant: this.#Config.Pollutants[historicalAir.airHourly[hour].primary] || "NOT_AVAILABLE",
 			scale: AirQuality.ToWeatherKitScale(AirQuality.Config.Scales.HJ6332012.weatherKitScale),
-		}
+		};
 	}
 
 	#ConvertTimeStamp(fxDate, time) {

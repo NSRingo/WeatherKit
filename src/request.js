@@ -102,7 +102,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									}
 									break;
 							}
-							const dataSetsTargets = new RegExp(Settings?.DataSets?.Targets || '(?!)');
+							const dataSetsTargets = new RegExp(Settings?.DataSets?.Targets || "(?!)");
 							if (dataSetsTargets.test(url.searchParams.get("country"))) {
 								let dataSets = url.searchParams.get("dataSets")?.split(",");
 								if (dataSets) {
