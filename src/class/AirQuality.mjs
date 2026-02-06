@@ -308,7 +308,7 @@ export default class AirQuality {
 			const scaleForPollutant = scale.pollutants[pollutant.pollutantType];
 			return {
 				pollutantType: pollutant.pollutantType,
-				index: scaleForPollutant ? this.#PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) : -1,
+				index: scaleForPollutant ? AirQuality.#PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) : -1,
 			};
 		});
 
@@ -344,11 +344,11 @@ export default class AirQuality {
 			const scaleForPollutant = scale.pollutants[pollutant.pollutantType];
 			return {
 				pollutantType: pollutant.pollutantType,
-				index: scaleForPollutant ? this.#PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) : -1,
+				index: scaleForPollutant ? AirQuality.#PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) : -1,
 			};
 		});
 
-		const primaryPollutant = this.FindPrimaryPollutants(indexes)[0];
+		const primaryPollutant = AirQuality.FindPrimaryPollutants(indexes)[0];
 		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
 		const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
 		if (isNotAvailable) {
