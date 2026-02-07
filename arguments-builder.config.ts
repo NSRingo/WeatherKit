@@ -33,7 +33,7 @@ export default defineConfig({
 	},
 	args: [
 		{
-			key: "DataSets.Targets",
+			key: "DataSets.Replace",
 			name: "[数据集] 修改地区",
 			defaultValue: "CN|HK|MO|TW",
 			type: "string",
@@ -59,7 +59,7 @@ export default defineConfig({
 			],
 		},
 		{
-			key: "Weather.Targets",
+			key: "Weather.Replace",
 			name: "[天气] 替换地区",
 			defaultValue: "CN",
 			type: "string",
@@ -78,7 +78,7 @@ export default defineConfig({
 			description: "使用选定的数据源替换天气数据。",
 		},
 		{
-			key: "NextHour.Targets",
+			key: "NextHour.Fill",
 			name: "[未来一小时降水强度] 填补地区",
 			defaultValue: "*",
 			type: "string",

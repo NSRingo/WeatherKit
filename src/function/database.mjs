@@ -2,18 +2,15 @@ export default {
 	WeatherKit: {
 		Settings: {
 			DataSets: {
-				Targets: "CN|HK|MO|TW",
-				Value: [
-					"airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour",
-					"locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges",
-				],
+				Replace: "CN|HK|MO|TW",
+				Value: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
 			},
 			Weather: {
-				Targets: "CN",
+				Replace: "CN",
 				Provider: "WeatherKit",
 			},
 			NextHour: {
-				Targets: "*",
+				Fill: "*",
 				Provider: "ColorfulClouds",
 			},
 			AirQuality: {
