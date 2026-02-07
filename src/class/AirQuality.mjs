@@ -210,10 +210,11 @@ export default class AirQuality {
 			const [minAmount, maxAmount] = amounts;
 			return { pollutantType, index: indexes[0], percentage: amount / (maxAmount - minAmount) };
 		});
+		Console.debug(`indexes: ${JSON.stringify(indexes)}`);
 
 		const primaryPollutant = indexes.reduce((previous, current) => (previous.index + previous.percentage > current.index + current.percentage ? previous : current));
 
-		Console.info("✅ PollutantsToEULike");
+		Console.info("✅ PollutantsToEULike", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`);
 		return {
 			index: primaryPollutant.index,
 			isSignificant: primaryPollutant.index >= scale.categories.significantIndex,
@@ -296,11 +297,12 @@ export default class AirQuality {
 		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
 		const convertedPollutants = AirQuality.ConvertUnits(scale.pollutants, AirQuality.Config.STP_ConversionFactor.US, pollutants);
 		const indexes = AirQuality.#PollutantsToInstantCastLikeIndexes(convertedPollutants, scale.pollutants);
+		Console.debug(`indexes: ${JSON.stringify(indexes)}`);
 
 		const primaryPollutant = indexes.reduce((previous, current) => (previous.index > current.index ? previous : current));
 		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
 
-		Console.info("✅ PollutantsToInstantCastUS");
+		Console.info("✅ PollutantsToInstantCastUS", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`, `categoryIndex: ${categoryIndex}`);
 		return {
 			// TODO: is it okay that index > 500 for WeatherKit?
 			index: primaryPollutant.index,
@@ -327,6 +329,7 @@ export default class AirQuality {
 
 		const convertedPollutants = AirQuality.ConvertUnits(scale.pollutants, AirQuality.Config.STP_ConversionFactor.US, pollutants);
 		const indexes = AirQuality.#PollutantsToInstantCastLikeIndexes(convertedPollutants, scale.pollutants);
+		Console.debug(`indexes: ${JSON.stringify(indexes)}`);
 
 		const primaryPollutant = AirQuality.FindPrimaryPollutants(indexes)[0];
 		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
@@ -335,7 +338,7 @@ export default class AirQuality {
 			Console.warn("⚠️ AirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, primaryPollutant will be NOT_AVAILABLE.`);
 		}
 
-		Console.info("✅ PollutantsToInstantCastCN");
+		Console.info("✅ PollutantsToInstantCastCN", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`, `categoryIndex: ${categoryIndex}`);
 		return {
 			// TODO: is it okay that index > 500 for WeatherKit?
 			// index: allowOverRange ? primaryPollutant.index : Math.min(primaryPollutant.index, 500),
