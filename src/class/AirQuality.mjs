@@ -113,26 +113,27 @@ export default class AirQuality {
 		}
 	}
 
-	static ConvertUnits(pollutants = []) {
+	static ConvertUnits(scaleForPollutants, stpConversionFactors, pollutants) {
 		Console.info("☑️ ConvertUnits");
-		pollutants = pollutants.map(pollutant => {
-			switch (pollutant.units) {
-				case "PARTS_PER_MILLION":
-					pollutant.amount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, "PARTS_PER_BILLION"); // Will not convert to Xg/m3
-					pollutant.units = "PARTS_PER_BILLION";
-					break;
-				case "MILLIGRAMS_PER_CUBIC_METER":
-					pollutant.amount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, "MICROGRAMS_PER_CUBIC_METER"); // Will not convert to Xg/m3
-					pollutant.units = "MICROGRAMS_PER_CUBIC_METER";
-					break;
-				default:
-					break;
+		const friendlyUnits = AirQuality.Config.Units.Friendly;
+		return pollutants.map(pollutant => {
+			const { pollutantType, units } = pollutant;
+			const toUnits = scaleForPollutants[pollutantType]?.units;
+
+			if (!toUnits) {
+				Console.warn("⚠️ ConvertUnits", `No units in scale for ${pollutantType}`);
+				return pollutant;
 			}
-			return pollutant;
+
+			const requireConvertUnit = units !== toUnits;
+			const amount = requireConvertUnit ? AirQuality.ConvertUnit(pollutant.amount, units, toUnits, stpConversionFactors?.[pollutantType] || -1) : pollutant.amount;
+
+			if (requireConvertUnit) {
+				Console.info("✅ ConvertUnits", `Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units] ?? units} -> ${amount} ${friendlyUnits[toUnits] ?? toUnits}`);
+			}
+
+			return { ...pollutant, amount, units: toUnits };
 		});
-		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
-		Console.info("✅ ConvertUnits");
-		return pollutants;
 	}
 
 	/**
@@ -188,25 +189,15 @@ export default class AirQuality {
 			return {};
 		}
 
-		const aqis = pollutants.map(pollutant => {
-			const friendlyUnits = AirQuality.Config.Units.Friendly;
-
-			const { pollutantType, units } = pollutant;
+		const friendlyUnits = AirQuality.Config.Units.Friendly;
+		const convertedPollutants = AirQuality.ConvertUnits(scale.pollutants, AirQuality.Config.STP_ConversionFactor.EU, pollutants);
+		const aqis = convertedPollutants.map(pollutant => {
+			const { pollutantType, amount } = pollutant;
 			const scaleForPollutant = scale.pollutants[pollutantType];
-			if (!scaleForPollutant) {
-				return { pollutantType, index: -1 };
-			}
-
-			const requireConvertUnit = units !== scaleForPollutant.units;
-			const amount = requireConvertUnit ? AirQuality.ConvertUnit(pollutant.amount, units, scaleForPollutant.units, AirQuality.Config.STP_ConversionFactor.EU[pollutantType] || -1) : pollutant.amount;
-
-			if (requireConvertUnit) {
-				Console.info("✅ PollutantsToEULike", `Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units]}` + ` -> ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
-			}
 
 			const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
 			if (amount < minValidAmount) {
-				Console.warn("⚠️ PollutantsToEULike", `Invalid amount of ${pollutantType}: ${amount}` + ` ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
+				Console.warn("⚠️ PollutantsToEULike", `Invalid amount of ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
 				return { pollutantType, index: scaleForPollutant.ranges.min.indexes[0] };
 			}
 
@@ -228,7 +219,7 @@ export default class AirQuality {
 			isSignificant: primaryPollutant.index >= scale.categories.significantIndex,
 			// categoryIndex === index in EU-like scales
 			categoryIndex: primaryPollutant.index,
-			pollutants,
+			pollutants: convertedPollutants,
 			metadata: { providerName: "iRingo", temporarilyUnavailable: false },
 			primaryPollutant: primaryPollutant.pollutantType,
 			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
@@ -262,39 +253,37 @@ export default class AirQuality {
 		return primaryPollutants;
 	};
 
-	static #PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) {
+	static #PollutantsToInstantCastLikeIndexes(pollutants, scaleForPollutants) {
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
 
-		const { pollutantType, units } = pollutant;
-		const requireConvertUnit = units !== scaleForPollutant.units;
-		const amount = requireConvertUnit ? AirQuality.ConvertUnit(pollutant.amount, units, scaleForPollutant.units, AirQuality.Config.STP_ConversionFactor.US[pollutantType] || -1) : pollutant.amount;
+		const convertedPollutants = AirQuality.ConvertUnits(scaleForPollutants, AirQuality.Config.STP_ConversionFactor.US, pollutants);
+		return convertedPollutants.map(pollutant => {
+			const { pollutantType, amount } = pollutant;
+			const scaleForPollutant = scaleForPollutants[pollutantType];
 
-		if (requireConvertUnit) {
-			Console.info("✅ PollutantToInstantCastLikeIndex", `Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units]}` + ` -> ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
-		}
+			const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
+			if (amount < minValidAmount) {
+				Console.warn("⚠️ PollutantToInstantCastLikeIndex", `Invalid amount of ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
+				return scaleForPollutant.ranges.min.indexes[0];
+			}
 
-		const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
-		if (amount < minValidAmount) {
-			Console.warn("⚠️ PollutantToInstantCastLikeIndex", `Invalid amount of ${pollutantType}: ${amount}` + ` ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
-			return scaleForPollutant.ranges.min.indexes[0];
-		}
+			const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
+				const [minAmount, maxAmount] = amounts;
+				return amount >= minAmount && amount <= maxAmount;
+			});
 
-		const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
-			const [minAmount, maxAmount] = amounts;
-			return amount >= minAmount && amount <= maxAmount;
+			const isOverRange = indexes[0] > scaleForPollutant.ranges.max.indexes[1];
+			if (isOverRange) {
+				Console.warn("⚠️ PollutantToInstantCastLikeIndex", `Index > 500 detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
+				Console.warn("⚠️ PollutantToInstantCastLikeIndex", "Take care of yourself!");
+			}
+
+			// Use max range for calculation if over range
+			const [minIndex, maxIndex] = isOverRange ? scaleForPollutant.ranges.max.indexes : indexes;
+			const [minAmount, maxAmount] = isOverRange ? scaleForPollutant.ranges.max.amounts : amounts;
+
+			return { pollutantType, index: Math.round(((maxIndex - minIndex) / (maxAmount - minAmount)) * (amount - minAmount) + minIndex) };
 		});
-
-		const isOverRange = indexes[0] > scaleForPollutant.ranges.max.indexes[1];
-		if (isOverRange) {
-			Console.warn("⚠️ PollutantToInstantCastLikeIndex", `Index > 500 detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
-			Console.warn("⚠️ PollutantToInstantCastLikeIndex", "Take care of yourself!");
-		}
-
-		// Use max range for calculation if over range
-		const [minIndex, maxIndex] = isOverRange ? scaleForPollutant.ranges.max.indexes : indexes;
-		const [minAmount, maxAmount] = isOverRange ? scaleForPollutant.ranges.max.amounts : amounts;
-
-		return Math.round(((maxIndex - minIndex) / (maxAmount - minAmount)) * (amount - minAmount) + minIndex);
 	}
 
 	static PollutantsToInstantCastUS(pollutants) {
@@ -305,13 +294,8 @@ export default class AirQuality {
 		}
 
 		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
-		const indexes = pollutants.map(pollutant => {
-			const scaleForPollutant = scale.pollutants[pollutant.pollutantType];
-			return {
-				pollutantType: pollutant.pollutantType,
-				index: scaleForPollutant ? AirQuality.#PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) : -1,
-			};
-		});
+		const convertedPollutants = AirQuality.ConvertUnits(scale.pollutants, AirQuality.Config.STP_ConversionFactor.US, pollutants);
+		const indexes = AirQuality.#PollutantsToInstantCastLikeIndexes(convertedPollutants, scale.pollutants);
 
 		const primaryPollutant = indexes.reduce((previous, current) => (previous.index > current.index ? previous : current));
 		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
@@ -322,7 +306,7 @@ export default class AirQuality {
 			index: primaryPollutant.index,
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
 			categoryIndex,
-			pollutants,
+			pollutants: convertedPollutants,
 			metadata: { providerName: "iRingo", temporarilyUnavailable: false },
 			primaryPollutant: primaryPollutant.pollutantType,
 			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
@@ -341,13 +325,8 @@ export default class AirQuality {
 			return {};
 		}
 
-		const indexes = pollutants.map(pollutant => {
-			const scaleForPollutant = scale.pollutants[pollutant.pollutantType];
-			return {
-				pollutantType: pollutant.pollutantType,
-				index: scaleForPollutant ? AirQuality.#PollutantToInstantCastLikeIndex(pollutant, scaleForPollutant) : -1,
-			};
-		});
+		const convertedPollutants = AirQuality.ConvertUnits(scale.pollutants, AirQuality.Config.STP_ConversionFactor.US, pollutants);
+		const indexes = AirQuality.#PollutantsToInstantCastLikeIndexes(convertedPollutants, scale.pollutants);
 
 		const primaryPollutant = AirQuality.FindPrimaryPollutants(indexes)[0];
 		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
@@ -363,7 +342,7 @@ export default class AirQuality {
 			index: primaryPollutant.index,
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
 			categoryIndex,
-			pollutants,
+			pollutants: convertedPollutants,
 			metadata: { providerName: "iRingo", temporarilyUnavailable: false },
 			primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : primaryPollutant.pollutantType,
 			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
