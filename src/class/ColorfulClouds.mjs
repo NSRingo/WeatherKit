@@ -451,18 +451,43 @@ export default class ColorfulClouds {
 		};
 	}
 
-	async YesterdayCategoryIndex(useUsa = true) {
-		Console.info("☑️ YesterdayCategoryIndex");
+	async YesterdayAirQuality(useUsa = true) {
+		Console.info("☑️ YesterdayAirQuality");
 		const yesterdayHourly = await this.#Hourly(1, (Date.now() - 864e5) / 1000);
+		const scale = useUsa ? AirQuality.Config.Scales.EPA_NowCast : AirQuality.Config.Scales.HJ6332012;
+		const particularAirQuality = {
+			previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
+			pollutants: [],
+			primaryPollutant: "NOT_AVAILABLE",
+			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
+		};
 
 		if (!yesterdayHourly.result) {
-			Console.error("YesterdayCategoryIndex", "Failed to get hourly data");
-			return "UNKNOWN";
+			Console.error("YesterdayAirQuality", "Failed to get hourly data");
+			return {
+				...particularAirQuality,
+				categoryIndex: -1,
+				metadata: this.#Metadata(undefined, undefined, true),
+			};
 		}
 
-		Console.info("✅ YesterdayCategoryIndex");
 		const { usa, chn } = yesterdayHourly.result.hourly.air_quality.aqi[0].value;
-		return useUsa ? AirQuality.CategoryIndex(usa, AirQuality.Config.Scales.EPA_NowCast) : AirQuality.CategoryIndex(chn, AirQuality.Config.Scales.HJ6332012);
+		if (usa === 0 && chn === 0) {
+			Console.warn("⚠️ YesterdayAirQuality", "Both usa and chn of AQI are 0, unsupported location?");
+		}
+
+		const index = useUsa ? usa : chn;
+		const categoryIndex = AirQuality.CategoryIndex(index, scale);
+		const isSignificant = categoryIndex >= scale.categories.significantIndex;
+		Console.info("✅ YesterdayAirQuality", `index: ${index}`, `categoryIndex: ${categoryIndex}`);
+
+		return {
+			...particularAirQuality,
+			index,
+			categoryIndex,
+			isSignificant,
+			metadata: this.#Metadata(yesterdayHourly.result.server_time, yesterdayHourly.location),
+		};
 	}
 
 	async ForecastHourly() {

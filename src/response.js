@@ -349,8 +349,8 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 	};
 
 	const colorfulCloudsComparison = async (useUsa, useCurrent, currentCategoryIndex) => {
-		const yesterdayCategoryIndex = await enviroments.colorfulClouds.YesterdayCategoryIndex(useUsa);
-		return AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.colorfulClouds.CurrentAirQuality(useUsa)).categoryIndex, yesterdayCategoryIndex);
+		const yesterdayAirQuality = await enviroments.colorfulClouds.YesterdayAirQuality(useUsa);
+		return !yesterdayAirQuality.metadata.temporarilyUnavailable ? AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.colorfulClouds.CurrentAirQuality(useUsa)).categoryIndex, yesterdayAirQuality.categoryIndex) : UNKNOWN;
 	};
 	const qweatherComparison = async (useCurrent, currentCategoryIndex, pollutantsToCategoryIndex) => {
 		const setQWeatherCache = qweatherCache => {
