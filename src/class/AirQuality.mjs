@@ -212,7 +212,7 @@ export default class AirQuality {
 
 			// minIndex === maxIndex === categoryIndex in EU-like scales
 			const [minAmount, maxAmount] = amounts;
-			return { pollutantType, index: indexes[0], percentage: amount / (maxAmount - minAmount) };
+			return { pollutantType, index: indexes[0], percentage: (amount - minAmount) / (maxAmount - minAmount) };
 		});
 		Console.debug(`indexes: ${JSON.stringify(indexes)}`);
 
