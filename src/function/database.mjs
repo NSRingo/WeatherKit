@@ -10,7 +10,7 @@ export default {
 				Provider: "WeatherKit",
 			},
 			NextHour: {
-				Fill: "*",
+				Fill: ".*",
 				Provider: "ColorfulClouds",
 			},
 			AirQuality: {

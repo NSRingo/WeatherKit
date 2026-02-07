@@ -80,7 +80,7 @@ export default defineConfig({
 		{
 			key: "NextHour.Fill",
 			name: "[未来一小时降水强度] 填补地区",
-			defaultValue: "*",
+			defaultValue: ".*",
 			type: "string",
 			description: "正则表达式，只填补指定地区的未来一小时降水强度。",
 		},
