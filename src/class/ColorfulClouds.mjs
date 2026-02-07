@@ -377,7 +377,7 @@ export default class ColorfulClouds {
 		const particularAirQuality = {
 			metadata: this.#Metadata(realtime.result.realtime.air_quality.obs_time, realtime.location),
 			pollutants: this.#CreatePollutants(realtime.result.realtime.air_quality),
-			previousDayComparison: "UNKNOWN",
+			previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
 		};
 
 		if (useUsa) {

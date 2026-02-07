@@ -248,7 +248,7 @@ export default class QWeather {
 						index: Number.parseInt(body?.now?.aqi, 10),
 						isSignificant: false,
 						pollutants: this.#CreatePollutantsV7(body?.now),
-						previousDayComparison: "UNKNOWN",
+						previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
 						primaryPollutant: this.#Config.Pollutants[body?.now?.primary] || "NOT_AVAILABLE",
 						scale: "HJ6332012",
 					};
