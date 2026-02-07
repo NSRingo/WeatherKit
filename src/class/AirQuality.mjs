@@ -428,7 +428,7 @@ export default class AirQuality {
 							],
 						},
 					},
-					O3: {
+					OZONE: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 24] },
@@ -509,7 +509,7 @@ export default class AirQuality {
 							],
 						},
 					},
-					O3: {
+					OZONE: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 60] },
