@@ -492,9 +492,9 @@ export default class ColorfulClouds {
 		};
 	}
 
-	async ForecastHourly() {
+	async ForecastHourly(hourlysteps, begin) {
 		Console.info("☑️ ForecastHourly");
-		const hourly = await this.#Hourly();
+		const hourly = await this.#Hourly(hourlysteps, begin);
 		if (!hourly.result) {
 			Console.error("ForecastHourly", "Failed to get hourly data");
 			return {

@@ -550,7 +550,7 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
 		case "ColorfulClouds": {
 			const hourlysteps = forecastHourly.hours?.length || 273;
 			const begin = forecastHourly.hours?.[0]?.forecastStart || undefined;
-			newForecastHourly = (await enviroments.colorfulClouds.Hourly(hourlysteps, begin)).forecastHourly;
+			newForecastHourly = await enviroments.colorfulClouds.ForecastHourly(hourlysteps, begin);
 			break;
 		}
 	}
