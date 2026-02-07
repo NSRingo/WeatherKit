@@ -453,7 +453,7 @@ export default class ColorfulClouds {
 
 	async YesterdayAirQuality(useUsa = true) {
 		Console.info("☑️ YesterdayAirQuality");
-		const yesterdayHourly = await this.#Hourly(1, (Date.now() - 864e5) / 1000);
+		const yesterdayHourly = await this.#Hourly(1, Math.trunc((Date.now() - 864e5) / 1000));
 		const scale = useUsa ? AirQuality.Config.Scales.EPA_NowCast : AirQuality.Config.Scales.HJ6332012;
 		const particularAirQuality = {
 			previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
