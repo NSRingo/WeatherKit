@@ -191,7 +191,7 @@ export default class AirQuality {
 
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
 		const convertedPollutants = AirQuality.ConvertUnits(scale.pollutants, AirQuality.Config.STP_ConversionFactor.EU, pollutants);
-		const aqis = convertedPollutants.map(pollutant => {
+		const indexes = convertedPollutants.map(pollutant => {
 			const { pollutantType, amount } = pollutant;
 			const scaleForPollutant = scale.pollutants[pollutantType];
 
@@ -211,7 +211,7 @@ export default class AirQuality {
 			return { pollutantType, index: indexes[0], percentage: amount / (maxAmount - minAmount) };
 		});
 
-		const primaryPollutant = aqis.reduce((previous, current) => (previous.index + previous.percentage > current.index + current.percentage ? previous : current));
+		const primaryPollutant = indexes.reduce((previous, current) => (previous.index + previous.percentage > current.index + current.percentage ? previous : current));
 
 		Console.info("✅ PollutantsToEULike");
 		return {
