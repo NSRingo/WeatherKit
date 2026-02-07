@@ -1,7 +1,7 @@
 import fs from "fs";
 import https from "https";
 
-const CSV_URL = "https://raw.githubusercontent.com/qwd/LocationList/refs/heads/master/China-City-List-latest.csv";
+const CHINA_CITY_LIST_URL = "https://raw.githubusercontent.com/qwd/LocationList/refs/heads/master/China-City-List-latest.csv";
 
 function fetchCSV(url) {
 	return new Promise((resolve, reject) => {
@@ -90,14 +90,14 @@ function toGridIndex(locations, gridSize = 1.0) {
 }
 
 async function main() {
-	const csv = await fetchCSV(CSV_URL);
-	const locations = parseCSV(csv);
-	const json = toGridIndex(locations);
+	const chinaCityListCSV = await fetchCSV(CHINA_CITY_LIST_URL);
+	const chinaCityList = parseCSV(chinaCityListCSV);
+	const chinaCityListGrid = toGridIndex(chinaCityList);
 
 	fs.mkdirSync("data", { recursive: true });
-	fs.writeFileSync("data/qweather-locations-grid.json", json);
+	fs.writeFileSync("data/qweather-china-city-list-grid.json", chinaCityListGrid);
 
-	console.log(`✔ Generated ${locations.length} locations`);
+	console.log(`✔ Generated ${chinaCityList.length} locations`);
 }
 
 main().catch(err => {
