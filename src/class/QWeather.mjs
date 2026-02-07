@@ -815,12 +815,16 @@ export default class QWeather {
 		}
 
 		const hour = new Date().getHours();
-		Console.info("✅ YesterdayAirQuality");
+		const categoryIndex = Number.parseInt(historicalAir.airHourly[hour].level, 10);
+		const index = Number.parseInt(historicalAir.airHourly[hour].aqi, 10);
+		const pollutants = this.#CreatePollutantsV7(historicalAir.airHourly[hour]);
+		Console.debug(`pollutants: ${JSON.stringify(pollutants)}`);
+		Console.info("✅ YesterdayAirQuality", `categoryIndex: ${categoryIndex}`, `index: ${index}`);
 		return {
 			metadata: this.#Metadata(historicalAir.fxLink),
-			categoryIndex: Number.parseInt(historicalAir.airHourly[hour].level, 10),
-			index: Number.parseInt(historicalAir.airHourly[hour].aqi, 10),
-			pollutants: this.#CreatePollutantsV7(historicalAir.airHourly[hour]),
+			categoryIndex,
+			index,
+			pollutants,
 			primaryPollutant: this.#Config.Pollutants[historicalAir.airHourly[hour].primary] || "NOT_AVAILABLE",
 			scale: AirQuality.ToWeatherKitScale(AirQuality.Config.Scales.HJ6332012.weatherKitScale),
 		};
