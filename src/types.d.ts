@@ -62,7 +62,7 @@ export interface Settings {
          *
          * 正则表达式，只填补指定地区的未来一小时降水强度。
          *
-         * @defaultValue "*"
+         * @defaultValue ".*"
          */
         Fill?: string;
         /**
