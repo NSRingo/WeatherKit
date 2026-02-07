@@ -77,7 +77,7 @@ export default class QWeather {
 	}
 
 	// Codes by Claude AI
-	static GetLocationID(locationsGrid, lat, lng) {
+	static GetLocationInfo(locationsGrid, lat, lng) {
 		const { gridSize, grid } = locationsGrid;
 
 		// Haversine距离计算
@@ -124,7 +124,7 @@ export default class QWeather {
 			return nearest;
 		};
 
-		return findNearestFast(lat, lng)?.id;
+		return findNearestFast(lat, lng);
 	}
 
 	async GeoAPI(path = "city/lookup") {

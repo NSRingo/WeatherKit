@@ -281,6 +281,8 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 
 async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Settings, Caches, enviroments) {
 	Console.info("☑️ InjectPreviousDayComparison");
+	const { UNKNOWN } = AirQuality.Config.CompareCategoryIndexes;
+
 	/**
 	 * HJ 633—2012
 	 * [环境空气质量指数（AQI）技术规定（试行）_中华人民共和国生态环境部]{@link https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/jcffbz/201203/t20120302_224166.shtml}
@@ -358,14 +360,22 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 
 		const locationsGrid = await QWeather.GetLocationsGrid(Caches?.qweather, setQWeatherCache);
 		const { latitude, longitude } = enviroments.qWeather;
-		const locationID = QWeather.GetLocationID(locationsGrid, latitude, longitude);
-		const yesterdayAirQuality = await enviroments.qWeather.YesterdayAirQuality(locationID);
+		const locationInfo = QWeather.GetLocationInfo(locationsGrid, latitude, longitude);
+		// Some locationID at Hong Kong and Macau with length 9 is supported
+		if (locationInfo.province === "台湾省" || locationInfo.id.length !== 9) {
+			Console.warn("⚠️ qweatherComparison: Unsupported location");
+			return UNKNOWN;
+		}
 
-		return AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.qWeather.CurrentAirQuality()).categoryIndex, pollutantsToCategoryIndex ? pollutantsToCategoryIndex(yesterdayAirQuality.pollutants) : yesterdayAirQuality.categoryIndex);
+		Console.info(`locationInfo.latitude: ${locationInfo.latitude}, locationInfo.longitude: ${locationInfo.longitude}`);
+		const yesterdayAirQuality = await enviroments.qWeather.YesterdayAirQuality(locationInfo.id);
+
+		return !yesterdayAirQuality.metadata.temporarilyUnavailable
+			? AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.qWeather.CurrentAirQuality()).categoryIndex, pollutantsToCategoryIndex ? pollutantsToCategoryIndex(yesterdayAirQuality.pollutants) : yesterdayAirQuality.categoryIndex)
+			: UNKNOWN;
 	};
 
 	Console.info("✅ InjectPreviousDayComparison");
-	const { UNKNOWN } = AirQuality.Config.CompareCategoryIndexes;
 	switch (Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider) {
 		case "iRingo": {
 			const algorithm = chooseAlogrithm(Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider, airQuality, Settings);
