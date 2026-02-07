@@ -810,6 +810,7 @@ export default class QWeather {
 			Console.error("YesterdayAirQuality", `Failed to get HistoricalAir(${locationID})`);
 			return {
 				metadata: this.#Metadata(undefined, undefined, true),
+				categoryIndex: -1,
 				pollutants: [],
 			};
 		}
