@@ -13,6 +13,8 @@ export default class ColorfulClouds {
 		this.headers = { Referer: "https://caiyunapp.com/" };
 		this.version = parameters.version;
 		this.language = parameters.language;
+		this.latitude = parameters.latitude;
+		this.longitude = parameters.longitude;
 		this.country = parameters.country;
 	}
 
@@ -326,7 +328,7 @@ export default class ColorfulClouds {
 		return forecastDaily;
 	}
 
-	#Metadata(reportedTime, location = [this.parameters.latitude, this.parameters.longitude], temporarilyUnavailable = false) {
+	#Metadata(reportedTime, location = [this.latitude, this.longitude], temporarilyUnavailable = false) {
 		const timeStamp = Math.trunc(Date.now() / 1000);
 		const [latitude, longitude] = location;
 		return {
