@@ -121,7 +121,7 @@ export default class AirQuality {
 			const toUnits = scaleForPollutants[pollutantType]?.units;
 
 			if (!toUnits) {
-				Console.warn("⚠️ ConvertUnits", `No units in scale for ${pollutantType}`);
+				Console.debug(`No units in scale for ${pollutantType}, skip`);
 				return pollutant;
 			}
 
@@ -194,6 +194,10 @@ export default class AirQuality {
 		const indexes = convertedPollutants.map(pollutant => {
 			const { pollutantType, amount } = pollutant;
 			const scaleForPollutant = scale.pollutants[pollutantType];
+			if (!scaleForPollutant) {
+				Console.debug(`No scale for ${pollutantType}, skip`);
+				return { pollutantType, index: -1, percentage: -1 };
+			}
 
 			const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
 			if (amount < minValidAmount) {
@@ -261,6 +265,10 @@ export default class AirQuality {
 		return convertedPollutants.map(pollutant => {
 			const { pollutantType, amount } = pollutant;
 			const scaleForPollutant = scaleForPollutants[pollutantType];
+			if (!scaleForPollutant) {
+				Console.debug(`No scale for ${pollutantType}, skip`);
+				return { pollutantType, index: -1 };
+			}
 
 			const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
 			if (amount < minValidAmount) {
