@@ -484,7 +484,7 @@ async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
 			break;
 		}
 		case "ColorfulClouds": {
-			newCurrentWeather = (await enviroments.colorfulClouds.RealTime()).currentWeather;
+			newCurrentWeather = await enviroments.colorfulClouds.CurrentWeather();
 			break;
 		}
 	}
