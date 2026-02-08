@@ -117,19 +117,37 @@ export default class AirQuality {
 		Console.info("☑️ ConvertUnits");
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
 		return pollutants.map(pollutant => {
-			const { pollutantType, units } = pollutant;
-			const toUnits = scaleForPollutants[pollutantType]?.units;
+			const { pollutantType } = pollutant;
+			const fromUnits = pollutant.units;
+			const scaleForPollutant = scaleForPollutants[pollutantType];
 
-			if (!toUnits) {
+			if (!scaleForPollutant) {
 				Console.debug(`No units in scale for ${pollutantType}, skip`);
 				return pollutant;
 			}
 
-			const requireConvertUnit = units !== toUnits;
-			const amount = requireConvertUnit ? AirQuality.ConvertUnit(pollutant.amount, units, toUnits, stpConversionFactors?.[pollutantType] || -1) : pollutant.amount;
+			const { ppb, ppm, ugm3 } = AirQuality.Config.Units.WeatherKit;
+			const ppx = [ppb, ppm];
+			const isPpxFrom = ppx.includes(fromUnits);
+			const stpConversionFactor = stpConversionFactors?.[pollutantType] || -1;
+			if (isPpxFrom && stpConversionFactor <= 0) {
+				Console.warn("⚠️ ConvertUnits", `Failed to convert unit for ${pollutantType}: no stpConversionFactor`);
+				return pollutant;
+			}
 
+			const toUnits = scaleForPollutant.units;
+
+			const isDifferentStp = isPpxFrom && ppx.includes(toUnits) && stpConversionFactor !== scaleForPollutant.stpConversionFactor;
+			const intermediatePollutant = isDifferentStp ? { ...pollutant, amount: AirQuality.ConvertUnit(pollutant.amount, fromUnits, ugm3, stpConversionFactor), units: ugm3 } : pollutant;
+			if (isDifferentStp) {
+				Console.info("ConvertUnits", `Different STP for ${pollutantType}: ${stpConversionFactor} -> ${scaleForPollutant.stpConversionFactor}`);
+				Console.info("ConvertUnits", `Convert ${pollutantType} intermediate: ${intermediatePollutant.amount} ${friendlyUnits[fromUnits] ?? fromUnits} -> ${intermediatePollutant.amount} ${friendlyUnits[intermediatePollutant.units] ?? intermediatePollutant.units}`);
+			}
+
+			const requireConvertUnit = intermediatePollutant.units !== toUnits;
+			const amount = requireConvertUnit ? AirQuality.ConvertUnit(intermediatePollutant.amount, intermediatePollutant.units, toUnits, scaleForPollutant.stpConversionFactor) : intermediatePollutant.amount;
 			if (requireConvertUnit) {
-				Console.info("✅ ConvertUnits", `Convert ${pollutantType}: ${pollutant.amount} ${friendlyUnits[units] ?? units} -> ${amount} ${friendlyUnits[toUnits] ?? toUnits}`);
+				Console.info("✅ ConvertUnits", `Convert ${pollutantType}: ${intermediatePollutant.amount} ${friendlyUnits[intermediatePollutant.units] ?? intermediatePollutant.units} -> ${amount} ${friendlyUnits[toUnits] ?? toUnits}`);
 			}
 
 			return { ...pollutant, amount, units: toUnits };
