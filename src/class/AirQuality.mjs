@@ -83,11 +83,23 @@ export default class AirQuality {
 		return airQuality;
 	}
 
+	// Code by Claude
+	static CeilByPrecision(a, b) {
+		// 获取 b 的小数位数
+		const decimals = (b.toString().split(".")[1] || "").length;
+
+		// 根据小数位数计算倍数
+		const multiplier = 10 ** decimals;
+
+		// 向上取整
+		return Math.ceil(a * multiplier) / multiplier;
+	}
+
 	static CategoryIndex(index, scale) {
 		Console.info("☑️ CategoryIndex", `index: ${index}`);
 		const { categoryIndex } = scale.categories.ranges.find(({ indexes }) => {
 			const [min, max] = indexes;
-			return index >= min && index <= max;
+			return CeilByPrecision(index, min) >= min && CeilByPrecision(index, max) <= max;
 		});
 		Console.info("✅ CategoryIndex", `categoryIndex: ${categoryIndex}`);
 		return categoryIndex;
@@ -224,7 +236,7 @@ export default class AirQuality {
 
 			const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
 				const [minAmount, maxAmount] = amounts;
-				return amount >= minAmount && amount <= maxAmount;
+				return CeilByPrecision(amount, minAmount) >= minAmount && CeilByPrecision(amount, maxAmount) <= maxAmount;
 			});
 
 			// minIndex === maxIndex === categoryIndex in EU-like scales
@@ -294,7 +306,7 @@ export default class AirQuality {
 
 			const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
 				const [minAmount, maxAmount] = amounts;
-				return amount >= minAmount && amount <= maxAmount;
+				return CeilByPrecision(amount, minAmount) >= minAmount && CeilByPrecision(amount, maxAmount) <= maxAmount;
 			});
 
 			const isOverRange = indexes[0] > scaleForPollutant.ranges.max.indexes[1];
