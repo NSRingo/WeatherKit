@@ -125,44 +125,32 @@ export default class AirQuality {
 		}
 	}
 
-	static ConvertUnits(scaleForPollutants, pollutants, stpConversionFactors) {
+	static ConvertUnits(pollutants, stpConversionFactors, scaleForPollutants) {
 		Console.info("☑️ ConvertUnits");
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
+		Console.info("✅ ConvertUnits");
 		return pollutants.map(pollutant => {
 			const { pollutantType } = pollutant;
-			const fromUnits = pollutant.units;
 			const scaleForPollutant = scaleForPollutants[pollutantType];
 
 			if (!scaleForPollutant) {
-				Console.debug(`No units in scale for ${pollutantType}, skip`);
+				Console.debug(`No scale for ${pollutantType}, skip`);
 				return pollutant;
 			}
 
-			const { ppb, ppm, ugm3 } = AirQuality.Config.Units.WeatherKit;
-			const ppx = [ppb, ppm];
-			const isPpxFrom = ppx.includes(fromUnits);
-			const stpConversionFactor = stpConversionFactors?.[pollutantType] || -1;
-			if (isPpxFrom && stpConversionFactor <= 0) {
-				Console.warn("⚠️ ConvertUnits", `Failed to convert unit for ${pollutantType}: no stpConversionFactor`);
+			Console.info("ConvertUnits", `Converting ${pollutantType}`);
+			const amount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, scaleForPollutant.units, stpConversionFactors?.[pollutantType] || -1, scaleForPollutant?.stpConversionFactor || -1);
+			if (amount < 0) {
+				Console.warn(
+					"ConvertUnits",
+					`Failed to convert unit for ${pollutantType}`,
+					`${pollutant.amount} ${friendlyUnits[pollutant.units] ?? pollutant.units} with ${stpConversionFactors?.[pollutantType] || -1} -> ${amount} ${friendlyUnits[scaleForPollutant.units] ?? scaleForPollutant.units} with ${scaleForPollutant?.stpConversionFactor || -1}`,
+				);
 				return pollutant;
 			}
 
-			const toUnits = scaleForPollutant.units;
-
-			const isDifferentStp = isPpxFrom && ppx.includes(toUnits) && stpConversionFactor !== scaleForPollutant.stpConversionFactor;
-			const intermediatePollutant = isDifferentStp ? { ...pollutant, amount: AirQuality.ConvertUnit(pollutant.amount, fromUnits, ugm3, stpConversionFactor), units: ugm3 } : pollutant;
-			if (isDifferentStp) {
-				Console.info("ConvertUnits", `Different STP for ${pollutantType}: ${stpConversionFactor} -> ${scaleForPollutant.stpConversionFactor}`);
-				Console.info("ConvertUnits", `Convert ${pollutantType} intermediate: ${intermediatePollutant.amount} ${friendlyUnits[fromUnits] ?? fromUnits} -> ${intermediatePollutant.amount} ${friendlyUnits[intermediatePollutant.units] ?? intermediatePollutant.units}`);
-			}
-
-			const requireConvertUnit = intermediatePollutant.units !== toUnits;
-			const amount = requireConvertUnit ? AirQuality.ConvertUnit(intermediatePollutant.amount, intermediatePollutant.units, toUnits, scaleForPollutant.stpConversionFactor) : intermediatePollutant.amount;
-			if (requireConvertUnit) {
-				Console.info("✅ ConvertUnits", `Convert ${pollutantType}: ${intermediatePollutant.amount} ${friendlyUnits[intermediatePollutant.units] ?? intermediatePollutant.units} -> ${amount} ${friendlyUnits[toUnits] ?? toUnits}`);
-			}
-
-			return { ...pollutant, amount, units: toUnits };
+			Console.debug("ConvertUnits", `Converted ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units] ?? scaleForPollutant.units}`);
+			return { ...pollutant, amount, units: scaleForPollutant.units };
 		});
 	}
 
@@ -1282,28 +1270,58 @@ export default class AirQuality {
 		return pollutants;
 	}
 
-	static ConvertUnit(amount, from, to, stpConversionFactor = -1) {
+	static ConvertUnit(amount, from, to, fromStpConversionFactor = -1, toStpConversionFactor = -1) {
 		Console.info("☑️ ConvertUnit");
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
-		Console.debug(`Convert ${amount} ${friendlyUnits[from]} to ${friendlyUnits[to]} with ${stpConversionFactor}`);
+		Console.info(`Convert ${amount} from ${friendlyUnits[from]} with ${fromStpConversionFactor} to ${friendlyUnits[to]} with ${toStpConversionFactor}`);
 		if (amount < 0) {
-			Console.warn("⚠️ ConvertUnit", `Amount ${amount} < 0`);
+			Console.error("ConvertUnit", `Amount ${amount} < 0`);
 			return -1;
 		}
 
 		const { ugm3, mgm3, ppb, ppm } = AirQuality.Config.Units.WeatherKit;
+		const ppx = [ppb, ppm];
+		const units = [...ppx, ugm3, mgm3];
+		if (!units.includes(from) || !units.includes(to)) {
+			Console.error("ConvertUnit", "Unsupported unit(s)", `from: ${from}`, `to: ${to}`);
+			return -1;
+		}
+
+		const isPpxFrom = ppx.includes(from);
+		const isPpxTo = ppx.includes(to);
+		const isDifferentStp = isPpxFrom && isPpxTo && fromStpConversionFactor !== toStpConversionFactor;
+		if (isDifferentStp) {
+			if (fromStpConversionFactor <= 0 || toStpConversionFactor <= 0) {
+				Console.error("ConvertUnit", "STP conversion factor(s) invalid", `fromStpConversionFactor: ${fromStpConversionFactor}`, `toStpConversionFactor: ${toStpConversionFactor}`);
+				return -1;
+			}
+
+			const intermediate = AirQuality.ConvertUnit(amount, from, ugm3, fromStpConversionFactor);
+			return AirQuality.ConvertUnit(intermediate, ugm3, to, -1, toStpConversionFactor);
+		}
+
+		if (isPpxFrom && fromStpConversionFactor <= 0) {
+			Console.error("ConvertUnit", `fromStpConversionFactor ${fromStpConversionFactor} <= 0`);
+			return -1;
+		}
+
+		if (isPpxTo && toStpConversionFactor <= 0) {
+			Console.error("ConvertUnit", `toStpConversionFactor ${toStpConversionFactor} <= 0`);
+			return -1;
+		}
+
 		switch (from) {
 			case ppm:
 				switch (to) {
 					case ppm:
-						return -1;
+						return amount;
 					case ppb:
 						return amount * 1000;
 					case mgm3:
-						return amount * stpConversionFactor;
+						return amount * fromStpConversionFactor;
 					case ugm3: {
-						const inPpb = AirQuality.ConvertUnit(amount, from, ppb, stpConversionFactor);
-						return inPpb * stpConversionFactor;
+						const inPpb = AirQuality.ConvertUnit(amount, from, ppb);
+						return inPpb * fromStpConversionFactor;
 					}
 					default:
 						return -1;
@@ -1311,29 +1329,29 @@ export default class AirQuality {
 			case ppb:
 				switch (to) {
 					case ppb:
-						return -1;
+						return amount;
 					case ppm:
 						return amount * 0.001;
 					case mgm3: {
-						const inPpm = AirQuality.ConvertUnit(amount, from, ppm, stpConversionFactor);
-						return inPpm * stpConversionFactor;
+						const inPpm = AirQuality.ConvertUnit(amount, from, ppm);
+						return inPpm * fromStpConversionFactor;
 					}
 					case ugm3:
-						return amount * stpConversionFactor;
+						return amount * fromStpConversionFactor;
 					default:
 						return -1;
 				}
 			case mgm3:
 				switch (to) {
 					case mgm3:
-						return -1;
+						return amount;
 					case ugm3:
 						return amount * 1000;
 					case ppm:
-						return amount / stpConversionFactor;
+						return amount / toStpConversionFactor;
 					case ppb: {
-						const inUgM3 = AirQuality.ConvertUnit(amount, from, ugm3, stpConversionFactor);
-						return inUgM3 / stpConversionFactor;
+						const inUgM3 = AirQuality.ConvertUnit(amount, from, ugm3);
+						return inUgM3 / toStpConversionFactor;
 					}
 					default:
 						return -1;
@@ -1341,15 +1359,15 @@ export default class AirQuality {
 			case ugm3:
 				switch (to) {
 					case ugm3:
-						return -1;
+						return amount;
 					case mgm3:
 						return amount * 0.001;
 					case ppm: {
-						const inMgM3 = AirQuality.ConvertUnit(amount, from, mgm3, stpConversionFactor);
-						return inMgM3 / stpConversionFactor;
+						const inMgM3 = AirQuality.ConvertUnit(amount, from, mgm3);
+						return inMgM3 / toStpConversionFactor;
 					}
 					case ppb:
-						return amount / stpConversionFactor;
+						return amount / toStpConversionFactor;
 					default:
 						return -1;
 				}
