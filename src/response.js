@@ -118,7 +118,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 								}
 
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
-									const getPollutants = (airQuality, injectedPollutants, injectedIndex) => {
+									const getPollutants = (airQuality, injectedPollutants, needInjectIndex, injectedIndex) => {
 										const getScale = scaleName => {
 											const scales = AirQuality.Config.Scales;
 											switch (scaleName) {
@@ -132,7 +132,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 										};
 
 										const replaceUnits = getArrayFromSetting(Settings?.AirQuality?.Current?.Pollutants?.ReplaceUnits);
-										const isIndexInjected = injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable;
+										const isIndexInjected = needInjectIndex && injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable;
 										const scaleName = AirQuality.GetNameFromScale(isIndexInjected ? injectedIndex?.scale : airQuality?.scale);
 
 										const pollutants = injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable ? injectedPollutants.pollutants : airQuality?.pollutants;
@@ -192,7 +192,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 										...(needInjectComparison && comparisonProviders.length > 0 ? [`对比昨日：${comparisonProviders.join("、")}`] : []),
 									];
 
-									const pollutants = getPollutants(body.airQuality, injectedPollutants, injectedIndex);
+									const pollutants = getPollutants(body.airQuality, injectedPollutants, needInjectIndex, injectedIndex);
 									body.airQuality = {
 										...body.airQuality,
 										...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
