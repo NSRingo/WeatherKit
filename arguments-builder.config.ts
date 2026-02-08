@@ -115,6 +115,19 @@ export default defineConfig({
 			description: "使用选定的数据源填充污染物数据。",
 		},
 		{
+			key: "AirQuality.Current.Pollutants.ReplaceUnits",
+			name: "[今日污染物] 单位转换",
+			defaultValue: [],
+			type: "array",
+			options: [
+				{ key: "EPA_NowCast", label: "美国（EPA NowCast）" },
+				{ key: "EU_EAQI", label: "欧盟EAQI（ETC HE Report 2024/17）" },
+				{ key: "HJ6332012", label: "中国（HJ 633—2012）" },
+				{ key: "UBA", label: "德国LQI（FB001846）" },
+			],
+			description: "选择的空气质量标准所需的单位与污染物的单位不同时，进行单位转换，方便与标准比对。单位转换会产生小数，小数部分可能会被省略。",
+		},
+		{
 			key: "AirQuality.Current.Index.Replace",
 			name: "[今日空气指数] 替换目标",
 			defaultValue: ["HJ6332012"],

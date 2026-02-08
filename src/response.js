@@ -118,6 +118,42 @@ Console.info(`FORMAT: ${FORMAT}`);
 								}
 
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
+									const getPollutants = (airQuality, injectedPollutants, injectedIndex) => {
+										const getScale = scaleName => {
+											const scales = AirQuality.Config.Scales;
+											switch (scaleName) {
+												case scales.HJ6332012.weatherKitScale.name:
+													return scales.WAQI_InstantCast_CN;
+												case scales.EPA_NowCast.weatherKitScale.name:
+													return scales.WAQI_NowCast_US;
+												default:
+													return scales[scaleName];
+											}
+										};
+
+										const replaceUnits = getArrayFromSetting(Settings?.AirQuality?.Current?.Pollutants?.ReplaceUnits);
+										const isIndexInjected = injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable;
+										const scaleName = AirQuality.GetNameFromScale(isIndexInjected ? injectedIndex?.scale : airQuality?.scale);
+
+										const pollutants = injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable ? injectedPollutants.pollutants : airQuality?.pollutants;
+										if (replaceUnits.includes(scaleName)) {
+											if (isIndexInjected && Settings?.AirQuality?.Current?.Index?.Provider === "iRingo") {
+												Console.info("getPollutants", `Use pollutants from iRingo`);
+												return injectedIndex.pollutants;
+											} else {
+												const scale = getScale(scaleName);
+												if (!scale) {
+													Console.warn("getPollutants", `Unsupported scale name: ${scaleName}`);
+													return pollutants;
+												}
+
+												return AirQuality.ConvertUnits(scale.pollutants, pollutants, getStpConversionFactors(airQuality));
+											}
+										} else {
+											return pollutants;
+										}
+									};
+
 									const isPollutantEmpty = !Array.isArray(body?.airQuality?.pollutants) || body.airQuality.pollutants.length === 0;
 									if (!isPollutantEmpty) {
 										AirQuality.FixQWeatherCO(body.airQuality);
@@ -155,6 +191,8 @@ Console.info(`FORMAT: ${FORMAT}`);
 										...(needInjectIndex && indexProvider ? [`空气指数：${indexProvider}`] : []),
 										...(needInjectComparison && comparisonProviders.length > 0 ? [`对比昨日：${comparisonProviders.join("、")}`] : []),
 									];
+
+									const pollutants = getPollutants(body.airQuality, injectedPollutants, injectedIndex);
 									body.airQuality = {
 										...body.airQuality,
 										...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
@@ -163,7 +201,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 											providerName: providers.join("、"),
 											...(providers?.[0] ? { providerLogo: providerNameToLogo(providers[0], "v2") } : {}),
 										},
-										...(injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable ? { pollutants: injectedPollutants.pollutants } : {}),
+										pollutants: pollutants ?? [],
 										previousDayComparison: injectedPreviousDayComparison,
 									};
 								}
