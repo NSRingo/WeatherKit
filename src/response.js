@@ -220,20 +220,51 @@ async function InjectPollutants(Settings, enviroments) {
 	}
 }
 
-function GetAirQualityFromPollutants(pollutants, algorithmSetting) {
+function GetAirQualityFromPollutants(algorithmSetting, airQuality) {
+	const getStpConversionFactors = airQuality => {
+		const { US } = AirQuality.Config.STP_ConversionFactors;
+		switch (airQuality?.metadata?.providerName) {
+			case "和风天气": {
+				// TODO: Is US the only country to use ppb in QWeather?
+				// const epaNowCast = AirQuality.Config.Scales.EPA_NowCast;
+				// const currentScaleName = AirQuality.GetNameFromScale(airQuality.scale);
+				// if (currentScaleName === epaNowCast.weatherKitScale.name) {
+				// 	return US;
+				// } else {
+				// 	return EU;
+				// }
+
+				return US;
+			}
+			// ColorfulClouds will not returns ppb
+			// case "彩云天气":
+			// BreeezoMeter is using 25 degree Celsius STP for EU also
+			case "BreezoMeter":
+			default: {
+				return US;
+			}
+		}
+	};
+
+	const { EU_EAQI, WAQI_InstantCast_US, WAQI_InstantCast_CN, UBA } = AirQuality.Config.Scales;
+	const stpConversionFactors = getStpConversionFactors(airQuality?.metadata?.providerName);
 	switch (algorithmSetting) {
 		case "EU_EAQI": {
+			const pollutants = AirQuality.ConvertUnits(EU_EAQI.pollutants, airQuality.pollutants, stpConversionFactors);
 			return AirQuality.PollutantsToEULike(pollutants);
 		}
 		case "WAQI_InstantCast_US": {
+			const pollutants = AirQuality.ConvertUnits(WAQI_InstantCast_US.pollutants, airQuality.pollutants, stpConversionFactors);
 			return AirQuality.PollutantsToInstantCastUS(pollutants);
 		}
 		case "WAQI_InstantCast_CN": {
+			const pollutants = AirQuality.ConvertUnits(WAQI_InstantCast_CN.pollutants, airQuality.pollutants, stpConversionFactors);
 			return AirQuality.PollutantsToInstantCastCN12(pollutants);
 		}
 		case "UBA":
 		default: {
-			return AirQuality.PollutantsToEULike(pollutants, AirQuality.Config.Scales.UBA);
+			const pollutants = AirQuality.ConvertUnits(UBA.pollutants, airQuality.pollutants, stpConversionFactors);
+			return AirQuality.PollutantsToEULike(pollutants, UBA);
 		}
 	}
 }
@@ -257,7 +288,7 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 		}
 		case "iRingo":
 		default: {
-			return GetAirQualityFromPollutants(airQuality.pollutants, Settings.AirQuality.iRingoAlgorithm);
+			return GetAirQualityFromPollutants(Settings.AirQuality.iRingoAlgorithm, airQuality);
 		}
 		// TODO
 		case "WAQI": {
@@ -352,7 +383,7 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 		const yesterdayAirQuality = await enviroments.colorfulClouds.YesterdayAirQuality(useUsa);
 		return !yesterdayAirQuality.metadata.temporarilyUnavailable ? AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.colorfulClouds.CurrentAirQuality(useUsa)).categoryIndex, yesterdayAirQuality.categoryIndex) : UNKNOWN;
 	};
-	const qweatherComparison = async (useCurrent, currentCategoryIndex, pollutantsToCategoryIndex) => {
+	const qweatherComparison = async (useCurrent, currentCategoryIndex, toCategoryIndex) => {
 		const setQWeatherCache = qweatherCache => {
 			Caches.qweather = qweatherCache;
 			Storage.setItem("@iRingo.WeatherKit.Caches", { ...Caches, qweather: qweatherCache });
@@ -370,9 +401,7 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 		Console.info(`locationInfo.latitude: ${locationInfo.latitude}, locationInfo.longitude: ${locationInfo.longitude}`);
 		const yesterdayAirQuality = await enviroments.qWeather.YesterdayAirQuality(locationInfo.id);
 
-		return !yesterdayAirQuality.metadata.temporarilyUnavailable
-			? AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.qWeather.CurrentAirQuality()).categoryIndex, pollutantsToCategoryIndex ? pollutantsToCategoryIndex(yesterdayAirQuality.pollutants) : yesterdayAirQuality.categoryIndex)
-			: UNKNOWN;
+		return !yesterdayAirQuality.metadata.temporarilyUnavailable ? AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.qWeather.CurrentAirQuality()).categoryIndex, toCategoryIndex ? toCategoryIndex(yesterdayAirQuality) : yesterdayAirQuality.categoryIndex) : UNKNOWN;
 	};
 
 	Console.info("✅ InjectPreviousDayComparison");
@@ -383,7 +412,7 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 			if (algorithm !== "") {
 				switch (Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider) {
 					case "QWeather": {
-						return await qweatherComparison(true, airQuality?.categoryIndex, pollutants => GetAirQualityFromPollutants(pollutants, algorithm).categoryIndex);
+						return await qweatherComparison(true, airQuality?.categoryIndex, airQuality => GetAirQualityFromPollutants(algorithm, airQuality).categoryIndex);
 					}
 				}
 			}
