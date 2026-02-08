@@ -105,7 +105,7 @@ export default defineConfig({
 		},
 		{
 			key: "AirQuality.Current.Pollutants.Provider",
-			name: "[空气质量 - 今日 - 污染物] 数据源",
+			name: "[今日污染物] 数据源",
 			defaultValue: "ColorfulClouds",
 			type: "string",
 			options: [
@@ -116,7 +116,7 @@ export default defineConfig({
 		},
 		{
 			key: "AirQuality.Current.Index.Replace",
-			name: "[空气质量 - 今日 - 空气质量指数] 替换目标",
+			name: "[今日空气指数] 替换目标",
 			defaultValue: ["HJ6332012"],
 			type: "array",
 			options: [
@@ -127,21 +127,21 @@ export default defineConfig({
 		},
 		{
 			key: "AirQuality.Current.Index.Provider",
-			name: "[空气质量 - 今日 - 空气质量指数] 数据源",
+			name: "[今日空气指数] 数据源",
 			defaultValue: "iRingo",
 			type: "string",
 			options: [
 				{ key: "iRingo", label: "iRingo内置算法" },
-				{ key: "ColorfulCloudsUS", label: "彩云天气（美标，EPA 454/B-18-007）" },
-				{ key: "ColorfulCloudsCN", label: "彩云天气（国标，HJ 633—2012）" },
-				{ key: "QWeather", label: "和风天气（国标，HJ 633—2012）" },
-				{ key: "WAQI", label: "The World Air Quality Project (InstantCast)" },
+				{ key: "ColorfulCloudsUS", label: "彩云天气（美标，18年9月版）" },
+				{ key: "ColorfulCloudsCN", label: "彩云天气（国标）" },
+				{ key: "QWeather", label: "和风天气（国标）" },
+				{ key: "WAQI", label: "WAQI（美标InstantCast，18年9月版）" },
 			],
-			description: "使用选定的数据源填充空气质量指数数据。彩云天气（美标）为2018年9月版（EPA-454/B-18-007），WAQI是基于2018年9月版美标（EPA-454/B-18-007）的InstantCast。",
+			description: "使用选定的数据源填充空气质量指数数据。",
 		},
 		{
 			key: "AirQuality.Current.Index.ForceCNPrimaryPollutants",
-			name: "[空气质量 - 今日 - 空气质量指数] 强制显示国标主要污染物",
+			name: "[今日空气指数] 强制主要污染物",
 			defaultValue: true,
 			type: "boolean",
 			description: "忽略国标（HJ 633—2012）的AQI > 50规定，始终将IAQI最大的空气污染物作为主要污染物。",
@@ -155,14 +155,14 @@ export default defineConfig({
 		},
 		{
 			key: "AirQuality.Comparison.ReplaceWhenCurrentChange",
-			name: "[空气质量 - 对比昨日] 数据变化时替换",
+			name: "[空气质量 - 对比昨日] 变化时替换",
 			defaultValue: false,
 			type: "boolean",
 			description: "即使已有对比昨日数据，当今日空气质量指数发生变化时，替换对比昨日数据。",
 		},
 		{
 			key: "AirQuality.Comparison.Yesterday.PollutantsProvider",
-			name: "[空气质量 - 对比昨日 - 昨日 - 污染物] 数据源",
+			name: "[昨日污染物] 数据源",
 			defaultValue: "QWeather",
 			type: "string",
 			options: [
@@ -172,16 +172,16 @@ export default defineConfig({
 		},
 		{
 			key: "AirQuality.Comparison.Yesterday.IndexProvider",
-			name: "[空气质量 - 对比昨日 - 昨日 - 空气质量指数] 数据源",
+			name: "[昨日空气指数] 数据源",
 			defaultValue: "ColorfulCloudsUS",
 			type: "string",
 			options: [
 				{ key: "iRingo", label: "iRingo内置算法" },
-				{ key: "ColorfulCloudsUS", label: "彩云天气（美标），EPA 454/B-18-007" },
-				{ key: "ColorfulCloudsCN", label: "彩云天气（国标，HJ 633—2012）" },
-				{ key: "QWeather", label: "和风天气（国标，HJ 633—2012）" },
+				{ key: "ColorfulCloudsUS", label: "彩云天气（美标，18年9月版）" },
+				{ key: "ColorfulCloudsCN", label: "彩云天气（国标）" },
+				{ key: "QWeather", label: "和风天气（国标）" },
 			],
-			description: "用来和今日空气质量指数对比的数据。iRingo内置算法需要昨日污染物数据，彩云天气（美标）为2018年9月版（EPA-454/B-18-007），WAQI是基于2018年9月版美标（EPA-454/B-18-007）的InstantCast。",
+			description: "用来和今日空气质量指数对比的数据。",
 		},
 		{
 			key: "AirQuality.iRingoAlgorithm",
@@ -191,10 +191,10 @@ export default defineConfig({
 			options: [
 				{ key: "UBA", label: "德国LQI（FB001846）" },
 				{ key: "EU_EAQI", label: "欧盟EAQI（ETC HE Report 2024/17）" },
-				{ key: "WAQI_InstantCast_US", label: "美标WAQI InstantCast（EPA-454/B-24-002）" },
-				{ key: "WAQI_InstantCast_CN", label: "国标WAQI InstantCast（HJ 633—2012）" },
+				{ key: "WAQI_InstantCast_US", label: "美标InstantCast（EPA-454/B-24-002）" },
+				{ key: "WAQI_InstantCast_CN", label: "国标InstantCast（HJ 633—2012）" },
 			],
-			description: "使用内置算法，通过污染物数据本地计算空气指数。",
+			description: "使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI。",
 		},
 		{
 			key: "API.ColorfulClouds.Token",
