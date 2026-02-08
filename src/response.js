@@ -147,7 +147,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 													return pollutants;
 												}
 
-												return AirQuality.ConvertUnits(scale.pollutants, pollutants, getStpConversionFactors(airQuality));
+												return AirQuality.ConvertUnits(pollutants, getStpConversionFactors(airQuality), scale.pollutants);
 											}
 										} else {
 											return pollutants;
@@ -288,20 +288,20 @@ function GetAirQualityFromPollutants(algorithmSetting, airQuality) {
 	const stpConversionFactors = getStpConversionFactors(airQuality);
 	switch (algorithmSetting) {
 		case "EU_EAQI": {
-			const pollutants = AirQuality.ConvertUnits(EU_EAQI.pollutants, airQuality.pollutants, stpConversionFactors);
+			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, EU_EAQI.pollutants);
 			return AirQuality.PollutantsToEULike(pollutants);
 		}
 		case "WAQI_InstantCast_US": {
-			const pollutants = AirQuality.ConvertUnits(WAQI_InstantCast_US.pollutants, airQuality.pollutants, stpConversionFactors);
+			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_US.pollutants);
 			return AirQuality.PollutantsToInstantCastUS(pollutants);
 		}
 		case "WAQI_InstantCast_CN": {
-			const pollutants = AirQuality.ConvertUnits(WAQI_InstantCast_CN.pollutants, airQuality.pollutants, stpConversionFactors);
+			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_CN.pollutants);
 			return AirQuality.PollutantsToInstantCastCN12(pollutants);
 		}
 		case "UBA":
 		default: {
-			const pollutants = AirQuality.ConvertUnits(UBA.pollutants, airQuality.pollutants, stpConversionFactors);
+			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, UBA.pollutants);
 			return AirQuality.PollutantsToEULike(pollutants, UBA);
 		}
 	}
