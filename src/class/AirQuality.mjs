@@ -384,6 +384,7 @@ export default class AirQuality {
 				pollutants: {
 					NO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 10] },
 							max: { indexes: [5, 5], amounts: [101, Number.POSITIVE_INFINITY] },
@@ -398,6 +399,7 @@ export default class AirQuality {
 					},
 					PM10: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 9] },
 							max: { indexes: [5, 5], amounts: [91, Number.POSITIVE_INFINITY] },
@@ -412,6 +414,7 @@ export default class AirQuality {
 					},
 					PM2_5: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 5] },
 							max: { indexes: [5, 5], amounts: [51, Number.POSITIVE_INFINITY] },
@@ -426,6 +429,7 @@ export default class AirQuality {
 					},
 					OZONE: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 24] },
 							max: { indexes: [5, 5], amounts: [241, Number.POSITIVE_INFINITY] },
@@ -440,6 +444,7 @@ export default class AirQuality {
 					},
 					SO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 10] },
 							max: { indexes: [5, 5], amounts: [101, Number.POSITIVE_INFINITY] },
@@ -477,6 +482,7 @@ export default class AirQuality {
 				pollutants: {
 					PM2_5: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 5] },
 							max: { indexes: [6, 6], amounts: [141, Number.POSITIVE_INFINITY] },
@@ -492,6 +498,7 @@ export default class AirQuality {
 					},
 					PM10: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 15] },
 							max: { indexes: [6, 6], amounts: [271, Number.POSITIVE_INFINITY] },
@@ -507,6 +514,7 @@ export default class AirQuality {
 					},
 					OZONE: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 60] },
 							max: { indexes: [6, 6], amounts: [181, Number.POSITIVE_INFINITY] },
@@ -522,6 +530,7 @@ export default class AirQuality {
 					},
 					NO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 10] },
 							max: { indexes: [6, 6], amounts: [151, Number.POSITIVE_INFINITY] },
@@ -537,6 +546,7 @@ export default class AirQuality {
 					},
 					SO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [1, 1], amounts: [0, 20] },
 							max: { indexes: [6, 6], amounts: [276, Number.POSITIVE_INFINITY] },
@@ -575,6 +585,7 @@ export default class AirQuality {
 				pollutants: {
 					SO2_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 50] },
 							max: { indexes: [401, 500], amounts: [2101, 2602] },
@@ -591,6 +602,7 @@ export default class AirQuality {
 					},
 					SO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 150] },
 							max: { indexes: [151, 200], amounts: [651, 800] },
@@ -605,6 +617,7 @@ export default class AirQuality {
 					},
 					NO2_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 40] },
 							max: { indexes: [401, 500], amounts: [751, 940] },
@@ -621,6 +634,7 @@ export default class AirQuality {
 					},
 					NO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 100] },
 							max: { indexes: [401, 500], amounts: [3091, 3840] },
@@ -637,6 +651,7 @@ export default class AirQuality {
 					},
 					PM10_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 50] },
 							max: { indexes: [401, 500], amounts: [501, 600] },
@@ -653,6 +668,7 @@ export default class AirQuality {
 					},
 					CO_24H: {
 						units: "MILLIGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 2] },
 							max: { indexes: [401, 500], amounts: [49, 60] },
@@ -669,6 +685,7 @@ export default class AirQuality {
 					},
 					CO: {
 						units: "MILLIGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 5] },
 							max: { indexes: [401, 500], amounts: [121, 150] },
@@ -685,6 +702,7 @@ export default class AirQuality {
 					},
 					OZONE: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 160] },
 							max: { indexes: [401, 500], amounts: [1001, 1200] },
@@ -701,6 +719,7 @@ export default class AirQuality {
 					},
 					OZONE_8H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 100] },
 							max: { indexes: [201, 300], amounts: [266, 800] },
@@ -716,6 +735,7 @@ export default class AirQuality {
 					},
 					PM2_5_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 35] },
 							max: { indexes: [401, 500], amounts: [351, 500] },
@@ -755,6 +775,7 @@ export default class AirQuality {
 				pollutants: {
 					OZONE_8H: {
 						units: "PARTS_PER_MILLION",
+						stpConversionFactor: 1.962,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 0.054] },
 							max: { indexes: [201, 300], amounts: [0.106, 0.2] },
@@ -773,6 +794,7 @@ export default class AirQuality {
 					},
 					OZONE: {
 						units: "PARTS_PER_MILLION",
+						stpConversionFactor: 1.962,
 						ranges: {
 							min: { indexes: [101, 150], amounts: [0.125, 0.164] },
 							max: { indexes: [301, 500], amounts: [0.405, 0.604] },
@@ -792,6 +814,7 @@ export default class AirQuality {
 					},
 					PM2_5_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0.0, 9.0] },
 							max: { indexes: [301, 500], amounts: [225.5, 325.4] },
@@ -812,6 +835,7 @@ export default class AirQuality {
 					},
 					PM10_24H: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 54] },
 							max: { indexes: [301, 500], amounts: [425, 604] },
@@ -828,6 +852,7 @@ export default class AirQuality {
 					},
 					CO_8H: {
 						units: "PARTS_PER_MILLION",
+						stpConversionFactor: 1.1445,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0.0, 4.4] },
 							max: { indexes: [301, 500], amounts: [425, 604] },
@@ -844,6 +869,7 @@ export default class AirQuality {
 					},
 					SO2: {
 						units: "PARTS_PER_BILLION",
+						stpConversionFactor: 2.616,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 35] },
 							max: { indexes: [301, 500], amounts: [425, 1004] },
@@ -865,6 +891,7 @@ export default class AirQuality {
 					},
 					NO2: {
 						units: "PARTS_PER_BILLION",
+						stpConversionFactor: 1.8802,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 53] },
 							max: { indexes: [301, 500], amounts: [1250, 2049] },
@@ -907,6 +934,7 @@ export default class AirQuality {
 					// [Ozone AQI Scale update](https://aqicn.org/faq/2016-08-10/ozone-aqi-scale-update/)
 					OZONE: {
 						units: "PARTS_PER_BILLION",
+						stpConversionFactor: 1.962,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 61.5] },
 							max: { indexes: [301, 500], amounts: [405, 605] },
@@ -923,6 +951,7 @@ export default class AirQuality {
 					},
 					PM2_5: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0.0, 9.0] },
 							max: { indexes: [301, 500], amounts: [225.5, 325.4] },
@@ -939,6 +968,7 @@ export default class AirQuality {
 					},
 					PM10: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 54] },
 							max: { indexes: [301, 500], amounts: [425, 604] },
@@ -955,6 +985,7 @@ export default class AirQuality {
 					},
 					CO: {
 						units: "PARTS_PER_BILLION",
+						stpConversionFactor: 1.1445,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0.0, 4.4] },
 							max: { indexes: [301, 500], amounts: [425, 604] },
@@ -971,6 +1002,7 @@ export default class AirQuality {
 					},
 					SO2: {
 						units: "PARTS_PER_BILLION",
+						stpConversionFactor: 2.616,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 35] },
 							max: { indexes: [301, 500], amounts: [425, 1004] },
@@ -987,6 +1019,7 @@ export default class AirQuality {
 					},
 					NO2: {
 						units: "PARTS_PER_BILLION",
+						stpConversionFactor: 1.8802,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 53] },
 							max: { indexes: [301, 500], amounts: [1250, 2049] },
@@ -1027,6 +1060,7 @@ export default class AirQuality {
 				pollutants: {
 					SO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 150] },
 							max: { indexes: [401, 500], amounts: [2101, 2602] },
@@ -1044,6 +1078,7 @@ export default class AirQuality {
 					},
 					NO2: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 100] },
 							max: { indexes: [401, 500], amounts: [3091, 3840] },
@@ -1061,6 +1096,7 @@ export default class AirQuality {
 					},
 					PM10: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 50] },
 							max: { indexes: [401, 500], amounts: [501, 600] },
@@ -1078,6 +1114,7 @@ export default class AirQuality {
 					},
 					CO: {
 						units: "MILLIGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 5] },
 							max: { indexes: [401, 500], amounts: [121, 150] },
@@ -1095,6 +1132,7 @@ export default class AirQuality {
 					},
 					OZONE: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 160] },
 							max: { indexes: [401, 500], amounts: [1001, 1200] },
@@ -1112,6 +1150,7 @@ export default class AirQuality {
 					},
 					PM2_5: {
 						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 35] },
 							max: { indexes: [401, 500], amounts: [351, 500] },
