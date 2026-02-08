@@ -106,12 +106,22 @@ export interface Settings {
                  * @defaultValue "ColorfulClouds"
                  */
                 Provider?: 'ColorfulClouds' | 'QWeather';
-                // Units?: {
-                //     Ugm3ToUSPpb?: string;
-                //     Ugm3ToEUPpb?: string;
-                //     EUppbToUgm3?: string;
-                //     USppbToUgm3?: string;
-                // },
+                /**
+                 * [今日污染物] 单位转换
+                 *
+                 * 选择的空气质量标准所需的单位与污染物的单位不同时，进行单位转换，方便与标准比对。单位转换会产生小数，小数部分可能会被省略。
+                 *
+                 * @remarks
+                 *
+                 * Possible values:
+                 * - `'EPA_NowCast'` - 美国 (EPA NowCast)
+                 * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
+                 * - `'HJ6332012'` - 中国 (HJ 633—2012)
+                 * - `'UBA'` - 德国LQI（FB001846）
+                 *
+                 * @defaultValue []
+                 */
+                ReplaceUnits?: ('EU_EAQI' | 'EPA_NowCast' | 'HJ6332012' | 'UBA')[];
             },
             Index?: {
                 /**
