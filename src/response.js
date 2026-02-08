@@ -220,32 +220,32 @@ async function InjectPollutants(Settings, enviroments) {
 	}
 }
 
-function GetAirQualityFromPollutants(algorithmSetting, airQuality) {
-	const getStpConversionFactors = airQuality => {
-		const { US } = AirQuality.Config.STP_ConversionFactors;
-		switch (airQuality?.metadata?.providerName) {
-			case "和风天气": {
-				// TODO: Is US the only country to use ppb in QWeather?
-				// const epaNowCast = AirQuality.Config.Scales.EPA_NowCast;
-				// const currentScaleName = AirQuality.GetNameFromScale(airQuality.scale);
-				// if (currentScaleName === epaNowCast.weatherKitScale.name) {
-				// 	return US;
-				// } else {
-				// 	return EU;
-				// }
+function getStpConversionFactors(airQuality) {
+	const { US } = AirQuality.Config.STP_ConversionFactors;
+	switch (airQuality?.metadata?.providerName) {
+		case "和风天气": {
+			// TODO: Is US the only country to use ppb in QWeather?
+			// const epaNowCast = AirQuality.Config.Scales.EPA_NowCast;
+			// const currentScaleName = AirQuality.GetNameFromScale(airQuality.scale);
+			// if (currentScaleName === epaNowCast.weatherKitScale.name) {
+			// 	return US;
+			// } else {
+			// 	return EU;
+			// }
 
-				return US;
-			}
-			// ColorfulClouds will not returns ppb
-			// case "彩云天气":
-			// BreeezoMeter is using 25 degree Celsius STP for EU also
-			case "BreezoMeter":
-			default: {
-				return US;
-			}
+			return US;
 		}
-	};
+		// ColorfulClouds will not returns ppb
+		// case "彩云天气":
+		// BreeezoMeter is using 25 degree Celsius STP for EU also
+		case "BreezoMeter":
+		default: {
+			return US;
+		}
+	}
+}
 
+function GetAirQualityFromPollutants(algorithmSetting, airQuality) {
 	const { EU_EAQI, WAQI_InstantCast_US, WAQI_InstantCast_CN, UBA } = AirQuality.Config.Scales;
 	const stpConversionFactors = getStpConversionFactors(airQuality?.metadata?.providerName);
 	switch (algorithmSetting) {
