@@ -118,17 +118,6 @@ Console.info(`FORMAT: ${FORMAT}`);
 								}
 
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
-									// BoxJS returns string if only one selected
-									const getArrayFromSetting = setting => {
-										if (!setting) {
-											return [];
-										} else if (Array.isArray(setting)) {
-											return setting;
-										} else {
-											return [setting];
-										}
-									};
-
 									const isPollutantEmpty = !Array.isArray(body?.airQuality?.pollutants) || body.airQuality.pollutants.length === 0;
 									if (!isPollutantEmpty) {
 										AirQuality.FixQWeatherCO(body.airQuality);
@@ -205,6 +194,17 @@ Console.info(`FORMAT: ${FORMAT}`);
 })()
 	.catch(e => Console.error(e))
 	.finally(() => done($response));
+
+// BoxJS returns string if only one selected
+function getArrayFromSetting(setting) {
+	if (!setting) {
+		return [];
+	} else if (Array.isArray(setting)) {
+		return setting;
+	} else {
+		return [setting];
+	}
+}
 
 async function InjectPollutants(Settings, enviroments) {
 	Console.info("☑️ InjectPollutants");
