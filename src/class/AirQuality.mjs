@@ -1172,7 +1172,7 @@ export default class AirQuality {
 		 * - 273.15 is the 0 celsius in kelvin.
 		 * - temperatureInCelsius is 25 in US, 20 in EU.
 		 */
-		STP_ConversionFactor: {
+		STP_ConversionFactors: {
 			US: {
 				OZONE: 1.962, // 48 g/mol
 				SO2: 2.616, // 64 g/mol
