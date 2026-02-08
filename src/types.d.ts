@@ -93,7 +93,7 @@ export interface Settings {
             Fill?: string;
             Pollutants?: {
                 /**
-                 * [空气质量 - 今日 - 污染物] 数据源
+                 * [今日污染物] 数据源
                  *
                  * 使用选定的数据源填补污染物数据。
                  *
@@ -115,7 +115,7 @@ export interface Settings {
             },
             Index?: {
                 /**
-                 * [空气质量 - 今日 - 空气质量指数] 替换目标
+                 * [今日空气指数] 替换目标
                  *
                  * 替换指定标准的空气质量指数。
                  *
@@ -129,26 +129,24 @@ export interface Settings {
                  */
                 Replace?: ('HJ6332012' | 'EPA_NowCast')[];
                 /**
-                 * [空气质量 - 今日 - 空气质量指数] 数据源
+                 * [今日空气指数] 数据源
                  *
                  * 使用选定的数据源填补和替换空气质量指数。
-                 * 彩云天气（美标）为2018年9月版（EPA-454/B-18-007），
-                 * WAQI是基于2018年9月版美标（EPA-454/B-18-007）的InstantCast。
                  *
                  * @remarks
                  *
                  * Possible values:
                  * - `'iRingo'` - iRingo内置算法
-                 * - `'ColorfulCloudsUS'` - 彩云天气（美标，EPA 454/B-18-007）
-                 * - `'ColorfulCloudsCN'` - 彩云天气（国标，HJ 633—2012）
-                 * - `'QWeather'` - 和风天气（国标，HJ 633—2012）
-                 * - `'WAQI'` - The World Air Quality Project（美标InstantCast，EPA 454/B-18-007）
+                 * - `'ColorfulCloudsUS'` - 彩云天气（美标，18年9月版）
+                 * - `'ColorfulCloudsCN'` - 彩云天气（国标）
+                 * - `'QWeather'` - 和风天气（国标）
+                 * - `'WAQI'` - WAQI（美标InstantCast，18年9月版）
                  *
                  * @defaultValue "iRingo"
                  */
                 Provider?: 'iRingo' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather' | 'WAQI';
                 /**
-                 * [空气质量 - 今日 - 空气质量指数] 强制显示国标主要污染物
+                 * [今日空气指数] 强制主要污染物
                  *
                  * 忽略国标（HJ 633—2012）的AQI > 50规定，始终将IAQI最大的空气污染物作为主要污染物。
                  *
@@ -167,7 +165,7 @@ export interface Settings {
              */
             Fill?: string;
             /**
-             * [空气质量 - 对比昨日] 数据变化时替换
+             * [空气质量 - 对比昨日] 变化时替换
              *
              * 即使已有对比昨日数据，当今日空气质量指数发生变化时，替换对比昨日数据。
              *
@@ -176,7 +174,7 @@ export interface Settings {
             ReplaceWhenCurrentChange?: boolean;
             Yesterday?: {
                 /**
-                 * [空气质量 - 对比昨日 - 昨日 - 污染物] 数据源
+                 * [昨日污染物] 数据源
                  *
                  * 为iRingo内置算法提供污染物数据，计算出昨日的空气质量指数。
                  *
@@ -189,19 +187,17 @@ export interface Settings {
                  */
                 PollutantsProvider?: 'QWeather';
                 /**
-                 * [空气质量 - 对比昨日 - 昨日 - 空气质量指数] 数据源
+                 * [昨日空气指数] 数据源
                  *
                  * 用来和今日空气质量指数对比的数据。
-                 * iRingo内置算法需要昨日污染物数据，
-                 * 彩云天气（美标）为2018年9月版（EPA-454/B-18-007）。
                  *
                  * @remarks
                  *
                  * Possible values:
                  * - `'iRingo'` - iRingo内置算法
-                 * - `'ColorfulCloudsUS'` - 彩云天气（美标，EPA 454/B-18-007）
-                 * - `'ColorfulCloudsCN'` - 彩云天气（国标，HJ 633—2012）
-                 * - `'QWeather'` - 和风天气（国标，HJ 633—2012）
+                 * - `'ColorfulCloudsUS'` - 彩云天气（美标，18年9月版）
+                 * - `'ColorfulCloudsCN'` - 彩云天气（国标）
+                 * - `'QWeather'` - 和风天气（国标）
                  *
                  * @defaultValue "ColorfulCloudsUS"
                  */
@@ -211,15 +207,15 @@ export interface Settings {
         /**
          * [空气质量 - iRingo内置算法] 算法
          *
-         * 使用内置算法，通过污染物数据本地计算空气指数。
+         * 使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI。
          *
          * @remarks
          *
          * Possible values:
          * - `'UBA'` - 德国LQI（FB001846）
          * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
-         * - `'WAQI_InstantCast_US'` - 美标WAQI InstantCast（EPA-454/B-24-002）
-         * - `'WAQI_InstantCast_CN'` - 国标WAQI InstantCast（HJ 633—2012）
+         * - `'WAQI_InstantCast_US'` - 美标InstantCast（EPA-454/B-24-002）
+         * - `'WAQI_InstantCast_CN'` - 国标InstantCast（HJ 633—2012）
          *
          * @defaultValue "UBA"
          */
