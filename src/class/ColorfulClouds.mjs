@@ -353,7 +353,7 @@ export default class ColorfulClouds {
 	#CreatePollutants(realtimeAirQuality) {
 		Console.info("☑️ CreatePollutants");
 		if (realtimeAirQuality?.description?.usa === "") {
-			Console.error("CreatePollutants", `Failed to get air_quality data`);
+			Console.error("CreatePollutants", `Unsupported location`);
 			return [];
 		}
 
