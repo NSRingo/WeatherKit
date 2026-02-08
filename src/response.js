@@ -247,7 +247,7 @@ function getStpConversionFactors(airQuality) {
 
 function GetAirQualityFromPollutants(algorithmSetting, airQuality) {
 	const { EU_EAQI, WAQI_InstantCast_US, WAQI_InstantCast_CN, UBA } = AirQuality.Config.Scales;
-	const stpConversionFactors = getStpConversionFactors(airQuality?.metadata?.providerName);
+	const stpConversionFactors = getStpConversionFactors(airQuality);
 	switch (algorithmSetting) {
 		case "EU_EAQI": {
 			const pollutants = AirQuality.ConvertUnits(EU_EAQI.pollutants, airQuality.pollutants, stpConversionFactors);
