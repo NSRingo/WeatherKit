@@ -113,7 +113,7 @@ export default class AirQuality {
 		}
 	}
 
-	static ConvertUnits(scaleForPollutants, stpConversionFactors, pollutants) {
+	static ConvertUnits(scaleForPollutants, pollutants, stpConversionFactors) {
 		Console.info("☑️ ConvertUnits");
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
 		return pollutants.map(pollutant => {
@@ -190,8 +190,7 @@ export default class AirQuality {
 		}
 
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
-		const convertedPollutants = AirQuality.ConvertUnits(scale.pollutants, AirQuality.Config.STP_ConversionFactor.EU, pollutants);
-		const indexes = convertedPollutants.map(pollutant => {
+		const indexes = pollutants.map(pollutant => {
 			const { pollutantType, amount } = pollutant;
 			const scaleForPollutant = scale.pollutants[pollutantType];
 			if (!scaleForPollutant) {
@@ -224,7 +223,7 @@ export default class AirQuality {
 			isSignificant: primaryPollutant.index >= scale.categories.significantIndex,
 			// categoryIndex === index in EU-like scales
 			categoryIndex: primaryPollutant.index,
-			pollutants: convertedPollutants,
+			pollutants,
 			metadata: { providerName: "iRingo", temporarilyUnavailable: false },
 			primaryPollutant: primaryPollutant.pollutantType,
 			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
@@ -261,8 +260,7 @@ export default class AirQuality {
 	static #PollutantsToInstantCastLikeIndexes(pollutants, scaleForPollutants) {
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
 
-		const convertedPollutants = AirQuality.ConvertUnits(scaleForPollutants, AirQuality.Config.STP_ConversionFactor.US, pollutants);
-		return convertedPollutants.map(pollutant => {
+		return pollutants.map(pollutant => {
 			const { pollutantType, amount } = pollutant;
 			const scaleForPollutant = scaleForPollutants[pollutantType];
 			if (!scaleForPollutant) {
@@ -303,8 +301,7 @@ export default class AirQuality {
 		}
 
 		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
-		const convertedPollutants = AirQuality.ConvertUnits(scale.pollutants, AirQuality.Config.STP_ConversionFactor.US, pollutants);
-		const indexes = AirQuality.#PollutantsToInstantCastLikeIndexes(convertedPollutants, scale.pollutants);
+		const indexes = AirQuality.#PollutantsToInstantCastLikeIndexes(pollutants, scale.pollutants);
 		Console.debug(`indexes: ${JSON.stringify(indexes)}`);
 
 		const primaryPollutant = indexes.reduce((previous, current) => (previous.index > current.index ? previous : current));
@@ -316,7 +313,7 @@ export default class AirQuality {
 			index: primaryPollutant.index,
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
 			categoryIndex,
-			pollutants: convertedPollutants,
+			pollutants,
 			metadata: { providerName: "iRingo", temporarilyUnavailable: false },
 			primaryPollutant: primaryPollutant.pollutantType,
 			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
@@ -335,8 +332,7 @@ export default class AirQuality {
 			return {};
 		}
 
-		const convertedPollutants = AirQuality.ConvertUnits(scale.pollutants, AirQuality.Config.STP_ConversionFactor.US, pollutants);
-		const indexes = AirQuality.#PollutantsToInstantCastLikeIndexes(convertedPollutants, scale.pollutants);
+		const indexes = AirQuality.#PollutantsToInstantCastLikeIndexes(pollutants, scale.pollutants);
 		Console.debug(`indexes: ${JSON.stringify(indexes)}`);
 
 		const primaryPollutant = AirQuality.FindPrimaryPollutants(indexes)[0];
@@ -353,7 +349,7 @@ export default class AirQuality {
 			index: primaryPollutant.index,
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
 			categoryIndex,
-			pollutants: convertedPollutants,
+			pollutants,
 			metadata: { providerName: "iRingo", temporarilyUnavailable: false },
 			primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : primaryPollutant.pollutantType,
 			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
