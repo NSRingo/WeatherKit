@@ -95,6 +95,17 @@ export default class AirQuality {
 		return Math.ceil(a * multiplier) / multiplier;
 	}
 
+	static #RoundByPrecision(a, b) {
+		// 获取 b 的小数位数
+		const decimals = (b.toString().split(".")[1] || "").length;
+
+		// 根据小数位数计算倍数
+		const multiplier = 10 ** decimals;
+
+		// 四舍五入
+		return Math.round(a * multiplier) / multiplier;
+	}
+
 	static CategoryIndex(index, scale) {
 		Console.info("☑️ CategoryIndex", `index: ${index}`);
 		const { categoryIndex } = scale.categories.ranges.find(({ indexes }) => {
@@ -307,7 +318,7 @@ export default class AirQuality {
 			const [minIndex, maxIndex] = isOverRange ? scaleForPollutant.ranges.max.indexes : indexes;
 			const [minAmount, maxAmount] = isOverRange ? scaleForPollutant.ranges.max.amounts : amounts;
 
-			return { pollutantType, index: Math.round(((maxIndex - minIndex) / (maxAmount - minAmount)) * (amount - minAmount) + minIndex) };
+			return { pollutantType, index: Math.round(((maxIndex - minIndex) / (maxAmount - minAmount)) * (AirQuality.#RoundByPrecision(amount, minAmount) - minAmount) + minIndex) };
 		});
 	}
 
