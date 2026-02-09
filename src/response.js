@@ -133,14 +133,14 @@ Console.info(`FORMAT: ${FORMAT}`);
 									const needInjectIndex = needPollutants || replaceScales.includes(AirQuality.GetNameFromScale(body.airQuality?.scale));
 									const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
 
-									// injectedPreviousDayComparison
+									// injectedComparison
 									const previousDayComparison = injectedIndex.previousDayComparison;
 									const isUnknownComparison = !previousDayComparison || previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
 									const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
 
 									const isComparisonFill = new RegExp(Settings?.AirQuality?.Comparison?.Fill || "(?!)").test(country);
 									const needInjectComparison = isComparisonFill && isUnknownComparison;
-									const injectedPreviousDayComparison = needInjectComparison ? await InjectPreviousDayComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : previousDayComparison;
+									const injectedComparison = needInjectComparison ? await InjectComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : injectedIndex;
 
 									// metadata
 									const weatherKitProvider = body.airQuality?.metadata?.providerName;
@@ -165,7 +165,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 											...(providers?.[0] ? { providerLogo: providerNameToLogo(providers[0], "v2") } : {}),
 										},
 										pollutants: ConvertPollutants(body.airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings),
-										previousDayComparison: injectedPreviousDayComparison,
+										previousDayComparison: injectedComparison?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
 									};
 								}
 								const WeatherData = WeatherKit2.encode(Builder, "all", body);
@@ -311,8 +311,8 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 	}
 }
 
-async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Settings, Caches, enviroments) {
-	Console.info("☑️ InjectPreviousDayComparison");
+async function InjectComparison(airQuality, currentIndexProvider, Settings, Caches, enviroments) {
+	Console.info("☑️ InjectComparison");
 	const { UNKNOWN } = AirQuality.Config.CompareCategoryIndexes;
 
 	/**
@@ -381,10 +381,43 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 	};
 
 	const colorfulCloudsComparison = async (useUsa, useCurrent, currentCategoryIndex) => {
+		Console.info("☑️ colorfulCloudsComparison", `useCurrent: ${useCurrent}`, `currentCategoryIndex: ${currentCategoryIndex}`);
 		const yesterdayAirQuality = await enviroments.colorfulClouds.YesterdayAirQuality(useUsa);
-		return !yesterdayAirQuality.metadata.temporarilyUnavailable ? AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.colorfulClouds.CurrentAirQuality(useUsa)).categoryIndex, yesterdayAirQuality.categoryIndex) : UNKNOWN;
+
+		const getMetadata = (temporarilyUnavailable = false) => ({
+			...yesterdayAirQuality.metadata,
+			providerName: `指数：${yesterdayAirQuality.metadata.providerName}（${useUsa ? "美标，18年9月版" : "国标"}）`,
+			temporarilyUnavailable,
+		});
+
+		Console.info("✅ colorfulCloudsComparison");
+		if (!yesterdayAirQuality.metadata.temporarilyUnavailable) {
+			if (useCurrent) {
+				return {
+					...yesterdayAirQuality,
+					metadata: getMetadata(false),
+					previousDayComparison: AirQuality.CompareCategoryIndexes(currentCategoryIndex, yesterdayAirQuality.categoryIndex),
+				};
+			} else {
+				const colorfulCloudsCurrent = await enviroments.colorfulClouds.CurrentAirQuality(useUsa);
+				if (!colorfulCloudsCurrent.metadata.temporarilyUnavailable) {
+					return {
+						...yesterdayAirQuality,
+						metadata: getMetadata(false),
+						previousDayComparison: AirQuality.CompareCategoryIndexes(colorfulCloudsCurrent.categoryIndex, yesterdayAirQuality.categoryIndex),
+					};
+				}
+			}
+		}
+
+		return {
+			...yesterdayAirQuality,
+			metadata: getMetadata(true),
+			previousDayComparison: UNKNOWN,
+		};
 	};
-	const qweatherComparison = async (useCurrent, currentCategoryIndex, toCategoryIndex) => {
+	const qweatherComparison = async (useCurrent, currentCategoryIndex, pollutantsToAirQuality) => {
+		Console.info("☑️ qweatherComparison", `useCurrent: ${useCurrent}`, `currentCategoryIndex: ${currentCategoryIndex}`);
 		const setQWeatherCache = qweatherCache => {
 			Caches.qweather = qweatherCache;
 			Storage.setItem("@iRingo.WeatherKit.Caches", { ...Caches, qweather: qweatherCache });
@@ -394,12 +427,43 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 		const { latitude, longitude } = enviroments.qWeather;
 		const locationInfo = QWeather.GetLocationInfo(locationsGrid, latitude, longitude);
 
-		const yesterdayAirQuality = await enviroments.qWeather.YesterdayAirQuality(locationInfo);
+		const yesterdayQWeather = await enviroments.qWeather.YesterdayAirQuality(locationInfo);
 
-		return !yesterdayAirQuality.metadata.temporarilyUnavailable ? AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.qWeather.CurrentAirQuality()).categoryIndex, toCategoryIndex ? toCategoryIndex(yesterdayAirQuality) : yesterdayAirQuality.categoryIndex) : UNKNOWN;
+		const getMetadata = (indexProvider, temporarilyUnavailable = false) => ({
+			...yesterdayQWeather.metadata,
+			providerName: `污染物：${yesterdayQWeather.metadata.providerName}，指数：${indexProvider}`,
+			temporarilyUnavailable,
+		});
+
+		Console.info("✅ qweatherComparison");
+		if (!yesterdayQWeather.metadata.temporarilyUnavailable) {
+			const yesterdayAirQuality = pollutantsToAirQuality ? pollutantsToAirQuality(yesterdayQWeather) : { ...yesterdayQWeather, metadata: { ...yesterdayQWeather.metadata, providerName: `${yesterdayQWeather.metadata.providerName}（国标）` } };
+			if (useCurrent) {
+				return {
+					...yesterdayQWeather,
+					metadata: getMetadata(yesterdayAirQuality.metadata.providerName, false),
+					previousDayComparison: AirQuality.CompareCategoryIndexes(currentCategoryIndex, yesterdayAirQuality.categoryIndex),
+				};
+			} else {
+				const qweatherCurrent = await enviroments.qWeather.CurrentAirQuality(locationInfo);
+				if (!qweatherCurrent.metadata.temporarilyUnavailable) {
+					return {
+						...yesterdayQWeather,
+						metadata: getMetadata(yesterdayAirQuality.metadata.providerName, false),
+						previousDayComparison: AirQuality.CompareCategoryIndexes(qweatherCurrent.categoryIndex, yesterdayAirQuality.categoryIndex),
+					};
+				}
+			}
+		}
+
+		return {
+			...yesterdayQWeather,
+			metadata: getMetadata(yesterdayQWeather.metadata.providerName, true),
+			previousDayComparison: UNKNOWN,
+		};
 	};
 
-	Console.info("✅ InjectPreviousDayComparison");
+	Console.info("✅ InjectComparison");
 	switch (Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider) {
 		case "iRingo": {
 			const algorithm = chooseAlogrithm(Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider, airQuality, Settings);
@@ -407,13 +471,13 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 			if (algorithm !== "") {
 				switch (Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider) {
 					case "QWeather": {
-						return await qweatherComparison(true, airQuality?.categoryIndex, airQuality => GetAirQualityFromPollutants(algorithm, airQuality).categoryIndex);
+						return await qweatherComparison(true, airQuality?.categoryIndex, airQuality => GetAirQualityFromPollutants(algorithm, airQuality));
 					}
 				}
 			}
 
-			Console.warn("⚠️ InjectPreviousDayComparison: Unsupported scale of current air quality");
-			return UNKNOWN;
+			Console.error("InjectComparison", "Unsupported scale of current air quality");
+			return { metadata: { providerName: "iRingo", temporarilyUnavailable: true }, previousDayComparison: UNKNOWN };
 		}
 		case "QWeather": {
 			return await qweatherComparison(isHJ6332012(currentIndexProvider, airQuality?.scale, Settings), airQuality?.categoryIndex);
