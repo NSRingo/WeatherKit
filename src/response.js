@@ -395,14 +395,8 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 		const locationsGrid = await QWeather.GetLocationsGrid(Caches?.qweather, setQWeatherCache);
 		const { latitude, longitude } = enviroments.qWeather;
 		const locationInfo = QWeather.GetLocationInfo(locationsGrid, latitude, longitude);
-		// Some locationID at Hong Kong and Macau with length 9 is supported
-		if (locationInfo.province === "台湾省" || locationInfo.id.length !== 9) {
-			Console.warn("⚠️ qweatherComparison: Unsupported location");
-			return UNKNOWN;
-		}
 
-		Console.info(`locationInfo.latitude: ${locationInfo.latitude}, locationInfo.longitude: ${locationInfo.longitude}`);
-		const yesterdayAirQuality = await enviroments.qWeather.YesterdayAirQuality(locationInfo.id);
+		const yesterdayAirQuality = await enviroments.qWeather.YesterdayAirQuality(locationInfo);
 
 		return !yesterdayAirQuality.metadata.temporarilyUnavailable ? AirQuality.CompareCategoryIndexes(useCurrent ? currentCategoryIndex : (await enviroments.qWeather.CurrentAirQuality()).categoryIndex, toCategoryIndex ? toCategoryIndex(yesterdayAirQuality) : yesterdayAirQuality.categoryIndex) : UNKNOWN;
 	};
