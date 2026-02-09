@@ -802,17 +802,24 @@ export default class QWeather {
 		};
 	}
 
-	async YesterdayAirQuality(locationID) {
-		Console.info("☑️ YesterdayAirQuality");
-		const historicalAir = await this.#HistoricalAir(locationID);
+	async YesterdayAirQuality(locationInfo) {
+		Console.info("☑️ YesterdayAirQuality", `id: ${locationInfo.id}`, `province: ${locationInfo.province}`, `name: ${locationInfo.name}`, `latitude: ${locationInfo.lat}`, `longitude: ${locationInfo.lng}`);
+		const failedAirQuality = {
+			metadata: this.#Metadata(undefined, undefined, true),
+			categoryIndex: -1,
+			pollutants: [],
+		};
 
+		// Some locationID at Hong Kong and Macau with length 9 is supported
+		if (locationInfo.province === "台湾省" || locationInfo.id.length !== 9) {
+			Console.warn("YesterdayAirQuality", "Unsupported location", `province: ${locationInfo.province}`, `id: ${locationInfo.id}`);
+			return failedAirQuality;
+		}
+
+		const historicalAir = await this.#HistoricalAir(locationInfo.id);
 		if (!historicalAir.airHourly) {
-			Console.error("YesterdayAirQuality", `Failed to get HistoricalAir(${locationID})`);
-			return {
-				metadata: this.#Metadata(undefined, undefined, true),
-				categoryIndex: -1,
-				pollutants: [],
-			};
+			Console.error("YesterdayAirQuality", `Failed to get HistoricalAir(${locationInfo.id})`);
+			return failedAirQuality;
 		}
 
 		const hour = new Date().getHours();
