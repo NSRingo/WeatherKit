@@ -18,7 +18,10 @@ export default {
 					Fill: "CN|HK|MO|TW",
 					Pollutants: {
 						Provider: "ColorfulClouds",
-						ReplaceUnits: [],
+						Units: {
+							Replace: [],
+							Mode: "Scale",
+						},
 					},
 					Index: {
 						Replace: ["HJ6332012"],
