@@ -116,13 +116,13 @@ export interface Settings {
                      *
                      * Possible values:
                      * - `'EPA_NowCast'` - 美国 (EPA NowCast)
-                     * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
+                     * - `'EU.EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
                      * - `'HJ6332012'` - 中国 (HJ 633—2012)
                      * - `'UBA'` - 德国LQI（FB001846）
                      *
                      * @defaultValue []
                      */
-                    Replace?: ('EU_EAQI' | 'EPA_NowCast' | 'HJ6332012' | 'UBA')[];
+                    Replace?: ('EU.EAQI' | 'EPA_NowCast' | 'HJ6332012' | 'UBA')[];
                     /**
                      * [今日污染物 - 单位转换] 模式
                      *
