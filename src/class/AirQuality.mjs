@@ -805,7 +805,7 @@ export default class AirQuality {
 				pollutants: {
 					OZONE_8H: {
 						units: "PARTS_PER_MILLION",
-						stpConversionFactor: 1.962019117893678,
+						stpConversionFactor: 1.96189649169881,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 0.054] },
 							max: { indexes: [201, 300], amounts: [0.106, 0.2] },
@@ -824,7 +824,7 @@ export default class AirQuality {
 					},
 					OZONE: {
 						units: "PARTS_PER_MILLION",
-						stpConversionFactor: 1.962019117893678,
+						stpConversionFactor: 1.96189649169881,
 						ranges: {
 							min: { indexes: [101, 150], amounts: [0.125, 0.164] },
 							max: { indexes: [301, 500], amounts: [0.405, 0.604] },
@@ -882,7 +882,7 @@ export default class AirQuality {
 					},
 					CO_8H: {
 						units: "PARTS_PER_MILLION",
-						stpConversionFactor: 1.144511152104645,
+						stpConversionFactor: 1.14491990608754,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0.0, 4.4] },
 							max: { indexes: [301, 500], amounts: [425, 604] },
@@ -899,7 +899,7 @@ export default class AirQuality {
 					},
 					SO2: {
 						units: "PARTS_PER_BILLION",
-						stpConversionFactor: 2.616025490524904,
+						stpConversionFactor: 2.618396263625692,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 35] },
 							max: { indexes: [301, 500], amounts: [425, 1004] },
@@ -921,7 +921,7 @@ export default class AirQuality {
 					},
 					NO2: {
 						units: "PARTS_PER_BILLION",
-						stpConversionFactor: 1.880268321314775,
+						stpConversionFactor: 1.880472698306222,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 53] },
 							max: { indexes: [301, 500], amounts: [1250, 2049] },
@@ -964,7 +964,7 @@ export default class AirQuality {
 					// [Ozone AQI Scale update](https://aqicn.org/faq/2016-08-10/ozone-aqi-scale-update/)
 					OZONE: {
 						units: "PARTS_PER_BILLION",
-						stpConversionFactor: 1.962019117893678,
+						stpConversionFactor: 1.96189649169881,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 61.5] },
 							max: { indexes: [301, 500], amounts: [405, 605] },
@@ -1032,7 +1032,7 @@ export default class AirQuality {
 					},
 					SO2: {
 						units: "PARTS_PER_BILLION",
-						stpConversionFactor: 2.616025490524904,
+						stpConversionFactor: 2.618396263625692,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 35] },
 							max: { indexes: [301, 500], amounts: [425, 1004] },
@@ -1049,7 +1049,7 @@ export default class AirQuality {
 					},
 					NO2: {
 						units: "PARTS_PER_BILLION",
-						stpConversionFactor: 1.880268321314775,
+						stpConversionFactor: 1.880472698306222,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 53] },
 							max: { indexes: [301, 500], amounts: [1250, 2049] },
@@ -1243,16 +1243,16 @@ export default class AirQuality {
 		 */
 		STP_ConversionFactors: {
 			US: {
-				OZONE: 1.962019117893678, // 48 g/mol
-				SO2: 2.616025490524904, // 64 g/mol
-				NO2: 1.880268321314775, // 46 g/mol
-				CO: 1.144511152104645, // 28 g/mol
+				OZONE: 1.96189649169881, // 47.997 g/mol
+				SO2: 2.618396263625692, // 64.058 g/mol
+				NO2: 1.880472698306222, // 46.005 g/mol
+				CO: 1.14491990608754, // 28.01 g/mol
 			},
 			EU: {
-				OZONE: 1.995483540849395, // 48 g/mol
-				SO2: 2.660644721132526, // 64 g/mol
-				NO2: 1.912338393314003, // 46 g/mol
-				CO: 1.16403206549548, // 28 g/mol
+				OZONE: 1.995358823128092, // 47.997 g/mol
+				SO2: 2.663055930411053, // 64.058 g/mol
+				NO2: 1.912546256182842, // 46.005 g/mol
+				CO: 1.164447791233157, // 28.01 g/mol
 			},
 		},
 	};
