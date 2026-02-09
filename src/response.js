@@ -439,6 +439,7 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 
 const ConvertPollutants = (airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) => {
 	const unitsMode = Settings?.AirQuality?.Current?.Pollutants?.Units?.Mode || "Scale";
+	Console.info("☑️ ConvertPollutants", `mode: ${unitsMode}`);
 
 	const getScale = scaleName => {
 		const scales = AirQuality.Config.Scales;
@@ -507,6 +508,7 @@ const ConvertPollutants = (airQuality, injectedPollutants, needInjectIndex, inje
 	const scaleName = AirQuality.GetNameFromScale(isIndexInjected ? injectedIndex?.scale : airQuality?.scale);
 
 	const pollutants = injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable ? injectedPollutants.pollutants : airQuality?.pollutants;
+	Console.info("✅ ConvertPollutants");
 	if (replaceUnits.includes(scaleName)) {
 		if (isIndexInjected && Settings?.AirQuality?.Current?.Index?.Provider === "iRingo" && unitsMode === "Scale") {
 			Console.info("ConvertPollutants", `Use pollutants from iRingo`);
