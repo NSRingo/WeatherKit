@@ -115,8 +115,8 @@ export default defineConfig({
 			description: "使用选定的数据源填充污染物数据。",
 		},
 		{
-			key: "AirQuality.Current.Pollutants.ReplaceUnits",
-			name: "[今日污染物] 单位转换",
+			key: "AirQuality.Current.Pollutants.Units.Replace",
+			name: "[今日污染物 - 单位转换] 替换目标",
 			defaultValue: [],
 			type: "array",
 			options: [
@@ -125,7 +125,23 @@ export default defineConfig({
 				{ key: "HJ6332012", label: "中国（HJ 633—2012）" },
 				{ key: "UBA", label: "德国LQI（FB001846）" },
 			],
-			description: "选择的空气质量标准所需的单位与污染物的单位不同时，进行单位转换，方便与标准比对。单位转换会产生小数，小数部分可能会被省略。",
+			description: "转换污染物的单位，方便与空气质量标准比对。单位转换会产生小数，有略微精度损失，且小数部分可能会被省略。",
+		},
+		{
+			key: "AirQuality.Current.Pollutants.Units.Mode",
+			name: "[今日污染物 - 单位转换] 模式",
+			defaultValue: "Scale",
+			type: "string",
+			options: [
+				{ key: "Scale", label: "与空气质量标准的要求相同" },
+				{ key: "ugm3", label: "除非标准要求，都转为µg/m³" },
+				{ key: "EU_ppb", label: "除非标准要求，都转为欧盟ppb" },
+				{ key: "US_ppb", label: "除非标准要求，都转为美标ppb" },
+				{ key: "Force_ugm3", label: "µg/m³" },
+				{ key: "Force_EU_ppb", label: "欧盟ppb" },
+				{ key: "Force_US_ppb", label: "美标ppb" },
+			],
+			description: "污染物单位的转换目标。",
 		},
 		{
 			key: "AirQuality.Current.Index.Replace",

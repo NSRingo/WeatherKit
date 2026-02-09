@@ -106,22 +106,43 @@ export interface Settings {
                  * @defaultValue "ColorfulClouds"
                  */
                 Provider?: 'ColorfulClouds' | 'QWeather';
-                /**
-                 * [今日污染物] 单位转换
-                 *
-                 * 选择的空气质量标准所需的单位与污染物的单位不同时，进行单位转换，方便与标准比对。单位转换会产生小数，小数部分可能会被省略。
-                 *
-                 * @remarks
-                 *
-                 * Possible values:
-                 * - `'EPA_NowCast'` - 美国 (EPA NowCast)
-                 * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
-                 * - `'HJ6332012'` - 中国 (HJ 633—2012)
-                 * - `'UBA'` - 德国LQI（FB001846）
-                 *
-                 * @defaultValue []
-                 */
-                ReplaceUnits?: ('EU_EAQI' | 'EPA_NowCast' | 'HJ6332012' | 'UBA')[];
+                Units?: {
+                    /**
+                     * [今日污染物 - 单位转换] 替换目标
+                     *
+                     * 转换污染物的单位，方便与空气质量标准比对。单位转换会产生小数，有略微精度损失，且小数部分可能会被省略。
+                     *
+                     * @remarks
+                     *
+                     * Possible values:
+                     * - `'EPA_NowCast'` - 美国 (EPA NowCast)
+                     * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
+                     * - `'HJ6332012'` - 中国 (HJ 633—2012)
+                     * - `'UBA'` - 德国LQI（FB001846）
+                     *
+                     * @defaultValue []
+                     */
+                    Replace?: ('EU_EAQI' | 'EPA_NowCast' | 'HJ6332012' | 'UBA')[];
+                    /**
+                     * [今日污染物 - 单位转换] 模式
+                     *
+                     * 污染物单位的转换目标。
+                     *
+                     * @remarks
+                     *
+                     * Possible values:
+                     * - `'Scale'` - 与空气质量标准的要求相同
+                     * - `'ugm3'` - 除非标准要求，都转为µg/m³
+                     * - `'EU_ppb'` - 除非标准要求，都转为欧盟ppb
+                     * - `'US_ppb'` - 除非标准要求，都转为美标ppb
+                     * - `'Force_ugm3'` - µg/m³
+                     * - `'Force_EU_ppb'` - 欧盟ppb
+                     * - `'Force_US_ppb'` - 美标ppb
+                     *
+                     * @defaultValue "Scale"
+                     */
+                    Mode?: 'Scale' | 'ugm3' | 'EU_ppb' | 'US_ppb' | 'Force_ugm3' | 'Force_EU_ppb' | 'Force_US_ppb';
+                };
             },
             Index?: {
                 /**
