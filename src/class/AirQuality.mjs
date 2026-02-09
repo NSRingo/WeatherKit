@@ -1,4 +1,5 @@
 import { Console } from "@nsnanocat/util";
+import SimplePrecisionMath from "./SimplePrecisionMath.mjs";
 
 export default class AirQuality {
 	static Name = "AirQuality";
@@ -1290,6 +1291,8 @@ export default class AirQuality {
 			return -1;
 		}
 
+		const numAmount = Number(amount.toFixed(15));
+
 		const { ugm3, mgm3, ppb, ppm } = AirQuality.Config.Units.WeatherKit;
 		const ppx = [ppb, ppm];
 		const units = [...ppx, ugm3, mgm3];
@@ -1307,7 +1310,7 @@ export default class AirQuality {
 				return -1;
 			}
 
-			const intermediate = AirQuality.ConvertUnit(amount, from, ugm3, fromStpConversionFactor);
+			const intermediate = AirQuality.ConvertUnit(numAmount, from, ugm3, fromStpConversionFactor);
 			return AirQuality.ConvertUnit(intermediate, ugm3, to, -1, toStpConversionFactor);
 		}
 
@@ -1321,18 +1324,19 @@ export default class AirQuality {
 			return -1;
 		}
 
+		const { multiply, divide } = SimplePrecisionMath;
 		switch (from) {
 			case ppm:
 				switch (to) {
 					case ppm:
-						return amount;
+						return numAmount;
 					case ppb:
-						return amount * 1000;
+						return multiply(numAmount, 1000);
 					case mgm3:
-						return amount * fromStpConversionFactor;
+						return multiply(numAmount, fromStpConversionFactor);
 					case ugm3: {
-						const inPpb = AirQuality.ConvertUnit(amount, from, ppb);
-						return inPpb * fromStpConversionFactor;
+						const inPpb = AirQuality.ConvertUnit(numAmount, from, ppb);
+						return multiply(inPpb, fromStpConversionFactor);
 					}
 					default:
 						return -1;
@@ -1340,29 +1344,29 @@ export default class AirQuality {
 			case ppb:
 				switch (to) {
 					case ppb:
-						return amount;
+						return numAmount;
 					case ppm:
-						return amount * 0.001;
+						return multiply(numAmount, 0.001);
 					case mgm3: {
-						const inPpm = AirQuality.ConvertUnit(amount, from, ppm);
-						return inPpm * fromStpConversionFactor;
+						const inPpm = AirQuality.ConvertUnit(numAmount, from, ppm);
+						return multiply(inPpm, fromStpConversionFactor);
 					}
 					case ugm3:
-						return amount * fromStpConversionFactor;
+						return multiply(numAmount, fromStpConversionFactor);
 					default:
 						return -1;
 				}
 			case mgm3:
 				switch (to) {
 					case mgm3:
-						return amount;
+						return numAmount;
 					case ugm3:
-						return amount * 1000;
+						return multiply(numAmount, 1000);
 					case ppm:
-						return amount / toStpConversionFactor;
+						return divide(numAmount, toStpConversionFactor);
 					case ppb: {
-						const inUgM3 = AirQuality.ConvertUnit(amount, from, ugm3);
-						return inUgM3 / toStpConversionFactor;
+						const inUgM3 = AirQuality.ConvertUnit(numAmount, from, ugm3);
+						return divide(inUgM3, toStpConversionFactor);
 					}
 					default:
 						return -1;
@@ -1370,15 +1374,15 @@ export default class AirQuality {
 			case ugm3:
 				switch (to) {
 					case ugm3:
-						return amount;
+						return numAmount;
 					case mgm3:
-						return amount * 0.001;
+						return multiply(numAmount, 0.001);
 					case ppm: {
-						const inMgM3 = AirQuality.ConvertUnit(amount, from, mgm3);
-						return inMgM3 / toStpConversionFactor;
+						const inMgM3 = AirQuality.ConvertUnit(numAmount, from, mgm3);
+						return divide(inMgM3, toStpConversionFactor);
 					}
 					case ppb:
-						return amount / toStpConversionFactor;
+						return divide(numAmount, toStpConversionFactor);
 					default:
 						return -1;
 				}
