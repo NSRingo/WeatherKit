@@ -156,8 +156,6 @@ Console.info(`FORMAT: ${FORMAT}`);
 										...(needInjectComparison && comparisonProviders.length > 0 ? [`对比昨日：${comparisonProviders.join("、")}`] : []),
 									];
 
-									const pollutants = ConvertPollutants(body.airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings);
-
 									body.airQuality = {
 										...body.airQuality,
 										...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
@@ -166,7 +164,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 											providerName: providers.join("、"),
 											...(providers?.[0] ? { providerLogo: providerNameToLogo(providers[0], "v2") } : {}),
 										},
-										pollutants: pollutants ?? [],
+										pollutants: ConvertPollutants(body.airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings),
 										previousDayComparison: injectedPreviousDayComparison,
 									};
 								}
@@ -431,7 +429,7 @@ async function InjectPreviousDayComparison(airQuality, currentIndexProvider, Set
 	}
 }
 
-const ConvertPollutants = (airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) => {
+function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) {
 	const unitsMode = Settings?.AirQuality?.Current?.Pollutants?.Units?.Mode || "Scale";
 	Console.info("☑️ ConvertPollutants", `mode: ${unitsMode}`);
 
@@ -519,7 +517,7 @@ const ConvertPollutants = (airQuality, injectedPollutants, needInjectIndex, inje
 	} else {
 		return pollutants;
 	}
-};
+}
 
 /**
  * 获取历史空气质量数据
