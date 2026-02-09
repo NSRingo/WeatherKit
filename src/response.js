@@ -143,26 +143,25 @@ Console.info(`FORMAT: ${FORMAT}`);
 									const injectedComparison = needInjectComparison ? await InjectComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : injectedIndex;
 
 									// metadata
-									const weatherKitProvider = body.airQuality?.metadata?.providerName;
-									const pollutantProvider = injectedPollutants?.metadata?.providerName;
-									const indexProvider = injectedIndex?.metadata?.providerName;
-									const comparisonPollutantProvider = Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider;
-									const comparisonIndexProvider = Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider;
-									const comparisonProviders = [...(comparisonIndexProvider === "iRingo" ? [comparisonPollutantProvider] : []), comparisonIndexProvider].filter(provider => provider);
+									const weatherKitMetadata = body.airQuality?.metadata;
+									const pollutantMetadata = injectedPollutants?.metadata;
+									const indexMetadata = injectedIndex?.metadata;
+									const comparisonMetadata = injectedComparison?.metadata;
 									const providers = [
-										...(weatherKitProvider ? [weatherKitProvider] : []),
-										...(needPollutants && pollutantProvider ? [`污染物：${pollutantProvider}`] : []),
-										...(needInjectIndex && indexProvider ? [`空气指数：${indexProvider}`] : []),
-										...(needInjectComparison && comparisonProviders.length > 0 ? [`对比昨日：${comparisonProviders.join("、")}`] : []),
+										...(weatherKitMetadata?.providerName && !weatherKitMetadata.temporarilyUnavailable ? [weatherKitMetadata.providerName] : []),
+										...(needPollutants && pollutantMetadata?.providerName && !pollutantMetadata.temporarilyUnavailable ? [`污染物：${pollutantMetadata.providerName}`] : []),
+										...(needInjectIndex && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${indexMetadata.providerName}`] : []),
+										...(needInjectComparison && comparisonMetadata?.providerName && !comparisonMetadata.temporarilyUnavailable ? [`对比昨日：${comparisonMetadata.providerName}`] : []),
 									];
 
+									const firstValidProvider = weatherKitMetadata?.providerName || pollutantMetadata?.providerName || indexMetadata?.providerName || comparisonMetadata?.providerName;
 									body.airQuality = {
 										...body.airQuality,
 										...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
 										metadata: {
 											...(body.airQuality?.metadata ? body.airQuality.metadata : injectedPollutants?.metadata),
 											providerName: providers.join("、"),
-											...(providers?.[0] ? { providerLogo: providerNameToLogo(providers[0], "v2") } : {}),
+											...(firstValidProvider ? { providerLogo: providerNameToLogo(firstValidProvider, "v2") } : {}),
 										},
 										pollutants: ConvertPollutants(body.airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings),
 										previousDayComparison: injectedComparison?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
