@@ -121,7 +121,7 @@ export default defineConfig({
 			type: "array",
 			options: [
 				{ key: "EPA_NowCast", label: "美国（EPA NowCast）" },
-				{ key: "EU_EAQI", label: "欧盟EAQI（ETC HE Report 2024/17）" },
+				{ key: "EU.EAQI", label: "欧盟EAQI（ETC HE Report 2024/17）" },
 				{ key: "HJ6332012", label: "中国（HJ 633—2012）" },
 				{ key: "UBA", label: "德国LQI（FB001846）" },
 			],
