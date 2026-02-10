@@ -1287,7 +1287,7 @@ export default class AirQuality {
 						{ categoryIndex: 3, indexes: [101, 150] }, // 轻度污染
 						{ categoryIndex: 4, indexes: [151, 200] }, // 中度污染
 						{ categoryIndex: 5, indexes: [201, 300] }, // 重度污染
-						{ categoryIndex: 6, indexes: [301, 500] }, // 严重污染
+						{ categoryIndex: 6, indexes: [301, Number.POSITIVE_INFINITY] }, // 严重污染
 					],
 				},
 				pollutants: {
@@ -1414,7 +1414,7 @@ export default class AirQuality {
 						{ categoryIndex: 3, indexes: [101, 150] }, // 轻度污染
 						{ categoryIndex: 4, indexes: [151, 200] }, // 中度污染
 						{ categoryIndex: 5, indexes: [201, 300] }, // 重度污染
-						{ categoryIndex: 6, indexes: [301, 500] }, // 严重污染
+						{ categoryIndex: 6, indexes: [301, Number.POSITIVE_INFINITY] }, // 严重污染
 					],
 				},
 				pollutants: {
@@ -1450,6 +1450,7 @@ export default class AirQuality {
 								{ indexes: [201, 300], amounts: [1201, 2340] },
 								{ indexes: [301, 400], amounts: [2341, 3090] },
 								{ indexes: [401, 500], amounts: [3091, 3840] },
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [3841, Number.POSITIVE_INFINITY] },
 							],
 						},
 					},
@@ -1468,6 +1469,7 @@ export default class AirQuality {
 								{ indexes: [201, 300], amounts: [60001, 90000] },
 								{ indexes: [301, 400], amounts: [90001, 120000] },
 								{ indexes: [401, 500], amounts: [120001, 150000] },
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [150001, Number.POSITIVE_INFINITY] },
 							],
 						},
 					},
@@ -1486,6 +1488,7 @@ export default class AirQuality {
 								{ indexes: [201, 300], amounts: [401, 800] },
 								{ indexes: [301, 400], amounts: [801, 1000] },
 								{ indexes: [401, 500], amounts: [1001, 1200] },
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [1201, Number.POSITIVE_INFINITY] },
 							],
 						},
 					},
@@ -1503,6 +1506,7 @@ export default class AirQuality {
 								{ indexes: [201, 300], amounts: [351, 420] },
 								{ indexes: [301, 400], amounts: [421, 500] },
 								{ indexes: [401, 500], amounts: [501, 600] },
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [601, Number.POSITIVE_INFINITY] },
 							],
 						},
 					},
@@ -1520,6 +1524,7 @@ export default class AirQuality {
 								{ indexes: [201, 300], amounts: [151, 250] },
 								{ indexes: [301, 400], amounts: [251, 350] },
 								{ indexes: [401, 500], amounts: [351, 500] },
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [501, Number.POSITIVE_INFINITY] },
 							],
 						},
 					},
