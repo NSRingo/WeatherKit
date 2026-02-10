@@ -30,7 +30,7 @@ export interface Settings {
          * @defaultValue ["airQuality","currentWeather","forecastDaily","forecastHourly","forecastNextHour","locationInfo","news","historicalComparisons","weatherAlerts","weatherChanges"]
          */
         Value?: ('airQuality' | 'currentWeather' | 'forecastDaily' | 'forecastHourly' | 'forecastNextHour' | 'locationInfo' | 'news' | 'historicalComparisons' | 'weatherAlerts' | 'weatherChanges')[];
-    },
+    };
     Weather?: {
         /**
          * [天气] 替换地区
@@ -143,7 +143,7 @@ export interface Settings {
                      */
                     Mode?: 'Scale' | 'ugm3' | 'EU_ppb' | 'US_ppb' | 'Force_ugm3' | 'Force_EU_ppb' | 'Force_US_ppb';
                 };
-            },
+            };
             Index?: {
                 /**
                  * [今日空气指数] 替换目标
@@ -205,8 +205,8 @@ export interface Settings {
                  * @defaultValue true
                  */
                 ForceCNPrimaryPollutants?: boolean;
-            }
-        },
+            };
+        };
         Comparison?: {
             /**
              * [空气质量 - 对比昨日] 填补地区
@@ -254,8 +254,8 @@ export interface Settings {
                  * @defaultValue "ColorfulCloudsUS"
                  */
                 IndexProvider?: 'iRingo' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather';
-            },
-        },
+            };
+        };
         /**
          * [空气质量 - iRingo内置算法] 算法
          *
