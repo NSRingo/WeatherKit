@@ -244,7 +244,7 @@ function getStpConversionFactors(airQuality) {
 }
 
 function GetAirQualityFromPollutants(algorithmSetting, airQuality) {
-	const { EU_EAQI, WAQI_InstantCast_US, WAQI_InstantCast_CN, UBA } = AirQuality.Config.Scales;
+	const { EU_EAQI, WAQI_InstantCast_US, WAQI_InstantCast_CN, WAQI_InstantCast_CN_25_DRAFT, UBA } = AirQuality.Config.Scales;
 	const stpConversionFactors = getStpConversionFactors(airQuality);
 	switch (algorithmSetting) {
 		case "EU_EAQI": {
@@ -258,6 +258,10 @@ function GetAirQualityFromPollutants(algorithmSetting, airQuality) {
 		case "WAQI_InstantCast_CN": {
 			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_CN.pollutants);
 			return AirQuality.PollutantsToInstantCastCN12(pollutants);
+		}
+		case "WAQI_InstantCast_CN_25_DRAFT": {
+			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_CN_25_DRAFT.pollutants);
+			return AirQuality.PollutantsToInstantCastCN25(pollutants);
 		}
 		case "UBA":
 		default: {

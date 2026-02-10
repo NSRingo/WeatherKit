@@ -239,6 +239,7 @@ export default defineConfig({
 				{ key: "EU_EAQI", label: "欧盟EAQI（ETC HE Report 2024/17）" },
 				{ key: "WAQI_InstantCast_US", label: "美标InstantCast（EPA-454/B-24-002）" },
 				{ key: "WAQI_InstantCast_CN", label: "国标InstantCast（HJ 633—2012）" },
+				{ key: "WAQI_InstantCast_CN_25_DRAFT", label: "国标InstantCast（HJ 633 2025年草案）" },
 			],
 			description: "使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI。",
 		},

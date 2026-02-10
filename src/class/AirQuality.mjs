@@ -393,6 +393,7 @@ export default class AirQuality {
 	}
 
 	static PollutantsToInstantCastCN12 = pollutants => this.#PollutantsToInstantCastCN(pollutants, AirQuality.Config.Scales.WAQI_InstantCast_CN);
+	static PollutantsToInstantCastCN25 = pollutants => this.#PollutantsToInstantCastCN(pollutants, AirQuality.Config.Scales.WAQI_InstantCast_CN_25_DRAFT);
 
 	static Config = {
 		Scales: {
@@ -778,6 +779,202 @@ export default class AirQuality {
 							value: [
 								{ indexes: [0, 50], amounts: [0, 35] },
 								{ indexes: [51, 100], amounts: [36, 75] },
+								{ indexes: [101, 150], amounts: [76, 115] },
+								{ indexes: [151, 200], amounts: [116, 150] },
+								{ indexes: [201, 300], amounts: [151, 250] },
+								{ indexes: [301, 400], amounts: [251, 350] },
+								{ indexes: [401, 500], amounts: [351, 500] },
+							],
+						},
+					},
+				},
+			},
+			/**
+			 * China AQI standard (2025 draft).
+			 * [关于公开征求《环境空气质量标准（征求意见稿）》等3项生态环境标准意见的通知]{@link https://www.mee.gov.cn/xxgk2018/xxgk/xxgk06/202512/t20251215_1137858.html}
+			 */
+			HJ6332025_DRAFT: {
+				weatherKitScale: {
+					name: "HJ6332012",
+					version: "2414",
+				},
+				categories: {
+					significantIndex: 3, // 轻度污染
+					ranges: [
+						{ categoryIndex: 1, indexes: [1, 50] }, // 优
+						{ categoryIndex: 2, indexes: [51, 100] }, // 良
+						{ categoryIndex: 3, indexes: [101, 150] }, // 轻度污染
+						{ categoryIndex: 4, indexes: [151, 200] }, // 中度污染
+						{ categoryIndex: 5, indexes: [201, 300] }, // 重度污染
+						{ categoryIndex: 6, indexes: [301, 500] }, // 严重污染
+					],
+				},
+				pollutants: {
+					SO2_24H: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 50] },
+							max: { indexes: [401, 500], amounts: [2101, 2620] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 50] },
+								{ indexes: [51, 100], amounts: [51, 150] },
+								{ indexes: [101, 150], amounts: [151, 475] },
+								{ indexes: [151, 200], amounts: [476, 800] },
+								{ indexes: [201, 300], amounts: [801, 1600] },
+								{ indexes: [301, 400], amounts: [1601, 2100] },
+								{ indexes: [401, 500], amounts: [2101, 2620] },
+							],
+						},
+					},
+					// SO2、NO2、CO和O3 1小时平均浓度限值仅用于实时报。
+					SO2: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 150] },
+							max: { indexes: [200, 200], amounts: [801, Number.POSITIVE_INFINITY] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 150] },
+								{ indexes: [51, 100], amounts: [151, 500] },
+								{ indexes: [101, 150], amounts: [501, 650] },
+								{ indexes: [151, 200], amounts: [651, 800] },
+								// SO2 1小时平均浓度值高于800 μg/m3的，IAQI按照200计。
+								{ indexes: [200, 200], amounts: [801, Number.POSITIVE_INFINITY] },
+							],
+						},
+					},
+					NO2_24H: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 40] },
+							max: { indexes: [401, 500], amounts: [751, 940] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 40] },
+								{ indexes: [51, 100], amounts: [41, 80] },
+								{ indexes: [101, 150], amounts: [81, 180] },
+								{ indexes: [151, 200], amounts: [181, 280] },
+								{ indexes: [201, 300], amounts: [281, 565] },
+								{ indexes: [301, 400], amounts: [566, 750] },
+								{ indexes: [401, 500], amounts: [751, 940] },
+							],
+						},
+					},
+					// SO2、NO2、CO和O3 1小时平均浓度限值仅用于实时报。
+					NO2: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 100] },
+							max: { indexes: [401, 500], amounts: [3091, 3840] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 100] },
+								{ indexes: [51, 100], amounts: [101, 200] },
+								{ indexes: [101, 150], amounts: [201, 700] },
+								{ indexes: [151, 200], amounts: [701, 1200] },
+								{ indexes: [201, 300], amounts: [1201, 2340] },
+								{ indexes: [301, 400], amounts: [2341, 3090] },
+								{ indexes: [401, 500], amounts: [3091, 3840] },
+							],
+						},
+					},
+					CO_24H: {
+						units: "MILLIGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 2] },
+							max: { indexes: [401, 500], amounts: [49, 60] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 2] },
+								{ indexes: [51, 100], amounts: [3, 4] },
+								{ indexes: [101, 150], amounts: [5, 14] },
+								{ indexes: [151, 200], amounts: [15, 24] },
+								{ indexes: [201, 300], amounts: [25, 36] },
+								{ indexes: [301, 400], amounts: [37, 48] },
+								{ indexes: [401, 500], amounts: [49, 60] },
+							],
+						},
+					},
+					// SO2、NO2、CO和O3 1小时平均浓度限值仅用于实时报。
+					CO: {
+						units: "MILLIGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 5] },
+							max: { indexes: [401, 500], amounts: [121, 150] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 5] },
+								{ indexes: [51, 100], amounts: [6, 10] },
+								{ indexes: [101, 150], amounts: [11, 35] },
+								{ indexes: [151, 200], amounts: [36, 60] },
+								{ indexes: [201, 300], amounts: [61, 90] },
+								{ indexes: [301, 400], amounts: [91, 120] },
+								{ indexes: [401, 500], amounts: [121, 150] },
+							],
+						},
+					},
+					OZONE_8H: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 100] },
+							max: { indexes: [300, 300], amounts: [801, Number.POSITIVE_INFINITY] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 100] },
+								{ indexes: [51, 100], amounts: [101, 160] },
+								{ indexes: [101, 150], amounts: [161, 215] },
+								{ indexes: [151, 200], amounts: [216, 265] },
+								{ indexes: [201, 300], amounts: [266, 800] },
+								// O3 8小时平均浓度值高于800 μg/m3的，IAQI按照300计。
+								{ indexes: [300, 300], amounts: [801, Number.POSITIVE_INFINITY] },
+							],
+						},
+					},
+					// SO2、NO2、CO和O3 1小时平均浓度限值仅用于实时报。
+					OZONE: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 160] },
+							max: { indexes: [401, 500], amounts: [1001, 1200] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 160] },
+								{ indexes: [51, 100], amounts: [161, 200] },
+								{ indexes: [101, 150], amounts: [201, 300] },
+								{ indexes: [151, 200], amounts: [301, 400] },
+								{ indexes: [201, 300], amounts: [401, 800] },
+								{ indexes: [301, 400], amounts: [801, 1000] },
+								{ indexes: [401, 500], amounts: [1001, 1200] },
+							],
+						},
+					},
+					PM10_24H: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 50] },
+							max: { indexes: [401, 500], amounts: [501, 600] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 50] },
+								{ indexes: [51, 100], amounts: [51, 120] },
+								{ indexes: [101, 150], amounts: [151, 250] },
+								{ indexes: [151, 200], amounts: [251, 350] },
+								{ indexes: [201, 300], amounts: [351, 420] },
+								{ indexes: [301, 400], amounts: [421, 500] },
+								{ indexes: [401, 500], amounts: [501, 600] },
+							],
+						},
+					},
+					PM2_5_24H: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 35] },
+							max: { indexes: [401, 500], amounts: [351, 500] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 30] },
+								{ indexes: [51, 100], amounts: [36, 60] },
 								{ indexes: [101, 150], amounts: [76, 115] },
 								{ indexes: [151, 200], amounts: [116, 150] },
 								{ indexes: [201, 300], amounts: [151, 250] },
@@ -1199,6 +1396,130 @@ export default class AirQuality {
 								{ indexes: [301, 400], amounts: [251, 350] },
 								{ indexes: [401, 500], amounts: [351, 500] },
 								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [501, Number.POSITIVE_INFINITY] },
+							],
+						},
+					},
+				},
+			},
+			WAQI_InstantCast_CN_25_DRAFT: {
+				weatherKitScale: {
+					name: "HJ6332012",
+					version: "2414",
+				},
+				categories: {
+					significantIndex: 3, // 轻度污染
+					ranges: [
+						{ categoryIndex: 1, indexes: [1, 50] }, // 优
+						{ categoryIndex: 2, indexes: [51, 100] }, // 良
+						{ categoryIndex: 3, indexes: [101, 150] }, // 轻度污染
+						{ categoryIndex: 4, indexes: [151, 200] }, // 中度污染
+						{ categoryIndex: 5, indexes: [201, 300] }, // 重度污染
+						{ categoryIndex: 6, indexes: [301, 500] }, // 严重污染
+					],
+				},
+				pollutants: {
+					// SO2、NO2、CO和O3 1小时平均浓度限值仅用于实时报。
+					SO2: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 150] },
+							max: { indexes: [200, 200], amounts: [801, Number.POSITIVE_INFINITY] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 150] },
+								{ indexes: [51, 100], amounts: [151, 500] },
+								{ indexes: [101, 150], amounts: [501, 650] },
+								{ indexes: [151, 200], amounts: [651, 800] },
+								// SO2 1小时平均浓度值高于800 μg/m3的，IAQI按照200计。
+								{ indexes: [200, 200], amounts: [801, Number.POSITIVE_INFINITY] },
+							],
+						},
+					},
+					// SO2、NO2、CO和O3 1小时平均浓度限值仅用于实时报。
+					NO2: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 100] },
+							max: { indexes: [401, 500], amounts: [3091, 3840] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 100] },
+								{ indexes: [51, 100], amounts: [101, 200] },
+								{ indexes: [101, 150], amounts: [201, 700] },
+								{ indexes: [151, 200], amounts: [701, 1200] },
+								{ indexes: [201, 300], amounts: [1201, 2340] },
+								{ indexes: [301, 400], amounts: [2341, 3090] },
+								{ indexes: [401, 500], amounts: [3091, 3840] },
+							],
+						},
+					},
+					// SO2、NO2、CO和O3 1小时平均浓度限值仅用于实时报。
+					CO: {
+						units: "MILLIGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 5] },
+							max: { indexes: [401, 500], amounts: [121, 150] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 5] },
+								{ indexes: [51, 100], amounts: [6, 10] },
+								{ indexes: [101, 150], amounts: [11, 35] },
+								{ indexes: [151, 200], amounts: [36, 60] },
+								{ indexes: [201, 300], amounts: [61, 90] },
+								{ indexes: [301, 400], amounts: [91, 120] },
+								{ indexes: [401, 500], amounts: [121, 150] },
+							],
+						},
+					},
+					// SO2、NO2、CO和O3 1小时平均浓度限值仅用于实时报。
+					OZONE: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 160] },
+							max: { indexes: [401, 500], amounts: [1001, 1200] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 160] },
+								{ indexes: [51, 100], amounts: [161, 200] },
+								{ indexes: [101, 150], amounts: [201, 300] },
+								{ indexes: [151, 200], amounts: [301, 400] },
+								{ indexes: [201, 300], amounts: [401, 800] },
+								{ indexes: [301, 400], amounts: [801, 1000] },
+								{ indexes: [401, 500], amounts: [1001, 1200] },
+							],
+						},
+					},
+					PM10: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 50] },
+							max: { indexes: [401, 500], amounts: [501, 600] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 50] },
+								{ indexes: [51, 100], amounts: [51, 120] },
+								{ indexes: [101, 150], amounts: [151, 250] },
+								{ indexes: [151, 200], amounts: [251, 350] },
+								{ indexes: [201, 300], amounts: [351, 420] },
+								{ indexes: [301, 400], amounts: [421, 500] },
+								{ indexes: [401, 500], amounts: [501, 600] },
+							],
+						},
+					},
+					PM2_5: {
+						units: "MICROGRAMS_PER_CUBIC_METER",
+						stpConversionFactor: -1,
+						ranges: {
+							min: { indexes: [0, 50], amounts: [0, 35] },
+							max: { indexes: [401, 500], amounts: [351, 500] },
+							value: [
+								{ indexes: [0, 50], amounts: [0, 30] },
+								{ indexes: [51, 100], amounts: [36, 60] },
+								{ indexes: [101, 150], amounts: [76, 115] },
+								{ indexes: [151, 200], amounts: [116, 150] },
+								{ indexes: [201, 300], amounts: [151, 250] },
+								{ indexes: [301, 400], amounts: [251, 350] },
+								{ indexes: [401, 500], amounts: [351, 500] },
 							],
 						},
 					},
