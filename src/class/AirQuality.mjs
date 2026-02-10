@@ -1636,8 +1636,8 @@ export default class AirQuality {
 
 		const isPpxFrom = ppx.includes(from);
 		const isPpxTo = ppx.includes(to);
-		const isDifferentStp = isPpxFrom && isPpxTo && fromStpConversionFactor !== toStpConversionFactor;
-		if (isDifferentStp) {
+		const isBothPpx = isPpxFrom && isPpxTo;
+		if (isBothPpx && fromStpConversionFactor !== toStpConversionFactor) {
 			if (fromStpConversionFactor <= 0 || toStpConversionFactor <= 0) {
 				Console.error("ConvertUnit", "STP conversion factor(s) invalid", `fromStpConversionFactor: ${fromStpConversionFactor}`, `toStpConversionFactor: ${toStpConversionFactor}`);
 				return -1;
@@ -1647,12 +1647,12 @@ export default class AirQuality {
 			return AirQuality.ConvertUnit(intermediate, ugm3, to, -1, toStpConversionFactor);
 		}
 
-		if (isPpxFrom && fromStpConversionFactor <= 0) {
+		if (!isBothPpx && isPpxFrom && fromStpConversionFactor <= 0) {
 			Console.error("ConvertUnit", `fromStpConversionFactor ${fromStpConversionFactor} <= 0`);
 			return -1;
 		}
 
-		if (isPpxTo && toStpConversionFactor <= 0) {
+		if (!isBothPpx && isPpxTo && toStpConversionFactor <= 0) {
 			Console.error("ConvertUnit", `toStpConversionFactor ${toStpConversionFactor} <= 0`);
 			return -1;
 		}
