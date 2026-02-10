@@ -115,14 +115,14 @@ export interface Settings {
                      * @remarks
                      *
                      * Possible values:
-                     * - `'EPA_NowCast'` - 美国 (EPA NowCast)
-                     * - `'EU.EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
-                     * - `'HJ6332012'` - 中国 (HJ 633—2012)
-                     * - `'UBA'` - 德国LQI（FB001846）
+                     * - `'EPA_NowCast'` - 美国AQI (EPA_NowCast)
+                     * - `'EU.EAQI'` - 欧盟EAQI（EU.EAQI）
+                     * - `'HJ6332012'` - 中国AQI (HJ6332012)
+                     * - `'UBA'` - 德国LQI（UBA）
                      *
                      * @defaultValue []
                      */
-                    Replace?: ('EU.EAQI' | 'EPA_NowCast' | 'HJ6332012' | 'UBA')[];
+                    Replace?: ('EPA_NowCast' | 'EU.EAQI' | 'HJ6332012' | 'UBA')[];
                     /**
                      * [今日污染物 - 单位转换] 模式
                      *
@@ -153,8 +153,8 @@ export interface Settings {
                  * @remarks
                  *
                  * Possible values:
-                 * - `'HJ6332012'` - 中国 (HJ 633—2012)
-                 * - `'EPA_NowCast'` - 美国 (EPA NowCast)
+                 * - `'HJ6332012'` - 中国AQI (HJ6332012)
+                 * - `'EPA_NowCast'` - 美国AQI (EPA_NowCast)
                  *
                  * @defaultValue ["HJ6332012"]
                  */
