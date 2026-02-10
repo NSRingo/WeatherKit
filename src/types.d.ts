@@ -268,10 +268,11 @@ export interface Settings {
          * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
          * - `'WAQI_InstantCast_US'` - 美标InstantCast（EPA-454/B-24-002）
          * - `'WAQI_InstantCast_CN'` - 国标InstantCast（HJ 633—2012）
+         * - `'WAQI_InstantCast_CN_25_DRAFT'` - 国标InstantCast（HJ 633 2025年草案）
          *
          * @defaultValue "UBA"
          */
-        iRingoAlgorithm?: 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN';
+        iRingoAlgorithm?: 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN' | 'WAQI_InstantCast_CN_25_DRAFT';
     };
     API?: {
         ColorfulClouds?: {
