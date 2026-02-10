@@ -624,7 +624,7 @@ export default class AirQuality {
 						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 50] },
-							max: { indexes: [401, 500], amounts: [2101, 2602] },
+							max: { indexes: [401, 500], amounts: [2101, 2620] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 50] },
 								{ indexes: [51, 100], amounts: [51, 150] },
@@ -632,7 +632,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [476, 800] },
 								{ indexes: [201, 300], amounts: [801, 1600] },
 								{ indexes: [301, 400], amounts: [1601, 2100] },
-								{ indexes: [401, 500], amounts: [2101, 2602] },
+								{ indexes: [401, 500], amounts: [2101, 2620] },
 							],
 						},
 					},
@@ -1099,7 +1099,7 @@ export default class AirQuality {
 						stpConversionFactor: -1,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 150] },
-							max: { indexes: [401, 500], amounts: [2101, 2602] },
+							max: { indexes: [401, 500], amounts: [2101, 2620] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 150] },
 								{ indexes: [51, 100], amounts: [151, 500] },
@@ -1107,7 +1107,7 @@ export default class AirQuality {
 								{ indexes: [151, 200], amounts: [651, 800] },
 								{ indexes: [201, 300], amounts: [801, 1600] },
 								{ indexes: [301, 400], amounts: [1601, 2100] },
-								{ indexes: [401, 500], amounts: [2101, 2602] },
+								{ indexes: [401, 500], amounts: [2101, 2620] },
 								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [2602, Number.POSITIVE_INFINITY] },
 							],
 						},
