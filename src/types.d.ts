@@ -154,11 +154,32 @@ export interface Settings {
                  *
                  * Possible values:
                  * - `'HJ6332012'` - 中国AQI (HJ6332012)
-                 * - `'EPA_NowCast'` - 美国AQI (EPA_NowCast)
+                 *
+                 * - `'IE.AQIH'` - 爱尔兰AQIH（IE.AQIH）
+                 * - `'AT.AQI'` - 奥地利AQI（AT.AQI）
+                 * - `'BE.BelAQI'` - 比利时BelAQI（BE.BelAQI）
+                 * - `'UBA'` - 德国LQI（UBA）
+                 * - `'FR.ATMO'` - 法国IQA（FR.ATMO）
+                 * - `'KR.CAI'` - 韩国CAI（KR.CAI）
+                 * - `'CA.AQHI'` - 加拿大AQHI（CA.AQHI）
+                 * - `'CZ.AQI'` - 捷克AQI（CZ.AQI）
+                 * - `'NL.LKI'` - 荷兰LKI（NL.LKI）
+                 * - `'EPA_NowCast'` - 美国AQI（EPA_NowCast）
+                 * - `'ICARS'` - 墨西哥ICARS（ICARS）
+                 * - `'EU.EAQI'` - 欧盟EAQI（EU.EAQI）
+                 * - `'CH.KBI'` - 瑞士KBI（CH.KBI）
+                 * - `'ES.MITECO'` - 西班牙ICA（ES.MITECO）
+                 * - `'SG.NEA'` - 新加坡PSI（SG.NEA）
+                 * - `'NAQI'` - 印度NAQI（NAQI）
+                 * - `'DAQI'` - 英国DAQI（DAQI）
                  *
                  * @defaultValue ["HJ6332012"]
                  */
-                Replace?: ('HJ6332012' | 'EPA_NowCast')[];
+                Replace?: (
+                    'HJ6332012' | 'IE.AQIH' | 'AT.AQI' | 'BE.BelAQI' | 'UBA' | 'FR.ATMO' | 'KR.CAI' | 'CA.AQHI' |
+                    'CZ.AQI' | 'NL.LKI' | 'EPA_NowCast' | 'ICARS' | 'EU.EAQI' | 'CH.KBI' | 'ES.MITECO' | 'SG.NEA' |
+                    'NAQI' | 'DAQI'
+                )[];
                 /**
                  * [今日空气指数] 数据源
                  *
