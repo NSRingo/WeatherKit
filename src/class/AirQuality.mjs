@@ -958,7 +958,7 @@ export default class AirQuality {
 							value: [
 								{ indexes: [0, 50], amounts: [0, 50] },
 								{ indexes: [51, 100], amounts: [51, 120] },
-								{ indexes: [101, 150], amounts: [151, 250] },
+								{ indexes: [101, 150], amounts: [121, 250] },
 								{ indexes: [151, 200], amounts: [251, 350] },
 								{ indexes: [201, 300], amounts: [351, 420] },
 								{ indexes: [301, 400], amounts: [421, 500] },
@@ -974,8 +974,8 @@ export default class AirQuality {
 							max: { indexes: [401, 500], amounts: [351, 500] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 30] },
-								{ indexes: [51, 100], amounts: [36, 60] },
-								{ indexes: [101, 150], amounts: [76, 115] },
+								{ indexes: [51, 100], amounts: [31, 60] },
+								{ indexes: [101, 150], amounts: [61, 115] },
 								{ indexes: [151, 200], amounts: [116, 150] },
 								{ indexes: [201, 300], amounts: [151, 250] },
 								{ indexes: [301, 400], amounts: [251, 350] },
@@ -1501,7 +1501,7 @@ export default class AirQuality {
 							value: [
 								{ indexes: [0, 50], amounts: [0, 50] },
 								{ indexes: [51, 100], amounts: [51, 120] },
-								{ indexes: [101, 150], amounts: [151, 250] },
+								{ indexes: [101, 150], amounts: [121, 250] },
 								{ indexes: [151, 200], amounts: [251, 350] },
 								{ indexes: [201, 300], amounts: [351, 420] },
 								{ indexes: [301, 400], amounts: [421, 500] },
@@ -1518,8 +1518,8 @@ export default class AirQuality {
 							max: { indexes: [401, 500], amounts: [351, 500] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 30] },
-								{ indexes: [51, 100], amounts: [36, 60] },
-								{ indexes: [101, 150], amounts: [76, 115] },
+								{ indexes: [51, 100], amounts: [31, 60] },
+								{ indexes: [101, 150], amounts: [61, 115] },
 								{ indexes: [151, 200], amounts: [116, 150] },
 								{ indexes: [201, 300], amounts: [151, 250] },
 								{ indexes: [301, 400], amounts: [251, 350] },
