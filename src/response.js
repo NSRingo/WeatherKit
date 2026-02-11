@@ -505,7 +505,7 @@ function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, inje
 			case scales.HJ6332012.weatherKitScale.name:
 				return scales.WAQI_InstantCast_CN;
 			case scales.EPA_NowCast.weatherKitScale.name:
-				return scales.WAQI_NowCast_US;
+				return scales.WAQI_InstantCast_US;
 			case scales.EU_EAQI.weatherKitScale.name:
 				return scales.EU_EAQI;
 			default:
