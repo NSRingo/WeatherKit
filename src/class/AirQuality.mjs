@@ -300,7 +300,7 @@ export default class AirQuality {
 			const { pollutantType, amount } = pollutant;
 			const scaleForPollutant = scaleForPollutants[pollutantType];
 
-			Console.debug("PollutantToInstantCastLikeIndex", `${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
+			Console.debug("PollutantToInstantCastLikeIndex", `${pollutantType}: ${amount} ${friendlyUnits[pollutant.units]}`);
 			if (!scaleForPollutant) {
 				Console.debug(`No scale for ${pollutantType}, skip`);
 				return { pollutantType, index: -1 };
