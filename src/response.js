@@ -244,10 +244,10 @@ function getStpConversionFactors(airQuality) {
 	}
 }
 
-function GetAirQualityFromPollutants(algorithmSetting, airQuality) {
+function GetAirQualityFromPollutants(algorithm, forcePrimaryPollutant, airQuality) {
 	const { EU_EAQI, WAQI_InstantCast_US, WAQI_InstantCast_CN, WAQI_InstantCast_CN_25_DRAFT, UBA } = AirQuality.Config.Scales;
 	const stpConversionFactors = getStpConversionFactors(airQuality);
-	switch (algorithmSetting) {
+	switch (algorithm) {
 		case "EU_EAQI": {
 			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, EU_EAQI.pollutants);
 			return AirQuality.PollutantsToEULike(pollutants);
@@ -258,11 +258,11 @@ function GetAirQualityFromPollutants(algorithmSetting, airQuality) {
 		}
 		case "WAQI_InstantCast_CN": {
 			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_CN.pollutants);
-			return AirQuality.PollutantsToInstantCastCN12(pollutants);
+			return AirQuality.PollutantsToInstantCastCN12(pollutants, forcePrimaryPollutant);
 		}
 		case "WAQI_InstantCast_CN_25_DRAFT": {
 			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_CN_25_DRAFT.pollutants);
-			return AirQuality.PollutantsToInstantCastCN25(pollutants);
+			return AirQuality.PollutantsToInstantCastCN25(pollutants, forcePrimaryPollutant);
 		}
 		case "UBA":
 		default: {
@@ -291,7 +291,7 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 		}
 		case "iRingo":
 		default: {
-			return GetAirQualityFromPollutants(Settings.AirQuality.iRingoAlgorithm, airQuality);
+			return GetAirQualityFromPollutants(Settings.AirQuality.iRingoAlgorithm, Settings.AirQuality.Current.Index?.ForceCNPrimaryPollutants, airQuality);
 		}
 		// TODO
 		case "WAQI": {
@@ -473,7 +473,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 			if (algorithm !== "") {
 				switch (Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider) {
 					case "QWeather": {
-						return await qweatherComparison(true, airQuality?.categoryIndex, airQuality => GetAirQualityFromPollutants(algorithm, airQuality));
+						return await qweatherComparison(true, airQuality?.categoryIndex, airQuality => GetAirQualityFromPollutants(algorithm, Settings.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants, airQuality));
 					}
 				}
 			}
