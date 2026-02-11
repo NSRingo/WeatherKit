@@ -392,8 +392,8 @@ export default class AirQuality {
 		};
 	}
 
-	static PollutantsToInstantCastCN12 = pollutants => this.#PollutantsToInstantCastCN(pollutants, AirQuality.Config.Scales.WAQI_InstantCast_CN);
-	static PollutantsToInstantCastCN25 = pollutants => this.#PollutantsToInstantCastCN(pollutants, AirQuality.Config.Scales.WAQI_InstantCast_CN_25_DRAFT);
+	static PollutantsToInstantCastCN12 = (pollutants, forcePrimaryPollutant) => this.#PollutantsToInstantCastCN(pollutants, forcePrimaryPollutant, AirQuality.Config.Scales.WAQI_InstantCast_CN);
+	static PollutantsToInstantCastCN25 = (pollutants, forcePrimaryPollutant) => this.#PollutantsToInstantCastCN(pollutants, forcePrimaryPollutant, AirQuality.Config.Scales.WAQI_InstantCast_CN_25_DRAFT);
 
 	static Config = {
 		Scales: {
