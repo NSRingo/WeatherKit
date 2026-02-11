@@ -331,7 +331,10 @@ export default class AirQuality {
 		});
 	}
 
-	static PollutantsToInstantCastUS(pollutants) {
+	static PollutantsToInstantCastUS(pollutants, allowOverRange = true) {
+		// Max index in Apple Weather
+		const MAX_INDEX = 500;
+
 		Console.info("☑️ PollutantsToInstantCastUS");
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
 			Console.warn("⚠️ PollutantsToInstantCastUS", "pollutants is invalid");
@@ -347,8 +350,7 @@ export default class AirQuality {
 
 		Console.info("✅ PollutantsToInstantCastUS", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`, `categoryIndex: ${categoryIndex}`);
 		return {
-			// TODO: is it okay that index > 500 for WeatherKit?
-			index: primaryPollutant.index,
+			index: allowOverRange ? primaryPollutant.index : Math.min(primaryPollutant.index, MAX_INDEX),
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
 			categoryIndex,
 			pollutants,
@@ -358,12 +360,8 @@ export default class AirQuality {
 		};
 	}
 
-	static #PollutantsToInstantCastCN(
-		pollutants,
-		forcePrimaryPollutant = true,
-		// allowOverRange = true,
-		scale = AirQuality.Config.Scales.WAQI_InstantCast_CN,
-	) {
+	static #PollutantsToInstantCastCN(pollutants, forcePrimaryPollutant = true, allowOverRange = true, scale = AirQuality.Config.Scales.WAQI_InstantCast_CN) {
+		const MAX_INDEX = 500;
 		Console.info("☑️ PollutantsToInstantCastCN");
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
 			Console.warn("⚠️ PollutantsToInstantCastCN", "pollutants is invalid");
@@ -382,9 +380,7 @@ export default class AirQuality {
 
 		Console.info("✅ PollutantsToInstantCastCN", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`, `categoryIndex: ${categoryIndex}`);
 		return {
-			// TODO: is it okay that index > 500 for WeatherKit?
-			// index: allowOverRange ? primaryPollutant.index : Math.min(primaryPollutant.index, 500),
-			index: primaryPollutant.index,
+			index: allowOverRange ? primaryPollutant.index : Math.min(primaryPollutant.index, MAX_INDEX),
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
 			categoryIndex,
 			pollutants,
@@ -394,8 +390,8 @@ export default class AirQuality {
 		};
 	}
 
-	static PollutantsToInstantCastCN12 = (pollutants, forcePrimaryPollutant) => this.#PollutantsToInstantCastCN(pollutants, forcePrimaryPollutant, AirQuality.Config.Scales.WAQI_InstantCast_CN);
-	static PollutantsToInstantCastCN25 = (pollutants, forcePrimaryPollutant) => this.#PollutantsToInstantCastCN(pollutants, forcePrimaryPollutant, AirQuality.Config.Scales.WAQI_InstantCast_CN_25_DRAFT);
+	static PollutantsToInstantCastCN12 = (pollutants, forcePrimaryPollutant, allowOverRange) => this.#PollutantsToInstantCastCN(pollutants, forcePrimaryPollutant, allowOverRange, AirQuality.Config.Scales.WAQI_InstantCast_CN);
+	static PollutantsToInstantCastCN25 = (pollutants, forcePrimaryPollutant, allowOverRange) => this.#PollutantsToInstantCastCN(pollutants, forcePrimaryPollutant, allowOverRange, AirQuality.Config.Scales.WAQI_InstantCast_CN_25_DRAFT);
 
 	static Config = {
 		Scales: {

@@ -244,7 +244,7 @@ function getStpConversionFactors(airQuality) {
 	}
 }
 
-function GetAirQualityFromPollutants(algorithm, forcePrimaryPollutant, airQuality) {
+function GetAirQualityFromPollutants(algorithm, forcePrimaryPollutant, allowOverRange, airQuality) {
 	const { EU_EAQI, WAQI_InstantCast_US, WAQI_InstantCast_CN, WAQI_InstantCast_CN_25_DRAFT, UBA } = AirQuality.Config.Scales;
 	const stpConversionFactors = getStpConversionFactors(airQuality);
 	switch (algorithm) {
@@ -254,15 +254,15 @@ function GetAirQualityFromPollutants(algorithm, forcePrimaryPollutant, airQualit
 		}
 		case "WAQI_InstantCast_US": {
 			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_US.pollutants);
-			return AirQuality.PollutantsToInstantCastUS(pollutants);
+			return AirQuality.PollutantsToInstantCastUS(pollutants, allowOverRange);
 		}
 		case "WAQI_InstantCast_CN": {
 			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_CN.pollutants);
-			return AirQuality.PollutantsToInstantCastCN12(pollutants, forcePrimaryPollutant);
+			return AirQuality.PollutantsToInstantCastCN12(pollutants, forcePrimaryPollutant, allowOverRange);
 		}
 		case "WAQI_InstantCast_CN_25_DRAFT": {
 			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_CN_25_DRAFT.pollutants);
-			return AirQuality.PollutantsToInstantCastCN25(pollutants, forcePrimaryPollutant);
+			return AirQuality.PollutantsToInstantCastCN25(pollutants, forcePrimaryPollutant, allowOverRange);
 		}
 		case "UBA":
 		default: {
@@ -291,7 +291,7 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 		}
 		case "iRingo":
 		default: {
-			return GetAirQualityFromPollutants(Settings.AirQuality.iRingoAlgorithm, Settings.AirQuality.Current.Index?.ForceCNPrimaryPollutants, airQuality);
+			return GetAirQualityFromPollutants(Settings.AirQuality?.iRingo?.Algorithm, Settings.AirQuality.Current.Index?.ForceCNPrimaryPollutants, Settings.AirQuality?.iRingo?.AllowOverRange, airQuality);
 		}
 		// TODO
 		case "WAQI": {
@@ -324,7 +324,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 	const isHJ6332012 = (currentIndexProvider, currentScale, Settings) => {
 		switch (currentIndexProvider) {
 			case "iRingo":
-				return Settings?.AirQuality?.iRingoAlgorithm === "WAQI_InstantCast_CN";
+				return Settings?.AirQuality?.iRingo?.Algorithm === "WAQI_InstantCast_CN";
 			case "QWeather":
 			case "ColorfulCloudsCN": {
 				return true;
@@ -355,7 +355,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 	const chooseAlogrithm = (currentIndexProvider, airQuality, Settings) => {
 		switch (currentIndexProvider) {
 			case "iRingo":
-				return Settings?.AirQuality?.iRingoAlgorithm;
+				return Settings?.AirQuality?.iRingo?.Algorithm;
 			case "QWeather":
 			case "ColorfulCloudsCN": {
 				return "WAQI_InstantCast_CN";
@@ -473,7 +473,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 			if (algorithm !== "") {
 				switch (Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider) {
 					case "QWeather": {
-						return await qweatherComparison(true, airQuality?.categoryIndex, airQuality => GetAirQualityFromPollutants(algorithm, Settings.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants, airQuality));
+						return await qweatherComparison(true, airQuality?.categoryIndex, airQuality => GetAirQualityFromPollutants(algorithm, Settings.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants, Settings.AirQuality?.iRingo?.AllowOverRange, airQuality));
 					}
 				}
 			}
