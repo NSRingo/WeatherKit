@@ -37,7 +37,10 @@ export default {
 						IndexProvider: "ColorfulCloudsUS",
 					},
 				},
-				iRingoAlgorithm: "UBA",
+				iRingo: {
+					Algorithm: "UBA",
+					AllowOverRange: true,
+				},
 			},
 			API: {
 				WAQI: {

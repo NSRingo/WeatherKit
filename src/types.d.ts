@@ -256,23 +256,33 @@ export interface Settings {
                 IndexProvider?: 'iRingo' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather';
             };
         };
-        /**
-         * [空气质量 - iRingo内置算法] 算法
-         *
-         * 使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI。
-         *
-         * @remarks
-         *
-         * Possible values:
-         * - `'UBA'` - 德国LQI（FB001846）
-         * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
-         * - `'WAQI_InstantCast_US'` - 美标InstantCast（EPA-454/B-24-002）
-         * - `'WAQI_InstantCast_CN'` - 国标InstantCast（HJ 633—2012）
-         * - `'WAQI_InstantCast_CN_25_DRAFT'` - 国标InstantCast（HJ 633 2025年草案）
-         *
-         * @defaultValue "UBA"
-         */
-        iRingoAlgorithm?: 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN' | 'WAQI_InstantCast_CN_25_DRAFT';
+        iRingo?: {
+            /**
+             * [iRingo内置算法] 算法
+             *
+             * 使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI。
+             *
+             * @remarks
+             *
+             * Possible values:
+             * - `'UBA'` - 德国LQI（FB001846）
+             * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
+             * - `'WAQI_InstantCast_US'` - 美标InstantCast（EPA-454/B-24-002）
+             * - `'WAQI_InstantCast_CN'` - 国标InstantCast（HJ 633—2012）
+             * - `'WAQI_InstantCast_CN_25_DRAFT'` - 国标InstantCast（HJ 633 2025年草案）
+             *
+             * @defaultValue "UBA"
+             */
+            Algorithm?: 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN' | 'WAQI_InstantCast_CN_25_DRAFT';
+            /**
+             * [iRingo内置算法] 允许指数超标
+             *
+             * 允许美标和国标的指数超过500。超过500时，指示颜色的小圆点会消失。
+             *
+             * @defaultValue true
+             */
+            AllowOverRange?: boolean;
+        };
     };
     API?: {
         ColorfulClouds?: {

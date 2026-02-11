@@ -230,8 +230,8 @@ export default defineConfig({
 			description: "用来和今日空气质量指数对比的数据。",
 		},
 		{
-			key: "AirQuality.iRingoAlgorithm",
-			name: "[空气质量 - iRingo内置算法] 算法",
+			key: "AirQuality.iRingo.Algorithm",
+			name: "[iRingo内置算法] 算法",
 			defaultValue: "UBA",
 			type: "string",
 			options: [
@@ -242,6 +242,13 @@ export default defineConfig({
 				{ key: "WAQI_InstantCast_CN_25_DRAFT", label: "国标InstantCast（HJ 633 2025年草案）" },
 			],
 			description: "使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI。",
+		},
+		{
+			key: "AirQuality.iRingo.AllowOverRange",
+			name: "[iRingo内置算法] 允许指数超标",
+			defaultValue: true,
+			type: "boolean",
+			description: "允许美标和国标的指数超过500。超过500时，指示颜色的小圆点会消失。",
 		},
 		{
 			key: "API.ColorfulClouds.Token",
