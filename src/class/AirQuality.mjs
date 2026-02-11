@@ -1049,10 +1049,10 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [0, 50], amounts: [0.0, 9.0] },
+							min: { indexes: [0, 50], amounts: [0, 9] },
 							max: { indexes: [301, 500], amounts: [225.5, 325.4] },
 							value: [
-								{ indexes: [0, 50], amounts: [0.0, 9.0] }, // Good
+								{ indexes: [0, 50], amounts: [0, 9] }, // Good
 								{ indexes: [51, 100], amounts: [9.1, 35.4] }, // Moderate
 								{ indexes: [101, 150], amounts: [35.5, 55.4] }, // Unhealthy for Sensitive Groups
 								// Note 3 of PM2.5 can be found in EPA 454/B-18-007:
@@ -1087,10 +1087,10 @@ export default class AirQuality {
 						units: "PARTS_PER_MILLION",
 						stpConversionFactor: 1.14491990608754,
 						ranges: {
-							min: { indexes: [0, 50], amounts: [0.0, 4.4] },
-							max: { indexes: [301, 500], amounts: [425, 604] },
+							min: { indexes: [0, 50], amounts: [0, 4.4] },
+							max: { indexes: [301, 500], amounts: [30.5, 50.4] },
 							value: [
-								{ indexes: [0, 50], amounts: [0.0, 4.4] }, // Good
+								{ indexes: [0, 50], amounts: [0, 4.4] }, // Good
 								{ indexes: [51, 100], amounts: [4.5, 9.4] }, // Moderate
 								{ indexes: [101, 150], amounts: [9.5, 12.4] }, // Unhealthy for Sensitive Groups
 								{ indexes: [151, 200], amounts: [12.5, 15.4] }, // Unhealthy
@@ -1105,7 +1105,7 @@ export default class AirQuality {
 						stpConversionFactor: 2.618396263625692,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 35] },
-							max: { indexes: [301, 500], amounts: [425, 1004] },
+							max: { indexes: [301, 500], amounts: [605, 1004] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 35] }, // Good
 								{ indexes: [51, 100], amounts: [36, 75] }, // Moderate
@@ -1169,16 +1169,16 @@ export default class AirQuality {
 						units: "PARTS_PER_BILLION",
 						stpConversionFactor: 1.96189649169881,
 						ranges: {
-							min: { indexes: [0, 50], amounts: [0, 61.5] },
-							max: { indexes: [301, 500], amounts: [405, 605] },
+							min: { indexes: [0, 50], amounts: [0, 62.5] },
+							max: { indexes: [301, 500], amounts: [405.1, 605] },
 							value: [
-								{ indexes: [0, 50], amounts: [0, 61.5] }, // Good
-								{ indexes: [51, 100], amounts: [62.5, 100.5] }, // Moderate
-								{ indexes: [101, 150], amounts: [101.5, 151.5] }, // Unhealthy for Sensitive Groups
-								{ indexes: [151, 200], amounts: [152.5, 204] }, // Unhealthy
-								{ indexes: [201, 300], amounts: [205, 404] }, // Very Unhealthy
-								{ indexes: [301, 500], amounts: [405, 605] }, // Hazardous
-								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [606, Number.POSITIVE_INFINITY] }, // Hazardous
+								{ indexes: [0, 50], amounts: [0, 62.5] }, // Good
+								{ indexes: [51, 100], amounts: [62.6, 101.5] }, // Moderate
+								{ indexes: [101, 150], amounts: [101.6, 152.5] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [152.6, 205] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [205.1, 405] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [405.1, 605] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [605.1, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -1186,10 +1186,10 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [0, 50], amounts: [0.0, 9.0] },
+							min: { indexes: [0, 50], amounts: [0, 9] },
 							max: { indexes: [301, 500], amounts: [225.5, 325.4] },
 							value: [
-								{ indexes: [0, 50], amounts: [0.0, 9.0] }, // Good
+								{ indexes: [0, 50], amounts: [0, 9] }, // Good
 								{ indexes: [51, 100], amounts: [9.1, 35.4] }, // Moderate
 								{ indexes: [101, 150], amounts: [35.5, 55.4] }, // Unhealthy for Sensitive Groups
 								{ indexes: [151, 200], amounts: [55.5, 125.4] }, // Unhealthy
@@ -1220,16 +1220,16 @@ export default class AirQuality {
 						units: "PARTS_PER_BILLION",
 						stpConversionFactor: 1.144511152104645,
 						ranges: {
-							min: { indexes: [0, 50], amounts: [0.0, 4.4] },
-							max: { indexes: [301, 500], amounts: [425, 604] },
+							min: { indexes: [0, 50], amounts: [0, 4400] },
+							max: { indexes: [301, 500], amounts: [30401, 50400] },
 							value: [
-								{ indexes: [0, 50], amounts: [0.0, 4.4] }, // Good
-								{ indexes: [51, 100], amounts: [4.5, 9.4] }, // Moderate
-								{ indexes: [101, 150], amounts: [9.5, 12.4] }, // Unhealthy for Sensitive Groups
-								{ indexes: [151, 200], amounts: [12.5, 15.4] }, // Unhealthy
-								{ indexes: [201, 300], amounts: [15.5, 30.4] }, // Very Unhealthy
-								{ indexes: [301, 500], amounts: [30.5, 50.4] }, // Hazardous
-								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [50.5, Number.POSITIVE_INFINITY] }, // Hazardous
+								{ indexes: [0, 50], amounts: [0, 4400] }, // Good
+								{ indexes: [51, 100], amounts: [4401, 9400] }, // Moderate
+								{ indexes: [101, 150], amounts: [9401, 12400] }, // Unhealthy for Sensitive Groups
+								{ indexes: [151, 200], amounts: [12401, 15400] }, // Unhealthy
+								{ indexes: [201, 300], amounts: [15401, 30400] }, // Very Unhealthy
+								{ indexes: [301, 500], amounts: [30401, 50400] }, // Hazardous
+								{ indexes: [501, Number.POSITIVE_INFINITY], amounts: [50401, Number.POSITIVE_INFINITY] }, // Hazardous
 							],
 						},
 					},
@@ -1238,7 +1238,7 @@ export default class AirQuality {
 						stpConversionFactor: 2.618396263625692,
 						ranges: {
 							min: { indexes: [0, 50], amounts: [0, 35] },
-							max: { indexes: [301, 500], amounts: [425, 1004] },
+							max: { indexes: [301, 500], amounts: [605, 1004] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 35] }, // Good
 								{ indexes: [51, 100], amounts: [36, 75] }, // Moderate
