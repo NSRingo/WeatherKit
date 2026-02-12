@@ -333,26 +333,22 @@ export default class AirQuality {
 		});
 	}
 
-	static PollutantsToInstantCastUS(pollutants, allowOverRange = true) {
-		// Max index in Apple Weather
-		const MAX_INDEX = 500;
-
-		Console.info("☑️ PollutantsToInstantCastUS");
+	static #PollutantsToAirQuality(pollutants, scale) {
+		Console.info("☑️ PollutantsToAirQuality");
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
-			Console.warn("⚠️ PollutantsToInstantCastUS", "pollutants is invalid");
+			Console.warn("PollutantsToAirQuality", "pollutants is invalid");
 			return {};
 		}
 
-		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
 		const indexes = AirQuality.#PollutantsToIndexes(pollutants, scale.pollutants);
-		Console.debug(`indexes: ${JSON.stringify(indexes)}`);
+		Console.debug("PollutantsToAirQuality", `indexes: ${JSON.stringify(indexes)}`);
 
 		const primaryPollutant = indexes.reduce((previous, current) => (previous.index > current.index ? previous : current));
 		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
 
-		Console.info("✅ PollutantsToInstantCastUS", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`, `categoryIndex: ${categoryIndex}`);
+		Console.info("✅ PollutantsToAirQuality", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`, `categoryIndex: ${categoryIndex}`);
 		return {
-			index: allowOverRange ? primaryPollutant.index : Math.min(primaryPollutant.index, MAX_INDEX),
+			index: primaryPollutant.index,
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
 			categoryIndex,
 			pollutants,
@@ -362,33 +358,42 @@ export default class AirQuality {
 		};
 	}
 
-	static #PollutantsToInstantCastCN(pollutants, forcePrimaryPollutant = true, allowOverRange = true, scale = AirQuality.Config.Scales.WAQI_InstantCast_CN) {
+	static PollutantsToInstantCastUS(pollutants, allowOverRange = true) {
+		// Max index in Apple Weather
 		const MAX_INDEX = 500;
-		Console.info("☑️ PollutantsToInstantCastCN");
-		if (!Array.isArray(pollutants) || pollutants.length === 0) {
-			Console.warn("⚠️ PollutantsToInstantCastCN", "pollutants is invalid");
-			return {};
-		}
 
-		const indexes = AirQuality.#PollutantsToIndexes(pollutants, scale.pollutants);
-		Console.debug(`indexes: ${JSON.stringify(indexes)}`);
+		Console.info("☑️ PollutantsToInstantCastUS");
 
-		const primaryPollutant = AirQuality.FindPrimaryPollutants(indexes)[0];
-		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
-		const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
-		if (isNotAvailable) {
-			Console.warn("⚠️ AirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, primaryPollutant will be NOT_AVAILABLE.`);
-		}
+		const airQuality = AirQuality.#PollutantsToAirQuality(pollutants, AirQuality.Config.Scales.WAQI_InstantCast_US);
 
-		Console.info("✅ PollutantsToInstantCastCN", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`, `categoryIndex: ${categoryIndex}`);
+		Console.info("✅ PollutantsToInstantCastUS");
 		return {
-			index: allowOverRange ? primaryPollutant.index : Math.min(primaryPollutant.index, MAX_INDEX),
-			isSignificant: categoryIndex >= scale.categories.significantIndex,
-			categoryIndex,
-			pollutants,
-			metadata: { providerName: "iRingo", temporarilyUnavailable: false },
-			primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : primaryPollutant.pollutantType,
-			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
+			...airQuality,
+			index: allowOverRange ? airQuality.index : Math.min(airQuality.index, MAX_INDEX),
+		};
+	}
+
+	static #PollutantsToInstantCastCN(pollutants, forcePrimaryPollutant = true, allowOverRange = true, scale = AirQuality.Config.Scales.WAQI_InstantCast_CN) {
+		// Max index in Apple Weather
+		const MAX_INDEX = 500;
+
+		Console.info("☑️ PollutantsToInstantCastCN");
+
+		const airQuality = AirQuality.#PollutantsToAirQuality(pollutants, AirQuality.Config.Scales.WAQI_InstantCast_CN);
+
+		// Log all primary pollutants for HJ633
+		AirQuality.FindPrimaryPollutants(AirQuality.#PollutantsToIndexes(pollutants, scale.pollutants));
+
+		const isNotAvailable = !forcePrimaryPollutant && airQuality.index <= 50;
+		if (isNotAvailable) {
+			Console.warn("⚠️ AirQuality", `Max index of pollutants ${airQuality.primaryPollutant} = ${airQuality.index} is <= 50, primaryPollutant will be NOT_AVAILABLE.`);
+		}
+
+		Console.info("✅ PollutantsToInstantCastCN");
+		return {
+			...airQuality,
+			index: allowOverRange ? airQuality.index : Math.min(airQuality.index, MAX_INDEX),
+			primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : airQuality.primaryPollutant,
 		};
 	}
 
