@@ -317,7 +317,7 @@ export default class AirQuality {
 				return AirQuality.#CeilByPrecision(amount, minAmount) >= minAmount && AirQuality.#CeilByPrecision(amount, maxAmount) <= maxAmount;
 			});
 
-			const isOverRange = indexes[0] > scaleForPollutant.ranges.max.indexes[1];
+			const isOverRange = amount > scaleForPollutant.ranges.max.amounts[1];
 			if (isOverRange) {
 				Console.warn("⚠️ PollutantToInstantCastLikeIndex", `Index > 500 detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
 				Console.warn("⚠️ PollutantToInstantCastLikeIndex", "Take care of yourself!");
