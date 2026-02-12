@@ -394,7 +394,7 @@ export default class AirQuality {
 						{ categoryIndex: 2, indexes: [1, 2] }, // gut
 						{ categoryIndex: 3, indexes: [2, 3] }, // mäßig
 						{ categoryIndex: 4, indexes: [3, 4] }, // schlecht
-						{ categoryIndex: 5, indexes: [4, 5] }, // sehr schlecht
+						{ categoryIndex: 5, indexes: [4, Number.POSITIVE_INFINITY] }, // sehr schlecht
 					],
 				},
 				pollutants: {
@@ -409,7 +409,7 @@ export default class AirQuality {
 								{ indexes: [1, 2], amounts: [11, 30] }, // gut
 								{ indexes: [2, 3], amounts: [31, 60] }, // mäßig
 								{ indexes: [3, 4], amounts: [61, 100] }, // schlecht
-								{ indexes: [4, 5], amounts: [101, Number.POSITIVE_INFINITY] }, // sehr schlecht
+								{ indexes: [4, Number.POSITIVE_INFINITY], amounts: [101, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
 					},
@@ -424,7 +424,7 @@ export default class AirQuality {
 								{ indexes: [1, 2], amounts: [10, 27] }, // gut
 								{ indexes: [2, 3], amounts: [28, 54] }, // mäßig
 								{ indexes: [3, 4], amounts: [55, 90] }, // schlecht
-								{ indexes: [4, 5], amounts: [91, Number.POSITIVE_INFINITY] }, // sehr schlecht
+								{ indexes: [4, Number.POSITIVE_INFINITY], amounts: [91, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
 					},
@@ -439,7 +439,7 @@ export default class AirQuality {
 								{ indexes: [1, 2], amounts: [6, 15] }, // gut
 								{ indexes: [2, 3], amounts: [16, 30] }, // mäßig
 								{ indexes: [3, 4], amounts: [31, 50] }, // schlecht
-								{ indexes: [4, 5], amounts: [51, Number.POSITIVE_INFINITY] }, // sehr schlecht
+								{ indexes: [4, Number.POSITIVE_INFINITY], amounts: [51, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
 					},
@@ -454,7 +454,7 @@ export default class AirQuality {
 								{ indexes: [1, 2], amounts: [25, 72] }, // gut
 								{ indexes: [2, 3], amounts: [73, 144] }, // mäßig
 								{ indexes: [3, 4], amounts: [145, 240] }, // schlecht
-								{ indexes: [4, 5], amounts: [241, Number.POSITIVE_INFINITY] }, // sehr schlecht
+								{ indexes: [4, Number.POSITIVE_INFINITY], amounts: [241, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
 					},
@@ -469,7 +469,7 @@ export default class AirQuality {
 								{ indexes: [1, 2], amounts: [11, 30] }, // gut
 								{ indexes: [2, 3], amounts: [31, 60] }, // mäßig
 								{ indexes: [3, 4], amounts: [61, 100] }, // schlecht
-								{ indexes: [4, 5], amounts: [101, Number.POSITIVE_INFINITY] }, // sehr schlecht
+								{ indexes: [4, Number.POSITIVE_INFINITY], amounts: [101, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
 					},
@@ -493,7 +493,7 @@ export default class AirQuality {
 						{ categoryIndex: 3, indexes: [20, 29] }, // Moderate
 						{ categoryIndex: 4, indexes: [30, 39] }, // Poor
 						{ categoryIndex: 5, indexes: [40, 49] }, // Very Poor
-						{ categoryIndex: 6, indexes: [50, 60] }, // Extremely Poor
+						{ categoryIndex: 6, indexes: [50, Number.POSITIVE_INFINITY] }, // Extremely Poor
 					],
 				},
 				pollutants: {
@@ -509,7 +509,7 @@ export default class AirQuality {
 								{ indexes: [20, 29], amounts: [16, 50] }, // Moderate
 								{ indexes: [30, 39], amounts: [51, 90] }, // Poor
 								{ indexes: [40, 49], amounts: [91, 140] }, // Very Poor
-								{ indexes: [50, 60], amounts: [141, Number.POSITIVE_INFINITY] }, // Extremely Poor
+								{ indexes: [50, Number.POSITIVE_INFINITY], amounts: [141, Number.POSITIVE_INFINITY] }, // Extremely Poor
 							],
 						},
 					},
@@ -525,7 +525,7 @@ export default class AirQuality {
 								{ indexes: [20, 29], amounts: [46, 120] }, // Moderate
 								{ indexes: [30, 39], amounts: [121, 195] }, // Poor
 								{ indexes: [40, 49], amounts: [196, 270] }, // Very Poor
-								{ indexes: [50, 60], amounts: [271, Number.POSITIVE_INFINITY] }, // Extremely Poor
+								{ indexes: [50, Number.POSITIVE_INFINITY], amounts: [271, Number.POSITIVE_INFINITY] }, // Extremely Poor
 							],
 						},
 					},
@@ -541,7 +541,7 @@ export default class AirQuality {
 								{ indexes: [20, 29], amounts: [101, 120] }, // Moderate
 								{ indexes: [30, 39], amounts: [121, 160] }, // Poor
 								{ indexes: [40, 49], amounts: [161, 180] }, // Very Poor
-								{ indexes: [50, 60], amounts: [181, Number.POSITIVE_INFINITY] }, // Extremely Poor
+								{ indexes: [50, Number.POSITIVE_INFINITY], amounts: [181, Number.POSITIVE_INFINITY] }, // Extremely Poor
 							],
 						},
 					},
@@ -557,7 +557,7 @@ export default class AirQuality {
 								{ indexes: [20, 29], amounts: [26, 60] }, // Moderate
 								{ indexes: [30, 39], amounts: [61, 100] }, // Poor
 								{ indexes: [40, 49], amounts: [101, 150] }, // Very Poor
-								{ indexes: [50, 60], amounts: [151, Number.POSITIVE_INFINITY] }, // Extremely Poor
+								{ indexes: [50, Number.POSITIVE_INFINITY], amounts: [151, Number.POSITIVE_INFINITY] }, // Extremely Poor
 							],
 						},
 					},
@@ -573,7 +573,7 @@ export default class AirQuality {
 								{ indexes: [20, 29], amounts: [41, 125] }, // Moderate
 								{ indexes: [30, 39], amounts: [126, 190] }, // Poor
 								{ indexes: [40, 49], amounts: [191, 275] }, // Very Poor
-								{ indexes: [50, 60], amounts: [276, Number.MAX_VALUE] }, // Extremely Poor
+								{ indexes: [50, Number.POSITIVE_INFINITY], amounts: [276, Number.MAX_VALUE] }, // Extremely Poor
 							],
 						},
 					},
