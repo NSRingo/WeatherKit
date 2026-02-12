@@ -312,20 +312,22 @@ export default class AirQuality {
 				return scaleForPollutant.ranges.min.indexes[0];
 			}
 
-			const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
-				const [minAmount, maxAmount] = amounts;
-				return AirQuality.#CeilByPrecision(amount, minAmount) >= minAmount && AirQuality.#CeilByPrecision(amount, maxAmount) <= maxAmount;
-			});
-
 			const isOverRange = amount > scaleForPollutant.ranges.max.amounts[1];
 			if (isOverRange) {
-				Console.warn("⚠️ PollutantToInstantCastLikeIndex", `Index > 500 detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
+				Console.warn("⚠️ PollutantToInstantCastLikeIndex", `Over range detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
 				Console.warn("⚠️ PollutantToInstantCastLikeIndex", "Take care of yourself!");
 			}
 
-			// Use max range for calculation if over range
-			const [minIndex, maxIndex] = isOverRange ? scaleForPollutant.ranges.max.indexes : indexes;
-			const [minAmount, maxAmount] = isOverRange ? scaleForPollutant.ranges.max.amounts : amounts;
+			// Use range before infinity for calculation if over range
+			const { indexes, amounts } = isOverRange
+				? scaleForPollutant.ranges.max
+				: scaleForPollutant.ranges.value.find(({ amounts }) => {
+						const [minAmount, maxAmount] = amounts;
+						return AirQuality.#CeilByPrecision(amount, minAmount) >= minAmount && AirQuality.#CeilByPrecision(amount, maxAmount) <= maxAmount;
+					});
+
+			const [minIndex, maxIndex] = indexes;
+			const [minAmount, maxAmount] = amounts;
 
 			return { pollutantType, index: Math.round(((maxIndex - minIndex) / (maxAmount - minAmount)) * (AirQuality.#RoundByPrecision(amount, minAmount) - minAmount) + minIndex) };
 		});
