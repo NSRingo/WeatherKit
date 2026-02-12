@@ -267,7 +267,7 @@ function GetAirQualityFromPollutants(algorithm, forcePrimaryPollutant, allowOver
 		case "UBA":
 		default: {
 			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, UBA.pollutants);
-			return AirQuality.PollutantsToEULike(pollutants, UBA);
+			return AirQuality.PollutantsToUBA(pollutants);
 		}
 	}
 }
