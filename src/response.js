@@ -250,7 +250,7 @@ function GetAirQualityFromPollutants(algorithm, forcePrimaryPollutant, allowOver
 	switch (algorithm) {
 		case "EU_EAQI": {
 			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, EU_EAQI.pollutants);
-			return AirQuality.PollutantsToEULike(pollutants);
+			return AirQuality.PollutantsToEAQI(pollutants);
 		}
 		case "WAQI_InstantCast_US": {
 			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_US.pollutants);

@@ -212,60 +212,6 @@ export default class AirQuality {
 		return scaleName;
 	}
 
-	static PollutantsToEULike(pollutants, scale = AirQuality.Config.Scales.EU_EAQI) {
-		Console.info("☑️ PollutantsToEULike");
-		if (!Array.isArray(pollutants) || pollutants.length === 0) {
-			Console.warn("⚠️ PollutantsToEULike", "pollutants is invalid");
-			return {};
-		}
-
-		const friendlyUnits = AirQuality.Config.Units.Friendly;
-		const indexes = pollutants.map(pollutant => {
-			const { pollutantType, amount } = pollutant;
-			const scaleForPollutant = scale.pollutants[pollutantType];
-			if (!scaleForPollutant) {
-				Console.debug(`No scale for ${pollutantType}, skip`);
-				return { pollutantType, index: -1, percentage: -1 };
-			}
-
-			const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
-			if (amount < minValidAmount) {
-				Console.warn("⚠️ PollutantsToEULike", `Invalid amount of ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
-				return { pollutantType, index: scaleForPollutant.ranges.min.indexes[0] };
-			}
-
-			const { indexes, amounts } = scaleForPollutant.ranges.value.find(({ amounts }) => {
-				const [minAmount, maxAmount] = amounts;
-				return AirQuality.#CeilByPrecision(amount, minAmount) >= minAmount && AirQuality.#CeilByPrecision(amount, maxAmount) <= maxAmount;
-			});
-
-			const isInfinity = indexes[0] > scaleForPollutant.ranges.max.indexes[1];
-			// minIndex === maxIndex === categoryIndex in EU-like scales
-			const [minAmount, maxAmount] = !isInfinity ? amounts : scaleForPollutant.ranges.max.amounts;
-			const percentage = (amount - minAmount) / (maxAmount - minAmount);
-			return {
-				pollutantType,
-				index: indexes[0],
-				percentage: !isInfinity ? percentage : percentage - 1,
-			};
-		});
-		Console.debug(`indexes: ${JSON.stringify(indexes)}`);
-
-		const primaryPollutant = indexes.reduce((previous, current) => (previous.index + previous.percentage > current.index + current.percentage ? previous : current));
-
-		Console.info("✅ PollutantsToEULike", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`);
-		return {
-			index: primaryPollutant.index,
-			isSignificant: primaryPollutant.index >= scale.categories.significantIndex,
-			// categoryIndex === index in EU-like scales
-			categoryIndex: primaryPollutant.index,
-			pollutants,
-			metadata: { providerName: "iRingo", temporarilyUnavailable: false },
-			primaryPollutant: primaryPollutant.pollutantType,
-			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
-		};
-	}
-
 	static FindPrimaryPollutants = pollutantIndexes => {
 		Console.info("☑️ FindPrimaryPollutants");
 
@@ -367,6 +313,21 @@ export default class AirQuality {
 		return {
 			...airQuality,
 			index: airQuality.categoryIndex,
+		};
+	}
+
+	static PollutantsToEAQI(pollutants) {
+		// Max index in Apple Weather
+		const MAX_INDEX = 60;
+
+		Console.info("☑️ PollutantsToEAQI");
+
+		const airQuality = AirQuality.#PollutantsToAirQuality(pollutants, AirQuality.Config.Scales.EU_EAQI);
+
+		Console.info("✅ PollutantsToEAQI");
+		return {
+			...airQuality,
+			index: Math.min(airQuality.index, MAX_INDEX),
 		};
 	}
 
@@ -523,15 +484,16 @@ export default class AirQuality {
 					name: "EU.EAQI",
 					version: "2414",
 				},
+				// Indexes below for calculation only, not for display
 				categories: {
 					significantIndex: 4, // Poor
 					ranges: [
-						{ categoryIndex: 1, indexes: [1, 1] }, // Good
-						{ categoryIndex: 2, indexes: [2, 2] }, // Fair
-						{ categoryIndex: 3, indexes: [3, 3] }, // Moderate
-						{ categoryIndex: 4, indexes: [4, 4] }, // Poor
-						{ categoryIndex: 5, indexes: [5, 5] }, // Very Poor
-						{ categoryIndex: 6, indexes: [6, 6] }, // Extremely Poor
+						{ categoryIndex: 1, indexes: [0, 9] }, // Good
+						{ categoryIndex: 2, indexes: [10, 19] }, // Fair
+						{ categoryIndex: 3, indexes: [20, 29] }, // Moderate
+						{ categoryIndex: 4, indexes: [30, 39] }, // Poor
+						{ categoryIndex: 5, indexes: [40, 49] }, // Very Poor
+						{ categoryIndex: 6, indexes: [50, 60] }, // Extremely Poor
 					],
 				},
 				pollutants: {
@@ -539,15 +501,15 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [1, 1], amounts: [0, 5] },
-							max: { indexes: [5, 5], amounts: [91, 140] },
+							min: { indexes: [0, 9], amounts: [0, 5] },
+							max: { indexes: [40, 49], amounts: [91, 140] },
 							value: [
-								{ indexes: [1, 1], amounts: [0, 5] }, // Good
-								{ indexes: [2, 2], amounts: [6, 15] }, // Fair
-								{ indexes: [3, 3], amounts: [16, 50] }, // Moderate
-								{ indexes: [4, 4], amounts: [51, 90] }, // Poor
-								{ indexes: [5, 5], amounts: [91, 140] }, // Very Poor
-								{ indexes: [6, 6], amounts: [141, Number.POSITIVE_INFINITY] }, // Extremely Poor
+								{ indexes: [0, 9], amounts: [0, 5] }, // Good
+								{ indexes: [10, 19], amounts: [6, 15] }, // Fair
+								{ indexes: [20, 29], amounts: [16, 50] }, // Moderate
+								{ indexes: [30, 39], amounts: [51, 90] }, // Poor
+								{ indexes: [40, 49], amounts: [91, 140] }, // Very Poor
+								{ indexes: [50, 60], amounts: [141, Number.POSITIVE_INFINITY] }, // Extremely Poor
 							],
 						},
 					},
@@ -555,15 +517,15 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [1, 1], amounts: [0, 15] },
-							max: { indexes: [5, 5], amounts: [196, 270] },
+							min: { indexes: [0, 9], amounts: [0, 15] },
+							max: { indexes: [40, 49], amounts: [196, 270] },
 							value: [
-								{ indexes: [1, 1], amounts: [0, 15] }, // Good
-								{ indexes: [2, 2], amounts: [16, 45] }, // Fair
-								{ indexes: [3, 3], amounts: [46, 120] }, // Moderate
-								{ indexes: [4, 4], amounts: [121, 195] }, // Poor
-								{ indexes: [5, 5], amounts: [196, 270] }, // Very Poor
-								{ indexes: [6, 6], amounts: [271, Number.POSITIVE_INFINITY] }, // Extremely Poor
+								{ indexes: [0, 9], amounts: [0, 15] }, // Good
+								{ indexes: [10, 19], amounts: [16, 45] }, // Fair
+								{ indexes: [20, 29], amounts: [46, 120] }, // Moderate
+								{ indexes: [30, 39], amounts: [121, 195] }, // Poor
+								{ indexes: [40, 49], amounts: [196, 270] }, // Very Poor
+								{ indexes: [50, 60], amounts: [271, Number.POSITIVE_INFINITY] }, // Extremely Poor
 							],
 						},
 					},
@@ -571,15 +533,15 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [1, 1], amounts: [0, 60] },
-							max: { indexes: [5, 5], amounts: [161, 180] },
+							min: { indexes: [0, 9], amounts: [0, 60] },
+							max: { indexes: [40, 49], amounts: [161, 180] },
 							value: [
-								{ indexes: [1, 1], amounts: [0, 60] }, // Good
-								{ indexes: [2, 2], amounts: [61, 100] }, // Fair
-								{ indexes: [3, 3], amounts: [101, 120] }, // Moderate
-								{ indexes: [4, 4], amounts: [121, 160] }, // Poor
-								{ indexes: [5, 5], amounts: [161, 180] }, // Very Poor
-								{ indexes: [6, 6], amounts: [181, Number.POSITIVE_INFINITY] }, // Extremely Poor
+								{ indexes: [0, 9], amounts: [0, 60] }, // Good
+								{ indexes: [10, 19], amounts: [61, 100] }, // Fair
+								{ indexes: [20, 29], amounts: [101, 120] }, // Moderate
+								{ indexes: [30, 39], amounts: [121, 160] }, // Poor
+								{ indexes: [40, 49], amounts: [161, 180] }, // Very Poor
+								{ indexes: [50, 60], amounts: [181, Number.POSITIVE_INFINITY] }, // Extremely Poor
 							],
 						},
 					},
@@ -587,15 +549,15 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [1, 1], amounts: [0, 10] },
-							max: { indexes: [5, 5], amounts: [101, 150] },
+							min: { indexes: [0, 9], amounts: [0, 10] },
+							max: { indexes: [40, 49], amounts: [101, 150] },
 							value: [
-								{ indexes: [1, 1], amounts: [0, 10] }, // Good
-								{ indexes: [2, 2], amounts: [11, 25] }, // Fair
-								{ indexes: [3, 3], amounts: [26, 60] }, // Moderate
-								{ indexes: [4, 4], amounts: [61, 100] }, // Poor
-								{ indexes: [5, 5], amounts: [101, 150] }, // Very Poor
-								{ indexes: [6, 6], amounts: [151, Number.POSITIVE_INFINITY] }, // Extremely Poor
+								{ indexes: [0, 9], amounts: [0, 10] }, // Good
+								{ indexes: [10, 19], amounts: [11, 25] }, // Fair
+								{ indexes: [20, 29], amounts: [26, 60] }, // Moderate
+								{ indexes: [30, 39], amounts: [61, 100] }, // Poor
+								{ indexes: [40, 49], amounts: [101, 150] }, // Very Poor
+								{ indexes: [50, 60], amounts: [151, Number.POSITIVE_INFINITY] }, // Extremely Poor
 							],
 						},
 					},
@@ -603,15 +565,15 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [1, 1], amounts: [0, 20] },
-							max: { indexes: [5, 5], amounts: [191, 275] },
+							min: { indexes: [0, 9], amounts: [0, 20] },
+							max: { indexes: [40, 49], amounts: [191, 275] },
 							value: [
-								{ indexes: [1, 1], amounts: [0, 20] }, // Good
-								{ indexes: [2, 2], amounts: [21, 40] }, // Fair
-								{ indexes: [3, 3], amounts: [41, 125] }, // Moderate
-								{ indexes: [4, 4], amounts: [126, 190] }, // Poor
-								{ indexes: [5, 5], amounts: [191, 275] }, // Very Poor
-								{ indexes: [6, 6], amounts: [276, Number.MAX_VALUE] }, // Extremely Poor
+								{ indexes: [0, 9], amounts: [0, 20] }, // Good
+								{ indexes: [10, 19], amounts: [21, 40] }, // Fair
+								{ indexes: [20, 29], amounts: [41, 125] }, // Moderate
+								{ indexes: [30, 39], amounts: [126, 190] }, // Poor
+								{ indexes: [40, 49], amounts: [191, 275] }, // Very Poor
+								{ indexes: [50, 60], amounts: [276, Number.MAX_VALUE] }, // Extremely Poor
 							],
 						},
 					},
