@@ -293,7 +293,7 @@ export default class AirQuality {
 		return primaryPollutants;
 	};
 
-	static #PollutantsToInstantCastLikeIndexes(pollutants, scaleForPollutants) {
+	static #PollutantsToIndexes(pollutants, scaleForPollutants) {
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
 
 		return pollutants.map(pollutant => {
@@ -342,7 +342,7 @@ export default class AirQuality {
 		}
 
 		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
-		const indexes = AirQuality.#PollutantsToInstantCastLikeIndexes(pollutants, scale.pollutants);
+		const indexes = AirQuality.#PollutantsToIndexes(pollutants, scale.pollutants);
 		Console.debug(`indexes: ${JSON.stringify(indexes)}`);
 
 		const primaryPollutant = indexes.reduce((previous, current) => (previous.index > current.index ? previous : current));
@@ -368,7 +368,7 @@ export default class AirQuality {
 			return {};
 		}
 
-		const indexes = AirQuality.#PollutantsToInstantCastLikeIndexes(pollutants, scale.pollutants);
+		const indexes = AirQuality.#PollutantsToIndexes(pollutants, scale.pollutants);
 		Console.debug(`indexes: ${JSON.stringify(indexes)}`);
 
 		const primaryPollutant = AirQuality.FindPrimaryPollutants(indexes)[0];
