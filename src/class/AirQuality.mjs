@@ -329,7 +329,7 @@ export default class AirQuality {
 			const [minIndex, maxIndex] = indexes;
 			const [minAmount, maxAmount] = amounts;
 
-			return { pollutantType, index: Math.round(((maxIndex - minIndex) / (maxAmount - minAmount)) * (AirQuality.#RoundByPrecision(amount, minAmount) - minAmount) + minIndex) };
+			return { pollutantType, index: ((maxIndex - minIndex) / (maxAmount - minAmount)) * (AirQuality.#RoundByPrecision(amount, minAmount) - minAmount) + minIndex };
 		});
 	}
 
@@ -348,7 +348,7 @@ export default class AirQuality {
 
 		Console.info("✅ PollutantsToAirQuality", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`, `categoryIndex: ${categoryIndex}`);
 		return {
-			index: primaryPollutant.index,
+			index: Math.round(primaryPollutant.index),
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
 			categoryIndex,
 			pollutants,
