@@ -275,7 +275,7 @@ export default class AirQuality {
 			const [minIndex, maxIndex] = indexes;
 			const [minAmount, maxAmount] = amounts;
 
-			return { pollutantType, index: ((maxIndex - minIndex) / (maxAmount - minAmount)) * (AirQuality.#RoundByPrecision(amount, minAmount) - minAmount) + minIndex };
+			return { pollutantType, index: ((maxIndex - minIndex) / (maxAmount - minAmount)) * (AirQuality.#RoundByPrecision(amount, minAmount) - minAmount) + (amount > maxAmount ? maxIndex : minIndex) };
 		});
 	}
 
