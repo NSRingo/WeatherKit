@@ -19,6 +19,35 @@ function fetchCSV(url) {
 }
 
 // Code by Claude
+// 解析CSV行，正确处理带引号的字段（如 "Taiwan, Province of China"）
+function parseCSVLine(line) {
+	const values = [];
+	let current = "";
+	let inQuotes = false;
+
+	for (let i = 0; i < line.length; i++) {
+		const char = line[i];
+
+		if (char === '"') {
+			// 处理双引号转义 ("" -> ")
+			if (inQuotes && line[i + 1] === '"') {
+				current += '"';
+				i++; // 跳过下一个引号
+			} else {
+				inQuotes = !inQuotes;
+			}
+		} else if (char === "," && !inQuotes) {
+			values.push(current);
+			current = "";
+		} else {
+			current += char;
+		}
+	}
+	values.push(current); // 添加最后一个字段
+
+	return values;
+}
+
 // 解析CSV文件
 function parseCSV(csvText) {
 	const lines = csvText.trim().split("\n");
@@ -27,7 +56,7 @@ function parseCSV(csvText) {
 	// 跳过版本行和表头
 	for (let i = 2; i < lines.length; i++) {
 		const line = lines[i];
-		const values = line.split(",");
+		const values = parseCSVLine(line);
 
 		if (values.length >= 14) {
 			const location = {
