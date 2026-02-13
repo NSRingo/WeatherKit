@@ -15,7 +15,7 @@ export default {
 			},
 			AirQuality: {
 				Current: {
-					Fill: "CN|HK|MO|TW",
+					Fill: "CN|HK|MO",
 					Pollutants: {
 						Provider: "ColorfulClouds",
 						Units: {
@@ -30,7 +30,7 @@ export default {
 					},
 				},
 				Comparison: {
-					Fill: "CN|HK|MO|TW",
+					Fill: "CN|HK|MO",
 					ReplaceWhenCurrentChange: false,
 					Yesterday: {
 						PollutantProvider: "QWeather",

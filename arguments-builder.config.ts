@@ -99,7 +99,7 @@ export default defineConfig({
 		{
 			key: "AirQuality.Current.Fill",
 			name: "[空气质量 - 今日] 填补地区",
-			defaultValue: "CN|HK|MO|TW",
+			defaultValue: "CN|HK|MO",
 			type: "string",
 			description: "正则表达式，只填补指定地区的今日空气质量数据。",
 		},
@@ -195,7 +195,7 @@ export default defineConfig({
 		{
 			key: "AirQuality.Comparison.Fill",
 			name: "[空气质量 - 对比昨日] 填补地区",
-			defaultValue: "CN|HK|MO|TW",
+			defaultValue: "CN|HK|MO",
 			type: "string",
 			description: "正则表达式，只填补指定地区的对比昨日数据。",
 		},

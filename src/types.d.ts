@@ -88,7 +88,7 @@ export interface Settings {
              *
              * 正则表达式，只填补指定地区的今日空气质量数据。
              *
-             * @defaultValue "CN|HK|MO|TW"
+             * @defaultValue "CN|HK|MO"
              */
             Fill?: string;
             Pollutants?: {
@@ -213,7 +213,7 @@ export interface Settings {
              *
              * 正则表达式，只填补指定地区的对比昨日数据。
              *
-             * @defaultValue "CN|HK|MO|TW"
+             * @defaultValue "CN|HK|MO"
              */
             Fill?: string;
             /**
