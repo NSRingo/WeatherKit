@@ -48,13 +48,12 @@ export interface Settings {
          * @remarks
          *
          * Possible values:
-         * - `'WeatherKit'` - WeatherKit (不进行替换)
          * - `'ColorfulClouds'` - 彩云天气
          * - `'QWeather'` - 和风天气
          *
-         * @defaultValue "WeatherKit"
+         * @defaultValue "ColorfulClouds"
          */
-        Provider?: 'WeatherKit' | 'ColorfulClouds' | 'QWeather';
+        Provider?: 'ColorfulClouds' | 'QWeather';
     };
     NextHour?: {
         /**
@@ -73,13 +72,12 @@ export interface Settings {
          * @remarks
          *
          * Possible values:
-         * - `'WeatherKit'` - WeatherKit (不进行填补)
          * - `'ColorfulClouds'` - 彩云天气
          * - `'QWeather'` - 和风天气
          *
          * @defaultValue "ColorfulClouds"
          */
-        Provider?: 'WeatherKit' | 'ColorfulClouds' | 'QWeather';
+        Provider?: 'ColorfulClouds' | 'QWeather';
     };
     AirQuality?: {
         Current?: {

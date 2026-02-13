@@ -7,7 +7,7 @@ export default {
 			},
 			Weather: {
 				Replace: "CN",
-				Provider: "WeatherKit",
+				Provider: "ColorfulClouds",
 			},
 			NextHour: {
 				Fill: ".*",

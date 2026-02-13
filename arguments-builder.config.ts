@@ -68,10 +68,9 @@ export default defineConfig({
 		{
 			key: "Weather.Provider",
 			name: "[天气] 数据源",
-			defaultValue: "WeatherKit",
+			defaultValue: "ColorfulClouds",
 			type: "string",
 			options: [
-				{ key: "WeatherKit", label: "WeatherKit (不进行替换)" },
 				{ key: "ColorfulClouds", label: "彩云天气" },
 				{ key: "QWeather", label: "和风天气" },
 			],
@@ -90,7 +89,6 @@ export default defineConfig({
 			defaultValue: "ColorfulClouds",
 			type: "string",
 			options: [
-				{ key: "WeatherKit", label: "WeatherKit (不进行填补)" },
 				{ key: "ColorfulClouds", label: "彩云天气" },
 				{ key: "QWeather", label: "和风天气" },
 			],
