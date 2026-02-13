@@ -73,9 +73,12 @@ function toGridIndex(locations, gridSize = 1.0) {
 		grid[key].push({
 			id: loc.id,
 			name: loc.nameZH,
+			iso: loc.iso,
+			country: loc.countryZH,
 			province: loc.provinceZH,
-			lat: loc.lat,
-			lng: loc.lng,
+			city: loc.cityZH,
+			latitude: loc.lat,
+			longitude: loc.lng,
 		});
 	});
 
