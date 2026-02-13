@@ -57,7 +57,7 @@ export default class QWeather {
 			Console.info("⚠️ GetLocationsGrid", "Cache not found or stale, fetching...");
 			const response = await fetch({
 				headers: locationsGrid?.etag ? { "If-None-Match": locationsGrid?.etag } : undefined,
-				url: "https://raw.githubusercontent.com/NSRingo/WeatherKit/refs/heads/main/data/qweather-china-city-list-grid.json",
+				url: "https://raw.githubusercontent.com/NSRingo/QWeather-Location-Grid/refs/heads/main/data/qweather-china-city-list-grid.json",
 			});
 
 			if (response.status === 304) {
