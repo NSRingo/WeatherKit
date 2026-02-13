@@ -35,7 +35,7 @@ export default defineConfig({
 		{
 			key: "DataSets.Replace",
 			name: "[数据集] 修改地区",
-			defaultValue: "CN|HK|MO|TW",
+			defaultValue: "CN|HK|MO|TW|IT|LT|MT|FR|SK|NO|BY|IS|CZ|SI|DE|ES|UA|DK|PL|FI|SE|HR|RU|RO|PT|EE|RS|AT|GR|HU|FJ|GU|MH|NC|TR|BH|SA|ID|IR|SG|OM|PH|IN|KH|CY|MY|VN|KW|TH|KR|KP|CA|BS|KY|MX|PA|MQ|CU|BM|PR|CW|GP|NI|BR|GF|CO|GY|PY|AR",
 			type: "string",
 			description: "正则表达式，只修改指定地区的数据集。",
 		},
@@ -79,7 +79,7 @@ export default defineConfig({
 		{
 			key: "NextHour.Fill",
 			name: "[未来一小时降水强度] 填补地区",
-			defaultValue: ".*",
+			defaultValue: "CN|HK|MO|TW|IT|LT|MT|FR|SK|NO|BY|IS|CZ|SI|DE|ES|UA|DK|PL|FI|SE|HR|RU|RO|PT|EE|RS|AT|GR|HU|FJ|GU|MH|NC|TR|BH|SA|ID|IR|SG|OM|PH|IN|KH|CY|MY|VN|KW|TH|KR|KP|CA|BS|KY|MX|PA|MQ|CU|BM|PR|CW|GP|NI|BR|GF|CO|GY|PY|AR",
 			type: "string",
 			description: "正则表达式，只填补指定地区的未来一小时降水强度。",
 		},
