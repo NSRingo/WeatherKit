@@ -1,21 +1,45 @@
 export default {
 	WeatherKit: {
 		Settings: {
-			DataSets: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
+			DataSets: {
+				Replace: "CN|HK|MO|TW|IT|LT|MT|FR|SK|NO|BY|IS|CZ|SI|DE|ES|UA|DK|PL|FI|SE|HR|RU|RO|PT|EE|RS|AT|GR|HU|FJ|GU|MH|NC|TR|BH|SA|ID|IR|SG|OM|PH|IN|KH|CY|MY|VN|KW|TH|KR|KP|CA|BS|KY|MX|PA|MQ|CU|BM|PR|CW|GP|NI|BR|GF|CO|GY|PY|AR",
+				Value: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
+			},
 			Weather: {
-				Provider: "WeatherKit",
+				Replace: "CN",
+				Provider: "ColorfulClouds",
 			},
 			NextHour: {
+				Fill: "CN|HK|MO|TW|IT|LT|MT|FR|SK|NO|BY|IS|CZ|SI|DE|ES|UA|DK|PL|FI|SE|HR|RU|RO|PT|EE|RS|AT|GR|HU|FJ|GU|MH|NC|TR|BH|SA|ID|IR|SG|OM|PH|IN|KH|CY|MY|VN|KW|TH|KR|KP|CA|BS|KY|MX|PA|MQ|CU|BM|PR|CW|GP|NI|BR|GF|CO|GY|PY|AR",
 				Provider: "ColorfulClouds",
 			},
-			AQI: {
-				Provider: "ColorfulClouds",
-				ReplaceProviders: ["QWeather"],
-				ComparisonProvider: "Auto",
-				Local: {
-					Scale: "EPA_NowCast",
-					ReplaceScales: ["HJ6332012"],
-					ConvertUnits: false,
+			AirQuality: {
+				Current: {
+					Fill: "CN|HK|MO",
+					Pollutants: {
+						Provider: "ColorfulClouds",
+						Units: {
+							Replace: [],
+							Mode: "Scale",
+						},
+					},
+					Index: {
+						Replace: ["HJ6332012"],
+						Provider: "iRingo",
+						ForceCNPrimaryPollutants: true,
+					},
+				},
+				Comparison: {
+					Fill: "CN|HK|MO",
+					ReplaceWhenCurrentChange: false,
+					Yesterday: {
+						PollutantProvider: "QWeather",
+						IndexProvider: "ColorfulCloudsUS",
+					},
+				},
+				iRingo: {
+					Algorithm: "UBA",
+					AllowOverRange: true,
 				},
 			},
 			API: {
