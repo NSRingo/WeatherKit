@@ -1,4 +1,4 @@
-import { $app, Console, done, Lodash as _ } from "@nsnanocat/util";
+import { $app, Console, done, Lodash as _, Storage } from "@nsnanocat/util";
 import database from "./function/database.mjs";
 import setENV from "./function/setENV.mjs";
 import * as flatbuffers from "flatbuffers";
@@ -108,50 +108,100 @@ Console.info(`FORMAT: ${FORMAT}`);
 									qWeather: new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host),
 									waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
 								};
+								const country = url.searchParams.get("country");
+
+								const weatherTargets = new RegExp(Settings?.Weather?.Replace || "(?!)");
+								const nextHourTargets = new RegExp(Settings?.NextHour?.Fill || "(?!)");
+
+								if (weatherTargets.test(country)) {
+									if (url.searchParams.get("dataSets").includes("currentWeather")) {
+										// Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
+										if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+											matchEnum.weatherCondition();
+											matchEnum.pressureTrend();
+										}
+										body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
+										if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
+									}
+									if (url.searchParams.get("dataSets").includes("forecastDaily")) {
+										//Console.debug(`body.forecastDaily: ${JSON.stringify(body?.forecastDaily, null, 2)}`);
+										body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
+										if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
+									}
+									if (url.searchParams.get("dataSets").includes("forecastHourly")) {
+										//Console.debug(`body.forecastHourly: ${JSON.stringify(body?.forecastHourly, null, 2)}`);
+										body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
+										if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
+									}
+								}
+
+								if (nextHourTargets.test(country)) {
+									if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
+										Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
+										if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+											matchEnum.conditionType();
+											matchEnum.forecastToken();
+										}
+										if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
+										if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
+									}
+								}
+
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
 									//Console.debug(`body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`);
 									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
 										matchEnum.airQuality();
 									}
-									// FixPollutantUnits
-									body.airQuality = AirQuality.FixUnits(body.airQuality);
-									// InjectAirQuality
-									if (Settings?.AQI?.ReplaceProviders?.includes(body?.airQuality?.metadata?.providerName)) body.airQuality = await InjectAirQuality(body.airQuality, Settings, enviroments);
-									// CompareAirQuality
-									if (body?.airQuality) body.airQuality = await CompareAirQuality(body.airQuality, Settings, enviroments);
-									// Convert units that does not supported in Apple Weather
-									if (body?.airQuality?.pollutants) body.airQuality.pollutants = AirQuality.ConvertUnits(body.airQuality.pollutants);
-									// ProviderLogo
-									if (body?.airQuality?.metadata?.providerName && !body?.airQuality?.metadata?.providerLogo) body.airQuality.metadata.providerLogo = providerNameToLogo(body?.airQuality?.metadata?.providerName, "v2");
-								}
-								if (url.searchParams.get("dataSets").includes("currentWeather")) {
-									// Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
-									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
-										matchEnum.weatherCondition();
-										matchEnum.pressureTrend();
+
+									const isPollutantEmpty = !Array.isArray(body?.airQuality?.pollutants) || body.airQuality.pollutants.length === 0;
+									if (!isPollutantEmpty) {
+										AirQuality.FixQWeatherCO(body.airQuality);
 									}
-									body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
-									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
+
+									// injectedPollutants
+									const isCurrentFill = new RegExp(Settings?.AirQuality?.Current?.Fill || "(?!)").test(country);
+									const needPollutants = isCurrentFill && isPollutantEmpty;
+									const injectedPollutants = needPollutants ? await InjectPollutants(Settings, enviroments) : body.airQuality;
+
+									// InjectIndex
+									const replaceScales = getArrayFromSetting(Settings?.AirQuality?.Current?.Index?.Replace);
+									const needInjectIndex = needPollutants || replaceScales.includes(AirQuality.GetNameFromScale(body.airQuality?.scale));
+									const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
+
+									// injectedComparison
+									const isComparisonFill = new RegExp(Settings?.AirQuality?.Comparison?.Fill || "(?!)").test(country);
+									const weatherKitComparison = body?.airQuality?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
+									const previousDayComparison = needInjectIndex && Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange ? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : weatherKitComparison;
+									const needInjectComparison = isComparisonFill && previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
+									const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
+									const injectedComparison = needInjectComparison ? await InjectComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : { ...injectedIndex, previousDayComparison: weatherKitComparison };
+
+									// metadata
+									const weatherKitMetadata = body.airQuality?.metadata;
+									const pollutantMetadata = injectedPollutants?.metadata;
+									const indexMetadata = injectedIndex?.metadata;
+									const comparisonMetadata = injectedComparison?.metadata;
+									const providers = [
+										...(weatherKitMetadata?.providerName && !weatherKitMetadata.temporarilyUnavailable ? [weatherKitMetadata.providerName] : []),
+										...(needPollutants && pollutantMetadata?.providerName && !pollutantMetadata.temporarilyUnavailable ? [`污染物：${pollutantMetadata.providerName}`] : []),
+										...(needInjectIndex && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${indexMetadata.providerName}`] : []),
+										...(needInjectComparison && comparisonMetadata?.providerName && !comparisonMetadata.temporarilyUnavailable ? [`对比昨日：${comparisonMetadata.providerName}`] : []),
+									];
+
+									const firstValidProvider = weatherKitMetadata?.providerName || pollutantMetadata?.providerName || indexMetadata?.providerName || comparisonMetadata?.providerName;
+									body.airQuality = {
+										...body.airQuality,
+										...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
+										metadata: {
+											...(body.airQuality?.metadata ? body.airQuality.metadata : injectedPollutants?.metadata),
+											providerName: providers.join("、"),
+											...(firstValidProvider ? { providerLogo: providerNameToLogo(firstValidProvider, "v2") } : {}),
+										},
+										pollutants: ConvertPollutants(body.airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings),
+										previousDayComparison: injectedComparison?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
+									};
 								}
-								if (url.searchParams.get("dataSets").includes("forecastDaily")) {
-									//Console.debug(`body.forecastDaily: ${JSON.stringify(body?.forecastDaily, null, 2)}`);
-									body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
-									if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
-								}
-								if (url.searchParams.get("dataSets").includes("forecastHourly")) {
-									//Console.debug(`body.forecastHourly: ${JSON.stringify(body?.forecastHourly, null, 2)}`);
-									body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
-									if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
-								}
-								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
-									Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
-									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
-										matchEnum.conditionType();
-										matchEnum.forecastToken();
-									}
-									if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
-									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
-								}
+
 								if (url.searchParams.get("dataSets").includes("weatherAlerts")) {
 									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
 										matchEnum.severity();
@@ -204,6 +254,84 @@ Console.info(`FORMAT: ${FORMAT}`);
 	.catch(e => Console.error(e))
 	.finally(() => done($response));
 
+// BoxJS returns string if only one selected
+function getArrayFromSetting(setting) {
+	if (!setting) {
+		return [];
+	} else if (Array.isArray(setting)) {
+		return setting;
+	} else {
+		return [setting];
+	}
+}
+
+async function InjectPollutants(Settings, enviroments) {
+	Console.info("☑️ InjectPollutants");
+	Console.info("✅ InjectPollutants");
+	switch (Settings?.AirQuality?.Current?.Pollutants?.Provider) {
+		case "QWeather": {
+			return await enviroments.qWeather.CurrentAirQuality();
+		}
+		case "ColorfulClouds":
+		default: {
+			return await enviroments.colorfulClouds.CurrentAirQuality();
+		}
+	}
+}
+
+function getStpConversionFactors(airQuality) {
+	const { US } = AirQuality.Config.STP_ConversionFactors;
+	switch (airQuality?.metadata?.providerName) {
+		case "和风天气": {
+			// TODO: Is US the only country to use ppb in QWeather?
+			// const epaNowCast = AirQuality.Config.Scales.EPA_NowCast;
+			// const currentScaleName = AirQuality.GetNameFromScale(airQuality.scale);
+			// if (currentScaleName === epaNowCast.weatherKitScale.name) {
+			// 	return US;
+			// } else {
+			// 	return EU;
+			// }
+
+			return US;
+		}
+		// ColorfulClouds will not returns ppb
+		// case "彩云天气":
+		// BreeezoMeter is using 25 degree Celsius STP for EU also
+		case "BreezoMeter":
+		default: {
+			return US;
+		}
+	}
+}
+
+function GetAirQualityFromPollutants(algorithm, forcePrimaryPollutant, allowOverRange, airQuality) {
+	const { EU_EAQI, WAQI_InstantCast_US, WAQI_InstantCast_CN, WAQI_InstantCast_CN_25_DRAFT, UBA } = AirQuality.Config.Scales;
+	const stpConversionFactors = getStpConversionFactors(airQuality);
+	switch (algorithm) {
+		case "EU_EAQI": {
+			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, EU_EAQI.pollutants);
+			return AirQuality.PollutantsToEAQI(pollutants);
+		}
+		case "WAQI_InstantCast_US": {
+			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_US.pollutants);
+			return AirQuality.PollutantsToInstantCastUS(pollutants, allowOverRange);
+		}
+		case "WAQI_InstantCast_CN": {
+			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_CN.pollutants);
+			return AirQuality.PollutantsToInstantCastCN12(pollutants, forcePrimaryPollutant, allowOverRange);
+		}
+		case "WAQI_InstantCast_CN_25_DRAFT": {
+			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_CN_25_DRAFT.pollutants);
+			return AirQuality.PollutantsToInstantCastCN25(pollutants, forcePrimaryPollutant, allowOverRange);
+		}
+		case "UBA":
+		default: {
+			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, UBA.pollutants);
+			return AirQuality.PollutantsToUBA(pollutants);
+		}
+	}
+}
+
 /**
  * 注入空气质量数据
  * @param {any} airQuality - 空气质量数据对象
@@ -211,46 +339,312 @@ Console.info(`FORMAT: ${FORMAT}`);
  * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 注入后的空气质量数据
  */
-async function InjectAirQuality(airQuality, Settings, enviroments) {
-	Console.info("☑️ InjectAirQuality");
-	let newAirQuality;
-	switch (Settings?.AQI?.Provider) {
-		case "WeatherKit":
-			break;
+async function InjectIndex(airQuality, Settings, enviroments) {
+	Console.info("☑️ InjectIndex");
+	switch (Settings?.AirQuality?.Current?.Index?.Provider) {
 		case "QWeather": {
-			newAirQuality = await enviroments.qWeather.AirNow();
-			//newAirQuality = await enviroments.qWeather.AirQualityCurrent();
-			break;
+			return await enviroments.qWeather.CurrentAirQuality();
 		}
-		case "ColorfulClouds":
+		case "ColorfulCloudsUS":
+		case "ColorfulCloudsCN": {
+			return await enviroments.colorfulClouds.CurrentAirQuality(Settings.AirQuality.Current.Index.Provider === "ColorfulCloudsUS");
+		}
+		case "iRingo":
 		default: {
-			newAirQuality = (await enviroments.colorfulClouds.RealTime()).airQuality;
-			break;
+			return GetAirQualityFromPollutants(Settings.AirQuality?.iRingo?.Algorithm, Settings.AirQuality.Current.Index?.ForceCNPrimaryPollutants, Settings.AirQuality?.iRingo?.AllowOverRange, airQuality);
 		}
+		// TODO
 		case "WAQI": {
 			if (Settings?.API?.WAQI?.Token) {
-				newAirQuality = await enviroments.waqi.AQI2();
+				return await enviroments.waqi.AQI2();
 			} else {
 				const Nearest = await enviroments.waqi.Nearest();
 				const Token = await enviroments.waqi.Token(Nearest?.metadata?.stationId);
 				//Caches.WAQI.set(stationId, Token);
-				newAirQuality = await enviroments.waqi.AQI(Nearest?.metadata?.stationId, Token);
-				newAirQuality.metadata = { ...Nearest?.metadata, ...newAirQuality?.metadata };
-				newAirQuality = { ...Nearest, ...newAirQuality };
+				const aqi = await enviroments.waqi.AQI(Nearest?.metadata?.stationId, Token);
+
+				return {
+					metadata: { ...Nearest?.metadata, ...aqi?.metadata },
+					...Nearest,
+					...aqi,
+				};
 			}
-			break;
 		}
 	}
-	if (newAirQuality?.metadata) {
-		newAirQuality.metadata = { ...airQuality?.metadata, ...newAirQuality.metadata };
-		airQuality = { ...airQuality, ...newAirQuality };
-		if (!airQuality?.pollutants) airQuality.pollutants = [];
-		//Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
+}
+
+async function InjectComparison(airQuality, currentIndexProvider, Settings, Caches, enviroments) {
+	Console.info("☑️ InjectComparison");
+	const { UNKNOWN } = AirQuality.Config.CompareCategoryIndexes;
+
+	/**
+	 * HJ 633—2012
+	 * [环境空气质量指数（AQI）技术规定（试行）_中华人民共和国生态环境部]{@link https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/jcffbz/201203/t20120302_224166.shtml}
+	 */
+	const isHJ6332012 = (currentIndexProvider, currentScale, Settings) => {
+		switch (currentIndexProvider) {
+			case "iRingo":
+				return Settings?.AirQuality?.iRingo?.Algorithm === "WAQI_InstantCast_CN";
+			case "QWeather":
+			case "ColorfulCloudsCN": {
+				return true;
+			}
+			case "WeatherKit": {
+				return AirQuality.GetNameFromScale(currentScale) === AirQuality.Config.Scales.HJ6332012.weatherKitScale.name;
+			}
+			default: {
+				return false;
+			}
+		}
+	};
+	/**
+	 * EPA 454/B-18-007
+	 * [Technical Assistance Document for the Reporting of Daily Air Quality – the Air Quality Index (AQI)]{@link https://www.airnow.gov/sites/default/files/2020-05/aqi-technical-assistance-document-sept2018.pdf}
+	 */
+	const isEPA454_B18007 = currentIndexProvider => {
+		switch (currentIndexProvider) {
+			case "WAQI":
+			case "ColorfulCloudsUS": {
+				return true;
+			}
+			default: {
+				return false;
+			}
+		}
+	};
+	const chooseAlogrithm = (currentIndexProvider, airQuality, Settings) => {
+		switch (currentIndexProvider) {
+			case "iRingo":
+				return Settings?.AirQuality?.iRingo?.Algorithm;
+			case "QWeather":
+			case "ColorfulCloudsCN": {
+				return "WAQI_InstantCast_CN";
+			}
+			case "WeatherKit": {
+				const currentScale = AirQuality.GetNameFromScale(airQuality?.scale);
+				const scales = AirQuality.Config.Scales;
+				if (currentScale === scales.HJ6332012.weatherKitScale.name) {
+					return "WAQI_InstantCast_CN";
+				} else if (currentScale === scales.EPA_NowCast.weatherKitScale.name) {
+					return "WAQI_InstantCast_US";
+				} else {
+					const supportedScales = [scales.EU_EAQI.weatherKitScale.name, scales.UBA.weatherKitScale.name];
+					if (supportedScales.includes(currentScale)) {
+						return currentScale;
+					}
+
+					return "";
+				}
+			}
+			default: {
+				return "";
+			}
+		}
+	};
+
+	const colorfulCloudsComparison = async (useUsa, useCurrent, currentCategoryIndex) => {
+		Console.info("☑️ colorfulCloudsComparison", `useCurrent: ${useCurrent}`, `currentCategoryIndex: ${currentCategoryIndex}`);
+		const yesterdayAirQuality = await enviroments.colorfulClouds.YesterdayAirQuality(useUsa);
+
+		const getMetadata = (temporarilyUnavailable = false) => ({
+			...yesterdayAirQuality.metadata,
+			providerName: `指数：${yesterdayAirQuality.metadata.providerName}（${useUsa ? "美标，18年9月版" : "国标"}）`,
+			temporarilyUnavailable,
+		});
+
+		Console.info("✅ colorfulCloudsComparison");
+		if (!yesterdayAirQuality.metadata.temporarilyUnavailable) {
+			if (useCurrent) {
+				return {
+					...yesterdayAirQuality,
+					metadata: getMetadata(false),
+					previousDayComparison: AirQuality.CompareCategoryIndexes(currentCategoryIndex, yesterdayAirQuality.categoryIndex),
+				};
+			} else {
+				const colorfulCloudsCurrent = await enviroments.colorfulClouds.CurrentAirQuality(useUsa);
+				if (!colorfulCloudsCurrent.metadata.temporarilyUnavailable) {
+					return {
+						...yesterdayAirQuality,
+						metadata: getMetadata(false),
+						previousDayComparison: AirQuality.CompareCategoryIndexes(colorfulCloudsCurrent.categoryIndex, yesterdayAirQuality.categoryIndex),
+					};
+				}
+			}
+		}
+
+		return {
+			...yesterdayAirQuality,
+			metadata: getMetadata(true),
+			previousDayComparison: UNKNOWN,
+		};
+	};
+	const qweatherComparison = async (useCurrent, currentCategoryIndex, pollutantsToAirQuality) => {
+		Console.info("☑️ qweatherComparison", `useCurrent: ${useCurrent}`, `currentCategoryIndex: ${currentCategoryIndex}`);
+		const setQWeatherCache = qweatherCache => {
+			Caches.qweather = qweatherCache;
+			Storage.setItem("@iRingo.WeatherKit.Caches", { ...Caches, qweather: qweatherCache });
+		};
+
+		const locationsGrid = await QWeather.GetLocationsGrid(Caches?.qweather, setQWeatherCache);
+		const { latitude, longitude } = enviroments.qWeather;
+		const locationInfo = QWeather.GetLocationInfo(locationsGrid, latitude, longitude);
+
+		const yesterdayQWeather = await enviroments.qWeather.YesterdayAirQuality(locationInfo);
+
+		const getMetadata = (indexProvider, temporarilyUnavailable = false) => ({
+			...yesterdayQWeather.metadata,
+			providerName: `污染物：${yesterdayQWeather.metadata.providerName}，指数：${indexProvider}`,
+			temporarilyUnavailable,
+		});
+
+		Console.info("✅ qweatherComparison");
+		if (!yesterdayQWeather.metadata.temporarilyUnavailable) {
+			const yesterdayAirQuality = pollutantsToAirQuality ? pollutantsToAirQuality(yesterdayQWeather) : { ...yesterdayQWeather, metadata: { ...yesterdayQWeather.metadata, providerName: `${yesterdayQWeather.metadata.providerName}（国标）` } };
+			if (useCurrent) {
+				return {
+					...yesterdayQWeather,
+					metadata: getMetadata(yesterdayAirQuality.metadata.providerName, false),
+					previousDayComparison: AirQuality.CompareCategoryIndexes(currentCategoryIndex, yesterdayAirQuality.categoryIndex),
+				};
+			} else {
+				const qweatherCurrent = await enviroments.qWeather.CurrentAirQuality(locationInfo);
+				if (!qweatherCurrent.metadata.temporarilyUnavailable) {
+					return {
+						...yesterdayQWeather,
+						metadata: getMetadata(yesterdayAirQuality.metadata.providerName, false),
+						previousDayComparison: AirQuality.CompareCategoryIndexes(qweatherCurrent.categoryIndex, yesterdayAirQuality.categoryIndex),
+					};
+				}
+			}
+		}
+
+		return {
+			...yesterdayQWeather,
+			metadata: getMetadata(yesterdayQWeather.metadata.providerName, true),
+			previousDayComparison: UNKNOWN,
+		};
+	};
+
+	Console.info("✅ InjectComparison");
+	switch (Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider) {
+		case "iRingo": {
+			const algorithm = chooseAlogrithm(Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider, airQuality, Settings);
+
+			if (algorithm !== "") {
+				switch (Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider) {
+					case "QWeather": {
+						return await qweatherComparison(true, airQuality?.categoryIndex, airQuality => GetAirQualityFromPollutants(algorithm, Settings.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants, Settings.AirQuality?.iRingo?.AllowOverRange, airQuality));
+					}
+				}
+			}
+
+			Console.error("InjectComparison", "Unsupported scale of current air quality");
+			return { metadata: { providerName: "iRingo", temporarilyUnavailable: true }, previousDayComparison: UNKNOWN };
+		}
+		case "QWeather": {
+			return await qweatherComparison(isHJ6332012(currentIndexProvider, airQuality?.scale, Settings), airQuality?.categoryIndex);
+		}
+		case "ColorfulCloudsCN": {
+			// Use injected AQI or ColorfulClouds AQI depends on data source
+			return colorfulCloudsComparison(false, isHJ6332012(currentIndexProvider, airQuality?.scale, Settings), airQuality?.categoryIndex);
+		}
+		case "ColorfulCloudsUS":
+		default: {
+			return colorfulCloudsComparison(true, isEPA454_B18007(currentIndexProvider), airQuality?.categoryIndex);
+		}
 	}
-	// ConvertAirQuality 现在是必要操作
-	airQuality = AirQuality.ConvertScale(airQuality, Settings);
-	Console.info("✅ InjectAirQuality");
-	return airQuality;
+}
+
+function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) {
+	const unitsMode = Settings?.AirQuality?.Current?.Pollutants?.Units?.Mode || "Scale";
+	Console.info("☑️ ConvertPollutants", `mode: ${unitsMode}`);
+
+	const getScale = scaleName => {
+		const scales = AirQuality.Config.Scales;
+		switch (scaleName) {
+			case scales.HJ6332012.weatherKitScale.name:
+				return scales.WAQI_InstantCast_CN;
+			case scales.EPA_NowCast.weatherKitScale.name:
+				return scales.WAQI_InstantCast_US;
+			case scales.EU_EAQI.weatherKitScale.name:
+				return scales.EU_EAQI;
+			default:
+				return scales[scaleName];
+		}
+	};
+
+	const getScaleForPollutants = scaleForPollutants => {
+		const { ugm3, ppb } = AirQuality.Config.Units.WeatherKit;
+		const { US, EU } = AirQuality.Config.STP_ConversionFactors;
+		const ugm3Scale = {
+			OZONE: { units: ugm3, stpConversionFactor: -1 },
+			NO2: { units: ugm3, stpConversionFactor: -1 },
+			SO2: { units: ugm3, stpConversionFactor: -1 },
+			CO: { units: ugm3, stpConversionFactor: -1 },
+			C6H6: { units: ugm3, stpConversionFactor: -1 },
+			NH3: { units: ugm3, stpConversionFactor: -1 },
+			NO: { units: ugm3, stpConversionFactor: -1 },
+		};
+		const usPpbScale = {
+			OZONE: { units: ppb, stpConversionFactor: US.OZONE },
+			NO2: { units: ppb, stpConversionFactor: US.NO2 },
+			SO2: { units: ppb, stpConversionFactor: US.SO2 },
+			CO: { units: ppb, stpConversionFactor: US.CO },
+			C6H6: { units: ppb, stpConversionFactor: US.C6H6 },
+			NH3: { units: ppb, stpConversionFactor: US.NH3 },
+			NO: { units: ppb, stpConversionFactor: US.NO },
+		};
+		const euPpbScale = {
+			OZONE: { units: ppb, stpConversionFactor: EU.OZONE },
+			NO2: { units: ppb, stpConversionFactor: EU.NO2 },
+			SO2: { units: ppb, stpConversionFactor: EU.SO2 },
+			CO: { units: ppb, stpConversionFactor: EU.CO },
+			C6H6: { units: ppb, stpConversionFactor: EU.C6H6 },
+			NH3: { units: ppb, stpConversionFactor: EU.NH3 },
+			NO: { units: ppb, stpConversionFactor: EU.NO },
+		};
+
+		switch (unitsMode) {
+			case "ugm3":
+				return { ...ugm3Scale, ...scaleForPollutants };
+			case "EU_ppb":
+				return { ...euPpbScale, ...scaleForPollutants };
+			case "US_ppb":
+				return { ...usPpbScale, ...scaleForPollutants };
+			case "Force_ugm3":
+				return ugm3Scale;
+			case "Force_EU_ppb":
+				return euPpbScale;
+			case "Force_US_ppb":
+				return usPpbScale;
+			case "Scale":
+			default:
+				return scaleForPollutants;
+		}
+	};
+
+	const replaceUnits = getArrayFromSetting(Settings?.AirQuality?.Current?.Pollutants?.Units?.Replace);
+	const isIndexInjected = needInjectIndex && injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable;
+	const scaleName = AirQuality.GetNameFromScale(isIndexInjected ? injectedIndex?.scale : airQuality?.scale);
+
+	const pollutants = injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable ? injectedPollutants.pollutants : airQuality?.pollutants;
+	Console.info("✅ ConvertPollutants");
+	if (replaceUnits.includes(scaleName)) {
+		if (isIndexInjected && Settings?.AirQuality?.Current?.Index?.Provider === "iRingo" && unitsMode === "Scale") {
+			Console.info("ConvertPollutants", `Use pollutants from iRingo`);
+			return injectedIndex.pollutants;
+		} else {
+			const scale = getScale(scaleName);
+			if (!scale) {
+				Console.error("ConvertPollutants", `Unsupported scale name: ${scaleName}`);
+				return pollutants;
+			}
+
+			return AirQuality.ConvertUnits(pollutants, getStpConversionFactors(airQuality), getScaleForPollutants(scale.pollutants));
+		}
+	} else {
+		return pollutants;
+	}
 }
 
 /**
@@ -333,7 +727,7 @@ async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
 			break;
 		}
 		case "ColorfulClouds": {
-			newCurrentWeather = (await enviroments.colorfulClouds.RealTime()).currentWeather;
+			newCurrentWeather = await enviroments.colorfulClouds.CurrentWeather();
 			break;
 		}
 	}
@@ -403,7 +797,7 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
 			const hourlysteps = forecastHourly.hours?.length || 273;
 			const begin = forecastHourly.hours?.[0]?.forecastStart || undefined;
 			//Console.debug(`hourlysteps: ${hourlysteps}, begin: ${begin}`);
-			newForecastHourly = (await enviroments.colorfulClouds.Hourly(hourlysteps, begin)).forecastHourly;
+			newForecastHourly = await enviroments.colorfulClouds.ForecastHourly(hourlysteps, begin);
 			break;
 		}
 	}
