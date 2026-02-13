@@ -729,7 +729,7 @@ export default class QWeather {
 		const getPrimaryPollutant = (scaleCode, pollutants) => {
 			Console.info("☑️ getPrimaryPollutant", `scaleCode = ${scaleCode}`);
 			if (pollutants.length === 0) {
-				Console.warn("⚠️ getPrimaryPollutant", "pollutants is empty!");
+				Console.error("getPrimaryPollutant", "pollutants is empty!");
 				return "NOT_AVAILABLE";
 			}
 
@@ -741,13 +741,13 @@ export default class QWeather {
 					}
 				}
 
-				Console.warn("⚠️ getPrimaryPollutant", `No index of ${pollutantType} found for required scale`);
+				Console.error("getPrimaryPollutant", `No index of ${pollutantType} found for required scale`);
 				return { pollutantType, index: -1 };
 			});
 
 			const primaryPollutant = AirQuality.FindPrimaryPollutants(pollutantIndexes)[0];
 			if (primaryPollutant.index < 0) {
-				Console.warn("⚠️ getPrimaryPollutant", "No any valid sub-index");
+				Console.error("getPrimaryPollutant", "No any valid sub-index");
 				return "NOT_AVAILABLE";
 			}
 
@@ -755,7 +755,7 @@ export default class QWeather {
 			return primaryPollutant.pollutantType;
 		};
 
-		Console.info("☑️ AirQuality");
+		Console.info("☑️ CurrentAirQuality");
 		const airQualityCurrent = await this.#AirQualityCurrent();
 
 		const particularAirQuality = {
@@ -784,10 +784,10 @@ export default class QWeather {
 		const apiPrimaryPollutant = this.#Config.Pollutants[supportedIndex.primaryPollutant?.code] || "NOT_AVAILABLE";
 
 		if (!forcePrimaryPollutant && apiPrimaryPollutant === "NOT_AVAILABLE") {
-			Console.warn("⚠️ AirQuality", "Max index of pollutants is <= 50, primaryPollutant will be NOT_AVAILABLE.");
+			Console.warn("CurrentAirQuality", "Max index of pollutants is <= 50, primaryPollutant will be NOT_AVAILABLE.");
 		}
 
-		Console.info("✅ AirQuality");
+		Console.info("✅ CurrentAirQuality");
 		return {
 			metadata: this.#Metadata(
 				// TODO: &lang=zh

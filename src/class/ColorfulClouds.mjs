@@ -411,7 +411,7 @@ export default class ColorfulClouds {
 			const primaryPollutant = AirQuality.FindPrimaryPollutants(chnIaqi)[0];
 			const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
 			if (isNotAvailable) {
-				Console.warn("⚠️ CurrentAirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, primaryPollutant will be NOT_AVAILABLE.`);
+				Console.warn("CurrentAirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, primaryPollutant will be set to NOT_AVAILABLE.`);
 			}
 
 			Console.info("✅ CurrentAirQuality");
@@ -475,7 +475,7 @@ export default class ColorfulClouds {
 
 		const { usa, chn } = yesterdayHourly.result.hourly.air_quality.aqi[0].value;
 		if (usa === 0 && chn === 0) {
-			Console.warn("⚠️ YesterdayAirQuality", "Both usa and chn of AQI are 0, unsupported location?");
+			Console.warn("YesterdayAirQuality", "Both usa and chn of AQI are 0, unsupported location?");
 		}
 
 		const index = useUsa ? usa : chn;

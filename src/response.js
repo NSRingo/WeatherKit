@@ -576,7 +576,7 @@ function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, inje
 		} else {
 			const scale = getScale(scaleName);
 			if (!scale) {
-				Console.warn("ConvertPollutants", `Unsupported scale name: ${scaleName}`);
+				Console.error("ConvertPollutants", `Unsupported scale name: ${scaleName}`);
 				return pollutants;
 			}
 

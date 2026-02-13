@@ -123,7 +123,7 @@ export default class AirQuality {
 		const diff = Number(todayCategoryIndex) - Number(yesterdayCategoryIndex);
 
 		if (Number.isNaN(diff)) {
-			Console.warn("⚠️ CompareCategoryIndexes", `Invalid categoryIndex`);
+			Console.error("CompareCategoryIndexes", "Invalid categoryIndex");
 			return AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
 		} else {
 			Console.info("✅ CompareCategoryIndexes");
@@ -146,14 +146,14 @@ export default class AirQuality {
 			const scaleForPollutant = scaleForPollutants[pollutantType];
 
 			if (!scaleForPollutant) {
-				Console.debug(`No scale for ${pollutantType}, skip`);
+				Console.debug("ConvertUnits", `No scale for ${pollutantType}, skip`);
 				return pollutant;
 			}
 
 			Console.info("ConvertUnits", `Converting ${pollutantType}`);
 			const amount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, scaleForPollutant.units, stpConversionFactors?.[pollutantType] || -1, scaleForPollutant?.stpConversionFactor || -1);
 			if (amount < 0) {
-				Console.warn(
+				Console.error(
 					"ConvertUnits",
 					`Failed to convert unit for ${pollutantType}`,
 					`${pollutant.amount} ${friendlyUnits[pollutant.units] ?? pollutant.units} with ${stpConversionFactors?.[pollutantType] || -1} -> ${amount} ${friendlyUnits[scaleForPollutant.units] ?? scaleForPollutant.units} with ${scaleForPollutant?.stpConversionFactor || -1}`,
@@ -173,7 +173,7 @@ export default class AirQuality {
 	static FixQWeatherCO(airQuality) {
 		Console.info("☑️ FixQWeatherCO");
 		if (!Array.isArray(airQuality?.pollutants)) {
-			Console.warn("⚠️ FixQWeatherCO", "airQuality.pollutants is invalid");
+			Console.error("FixQWeatherCO", "airQuality.pollutants is invalid");
 			return;
 		}
 
@@ -203,7 +203,7 @@ export default class AirQuality {
 		Console.info("☑️ GetNameFromScale");
 		const lastDotIndex = scale?.lastIndexOf(".");
 		if (!scale || lastDotIndex === -1) {
-			Console.warn("⚠️ GetNameFromScale", `Cannot find version part of ${scale}`);
+			Console.error("GetNameFromScale", `Cannot find version part of ${scale}`);
 			return scale;
 		}
 
@@ -217,8 +217,8 @@ export default class AirQuality {
 
 		const overRangePollutants = pollutantIndexes.filter(({ index }) => index > 500);
 		if (overRangePollutants.length > 0) {
-			Console.warn("⚠️ FindPrimaryPollutants", `Index > 500 detected! ${JSON.stringify(overRangePollutants.map(({ pollutantType }) => pollutantType))}`);
-			Console.warn("⚠️ FindPrimaryPollutants", "Take care of yourself!");
+			Console.warn("FindPrimaryPollutants", `Over range detected! ${JSON.stringify(overRangePollutants.map(({ pollutantType }) => pollutantType))}`);
+			Console.warn("FindPrimaryPollutants", "Take care of yourself!");
 			Console.info("✅ FindPrimaryPollutants");
 			return [...overRangePollutants].sort((a, b) => b.index - a.index);
 		}
@@ -232,7 +232,7 @@ export default class AirQuality {
 			return list;
 		}, []);
 		if (primaryPollutants.length > 1) {
-			Console.warn("⚠️ AirQuality", `Multiple primary pollutants: ${JSON.stringify(primaryPollutants.map(({ pollutantType }) => pollutantType))}`);
+			Console.warn("FindPrimaryPollutants", `Multiple primary pollutants: ${JSON.stringify(primaryPollutants.map(({ pollutantType }) => pollutantType))}`);
 		}
 
 		Console.info("✅ FindPrimaryPollutants");
@@ -254,14 +254,14 @@ export default class AirQuality {
 
 			const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
 			if (amount < minValidAmount) {
-				Console.warn("⚠️ PollutantToInstantCastLikeIndex", `Invalid amount of ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
+				Console.error("PollutantToInstantCastLikeIndex", `Invalid amount of ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
 				return scaleForPollutant.ranges.min.indexes[0];
 			}
 
 			const isOverRange = amount > scaleForPollutant.ranges.max.amounts[1];
 			if (isOverRange) {
-				Console.warn("⚠️ PollutantToInstantCastLikeIndex", `Over range detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
-				Console.warn("⚠️ PollutantToInstantCastLikeIndex", "Take care of yourself!");
+				Console.warn("PollutantToInstantCastLikeIndex", `Over range detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
+				Console.warn("PollutantToInstantCastLikeIndex", "Take care of yourself!");
 			}
 
 			// Use range before infinity for calculation if over range
@@ -282,7 +282,7 @@ export default class AirQuality {
 	static #PollutantsToAirQuality(pollutants, scale) {
 		Console.info("☑️ PollutantsToAirQuality");
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
-			Console.warn("PollutantsToAirQuality", "pollutants is invalid");
+			Console.error("PollutantsToAirQuality", "pollutants is invalid");
 			return {};
 		}
 
@@ -359,7 +359,7 @@ export default class AirQuality {
 
 		const isNotAvailable = !forcePrimaryPollutant && airQuality.index <= 50;
 		if (isNotAvailable) {
-			Console.warn("⚠️ AirQuality", `Max index of pollutants ${airQuality.primaryPollutant} = ${airQuality.index} is <= 50, primaryPollutant will be NOT_AVAILABLE.`);
+			Console.warn("PollutantsToInstantCastCN", `Max index of pollutants ${airQuality.primaryPollutant} = ${airQuality.index} is <= 50, primaryPollutant will be set to NOT_AVAILABLE.`);
 		}
 
 		Console.info("✅ PollutantsToInstantCastCN");
