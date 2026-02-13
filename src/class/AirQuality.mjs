@@ -1329,8 +1329,8 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [0, 50], amounts: [0, 5] },
-							max: { indexes: [401, 500], amounts: [121, 150] },
+							min: { indexes: [0, 50], amounts: [0, 5000] },
+							max: { indexes: [401, 500], amounts: [120001, 150000] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 5000] },
 								{ indexes: [51, 100], amounts: [5001, 10000] },
@@ -1439,8 +1439,8 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [0, 50], amounts: [0, 5] },
-							max: { indexes: [401, 500], amounts: [121, 150] },
+							min: { indexes: [0, 50], amounts: [0, 5000] },
+							max: { indexes: [401, 500], amounts: [120001, 150000] },
 							value: [
 								{ indexes: [0, 50], amounts: [0, 5000] },
 								{ indexes: [51, 100], amounts: [5001, 10000] },
