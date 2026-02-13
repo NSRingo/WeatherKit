@@ -57,7 +57,7 @@ export default class QWeather {
 			Console.info("⚠️ GetLocationsGrid", "Cache not found or stale, fetching...");
 			const response = await fetch({
 				headers: locationsGrid?.etag ? { "If-None-Match": locationsGrid?.etag } : undefined,
-				url: "https://raw.githubusercontent.com/NSRingo/WeatherKit/refs/heads/main/data/qweather-locations-grid.json",
+				url: "https://raw.githubusercontent.com/NSRingo/WeatherKit/refs/heads/main/data/qweather-china-city-list-grid.json",
 			});
 
 			if (response.status === 304) {
@@ -77,7 +77,7 @@ export default class QWeather {
 	}
 
 	// Codes by Claude AI
-	static GetLocationInfo(locationsGrid, lat, lng) {
+	static GetLocationInfo(locationsGrid, latitude, longitude) {
 		const { gridSize, grid } = locationsGrid;
 
 		// Haversine距离计算
@@ -113,7 +113,7 @@ export default class QWeather {
 				if (!locations) continue;
 
 				for (const loc of locations) {
-					const dist = distance(lat, lng, loc.lat, loc.lng);
+					const dist = distance(lat, lng, loc.latitude, loc.longitude);
 					if (dist < minDist) {
 						minDist = dist;
 						nearest = loc;
@@ -124,7 +124,7 @@ export default class QWeather {
 			return nearest;
 		};
 
-		return findNearestFast(lat, lng);
+		return findNearestFast(latitude, longitude);
 	}
 
 	async GeoAPI(path = "city/lookup") {
@@ -803,7 +803,7 @@ export default class QWeather {
 	}
 
 	async YesterdayAirQuality(locationInfo) {
-		Console.info("☑️ YesterdayAirQuality", `id: ${locationInfo.id}`, `province: ${locationInfo.province}`, `name: ${locationInfo.name}`, `latitude: ${locationInfo.lat}`, `longitude: ${locationInfo.lng}`);
+		Console.info("☑️ YesterdayAirQuality", `locationInfo ${JSON.stringify(locationInfo)}`);
 		const failedAirQuality = {
 			metadata: this.#Metadata(undefined, undefined, true),
 			categoryIndex: -1,
@@ -811,8 +811,8 @@ export default class QWeather {
 		};
 
 		// Some locationID at Hong Kong and Macau with length 9 is supported
-		if (locationInfo.province === "台湾省" || locationInfo.id.length !== 9) {
-			Console.warn("YesterdayAirQuality", "Unsupported location", `province: ${locationInfo.province}`, `id: ${locationInfo.id}`);
+		if (locationInfo.iso === "TW" || locationInfo.id.length !== 9) {
+			Console.warn("YesterdayAirQuality", "Unsupported location");
 			return failedAirQuality;
 		}
 
