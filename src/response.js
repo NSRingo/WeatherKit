@@ -285,12 +285,12 @@ function GetAirQualityFromPollutants(algorithm, forcePrimaryPollutant, allowOver
 			return newAirQuality;
 		}
 		case "WAQI_InstantCast_CN": {
-			const newAirQuality = AirQuality.PollutantsToInstantCastCN12(pollutants, stpConversionFactors, forcePrimaryPollutant, allowOverRange);
+			const newAirQuality = AirQuality.PollutantsToInstantCastCN12(pollutants, stpConversionFactors, allowOverRange, forcePrimaryPollutant);
 			Console.info("✅ GetAirQualityFromPollutants");
 			return newAirQuality;
 		}
 		case "WAQI_InstantCast_CN_25_DRAFT": {
-			const newAirQuality = AirQuality.PollutantsToInstantCastCN25(pollutants, stpConversionFactors, forcePrimaryPollutant, allowOverRange);
+			const newAirQuality = AirQuality.PollutantsToInstantCastCN25(pollutants, stpConversionFactors, allowOverRange, forcePrimaryPollutant);
 			Console.info("✅ GetAirQualityFromPollutants");
 			return newAirQuality;
 		}

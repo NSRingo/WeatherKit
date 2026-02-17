@@ -324,7 +324,7 @@ export default class AirQuality {
 		};
 	}
 
-	static #PollutantsToInstantCastCN(pollutants, stpConversionFactors, scale = AirQuality.Config.Scales.WAQI_InstantCast_CN, forcePrimaryPollutant = true, allowOverRange = true) {
+	static #PollutantsToInstantCastCN(pollutants, stpConversionFactors, scale = AirQuality.Config.Scales.WAQI_InstantCast_CN, allowOverRange = true, forcePrimaryPollutant = true) {
 		// Max index in Apple Weather
 		const MAX_INDEX = 500;
 
@@ -350,8 +350,8 @@ export default class AirQuality {
 		};
 	}
 
-	static PollutantsToInstantCastCN12 = (pollutants, stpConversionFactors, forcePrimaryPollutant, allowOverRange) => this.#PollutantsToInstantCastCN(pollutants, stpConversionFactors, AirQuality.Config.Scales.WAQI_InstantCast_CN, forcePrimaryPollutant, allowOverRange);
-	static PollutantsToInstantCastCN25 = (pollutants, stpConversionFactors, forcePrimaryPollutant, allowOverRange) => this.#PollutantsToInstantCastCN(pollutants, stpConversionFactors, AirQuality.Config.Scales.WAQI_InstantCast_CN_25_DRAFT, forcePrimaryPollutant, allowOverRange);
+	static PollutantsToInstantCastCN12 = (pollutants, stpConversionFactors, allowOverRange, forcePrimaryPollutant) => this.#PollutantsToInstantCastCN(pollutants, stpConversionFactors, AirQuality.Config.Scales.WAQI_InstantCast_CN, allowOverRange, forcePrimaryPollutant);
+	static PollutantsToInstantCastCN25 = (pollutants, stpConversionFactors, allowOverRange, forcePrimaryPollutant) => this.#PollutantsToInstantCastCN(pollutants, stpConversionFactors, AirQuality.Config.Scales.WAQI_InstantCast_CN_25_DRAFT, allowOverRange, forcePrimaryPollutant);
 
 	static Config = {
 		Scales: {
