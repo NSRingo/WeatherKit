@@ -253,7 +253,7 @@ export interface Settings {
         /**
          * [iRingo内置算法] 算法
          *
-         * 使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI。
+         * 使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI，美标版本使用了WAQI的臭氧标准。
          *
          * @remarks
          *

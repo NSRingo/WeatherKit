@@ -239,7 +239,7 @@ export default defineConfig({
 				{ key: "WAQI_InstantCast_CN", label: "国标InstantCast（HJ 633—2012）" },
 				{ key: "WAQI_InstantCast_CN_25_DRAFT", label: "国标InstantCast（HJ 633 2025年草案）" },
 			],
-			description: "使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI。",
+			description: "使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI，美标版本使用了WAQI的臭氧标准。",
 		},
 		{
 			key: "AirQuality.iRingo.AllowOverRange",
