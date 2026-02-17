@@ -277,8 +277,8 @@ const airQualityComparisonYesterday: Args = [
 		options: [
 			{ key: "Calculate", label: "iRingo内置算法" },
 			{ key: "ColorfulCloudsUS", label: "彩云天气（美标，18年9月版）" },
-			{ key: "ColorfulCloudsCN", label: "彩云天气（国标）" },
-			{ key: "QWeather", label: "和风天气（国标）" },
+			{ key: "ColorfulCloudsCN", label: "彩云天气（国标，12年2月版）" },
+			{ key: "QWeather", label: "和风天气（国标，12年2月版）" },
 		],
 		description: "用来和今日空气质量指数对比的数据。",
 	},

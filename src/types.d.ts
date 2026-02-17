@@ -241,8 +241,8 @@ export interface Settings {
              * Possible values:
              * - `'Calculate'` - iRingo内置算法
              * - `'ColorfulCloudsUS'` - 彩云天气（美标，18年9月版）
-             * - `'ColorfulCloudsCN'` - 彩云天气（国标）
-             * - `'QWeather'` - 和风天气（国标）
+             * - `'ColorfulCloudsCN'` - 彩云天气（国标，12年2月版）
+             * - `'QWeather'` - 和风天气（国标，12年2月版）
              *
              * @defaultValue "ColorfulCloudsUS"
              */
