@@ -809,7 +809,7 @@ export default class QWeather {
 
 		// Some locationID at Hong Kong and Macau with length 9 is supported
 		if (locationInfo.iso === "TW" || locationInfo.id.length !== 9) {
-			Console.warn("YesterdayAirQuality", "Unsupported location");
+			Console.error("YesterdayAirQuality", "Unsupported location");
 			return failedAirQuality;
 		}
 
