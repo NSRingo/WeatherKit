@@ -754,8 +754,25 @@ export default class QWeather {
 
 		Console.info("☑️ CurrentAirQuality");
 		const airQualityCurrent = await this.#AirQualityCurrent();
+		if (!Array.isArray(airQualityCurrent.pollutants)) {
+			Console.error("AirQuality", "Failed to get current air quality data.");
+			return {
+				metadata: this.#Metadata(
+					// TODO: &lang=zh
+					`https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`,
+					undefined,
+					true,
+				),
+				pollutants: [],
+				previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
+			};
+		}
 
 		const particularAirQuality = {
+			metadata: this.#Metadata(
+				// TODO: &lang=zh
+				`https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`,
+			),
 			pollutants: this.#CreatePollutants(airQualityCurrent.pollutants),
 			previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
 		};
@@ -764,16 +781,15 @@ export default class QWeather {
 		const scale = indexCodeToScale(supportedIndex?.code);
 
 		if (!supportedIndex?.code || !scale?.categories) {
-			Console.error("AirQuality", "No supported index found");
+			Console.warn("AirQuality", "No supported index found");
 			Console.debug(`airQualityCurrent.indexes[].code = ${JSON.stringify(airQualityCurrent.indexes?.map(({ code }) => code))}`);
 			return {
-				metadata: this.#Metadata(
-					// TODO: &lang=zh
-					`https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`,
-					undefined,
-					true,
-				),
 				...particularAirQuality,
+				index: -1,
+				isSignificant: false,
+				categoryIndex: -1,
+				primaryPollutant: "NOT_AVAILABLE",
+				scale: AirQuality.ToWeatherKitScale(AirQuality.Config.Scales.HJ6332012.weatherKitScale),
 			};
 		}
 
