@@ -330,29 +330,34 @@ function getStpConversionFactors(airQuality) {
 function GetAirQualityFromPollutants(algorithm, forcePrimaryPollutant, allowOverRange, airQuality) {
 	Console.info("☑️ GetAirQualityFromPollutants");
 
-	const { EU_EAQI, WAQI_InstantCast_US, WAQI_InstantCast_CN, WAQI_InstantCast_CN_25_DRAFT, UBA } = AirQuality.Config.Scales;
+	const { pollutants } = airQuality;
 	const stpConversionFactors = getStpConversionFactors(airQuality);
 	switch (algorithm) {
 		case "EU_EAQI": {
-			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, EU_EAQI.pollutants);
-			return AirQuality.PollutantsToEAQI(pollutants);
+			const newAirQuality = AirQuality.PollutantsToEAQI(pollutants, stpConversionFactors);
+			Console.info("✅ GetAirQualityFromPollutants");
+			return newAirQuality;
 		}
 		case "WAQI_InstantCast_US": {
-			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_US.pollutants);
-			return AirQuality.PollutantsToInstantCastUS(pollutants, allowOverRange);
+			const newAirQuality = AirQuality.PollutantsToInstantCastUS(pollutants, stpConversionFactors, allowOverRange);
+			Console.info("✅ GetAirQualityFromPollutants");
+			return newAirQuality;
 		}
 		case "WAQI_InstantCast_CN": {
-			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_CN.pollutants);
-			return AirQuality.PollutantsToInstantCastCN12(pollutants, forcePrimaryPollutant, allowOverRange);
+			const newAirQuality = AirQuality.PollutantsToInstantCastCN12(pollutants, stpConversionFactors, forcePrimaryPollutant, allowOverRange);
+			Console.info("✅ GetAirQualityFromPollutants");
+			return newAirQuality;
 		}
 		case "WAQI_InstantCast_CN_25_DRAFT": {
-			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, WAQI_InstantCast_CN_25_DRAFT.pollutants);
-			return AirQuality.PollutantsToInstantCastCN25(pollutants, forcePrimaryPollutant, allowOverRange);
+			const newAirQuality = AirQuality.PollutantsToInstantCastCN25(pollutants, stpConversionFactors, forcePrimaryPollutant, allowOverRange);
+			Console.info("✅ GetAirQualityFromPollutants");
+			return newAirQuality;
 		}
 		case "UBA":
 		default: {
-			const pollutants = AirQuality.ConvertUnits(airQuality.pollutants, stpConversionFactors, UBA.pollutants);
-			return AirQuality.PollutantsToUBA(pollutants);
+			const newAirQuality = AirQuality.PollutantsToUBA(pollutants, stpConversionFactors);
+			Console.info("✅ GetAirQualityFromPollutants");
+			return newAirQuality;
 		}
 	}
 }

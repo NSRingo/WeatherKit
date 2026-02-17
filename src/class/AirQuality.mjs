@@ -267,10 +267,12 @@ export default class AirQuality {
 		};
 	}
 
-	static PollutantsToUBA(pollutants) {
+	static PollutantsToUBA(pollutants, stpConversionFactors) {
 		Console.info("☑️ PollutantsToUBA");
 
-		const airQuality = AirQuality.#PollutantsToAirQuality(pollutants, AirQuality.Config.Scales.UBA);
+		const scale = AirQuality.Config.Scales.UBA;
+		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
+		const airQuality = AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
 
 		Console.info("✅ PollutantsToUBA");
 		return {
@@ -280,13 +282,15 @@ export default class AirQuality {
 		};
 	}
 
-	static PollutantsToEAQI(pollutants) {
+	static PollutantsToEAQI(pollutants, stpConversionFactors) {
 		// Max index in Apple Weather
 		const MAX_INDEX = 60;
 
 		Console.info("☑️ PollutantsToEAQI");
 
-		const airQuality = AirQuality.#PollutantsToAirQuality(pollutants, AirQuality.Config.Scales.EU_EAQI);
+		const scale = AirQuality.Config.Scales.EU_EAQI;
+		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
+		const airQuality = AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
 
 		Console.info("✅ PollutantsToEAQI");
 		return {
@@ -299,13 +303,15 @@ export default class AirQuality {
 		};
 	}
 
-	static PollutantsToInstantCastUS(pollutants, allowOverRange = true) {
+	static PollutantsToInstantCastUS(pollutants, stpConversionFactors, allowOverRange = true) {
 		// Max index in Apple Weather
 		const MAX_INDEX = 500;
 
 		Console.info("☑️ PollutantsToInstantCastUS");
 
-		const airQuality = AirQuality.#PollutantsToAirQuality(pollutants, AirQuality.Config.Scales.WAQI_InstantCast_US);
+		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
+		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
+		const airQuality = AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
 
 		Console.info("✅ PollutantsToInstantCastUS");
 		return {
@@ -318,13 +324,14 @@ export default class AirQuality {
 		};
 	}
 
-	static #PollutantsToInstantCastCN(pollutants, forcePrimaryPollutant = true, allowOverRange = true, scale = AirQuality.Config.Scales.WAQI_InstantCast_CN) {
+	static #PollutantsToInstantCastCN(pollutants, stpConversionFactors, scale = AirQuality.Config.Scales.WAQI_InstantCast_CN, forcePrimaryPollutant = true, allowOverRange = true) {
 		// Max index in Apple Weather
 		const MAX_INDEX = 500;
 
 		Console.info("☑️ PollutantsToInstantCastCN");
 
-		const airQuality = AirQuality.#PollutantsToAirQuality(pollutants, scale);
+		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
+		const airQuality = AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
 
 		const isNotAvailable = !forcePrimaryPollutant && airQuality.index <= 50;
 		if (isNotAvailable) {
@@ -343,8 +350,8 @@ export default class AirQuality {
 		};
 	}
 
-	static PollutantsToInstantCastCN12 = (pollutants, forcePrimaryPollutant, allowOverRange) => this.#PollutantsToInstantCastCN(pollutants, forcePrimaryPollutant, allowOverRange, AirQuality.Config.Scales.WAQI_InstantCast_CN);
-	static PollutantsToInstantCastCN25 = (pollutants, forcePrimaryPollutant, allowOverRange) => this.#PollutantsToInstantCastCN(pollutants, forcePrimaryPollutant, allowOverRange, AirQuality.Config.Scales.WAQI_InstantCast_CN_25_DRAFT);
+	static PollutantsToInstantCastCN12 = (pollutants, stpConversionFactors, forcePrimaryPollutant, allowOverRange) => this.#PollutantsToInstantCastCN(pollutants, stpConversionFactors, AirQuality.Config.Scales.WAQI_InstantCast_CN, forcePrimaryPollutant, allowOverRange);
+	static PollutantsToInstantCastCN25 = (pollutants, stpConversionFactors, forcePrimaryPollutant, allowOverRange) => this.#PollutantsToInstantCastCN(pollutants, stpConversionFactors, AirQuality.Config.Scales.WAQI_InstantCast_CN_25_DRAFT, forcePrimaryPollutant, allowOverRange);
 
 	static Config = {
 		Scales: {
