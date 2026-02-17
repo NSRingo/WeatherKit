@@ -153,7 +153,7 @@ export default class AirQuality {
 			const { pollutantType, amount } = pollutant;
 			const scaleForPollutant = scaleForPollutants[pollutantType];
 
-			Console.debug("PollutantToInstantCastLikeIndex", `${pollutantType}: ${amount} ${friendlyUnits[pollutant.units] ?? pollutant.units}`);
+			Console.debug("PollutantsToIndexes", `${pollutantType}: ${amount} ${friendlyUnits[pollutant.units] ?? pollutant.units}`);
 			if (!scaleForPollutant) {
 				Console.debug(`No scale for ${pollutantType}, skip`);
 				return { pollutantType, index: -1 };
@@ -161,14 +161,14 @@ export default class AirQuality {
 
 			const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
 			if (amount < minValidAmount) {
-				Console.error("PollutantToInstantCastLikeIndex", `Invalid amount of ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
+				Console.error("PollutantsToIndexes", `Invalid amount of ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
 				return scaleForPollutant.ranges.min.indexes[0];
 			}
 
 			const isOverRange = amount > scaleForPollutant.ranges.max.amounts[1];
 			if (isOverRange) {
-				Console.warn("PollutantToInstantCastLikeIndex", `Over range detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
-				Console.warn("PollutantToInstantCastLikeIndex", "Take care of yourself!");
+				Console.warn("PollutantsToIndexes", `Over range detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
+				Console.warn("PollutantsToIndexes", "Take care of yourself!");
 			}
 
 			// Use range before infinity for calculation if over range
