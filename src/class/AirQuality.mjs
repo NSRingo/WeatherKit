@@ -254,6 +254,7 @@ export default class AirQuality {
 		return {
 			...airQuality,
 			index: airQuality.categoryIndex,
+			metadata: { ...airQuality, providerName: `${airQuality.providerName} (FB001846)` },
 		};
 	}
 
@@ -284,6 +285,7 @@ export default class AirQuality {
 		return {
 			...airQuality,
 			index: allowOverRange ? airQuality.index : Math.min(airQuality.index, MAX_INDEX),
+			metadata: { ...airQuality, providerName: `${airQuality.providerName} (WAQI InstantCast EPA-454/B-24-002)` },
 		};
 	}
 
@@ -304,6 +306,10 @@ export default class AirQuality {
 		return {
 			...airQuality,
 			index: allowOverRange ? airQuality.index : Math.min(airQuality.index, MAX_INDEX),
+			metadata: {
+				...airQuality,
+				providerName: `${airQuality.providerName} (${scale === AirQuality.Config.Scales.HJ6332012 ? "HJ 633—2012" : "HJ 633—2025 DRAFT"})`,
+			},
 			primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : airQuality.primaryPollutant,
 		};
 	}
