@@ -283,11 +283,11 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 	Console.info("☑️ InjectIndex");
 	switch (Settings?.AirQuality?.Current?.Index?.Provider) {
 		case "QWeather": {
-			return await enviroments.qWeather.CurrentAirQuality();
+			return await enviroments.qWeather.CurrentAirQuality(Settings.AirQuality.Current.Index.ForceCNPrimaryPollutants);
 		}
 		case "ColorfulCloudsUS":
 		case "ColorfulCloudsCN": {
-			return await enviroments.colorfulClouds.CurrentAirQuality(Settings.AirQuality.Current.Index.Provider === "ColorfulCloudsUS");
+			return await enviroments.colorfulClouds.CurrentAirQuality(Settings.AirQuality.Current.Index.Provider === "ColorfulCloudsUS", Settings.AirQuality.Current.Index.ForceCNPrimaryPollutants);
 		}
 		case "iRingo":
 		default: {
