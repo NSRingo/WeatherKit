@@ -225,7 +225,7 @@ export default class AirQuality {
 		Console.info("☑️ PollutantsToAirQuality");
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
 			Console.error("PollutantsToAirQuality", "pollutants is invalid");
-			return {};
+			return { metadata: { providerName: "iRingo", temporarilyUnavailable: true } };
 		}
 
 		const indexes = AirQuality.#PollutantsToIndexes(pollutants, scale.pollutants);
