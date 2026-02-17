@@ -181,15 +181,15 @@ export interface Settings {
                  * @remarks
                  *
                  * Possible values:
-                 * - `'iRingo'` - iRingo内置算法
+                 * - `'Calculate'` - iRingo内置算法
                  * - `'ColorfulCloudsUS'` - 彩云天气（美标，18年9月版）
                  * - `'ColorfulCloudsCN'` - 彩云天气（国标）
                  * - `'QWeather'` - 和风天气（国标）
                  * - `'WAQI'` - WAQI（美标InstantCast，18年9月版）
                  *
-                 * @defaultValue "iRingo"
+                 * @defaultValue "Calculate"
                  */
-                Provider?: 'iRingo' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather' | 'WAQI';
+                Provider?: 'Calculate' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather' | 'WAQI';
                 /**
                  * [今日空气指数] 强制主要污染物
                  *
@@ -239,17 +239,17 @@ export interface Settings {
              * @remarks
              *
              * Possible values:
-             * - `'iRingo'` - iRingo内置算法
+             * - `'Calculate'` - iRingo内置算法
              * - `'ColorfulCloudsUS'` - 彩云天气（美标，18年9月版）
              * - `'ColorfulCloudsCN'` - 彩云天气（国标）
              * - `'QWeather'` - 和风天气（国标）
              *
              * @defaultValue "ColorfulCloudsUS"
              */
-            IndexProvider?: 'iRingo' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather';
+            IndexProvider?: 'Calculate' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather';
 };
 };
-    iRingo?: {
+    Calculate?: {
         /**
          * [iRingo内置算法] 算法
          *

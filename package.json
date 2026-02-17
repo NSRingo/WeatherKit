@@ -37,7 +37,7 @@
 		"build:lite-args": "arguments-builder build",
 		"build:full-args": "arguments-builder boxjs -c arguments-builder-full.config.ts",
 		"build:args": "npm-run-all --serial build:lite-args build:full-args",
-		"dts": "arguments-builder dts",
+		"dts": "arguments-builder dts -c arguments-builder-full.config.ts",
 		"submodule": "git submodule update --remote"
 	},
 	"browserslist": [
