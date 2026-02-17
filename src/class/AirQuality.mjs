@@ -31,10 +31,22 @@ export default class AirQuality {
 
 	static CategoryIndex(index, categories) {
 		Console.info("☑️ CategoryIndex", `index: ${index}`);
-		const { categoryIndex } = categories.ranges.find(({ indexes }) => {
+		const failedCategoryIndex = -1;
+		if (!categories?.ranges || !Array.isArray(categories.ranges) || categories.ranges.length === 0) {
+			Console.error("GetPrimaryPollutant", "categories is invalid");
+			return failedCategoryIndex;
+		}
+
+		const range = categories.ranges.find(({ indexes }) => {
 			const [min, max] = indexes;
 			return AirQuality.#CeilByPrecision(index, min) >= min && AirQuality.#CeilByPrecision(index, max) <= max;
 		});
+		if (!range) {
+			Console.error("CategoryIndex", `No category found for index: ${index}`);
+			return failedCategoryIndex;
+		}
+
+		const { categoryIndex } = range;
 		Console.info("✅ CategoryIndex", `categoryIndex: ${categoryIndex}`);
 		return categoryIndex;
 	}
@@ -180,11 +192,6 @@ export default class AirQuality {
 
 		if (!Array.isArray(indexes) || indexes.length === 0) {
 			Console.error("GetPrimaryPollutant", "indexes is invalid");
-			return failedPollutant;
-		}
-
-		if (!categories?.ranges || !Array.isArray(categories.ranges) || categories.ranges.length === 0) {
-			Console.error("GetPrimaryPollutant", "categories is invalid");
 			return failedPollutant;
 		}
 
