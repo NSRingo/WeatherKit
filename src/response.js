@@ -533,7 +533,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 			}
 		}
 
-		Console.error("qweatherComparison", `无法从和风天气获取${yesterdayAirQuality.metadata.temporarilyUnavailable ? "昨日" : "今日"}空气质量数据`);
+		Console.error("qweatherComparison", `无法从和风天气获取${yesterdayQWeather.metadata.temporarilyUnavailable ? "昨日" : "今日"}空气质量数据`);
 		return {
 			...yesterdayQWeather,
 			metadata: getMetadata(yesterdayQWeather.metadata.providerName, true),
