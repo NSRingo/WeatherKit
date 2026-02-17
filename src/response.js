@@ -527,7 +527,7 @@ function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, inje
 		}
 	};
 
-	const getScaleForPollutants = scaleForPollutants => {
+	const getPollutantScales = pollutantScales => {
 		const { ugm3, ppb } = AirQuality.Config.Units.WeatherKit;
 		const { US, EU } = AirQuality.Config.STP_ConversionFactors;
 		const ugm3Scale = {
@@ -560,11 +560,11 @@ function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, inje
 
 		switch (unitsMode) {
 			case "ugm3":
-				return { ...ugm3Scale, ...scaleForPollutants };
+				return { ...ugm3Scale, ...pollutantScales };
 			case "EU_ppb":
-				return { ...euPpbScale, ...scaleForPollutants };
+				return { ...euPpbScale, ...pollutantScales };
 			case "US_ppb":
-				return { ...usPpbScale, ...scaleForPollutants };
+				return { ...usPpbScale, ...pollutantScales };
 			case "Force_ugm3":
 				return ugm3Scale;
 			case "Force_EU_ppb":
@@ -573,7 +573,7 @@ function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, inje
 				return usPpbScale;
 			case "Scale":
 			default:
-				return scaleForPollutants;
+				return pollutantScales;
 		}
 	};
 
@@ -594,7 +594,7 @@ function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, inje
 				return pollutants;
 			}
 
-			return AirQuality.ConvertUnits(pollutants, getStpConversionFactors(airQuality), getScaleForPollutants(scale.pollutants));
+			return AirQuality.ConvertUnits(pollutants, getStpConversionFactors(airQuality), getPollutantScales(scale.pollutants));
 		}
 	} else {
 		return pollutants;

@@ -71,32 +71,32 @@ export default class AirQuality {
 		}
 	}
 
-	static ConvertUnits(pollutants, stpConversionFactors, scaleForPollutants) {
+	static ConvertUnits(pollutants, stpConversionFactors, pollutantScales) {
 		Console.info("☑️ ConvertUnits");
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
 		Console.info("✅ ConvertUnits");
 		return pollutants.map(pollutant => {
 			const { pollutantType } = pollutant;
-			const scaleForPollutant = scaleForPollutants[pollutantType];
+			const pollutantScale = pollutantScales[pollutantType];
 
-			if (!scaleForPollutant) {
+			if (!pollutantScale) {
 				Console.debug("ConvertUnits", `No scale for ${pollutantType}, skip`);
 				return pollutant;
 			}
 
 			Console.info("ConvertUnits", `Converting ${pollutantType}`);
-			const amount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, scaleForPollutant.units, stpConversionFactors?.[pollutantType] || -1, scaleForPollutant?.stpConversionFactor || -1);
+			const amount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, pollutantScale.units, stpConversionFactors?.[pollutantType] || -1, pollutantScale?.stpConversionFactor || -1);
 			if (amount < 0) {
 				Console.error(
 					"ConvertUnits",
 					`Failed to convert unit for ${pollutantType}`,
-					`${pollutant.amount} ${friendlyUnits[pollutant.units] ?? pollutant.units} with ${stpConversionFactors?.[pollutantType] || -1} -> ${amount} ${friendlyUnits[scaleForPollutant.units] ?? scaleForPollutant.units} with ${scaleForPollutant?.stpConversionFactor || -1}`,
+					`${pollutant.amount} ${friendlyUnits[pollutant.units] ?? pollutant.units} with ${stpConversionFactors?.[pollutantType] || -1} -> ${amount} ${friendlyUnits[pollutantScale.units] ?? pollutantScale.units} with ${pollutantScale?.stpConversionFactor || -1}`,
 				);
 				return pollutant;
 			}
 
-			Console.debug("ConvertUnits", `Converted ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units] ?? scaleForPollutant.units}`);
-			return { ...pollutant, amount, units: scaleForPollutant.units };
+			Console.debug("ConvertUnits", `Converted ${pollutantType}: ${amount} ${friendlyUnits[pollutantScale.units] ?? pollutantScale.units}`);
+			return { ...pollutant, amount, units: pollutantScale.units };
 		});
 	}
 
@@ -146,35 +146,35 @@ export default class AirQuality {
 		return scaleName;
 	}
 
-	static #PollutantsToIndexes(pollutants, scaleForPollutants) {
+	static #PollutantsToIndexes(pollutants, pollutantScales) {
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
 
 		return pollutants.map(pollutant => {
 			const { pollutantType, amount } = pollutant;
-			const scaleForPollutant = scaleForPollutants[pollutantType];
+			const pollutantScale = pollutantScales[pollutantType];
 
 			Console.debug("PollutantsToIndexes", `${pollutantType}: ${amount} ${friendlyUnits[pollutant.units] ?? pollutant.units}`);
-			if (!scaleForPollutant) {
+			if (!pollutantScale) {
 				Console.debug(`No scale for ${pollutantType}, skip`);
 				return { pollutantType, index: -1 };
 			}
 
-			const minValidAmount = scaleForPollutant.ranges.min.amounts[0];
+			const minValidAmount = pollutantScale.ranges.min.amounts[0];
 			if (amount < minValidAmount) {
-				Console.error("PollutantsToIndexes", `Invalid amount of ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}, should >= ${minValidAmount}`);
-				return scaleForPollutant.ranges.min.indexes[0];
+				Console.error("PollutantsToIndexes", `Invalid amount of ${pollutantType}: ${amount} ${friendlyUnits[pollutantScale.units]}, should >= ${minValidAmount}`);
+				return pollutantScale.ranges.min.indexes[0];
 			}
 
-			const isOverRange = amount > scaleForPollutant.ranges.max.amounts[1];
+			const isOverRange = amount > pollutantScale.ranges.max.amounts[1];
 			if (isOverRange) {
-				Console.warn("PollutantsToIndexes", `Over range detected! ${pollutantType}: ${amount} ${friendlyUnits[scaleForPollutant.units]}`);
+				Console.warn("PollutantsToIndexes", `Over range detected! ${pollutantType}: ${amount} ${friendlyUnits[pollutantScale.units]}`);
 				Console.warn("PollutantsToIndexes", "Take care of yourself!");
 			}
 
 			// Use range before infinity for calculation if over range
 			const { indexes, amounts } = isOverRange
-				? scaleForPollutant.ranges.max
-				: scaleForPollutant.ranges.value.find(({ amounts }) => {
+				? pollutantScale.ranges.max
+				: pollutantScale.ranges.value.find(({ amounts }) => {
 						const [minAmount, maxAmount] = amounts;
 						return AirQuality.#CeilByPrecision(amount, minAmount) >= minAmount && AirQuality.#CeilByPrecision(amount, maxAmount) <= maxAmount;
 					});
