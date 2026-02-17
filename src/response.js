@@ -303,9 +303,9 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 		case "ColorfulCloudsCN": {
 			return await enviroments.colorfulClouds.CurrentAirQuality(Settings.AirQuality.Current.Index.Provider === "ColorfulCloudsUS", Settings.AirQuality.Current.Index.ForceCNPrimaryPollutants);
 		}
-		case "iRingo":
+		case "Calculate":
 		default: {
-			return GetAirQualityFromPollutants(Settings.AirQuality?.iRingo?.Algorithm, Settings.AirQuality.Current.Index?.ForceCNPrimaryPollutants, Settings.AirQuality?.iRingo?.AllowOverRange, airQuality);
+			return GetAirQualityFromPollutants(Settings.AirQuality?.Calculate?.Algorithm, Settings.AirQuality.Current.Index?.ForceCNPrimaryPollutants, Settings.AirQuality?.Calculate?.AllowOverRange, airQuality);
 		}
 		// TODO
 		case "WAQI": {
@@ -337,8 +337,8 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 	 */
 	const isHJ6332012 = (currentIndexProvider, currentScale, Settings) => {
 		switch (currentIndexProvider) {
-			case "iRingo":
-				return Settings?.AirQuality?.iRingo?.Algorithm === "WAQI_InstantCast_CN";
+			case "Calculate":
+				return Settings?.AirQuality?.Calculate?.Algorithm === "WAQI_InstantCast_CN";
 			case "QWeather":
 			case "ColorfulCloudsCN": {
 				return true;
@@ -368,8 +368,8 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 	};
 	const chooseAlogrithm = (currentIndexProvider, airQuality, Settings) => {
 		switch (currentIndexProvider) {
-			case "iRingo":
-				return Settings?.AirQuality?.iRingo?.Algorithm;
+			case "Calculate":
+				return Settings?.AirQuality?.Calculate?.Algorithm;
 			case "QWeather":
 			case "ColorfulCloudsCN": {
 				return "WAQI_InstantCast_CN";
@@ -481,13 +481,13 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 
 	Console.info("✅ InjectComparison");
 	switch (Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider) {
-		case "iRingo": {
+		case "Calculate": {
 			const algorithm = chooseAlogrithm(Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider, airQuality, Settings);
 
 			if (algorithm !== "") {
 				switch (Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider) {
 					case "QWeather": {
-						return await qweatherComparison(true, airQuality?.categoryIndex, airQuality => GetAirQualityFromPollutants(algorithm, Settings.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants, Settings.AirQuality?.iRingo?.AllowOverRange, airQuality));
+						return await qweatherComparison(true, airQuality?.categoryIndex, airQuality => GetAirQualityFromPollutants(algorithm, Settings.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants, Settings.AirQuality?.Calculate?.AllowOverRange, airQuality));
 					}
 				}
 			}
@@ -584,7 +584,7 @@ function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, inje
 	const pollutants = injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable ? injectedPollutants.pollutants : airQuality?.pollutants;
 	Console.info("✅ ConvertPollutants");
 	if (replaceUnits.includes(scaleName)) {
-		if (isIndexInjected && Settings?.AirQuality?.Current?.Index?.Provider === "iRingo" && unitsMode === "Scale") {
+		if (isIndexInjected && Settings?.AirQuality?.Current?.Index?.Provider === "Calculate" && unitsMode === "Scale") {
 			Console.info("ConvertPollutants", `Use pollutants from iRingo`);
 			return injectedIndex.pollutants;
 		} else {

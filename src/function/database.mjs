@@ -25,7 +25,7 @@ export default {
 					},
 					Index: {
 						Replace: ["HJ6332012"],
-						Provider: "iRingo",
+						Provider: "Calculate",
 						ForceCNPrimaryPollutants: true,
 					},
 				},
@@ -37,7 +37,7 @@ export default {
 						IndexProvider: "ColorfulCloudsUS",
 					},
 				},
-				iRingo: {
+				Calculate: {
 					Algorithm: "UBA",
 					AllowOverRange: true,
 				},

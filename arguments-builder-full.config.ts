@@ -173,10 +173,10 @@ const currentAirQualityIndex: Args = [
 	{
 		key: "AirQuality.Current.Index.Provider",
 		name: "[今日空气指数] 数据源",
-		defaultValue: "iRingo",
+		defaultValue: "Calculate",
 		type: "string",
 		options: [
-			{ key: "iRingo", label: "iRingo内置算法" },
+			{ key: "Calculate", label: "iRingo内置算法" },
 			{ key: "ColorfulCloudsUS", label: "彩云天气（美标，18年9月版）" },
 			{ key: "ColorfulCloudsCN", label: "彩云天气（国标）" },
 			{ key: "QWeather", label: "和风天气（国标）" },
@@ -275,7 +275,7 @@ const airQualityComparisonYesterday: Args = [
 		defaultValue: "ColorfulCloudsUS",
 		type: "string",
 		options: [
-			{ key: "iRingo", label: "iRingo内置算法" },
+			{ key: "Calculate", label: "iRingo内置算法" },
 			{ key: "ColorfulCloudsUS", label: "彩云天气（美标，18年9月版）" },
 			{ key: "ColorfulCloudsCN", label: "彩云天气（国标）" },
 			{ key: "QWeather", label: "和风天气（国标）" },
@@ -297,7 +297,7 @@ export const airQualityComparison: Args = [
 
 export const calculate: Args = [
 	{
-		key: "AirQuality.iRingo.Algorithm",
+		key: "AirQuality.Calculate.Algorithm",
 		name: "[iRingo内置算法] 算法",
 		defaultValue: "UBA",
 		type: "string",
@@ -311,7 +311,7 @@ export const calculate: Args = [
 		description: "使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI，美标版本使用了WAQI的臭氧标准。",
 	},
 	{
-		key: "AirQuality.iRingo.AllowOverRange",
+		key: "AirQuality.Calculate.AllowOverRange",
 		name: "[iRingo内置算法] 允许指数超标",
 		defaultValue: true,
 		type: "boolean",
