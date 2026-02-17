@@ -365,18 +365,20 @@ export default class ColorfulClouds {
 	async CurrentAirQuality(useUsa = true, forcePrimaryPollutant = true) {
 		Console.info("☑️ CurrentAirQuality");
 		const realtime = await this.#RealTime();
+		const failedAirQuality = {
+			metadata: this.#Metadata(undefined, undefined, true),
+			pollutants: [],
+			previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
+		};
+
 		if (!realtime.result) {
 			Console.error("CurrentAirQuality", "Failed to get realtime data");
-			return {
-				metadata: this.#Metadata(undefined, undefined, true),
-			};
+			return failedAirQuality;
 		}
 
 		if (realtime.result.realtime.air_quality.description.usa === "") {
 			Console.error("CurrentAirQuality", `Unsupported location`);
-			return {
-				metadata: this.#Metadata(undefined, undefined, true),
-			};
+			return failedAirQuality;
 		}
 
 		const metadata = this.#Metadata(realtime.result.realtime.air_quality.obs_time, realtime.location);
