@@ -352,10 +352,6 @@ export default class ColorfulClouds {
 	 */
 	#CreatePollutants(realtimeAirQuality) {
 		Console.info("☑️ CreatePollutants");
-		if (realtimeAirQuality?.description?.usa === "") {
-			Console.error("CreatePollutants", `Unsupported location`);
-			return [];
-		}
 
 		Console.info("✅ CreatePollutants");
 		const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
@@ -371,6 +367,13 @@ export default class ColorfulClouds {
 		const realtime = await this.#RealTime();
 		if (!realtime.result) {
 			Console.error("CurrentAirQuality", "Failed to get realtime data");
+			return {
+				metadata: this.#Metadata(undefined, undefined, true),
+			};
+		}
+
+		if (realtime.result.realtime.air_quality.description.usa === "") {
+			Console.error("CurrentAirQuality", `Unsupported location`);
 			return {
 				metadata: this.#Metadata(undefined, undefined, true),
 			};
