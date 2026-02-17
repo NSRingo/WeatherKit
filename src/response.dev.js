@@ -270,7 +270,14 @@ async function InjectPollutants(Settings, enviroments) {
 	Console.info("✅ InjectPollutants");
 	switch (Settings?.AirQuality?.Current?.Pollutants?.Provider) {
 		case "QWeather": {
-			return await enviroments.qWeather.CurrentAirQuality();
+			const currentAirQuality = await enviroments.qWeather.CurrentAirQuality();
+			return {
+				...currentAirQuality,
+				metadata: {
+					...currentAirQuality.metadata,
+					providerName: "和风天气",
+				},
+			};
 		}
 		case "ColorfulClouds":
 		default: {

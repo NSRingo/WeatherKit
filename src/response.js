@@ -210,7 +210,14 @@ async function InjectPollutants(Settings, enviroments) {
 	Console.info("✅ InjectPollutants");
 	switch (Settings?.AirQuality?.Current?.Pollutants?.Provider) {
 		case "QWeather": {
-			return await enviroments.qWeather.CurrentAirQuality();
+			const currentAirQuality = await enviroments.qWeather.CurrentAirQuality();
+			return {
+				...currentAirQuality,
+				metadata: {
+					...currentAirQuality.metadata,
+					providerName: "和风天气",
+				},
+			};
 		}
 		case "ColorfulClouds":
 		default: {
@@ -433,7 +440,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 
 		const getMetadata = (indexProvider, temporarilyUnavailable = false) => ({
 			...yesterdayQWeather.metadata,
-			providerName: `污染物：${yesterdayQWeather.metadata.providerName}，指数：${indexProvider}`,
+			providerName: `污染物：和风天气，指数：${indexProvider}`,
 			temporarilyUnavailable,
 		});
 

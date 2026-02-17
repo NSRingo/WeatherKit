@@ -785,11 +785,15 @@ export default class QWeather {
 		}
 
 		Console.info("✅ CurrentAirQuality");
+		const metadata = this.#Metadata(
+			// TODO: &lang=zh
+			`https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`,
+		);
 		return {
-			metadata: this.#Metadata(
-				// TODO: &lang=zh
-				`https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`,
-			),
+			metadata: {
+				...metadata,
+				providerName: `${metadata.providerName}（国标，12年2月版）`,
+			},
 			categoryIndex,
 			index: supportedIndex.aqi,
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
@@ -825,8 +829,12 @@ export default class QWeather {
 		const pollutants = this.#CreatePollutantsV7(historicalAir.airHourly[hour]);
 		Console.debug(`pollutants: ${JSON.stringify(pollutants)}`);
 		Console.info("✅ YesterdayAirQuality", `categoryIndex: ${categoryIndex}`, `index: ${index}`);
+		const metadata = this.#Metadata(historicalAir.fxLink);
 		return {
-			metadata: this.#Metadata(historicalAir.fxLink),
+			metadata: {
+				...metadata,
+				providerName: `${metadata.providerName}（国标，12年2月版）`,
+			},
 			categoryIndex,
 			index,
 			pollutants,
