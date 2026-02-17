@@ -299,7 +299,7 @@ async function InjectPollutants(Settings, enviroments) {
 }
 
 function getStpConversionFactors(airQuality) {
-	Console.info("☑️ InjectPollutants");
+	Console.info("☑️ getStpConversionFactors");
 
 	const { US } = AirQuality.Config.STP_ConversionFactors;
 	switch (airQuality?.metadata?.providerName) {
@@ -308,10 +308,10 @@ function getStpConversionFactors(airQuality) {
 		// 	const epaNowCast = AirQuality.Config.Scales.EPA_NowCast;
 		// 	const currentScaleName = AirQuality.GetNameFromScale(airQuality.scale);
 		// 	if (currentScaleName === epaNowCast.weatherKitScale.name) {
-		// 		Console.info("✅ InjectPollutants", `STP conversion factors for ${airQuality?.metadata?.providerName}: US`);
+		// 		Console.info("✅ getStpConversionFactors", `STP conversion factors for ${airQuality?.metadata?.providerName}: US`);
 		// 		return US;
 		// 	} else {
-		// 		Console.info("✅ InjectPollutants", `STP conversion factors for ${airQuality?.metadata?.providerName}: EU`);
+		// 		Console.info("✅ getStpConversionFactors", `STP conversion factors for ${airQuality?.metadata?.providerName}: EU`);
 		// 		return EU;
 		// 	}
 		// }
@@ -321,7 +321,7 @@ function getStpConversionFactors(airQuality) {
 		case "和风天气":
 		case "BreezoMeter":
 		default: {
-			Console.info("✅ InjectPollutants", `STP conversion factors for ${airQuality?.metadata?.providerName}: US`);
+			Console.info("✅ getStpConversionFactors", `STP conversion factors for ${airQuality?.metadata?.providerName}: US`);
 			return US;
 		}
 	}
