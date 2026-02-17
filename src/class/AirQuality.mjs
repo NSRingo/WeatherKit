@@ -254,7 +254,7 @@ export default class AirQuality {
 		return {
 			...airQuality,
 			index: airQuality.categoryIndex,
-			metadata: { ...airQuality, providerName: `${airQuality.metadata.providerName} (FB001846)` },
+			metadata: { ...airQuality.metadata, providerName: `${airQuality.metadata.providerName} (FB001846)` },
 		};
 	}
 
@@ -270,7 +270,10 @@ export default class AirQuality {
 		return {
 			...airQuality,
 			index: Math.min(airQuality.index, MAX_INDEX),
-			metadata: { ...airQuality, providerName: `${airQuality.metadata.providerName} (ETC HE Report 2024/17)` },
+			metadata: {
+				...airQuality.metadata,
+				providerName: `${airQuality.metadata.providerName} (ETC HE Report 2024/17)`,
+			},
 		};
 	}
 
@@ -286,7 +289,10 @@ export default class AirQuality {
 		return {
 			...airQuality,
 			index: allowOverRange ? airQuality.index : Math.min(airQuality.index, MAX_INDEX),
-			metadata: { ...airQuality, providerName: `${airQuality.metadata.providerName} (WAQI InstantCast EPA-454/B-24-002)` },
+			metadata: {
+				...airQuality.metadata,
+				providerName: `${airQuality.metadata.providerName} (WAQI InstantCast EPA-454/B-24-002)`,
+			},
 		};
 	}
 
@@ -308,7 +314,7 @@ export default class AirQuality {
 			...airQuality,
 			index: allowOverRange ? airQuality.index : Math.min(airQuality.index, MAX_INDEX),
 			metadata: {
-				...airQuality,
+				...airQuality.metadata,
 				providerName: `${airQuality.metadata.providerName} (${scale === AirQuality.Config.Scales.HJ6332012 ? "HJ 633—2012" : "HJ 633—2025 DRAFT"})`,
 			},
 			primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : airQuality.primaryPollutant,
