@@ -341,10 +341,10 @@ export default class AirQuality {
 				categories: {
 					significantIndex: 4, // schlecht
 					ranges: [
-						{ categoryIndex: 1, indexes: [0, 1] }, // sehr gut
-						{ categoryIndex: 2, indexes: [1, 2] }, // gut
-						{ categoryIndex: 3, indexes: [2, 3] }, // mäßig
-						{ categoryIndex: 4, indexes: [3, 4] }, // schlecht
+						{ categoryIndex: 1, indexes: [0, 0.99] }, // sehr gut
+						{ categoryIndex: 2, indexes: [1, 1.99] }, // gut
+						{ categoryIndex: 3, indexes: [2, 2.99] }, // mäßig
+						{ categoryIndex: 4, indexes: [3, 3.99] }, // schlecht
 						{ categoryIndex: 5, indexes: [4, Number.POSITIVE_INFINITY] }, // sehr schlecht
 					],
 				},
@@ -353,13 +353,13 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [0, 1], amounts: [0, 10] },
-							max: { indexes: [3, 4], amounts: [61, 100] },
+							min: { indexes: [0, 0.99], amounts: [0, 10] },
+							max: { indexes: [3, 3.99], amounts: [61, 100] },
 							value: [
-								{ indexes: [0, 1], amounts: [0, 10] }, // sehr gut
-								{ indexes: [1, 2], amounts: [11, 30] }, // gut
-								{ indexes: [2, 3], amounts: [31, 60] }, // mäßig
-								{ indexes: [3, 4], amounts: [61, 100] }, // schlecht
+								{ indexes: [0, 0.99], amounts: [0, 10] }, // sehr gut
+								{ indexes: [1, 1.99], amounts: [11, 30] }, // gut
+								{ indexes: [2, 2.99], amounts: [31, 60] }, // mäßig
+								{ indexes: [3, 3.99], amounts: [61, 100] }, // schlecht
 								{ indexes: [4, Number.POSITIVE_INFINITY], amounts: [101, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
@@ -368,13 +368,13 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [0, 1], amounts: [0, 9] },
-							max: { indexes: [3, 4], amounts: [55, 90] },
+							min: { indexes: [0, 0.99], amounts: [0, 9] },
+							max: { indexes: [3, 3.99], amounts: [55, 90] },
 							value: [
-								{ indexes: [0, 1], amounts: [0, 9] }, // sehr gut
-								{ indexes: [1, 2], amounts: [10, 27] }, // gut
-								{ indexes: [2, 3], amounts: [28, 54] }, // mäßig
-								{ indexes: [3, 4], amounts: [55, 90] }, // schlecht
+								{ indexes: [0, 0.99], amounts: [0, 9] }, // sehr gut
+								{ indexes: [1, 1.99], amounts: [10, 27] }, // gut
+								{ indexes: [2, 2.99], amounts: [28, 54] }, // mäßig
+								{ indexes: [3, 3.99], amounts: [55, 90] }, // schlecht
 								{ indexes: [4, Number.POSITIVE_INFINITY], amounts: [91, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
@@ -383,13 +383,13 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [0, 1], amounts: [0, 5] },
-							max: { indexes: [3, 4], amounts: [31, 50] },
+							min: { indexes: [0, 0.99], amounts: [0, 5] },
+							max: { indexes: [3, 3.99], amounts: [31, 50] },
 							value: [
-								{ indexes: [0, 1], amounts: [0, 5] }, // sehr gut
-								{ indexes: [1, 2], amounts: [6, 15] }, // gut
-								{ indexes: [2, 3], amounts: [16, 30] }, // mäßig
-								{ indexes: [3, 4], amounts: [31, 50] }, // schlecht
+								{ indexes: [0, 0.99], amounts: [0, 5] }, // sehr gut
+								{ indexes: [1, 1.99], amounts: [6, 15] }, // gut
+								{ indexes: [2, 2.99], amounts: [16, 30] }, // mäßig
+								{ indexes: [3, 3.99], amounts: [31, 50] }, // schlecht
 								{ indexes: [4, Number.POSITIVE_INFINITY], amounts: [51, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
@@ -398,13 +398,13 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [0, 1], amounts: [0, 24] },
-							max: { indexes: [3, 4], amounts: [145, 240] },
+							min: { indexes: [0, 0.99], amounts: [0, 24] },
+							max: { indexes: [3, 3.99], amounts: [145, 240] },
 							value: [
-								{ indexes: [0, 1], amounts: [0, 24] }, // sehr gut
-								{ indexes: [1, 2], amounts: [25, 72] }, // gut
-								{ indexes: [2, 3], amounts: [73, 144] }, // mäßig
-								{ indexes: [3, 4], amounts: [145, 240] }, // schlecht
+								{ indexes: [0, 0.99], amounts: [0, 24] }, // sehr gut
+								{ indexes: [1, 1.99], amounts: [25, 72] }, // gut
+								{ indexes: [2, 2.99], amounts: [73, 144] }, // mäßig
+								{ indexes: [3, 3.99], amounts: [145, 240] }, // schlecht
 								{ indexes: [4, Number.POSITIVE_INFINITY], amounts: [241, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
@@ -413,13 +413,13 @@ export default class AirQuality {
 						units: "MICROGRAMS_PER_CUBIC_METER",
 						stpConversionFactor: -1,
 						ranges: {
-							min: { indexes: [0, 1], amounts: [0, 10] },
-							max: { indexes: [3, 4], amounts: [61, 100] },
+							min: { indexes: [0, 0.99], amounts: [0, 10] },
+							max: { indexes: [3, 3.99], amounts: [61, 100] },
 							value: [
-								{ indexes: [0, 1], amounts: [0, 10] }, // sehr gut
-								{ indexes: [1, 2], amounts: [11, 30] }, // gut
-								{ indexes: [2, 3], amounts: [31, 60] }, // mäßig
-								{ indexes: [3, 4], amounts: [61, 100] }, // schlecht
+								{ indexes: [0, 0.99], amounts: [0, 10] }, // sehr gut
+								{ indexes: [1, 1.99], amounts: [11, 30] }, // gut
+								{ indexes: [2, 2.99], amounts: [31, 60] }, // mäßig
+								{ indexes: [3, 3.99], amounts: [61, 100] }, // schlecht
 								{ indexes: [4, Number.POSITIVE_INFINITY], amounts: [101, Number.POSITIVE_INFINITY] }, // sehr schlecht
 							],
 						},
