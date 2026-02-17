@@ -147,6 +147,7 @@ export default class AirQuality {
 	}
 
 	static #PollutantsToIndexes(pollutants, pollutantScales) {
+		const { add, subtract, multiply, divide } = SimplePrecisionMath;
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
 
 		return Object.entries(pollutantScales).map(([pollutantType, pollutantScale]) => {
@@ -182,8 +183,18 @@ export default class AirQuality {
 
 			const [minIndex, maxIndex] = indexes;
 			const [minAmount, maxAmount] = amounts;
-
-			const index = ((maxIndex - minIndex) / (maxAmount - minAmount)) * (AirQuality.#RoundByPrecision(amount, minAmount) - minAmount) + (amount > maxAmount ? maxIndex : minIndex);
+			// (((maxIndex - minIndex) / (maxAmount - minAmount)) * (amount - minAmount)) + (amount > maxAmount ? maxIndex : minIndex)
+			const index = add(
+				// ((maxIndex - minIndex) / (maxAmount - minAmount)) * (amount - minAmount)
+				multiply(
+					// (maxIndex - minIndex) / (maxAmount - minAmount)
+					divide(subtract(maxIndex, minIndex), subtract(maxAmount, minAmount)),
+					// (amount - minAmount)
+					subtract(amount, minAmount),
+				),
+				// Use max index as base if over range
+				amount > maxAmount ? maxIndex : minIndex,
+			);
 			return { pollutantType, index };
 		});
 	}
