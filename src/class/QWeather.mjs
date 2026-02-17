@@ -745,11 +745,8 @@ export default class QWeather {
 				return { pollutantType, index: -1 };
 			});
 
-			const primaryPollutant = AirQuality.FindPrimaryPollutants(pollutantIndexes)[0];
-			if (primaryPollutant.index < 0) {
-				Console.error("getPrimaryPollutant", "No any valid sub-index");
-				return "NOT_AVAILABLE";
-			}
+			const scale = indexCodeToScale(scaleCode);
+			const primaryPollutant = AirQuality.GetPrimaryPollutant(pollutantIndexes, scale.categories);
 
 			Console.info("✅ getPrimaryPollutant");
 			return primaryPollutant.pollutantType;

@@ -134,33 +134,6 @@ export default class AirQuality {
 		return scaleName;
 	}
 
-	static FindPrimaryPollutants = pollutantIndexes => {
-		Console.info("☑️ FindPrimaryPollutants");
-
-		const overRangePollutants = pollutantIndexes.filter(({ index }) => index > 500);
-		if (overRangePollutants.length > 0) {
-			Console.warn("FindPrimaryPollutants", `Over range detected! ${JSON.stringify(overRangePollutants.map(({ pollutantType }) => pollutantType))}`);
-			Console.warn("FindPrimaryPollutants", "Take care of yourself!");
-			Console.info("✅ FindPrimaryPollutants");
-			return [...overRangePollutants].sort((a, b) => b.index - a.index);
-		}
-
-		const primaryPollutants = pollutantIndexes.reduce((list, pollutantIndex) => {
-			if (list.length === 0 || pollutantIndex.index > list[0].index) {
-				return [pollutantIndex];
-			} else if (pollutantIndex.index === list[0].index) {
-				list.push(pollutantIndex);
-			}
-			return list;
-		}, []);
-		if (primaryPollutants.length > 1) {
-			Console.warn("FindPrimaryPollutants", `Multiple primary pollutants: ${JSON.stringify(primaryPollutants.map(({ pollutantType }) => pollutantType))}`);
-		}
-
-		Console.info("✅ FindPrimaryPollutants");
-		return primaryPollutants;
-	};
-
 	static #PollutantsToIndexes(pollutants, scaleForPollutants) {
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
 
@@ -201,6 +174,46 @@ export default class AirQuality {
 		});
 	}
 
+	static GetPrimaryPollutant(indexes = [], categories = {}) {
+		Console.info("☑️ GetPrimaryPollutant");
+		const failedPollutant = { pollutantType: "NOT_AVAILABLE", index: -1, categoryIndex: -1 };
+
+		if (!Array.isArray(indexes) || indexes.length === 0) {
+			Console.error("GetPrimaryPollutant", "indexes is invalid");
+			return failedPollutant;
+		}
+
+		if (!categories?.ranges || !Array.isArray(categories.ranges) || categories.ranges.length === 0) {
+			Console.error("GetPrimaryPollutant", "categories is invalid");
+			return failedPollutant;
+		}
+
+		const indexesWithCategory = indexes
+			.filter(({ index }) => Number.isFinite(index))
+			.map(pollutant => ({
+				...pollutant,
+				categoryIndex: AirQuality.CategoryIndex(pollutant.index, categories),
+			}))
+			.sort((a, b) => b.index - a.index);
+
+		if (indexesWithCategory.length === 0) {
+			Console.error("GetPrimaryPollutant", "No valid pollutant index found");
+			return failedPollutant;
+		}
+
+		const maxCategoryIndex = indexesWithCategory.reduce((max, { categoryIndex }) => (categoryIndex > max ? categoryIndex : max), Number.NEGATIVE_INFINITY);
+		const primaryPollutants = indexesWithCategory.filter(({ categoryIndex }) => categoryIndex === maxCategoryIndex);
+
+		if (primaryPollutants.length > 1) {
+			Console.warn("GetPrimaryPollutant", `Multiple primary pollutants in categoryIndex ${maxCategoryIndex}`);
+			primaryPollutants.map(({ pollutantType, index }) => Console.warn("GetPrimaryPollutants", `Index of ${pollutantType}: ${index}`));
+		}
+
+		const primaryPollutant = primaryPollutants[0];
+		Console.info("✅ GetPrimaryPollutant", `primaryPollutant: ${JSON.stringify(primaryPollutant)}`);
+		return primaryPollutant;
+	}
+
 	static #PollutantsToAirQuality(pollutants, scale) {
 		Console.info("☑️ PollutantsToAirQuality");
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
@@ -211,14 +224,13 @@ export default class AirQuality {
 		const indexes = AirQuality.#PollutantsToIndexes(pollutants, scale.pollutants);
 		Console.debug("PollutantsToAirQuality", `indexes: ${JSON.stringify(indexes)}`);
 
-		const primaryPollutant = indexes.reduce((previous, current) => (previous.index > current.index ? previous : current));
-		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale.categories);
+		const primaryPollutant = AirQuality.GetPrimaryPollutant(indexes, scale.categories);
 
-		Console.info("✅ PollutantsToAirQuality", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`, `categoryIndex: ${categoryIndex}`);
+		Console.info("✅ PollutantsToAirQuality", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`);
 		return {
 			index: Math.round(primaryPollutant.index),
-			isSignificant: categoryIndex >= scale.categories.significantIndex,
-			categoryIndex,
+			isSignificant: primaryPollutant.categoryIndex >= scale.categories.significantIndex,
+			categoryIndex: primaryPollutant.categoryIndex,
 			pollutants,
 			metadata: { providerName: "iRingo", temporarilyUnavailable: false },
 			primaryPollutant: primaryPollutant.pollutantType,
@@ -275,9 +287,6 @@ export default class AirQuality {
 		Console.info("☑️ PollutantsToInstantCastCN");
 
 		const airQuality = AirQuality.#PollutantsToAirQuality(pollutants, AirQuality.Config.Scales.WAQI_InstantCast_CN);
-
-		// Log all primary pollutants for HJ633
-		AirQuality.FindPrimaryPollutants(AirQuality.#PollutantsToIndexes(pollutants, scale.pollutants));
 
 		const isNotAvailable = !forcePrimaryPollutant && airQuality.index <= 50;
 		if (isNotAvailable) {
