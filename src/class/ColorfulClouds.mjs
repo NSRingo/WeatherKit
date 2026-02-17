@@ -385,7 +385,7 @@ export default class ColorfulClouds {
 		if (useUsa) {
 			const scale = AirQuality.Config.Scales.EPA_NowCast;
 			const index = realtime.result.realtime.air_quality.aqi.usa;
-			const categoryIndex = AirQuality.CategoryIndex(index, scale);
+			const categoryIndex = AirQuality.CategoryIndex(index, scale.categories);
 			return {
 				...particularAirQuality,
 				categoryIndex,
@@ -397,7 +397,7 @@ export default class ColorfulClouds {
 		} else {
 			const scale = AirQuality.Config.Scales.HJ6332012;
 			const index = realtime.result.realtime.air_quality.aqi.chn;
-			const categoryIndex = AirQuality.CategoryIndex(index, scale);
+			const categoryIndex = AirQuality.CategoryIndex(index, scale.categories);
 
 			const chnIaqi = [
 				{ pollutantType: "PM2_5", index: realtime.result.realtime.air_quality.pm25_iaqi_chn },
@@ -479,7 +479,7 @@ export default class ColorfulClouds {
 		}
 
 		const index = useUsa ? usa : chn;
-		const categoryIndex = AirQuality.CategoryIndex(index, scale);
+		const categoryIndex = AirQuality.CategoryIndex(index, scale.categories);
 		const isSignificant = categoryIndex >= scale.categories.significantIndex;
 		Console.info("✅ YesterdayAirQuality", `index: ${index}`, `categoryIndex: ${categoryIndex}`);
 

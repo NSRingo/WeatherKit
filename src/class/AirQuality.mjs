@@ -29,9 +29,9 @@ export default class AirQuality {
 		return Math.round(a * multiplier) / multiplier;
 	}
 
-	static CategoryIndex(index, scale) {
+	static CategoryIndex(index, categories) {
 		Console.info("☑️ CategoryIndex", `index: ${index}`);
-		const { categoryIndex } = scale.categories.ranges.find(({ indexes }) => {
+		const { categoryIndex } = categories.ranges.find(({ indexes }) => {
 			const [min, max] = indexes;
 			return AirQuality.#CeilByPrecision(index, min) >= min && AirQuality.#CeilByPrecision(index, max) <= max;
 		});
@@ -212,7 +212,7 @@ export default class AirQuality {
 		Console.debug("PollutantsToAirQuality", `indexes: ${JSON.stringify(indexes)}`);
 
 		const primaryPollutant = indexes.reduce((previous, current) => (previous.index > current.index ? previous : current));
-		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale);
+		const categoryIndex = AirQuality.CategoryIndex(primaryPollutant.index, scale.categories);
 
 		Console.info("✅ PollutantsToAirQuality", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`, `categoryIndex: ${categoryIndex}`);
 		return {
