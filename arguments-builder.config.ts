@@ -34,10 +34,10 @@ export default defineConfig({
 	args: [
 		{
 			key: "DataSets.Replace",
-			name: "[数据集] 修改地区",
+			name: "[数据集] 替换地区",
 			defaultValue: "CN|HK|MO|TW|IT|LT|MT|FR|SK|NO|BY|IS|CZ|SI|DE|ES|UA|DK|PL|FI|SE|HR|RU|RO|PT|EE|RS|AT|GR|HU|FJ|GU|MH|NC|TR|BH|SA|ID|IR|SG|OM|PH|IN|KH|CY|MY|VN|KW|TH|KR|KP|CA|BS|KY|MX|PA|MQ|CU|BM|PR|CW|GP|NI|BR|GF|CO|GY|PY|AR",
 			type: "string",
-			description: "正则表达式，只修改指定地区的数据集。",
+			description: "正则表达式，只替换指定地区的数据集。",
 		},
 		{
 			key: "DataSets.Value",
@@ -110,7 +110,7 @@ export default defineConfig({
 				{ key: "ColorfulClouds", label: "彩云天气" },
 				{ key: "QWeather", label: "和风天气" },
 			],
-			description: "使用选定的数据源填充污染物数据。",
+			description: "使用选定的数据源填补污染物数据。",
 		},
 		{
 			key: "AirQuality.Current.Pollutants.Units.Replace",
@@ -147,7 +147,7 @@ export default defineConfig({
 			defaultValue: ["HJ6332012"],
 			type: "array",
 			options: [
-				{ key: "HJ6332012", label: "中国 (HJ6332012)" },
+				{ key: "HJ6332012", label: "中国AQI（HJ6332012）" },
 
 				{ key: "IE.AQIH", label: "爱尔兰AQIH（IE.AQIH）" },
 				{ key: "AT.AQI", label: "奥地利AQI（AT.AQI）" },
@@ -181,7 +181,7 @@ export default defineConfig({
 				{ key: "QWeather", label: "和风天气（国标）" },
 				{ key: "WAQI", label: "WAQI（美标InstantCast，18年9月版）" },
 			],
-			description: "使用选定的数据源填充空气质量指数数据。",
+			description: "使用选定的数据源填补和替换空气质量指数。",
 		},
 		{
 			key: "AirQuality.Current.Index.ForceCNPrimaryPollutants",

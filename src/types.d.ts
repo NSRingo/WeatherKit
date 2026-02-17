@@ -1,6 +1,6 @@
 export interface Settings {
-    DataSets: {
-        /**
+    DataSets?: {
+    /**
          * [数据集] 替换地区
          *
          * 正则表达式，只替换指定地区的数据集。
@@ -8,7 +8,7 @@ export interface Settings {
          * @defaultValue "CN|HK|MO|TW|IT|LT|MT|FR|SK|NO|BY|IS|CZ|SI|DE|ES|UA|DK|PL|FI|SE|HR|RU|RO|PT|EE|RS|AT|GR|HU|FJ|GU|MH|NC|TR|BH|SA|ID|IR|SG|OM|PH|IN|KH|CY|MY|VN|KW|TH|KR|KP|CA|BS|KY|MX|PA|MQ|CU|BM|PR|CW|GP|NI|BR|GF|CO|GY|PY|AR"
          */
         Replace?: string;
-        /**
+    /**
          * [数据集]
          *
          * 选中的数据集会被包含在请求中。
@@ -30,9 +30,9 @@ export interface Settings {
          * @defaultValue ["airQuality","currentWeather","forecastDaily","forecastHourly","forecastNextHour","locationInfo","news","historicalComparisons","weatherAlerts","weatherChanges"]
          */
         Value?: ('airQuality' | 'currentWeather' | 'forecastDaily' | 'forecastHourly' | 'forecastNextHour' | 'locationInfo' | 'news' | 'historicalComparisons' | 'weatherAlerts' | 'weatherChanges')[];
-    };
+};
     Weather?: {
-        /**
+    /**
          * [天气] 替换地区
          *
          * 正则表达式，只替换指定地区的天气。
@@ -40,7 +40,7 @@ export interface Settings {
          * @defaultValue "CN"
          */
         Replace?: string;
-        /**
+    /**
          * [天气] 数据源
          *
          * 使用选定的数据源替换天气数据。
@@ -54,9 +54,9 @@ export interface Settings {
          * @defaultValue "ColorfulClouds"
          */
         Provider?: 'ColorfulClouds' | 'QWeather';
-    };
+};
     NextHour?: {
-        /**
+    /**
          * [未来一小时降水强度] 填补地区
          *
          * 正则表达式，只填补指定地区的未来一小时降水强度。
@@ -64,7 +64,7 @@ export interface Settings {
          * @defaultValue "CN|HK|MO|TW|IT|LT|MT|FR|SK|NO|BY|IS|CZ|SI|DE|ES|UA|DK|PL|FI|SE|HR|RU|RO|PT|EE|RS|AT|GR|HU|FJ|GU|MH|NC|TR|BH|SA|ID|IR|SG|OM|PH|IN|KH|CY|MY|VN|KW|TH|KR|KP|CA|BS|KY|MX|PA|MQ|CU|BM|PR|CW|GP|NI|BR|GF|CO|GY|PY|AR"
          */
         Fill?: string;
-        /**
+    /**
          * [未来一小时降水强度] 数据源
          *
          * 使用选定的数据源填充未来一小时降水强度的数据。
@@ -78,17 +78,17 @@ export interface Settings {
          * @defaultValue "ColorfulClouds"
          */
         Provider?: 'ColorfulClouds' | 'QWeather';
-    };
+};
     AirQuality?: {
-        Current?: {
+    Current?: {
             /**
-             * [空气质量 - 今日] 填补地区
-             *
-             * 正则表达式，只填补指定地区的今日空气质量数据。
-             *
-             * @defaultValue "CN|HK|MO"
-             */
-            Fill?: string;
+         * [空气质量 - 今日] 填补地区
+         *
+         * 正则表达式，只填补指定地区的今日空气质量数据。
+         *
+         * @defaultValue "CN|HK|MO"
+         */
+        Fill?: string;
             Pollutants?: {
                 /**
                  * [今日污染物] 数据源
@@ -113,9 +113,9 @@ export interface Settings {
                      * @remarks
                      *
                      * Possible values:
-                     * - `'EPA_NowCast'` - 美国AQI (EPA_NowCast)
+                     * - `'EPA_NowCast'` - 美国AQI（EPA_NowCast）
                      * - `'EU.EAQI'` - 欧盟EAQI（EU.EAQI）
-                     * - `'HJ6332012'` - 中国AQI (HJ6332012)
+                     * - `'HJ6332012'` - 中国AQI（HJ6332012）
                      * - `'UBA'` - 德国LQI（UBA）
                      *
                      * @defaultValue []
@@ -140,8 +140,8 @@ export interface Settings {
                      * @defaultValue "Scale"
                      */
                     Mode?: 'Scale' | 'ugm3' | 'EU_ppb' | 'US_ppb' | 'Force_ugm3' | 'Force_EU_ppb' | 'Force_US_ppb';
-                };
-            };
+};
+};
             Index?: {
                 /**
                  * [今日空气指数] 替换目标
@@ -151,8 +151,7 @@ export interface Settings {
                  * @remarks
                  *
                  * Possible values:
-                 * - `'HJ6332012'` - 中国AQI (HJ6332012)
-                 *
+                 * - `'HJ6332012'` - 中国AQI（HJ6332012）
                  * - `'IE.AQIH'` - 爱尔兰AQIH（IE.AQIH）
                  * - `'AT.AQI'` - 奥地利AQI（AT.AQI）
                  * - `'BE.BelAQI'` - 比利时BelAQI（BE.BelAQI）
@@ -173,11 +172,7 @@ export interface Settings {
                  *
                  * @defaultValue ["HJ6332012"]
                  */
-                Replace?: (
-                    'HJ6332012' | 'IE.AQIH' | 'AT.AQI' | 'BE.BelAQI' | 'UBA' | 'FR.ATMO' | 'KR.CAI' | 'CA.AQHI' |
-                    'CZ.AQI' | 'NL.LKI' | 'EPA_NowCast' | 'ICARS' | 'EU.EAQI' | 'CH.KBI' | 'ES.MITECO' | 'SG.NEA' |
-                    'NAQI' | 'DAQI'
-                )[];
+                Replace?: ('HJ6332012' | 'IE.AQIH' | 'AT.AQI' | 'BE.BelAQI' | 'UBA' | 'FR.ATMO' | 'KR.CAI' | 'CA.AQHI' | 'CZ.AQI' | 'NL.LKI' | 'EPA_NowCast' | 'ICARS' | 'EU.EAQI' | 'CH.KBI' | 'ES.MITECO' | 'SG.NEA' | 'NAQI' | 'DAQI')[];
                 /**
                  * [今日空气指数] 数据源
                  *
@@ -203,125 +198,125 @@ export interface Settings {
                  * @defaultValue true
                  */
                 ForceCNPrimaryPollutants?: boolean;
-            };
-        };
-        Comparison?: {
+};
+};
+    Comparison?: {
+        /**
+         * [空气质量 - 对比昨日] 填补地区
+         *
+         * 正则表达式，只填补指定地区的对比昨日数据。
+         *
+         * @defaultValue "CN|HK|MO"
+         */
+        Fill?: string;
+        /**
+         * [空气质量 - 对比昨日] 变化时替换
+         *
+         * 即使已有对比昨日数据，当今日空气质量指数发生变化时，替换对比昨日数据。
+         *
+         * @defaultValue false
+         */
+        ReplaceWhenCurrentChange?: boolean;
+        Yesterday?: {
             /**
-             * [空气质量 - 对比昨日] 填补地区
+             * [昨日污染物] 数据源
              *
-             * 正则表达式，只填补指定地区的对比昨日数据。
-             *
-             * @defaultValue "CN|HK|MO"
-             */
-            Fill?: string;
-            /**
-             * [空气质量 - 对比昨日] 变化时替换
-             *
-             * 即使已有对比昨日数据，当今日空气质量指数发生变化时，替换对比昨日数据。
-             *
-             * @defaultValue false
-             */
-            ReplaceWhenCurrentChange?: boolean;
-            Yesterday?: {
-                /**
-                 * [昨日污染物] 数据源
-                 *
-                 * 为iRingo内置算法提供污染物数据，计算出昨日的空气质量指数。
-                 *
-                 * @remarks
-                 *
-                 * Possible values:
-                 * - `'QWeather'` - 和风天气
-                 *
-                 * @defaultValue "QWeather"
-                 */
-                PollutantsProvider?: 'QWeather';
-                /**
-                 * [昨日空气指数] 数据源
-                 *
-                 * 用来和今日空气质量指数对比的数据。
-                 *
-                 * @remarks
-                 *
-                 * Possible values:
-                 * - `'iRingo'` - iRingo内置算法
-                 * - `'ColorfulCloudsUS'` - 彩云天气（美标，18年9月版）
-                 * - `'ColorfulCloudsCN'` - 彩云天气（国标）
-                 * - `'QWeather'` - 和风天气（国标）
-                 *
-                 * @defaultValue "ColorfulCloudsUS"
-                 */
-                IndexProvider?: 'iRingo' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather';
-            };
-        };
-        iRingo?: {
-            /**
-             * [iRingo内置算法] 算法
-             *
-             * 使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI。
+             * 为iRingo内置算法提供污染物数据，计算出昨日的空气质量指数。
              *
              * @remarks
              *
              * Possible values:
-             * - `'UBA'` - 德国LQI（FB001846）
-             * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
-             * - `'WAQI_InstantCast_US'` - 美标InstantCast（EPA-454/B-24-002）
-             * - `'WAQI_InstantCast_CN'` - 国标InstantCast（HJ 633—2012）
-             * - `'WAQI_InstantCast_CN_25_DRAFT'` - 国标InstantCast（HJ 633 2025年草案）
+             * - `'QWeather'` - 和风天气
              *
-             * @defaultValue "UBA"
+             * @defaultValue "QWeather"
              */
-            Algorithm?: 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN' | 'WAQI_InstantCast_CN_25_DRAFT';
+            PollutantsProvider?: 'QWeather';
             /**
-             * [iRingo内置算法] 允许指数超标
+             * [昨日空气指数] 数据源
              *
-             * 允许美标和国标的指数超过500。超过500时，指示颜色的小圆点会消失。
+             * 用来和今日空气质量指数对比的数据。
              *
-             * @defaultValue true
+             * @remarks
+             *
+             * Possible values:
+             * - `'iRingo'` - iRingo内置算法
+             * - `'ColorfulCloudsUS'` - 彩云天气（美标，18年9月版）
+             * - `'ColorfulCloudsCN'` - 彩云天气（国标）
+             * - `'QWeather'` - 和风天气（国标）
+             *
+             * @defaultValue "ColorfulCloudsUS"
              */
-            AllowOverRange?: boolean;
-        };
-    };
+            IndexProvider?: 'iRingo' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather';
+};
+};
+    iRingo?: {
+        /**
+         * [iRingo内置算法] 算法
+         *
+         * 使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI。
+         *
+         * @remarks
+         *
+         * Possible values:
+         * - `'UBA'` - 德国LQI（FB001846）
+         * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
+         * - `'WAQI_InstantCast_US'` - 美标InstantCast（EPA-454/B-24-002）
+         * - `'WAQI_InstantCast_CN'` - 国标InstantCast（HJ 633—2012）
+         * - `'WAQI_InstantCast_CN_25_DRAFT'` - 国标InstantCast（HJ 633 2025年草案）
+         *
+         * @defaultValue "UBA"
+         */
+        Algorithm?: 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN' | 'WAQI_InstantCast_CN_25_DRAFT';
+        /**
+         * [iRingo内置算法] 允许指数超标
+         *
+         * 允许美标和国标的指数超过500。超过500时，指示颜色的小圆点会消失。
+         *
+         * @defaultValue true
+         */
+        AllowOverRange?: boolean;
+};
+};
     API?: {
-        ColorfulClouds?: {
+    ColorfulClouds?: {
             /**
-             * [API] 彩云天气令牌
-             *
-             * 彩云天气 API 令牌
-             *
-             * @defaultValue ""
-             */
-            Token?: string;
-        };
-        QWeather?: {
-            /**
-             * [API] 和风天气主机
-             *
-             * 和风天气 API 使用的主机名
-             *
-             * @defaultValue "devapi.qweather.com"
-             */
-            Host?: string;
-            /**
-             * [API] 和风天气令牌
-             *
-             * 和风天气 API 令牌
-             *
-             * @defaultValue ""
-             */
-            Token?: string;
-        };
-        WAQI?: {
-            /**
-             * [API] WAQI 令牌
-             *
-             * WAQI API 令牌，填写此字段将自动使用WAQI高级API
-             *
-             * @defaultValue ""
-             */
-            Token?: string;
-        };
-    };
+         * [API] 彩云天气令牌
+         *
+         * 彩云天气 API 令牌
+         *
+         * @defaultValue ""
+         */
+        Token?: string;
+};
+    QWeather?: {
+        /**
+         * [API] 和风天气主机
+         *
+         * 和风天气 API 使用的主机名
+         *
+         * @defaultValue "devapi.qweather.com"
+         */
+        Host?: string;
+        /**
+         * [API] 和风天气令牌
+         *
+         * 和风天气 API 令牌
+         *
+         * @defaultValue ""
+         */
+        Token?: string;
+};
+    WAQI?: {
+        /**
+         * [API] WAQI 令牌
+         *
+         * WAQI API 令牌，填写此字段将自动使用WAQI高级API
+         *
+         * @defaultValue ""
+         */
+        Token?: string;
+};
+};
     /**
      * [调试] 日志等级
      *
