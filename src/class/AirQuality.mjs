@@ -307,7 +307,7 @@ export default class AirQuality {
 		// Max index in Apple Weather
 		const MAX_INDEX = 500;
 
-		Console.info("☑️ PollutantsToInstantCastUS");
+		Console.info("☑️ PollutantsToInstantCastUS", `allowOverRange: ${allowOverRange}`);
 
 		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
 		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
@@ -328,7 +328,7 @@ export default class AirQuality {
 		// Max index in Apple Weather
 		const MAX_INDEX = 500;
 
-		Console.info("☑️ PollutantsToInstantCastCN");
+		Console.info("☑️ PollutantsToInstantCastCN", `allowOverRange: ${allowOverRange}`, `forcePrimaryPollutant: ${forcePrimaryPollutant}`);
 
 		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
 		const airQuality = AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
