@@ -34,7 +34,9 @@
 		"build": "rspack build",
 		"build:dev": "rspack build -c rspack.dev.config.js --mode=development",
 		"sgmoudle:dev": "sgmoudle dev",
-		"build:args": "arguments-builder build",
+		"build:lite-args": "arguments-builder build",
+		"build:full-args": "arguments-builder boxjs -c arguments-builder-full.config.ts",
+		"build:args": "npm-run-all --serial build:lite-args build:full-args",
 		"dts": "arguments-builder dts",
 		"submodule": "git submodule update --remote"
 	},
