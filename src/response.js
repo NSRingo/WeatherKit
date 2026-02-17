@@ -221,7 +221,14 @@ async function InjectPollutants(Settings, enviroments) {
 		}
 		case "ColorfulClouds":
 		default: {
-			return await enviroments.colorfulClouds.CurrentAirQuality();
+			const currentAirQuality = await enviroments.colorfulClouds.CurrentAirQuality();
+			return {
+				...currentAirQuality,
+				metadata: {
+					...currentAirQuality.metadata,
+					providerName: "彩云天气",
+				},
+			};
 		}
 	}
 }
@@ -395,7 +402,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 
 		const getMetadata = (temporarilyUnavailable = false) => ({
 			...yesterdayAirQuality.metadata,
-			providerName: `指数：${yesterdayAirQuality.metadata.providerName}（${useUsa ? "美标，18年9月版" : "国标"}）`,
+			providerName: `指数：${yesterdayAirQuality.metadata.providerName}`,
 			temporarilyUnavailable,
 		});
 
