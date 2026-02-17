@@ -127,7 +127,7 @@ export default class QWeather {
 		};
 
 		const nearest = findNearestFast(latitude, longitude);
-		Console.info("✅ GetLocationInfo", `locationInfo: ${JSON.stringify(nearest)}`);
+		Console.info("✅ GetLocationInfo");
 		return nearest;
 	}
 
