@@ -12,11 +12,6 @@ export default function setENV(name, platforms, database) {
 	Console.info("☑️ Set Environment Variables");
 	const { Settings, Caches, Configs } = getStorage(name, platforms, database);
 	/***************** Settings *****************/
-	if (!Array.isArray(Settings?.AQI?.ReplaceProviders)) _.set(Settings, "AQI.ReplaceProviders", Settings?.AQI?.ReplaceProviders ? [Settings.AQI.ReplaceProviders.toString()] : []);
-	if (Settings.AQI.ReplaceProviders.includes("TWC")) Settings.AQI.ReplaceProviders.push("The Weather Channel");
-	if (Settings.AQI.ReplaceProviders.includes("QWeather")) Settings.AQI.ReplaceProviders.push("和风天气");
-	Settings.AQI.ReplaceProviders.push(undefined);
-	if (!Array.isArray(Settings?.AQI?.Local?.ReplaceScales)) _.set(Settings, "AQI.Local.ReplaceScales", Settings?.AQI?.Local?.ReplaceScales ? [Settings.AQI.Local.ReplaceScales.toString()] : []);
 	Console.info(`typeof Settings: ${typeof Settings}`, `Settings: ${JSON.stringify(Settings, null, 2)}`);
 	/***************** Caches *****************/
 	//Console.debug(`typeof Caches: ${typeof Caches}`, `Caches: ${JSON.stringify(Caches)}`);
