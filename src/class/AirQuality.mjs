@@ -108,26 +108,28 @@ export default class AirQuality {
 		Console.info("☑️ FixQWeatherCO");
 		if (!Array.isArray(airQuality?.pollutants)) {
 			Console.error("FixQWeatherCO", "airQuality.pollutants is invalid");
-			return;
+			return airQuality;
 		}
 
 		switch (airQuality?.metadata?.providerName) {
 			case "和风天气":
 			case "QWeather": {
-				airQuality.pollutants = airQuality.pollutants.map(pollutant => {
-					const { pollutantType, amount } = pollutant;
-					const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
-					return {
-						...pollutant,
-						amount: pollutantType === "CO" ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
-					};
-				});
 				Console.info("✅ FixQWeatherCO");
-				break;
+				return {
+					...airQuality,
+					pollutants: airQuality.pollutants.map(pollutant => {
+						const { pollutantType, amount } = pollutant;
+						const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
+						return {
+							...pollutant,
+							amount: pollutantType === "CO" ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
+						};
+					}),
+				};
 			}
 			default: {
 				Console.info("✅ FixQWeatherCO", `Provider ${airQuality?.metadata?.providerName} is no need to fix.`);
-				break;
+				return airQuality;
 			}
 		}
 	}

@@ -120,7 +120,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
 									const isPollutantEmpty = !Array.isArray(body?.airQuality?.pollutants) || body.airQuality.pollutants.length === 0;
 									if (!isPollutantEmpty) {
-										AirQuality.FixQWeatherCO(body.airQuality);
+										body.airQuality = AirQuality.FixQWeatherCO(body.airQuality);
 									}
 
 									// injectedPollutants
