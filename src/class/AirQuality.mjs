@@ -297,7 +297,7 @@ export default class AirQuality {
 
 		const isNotAvailable = !forcePrimaryPollutant && airQuality.index <= 50;
 		if (isNotAvailable) {
-			Console.warn("PollutantsToInstantCastCN", `Max index of pollutants ${airQuality.primaryPollutant} = ${airQuality.index} is <= 50, primaryPollutant will be set to NOT_AVAILABLE.`);
+			Console.info("PollutantsToInstantCastCN", `Max index of pollutants ${airQuality.primaryPollutant} = ${airQuality.index} is <= 50, primaryPollutant will be set to NOT_AVAILABLE.`);
 		}
 
 		Console.info("✅ PollutantsToInstantCastCN");

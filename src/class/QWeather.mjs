@@ -781,7 +781,7 @@ export default class QWeather {
 		const apiPrimaryPollutant = this.#Config.Pollutants[supportedIndex.primaryPollutant?.code] || "NOT_AVAILABLE";
 
 		if (!forcePrimaryPollutant && apiPrimaryPollutant === "NOT_AVAILABLE") {
-			Console.warn("CurrentAirQuality", "Max index of pollutants is <= 50, primaryPollutant will be NOT_AVAILABLE.");
+			Console.info("CurrentAirQuality", "Max index of pollutants is <= 50, primaryPollutant will be NOT_AVAILABLE.");
 		}
 
 		Console.info("✅ CurrentAirQuality");
