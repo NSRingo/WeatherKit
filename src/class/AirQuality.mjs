@@ -149,15 +149,16 @@ export default class AirQuality {
 	static #PollutantsToIndexes(pollutants, pollutantScales) {
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
 
-		return pollutants.map(pollutant => {
-			const { pollutantType, amount } = pollutant;
-			const pollutantScale = pollutantScales[pollutantType];
+		return Object.entries(pollutantScales).map(([pollutantType, pollutantScale]) => {
+			const pollutant = pollutants.find(pollutant => pollutant.pollutantType === pollutantType);
 
-			Console.debug("PollutantsToIndexes", `${pollutantType}: ${amount} ${friendlyUnits[pollutant.units] ?? pollutant.units}`);
-			if (!pollutantScale) {
-				Console.debug(`No scale for ${pollutantType}, skip`);
+			if (!pollutant) {
+				Console.warn("PollutantsToIndexes", `No required pollutant "${pollutantType}" for scale. Index may be inaccurate.`);
 				return { pollutantType, index: -1 };
 			}
+
+			const { amount } = pollutant;
+			Console.debug("PollutantsToIndexes", `${pollutantType}: ${amount} ${friendlyUnits[pollutant.units] ?? pollutant.units}`);
 
 			const minValidAmount = pollutantScale.ranges.min.amounts[0];
 			if (amount < minValidAmount) {
@@ -182,7 +183,8 @@ export default class AirQuality {
 			const [minIndex, maxIndex] = indexes;
 			const [minAmount, maxAmount] = amounts;
 
-			return { pollutantType, index: ((maxIndex - minIndex) / (maxAmount - minAmount)) * (AirQuality.#RoundByPrecision(amount, minAmount) - minAmount) + (amount > maxAmount ? maxIndex : minIndex) };
+			const index = ((maxIndex - minIndex) / (maxAmount - minAmount)) * (AirQuality.#RoundByPrecision(amount, minAmount) - minAmount) + (amount > maxAmount ? maxIndex : minIndex);
+			return { pollutantType, index };
 		});
 	}
 
