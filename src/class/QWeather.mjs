@@ -78,6 +78,8 @@ export default class QWeather {
 
 	// Codes by Claude AI
 	static GetLocationInfo(locationsGrid, latitude, longitude) {
+		Console.info("☑️ GetLocationInfo");
+
 		const { gridSize, grid } = locationsGrid;
 
 		// Haversine距离计算
@@ -124,7 +126,9 @@ export default class QWeather {
 			return nearest;
 		};
 
-		return findNearestFast(latitude, longitude);
+		const nearest = findNearestFast(latitude, longitude);
+		Console.info("✅ GetLocationInfo", `locationInfo: ${JSON.stringify(nearest)}`);
+		return nearest;
 	}
 
 	async GeoAPI(path = "city/lookup") {
@@ -652,10 +656,10 @@ export default class QWeather {
 
 	#CreatePollutants(pollutantsObj) {
 		Console.info("☑️ CreatePollutants");
+		Console.debug(`pollutantsObj: ${JSON.stringify(pollutantsObj)}`);
 
-		Console.info("✅ CreatePollutants");
-		// TODO: what is ppmC?
-		return pollutantsObj
+		// TODO: what is ppmC? https://dev.qweather.com/docs/resource/air-info/#pollutants
+		const pollutants = pollutantsObj
 			.filter(pollutant => pollutant.concentration.unit !== "ppmC")
 			.map(({ code, concentration }) => {
 				const { value, unit } = concentration;
@@ -672,6 +676,9 @@ export default class QWeather {
 						return { pollutantType, amount: value, units: this.#Config.Units[unit] };
 				}
 			});
+
+		Console.info("✅ CreatePollutants");
+		return pollutants;
 	}
 
 	/**
@@ -682,9 +689,9 @@ export default class QWeather {
 	 */
 	#CreatePollutantsV7(pollutantsObj) {
 		Console.info("☑️ CreatePollutantsV7");
+		Console.debug(`pollutantsObj: ${JSON.stringify(pollutantsObj)}`);
 
-		Console.info("✅ CreatePollutantsV7");
-		return Object.entries(pollutantsObj)
+		const pollutants = Object.entries(pollutantsObj)
 			.filter(([name]) => this.#Config.Pollutants[name] !== undefined)
 			.map(([name, rawAmount]) => {
 				const amount = Number.parseFloat(rawAmount);
@@ -696,13 +703,19 @@ export default class QWeather {
 					units: ugm3,
 				};
 			});
+
+		Console.info("✅ CreatePollutantsV7");
+		return pollutants;
 	}
 
 	async CurrentAirQuality(forcePrimaryPollutant = true) {
 		const findSupportedIndex = indexes => {
+			Console.info("☑️ findSupportedIndex");
+
 			const supportedCodes = ["cn-mee", "cn-mee-1h", "eu-eea", "us-epa", "us-epa-nc"];
 			for (const index of indexes) {
 				if (supportedCodes.includes(index.code)) {
+					Console.info("✅ indexCodeToScale", `index.code: ${index.code}`);
 					return index;
 				}
 			}
@@ -711,23 +724,30 @@ export default class QWeather {
 		};
 
 		const indexCodeToScale = code => {
+			Console.info("☑️ indexCodeToScale", `code: ${code}`);
+
+			const { HJ6332012, EPA_NowCast, EU_EAQI } = AirQuality.Config.Scales;
 			switch (code) {
 				// We don't need calcualtion so they are same
 				case "cn-mee":
 				case "cn-mee-1h":
-					return AirQuality.Config.Scales.HJ6332012;
+					Console.info("✅ indexCodeToScale", "HJ6332012");
+					return HJ6332012;
 				case "us-epa":
 				case "us-epa-nc":
-					return AirQuality.Config.Scales.EPA_NowCast;
+					Console.info("✅ indexCodeToScale", "EPA_NowCast");
+					return EPA_NowCast;
 				case "eu-eea":
-					return AirQuality.Config.Scales.EU_EAQI;
+					Console.info("✅ indexCodeToScale", "EU_EAQI");
+					return EU_EAQI;
 				default:
+					Console.error("indexCodeToScale", "不支持的code");
 					return {};
 			}
 		};
 
 		const getPrimaryPollutant = (scaleCode, pollutants) => {
-			Console.info("☑️ getPrimaryPollutant", `scaleCode = ${scaleCode}`);
+			Console.info("☑️ getPrimaryPollutant", `scaleCode: ${scaleCode}`);
 			if (pollutants.length === 0) {
 				Console.error("getPrimaryPollutant", "pollutants is empty!");
 				return "NOT_AVAILABLE";
@@ -741,7 +761,7 @@ export default class QWeather {
 					}
 				}
 
-				Console.error("getPrimaryPollutant", `No index of ${pollutantType} found for required scale`);
+				Console.warn("getPrimaryPollutant", `No index for ${pollutantType} was found for required scale`);
 				return { pollutantType, index: -1 };
 			});
 
@@ -781,8 +801,7 @@ export default class QWeather {
 		const scale = indexCodeToScale(supportedIndex?.code);
 
 		if (!supportedIndex?.code || !scale?.categories) {
-			Console.warn("AirQuality", "No supported index found");
-			Console.debug(`airQualityCurrent.indexes[].code = ${JSON.stringify(airQualityCurrent.indexes?.map(({ code }) => code))}`);
+			Console.error("AirQuality", "No supported index found", `airQualityCurrent.indexes[].code = ${JSON.stringify(airQualityCurrent.indexes?.map(({ code }) => code))}`);
 			return {
 				...particularAirQuality,
 				index: -1,
@@ -795,17 +814,17 @@ export default class QWeather {
 
 		const categoryIndex = Number.parseInt(supportedIndex.level, 10);
 		const apiPrimaryPollutant = this.#Config.Pollutants[supportedIndex.primaryPollutant?.code] || "NOT_AVAILABLE";
+		Console.debug(`apiPrimaryPollutant: ${apiPrimaryPollutant}`);
 
 		if (!forcePrimaryPollutant && apiPrimaryPollutant === "NOT_AVAILABLE") {
 			Console.info("CurrentAirQuality", "Max index of pollutants is <= 50, primaryPollutant will be NOT_AVAILABLE.");
 		}
 
-		Console.info("✅ CurrentAirQuality");
 		const metadata = this.#Metadata(
 			// TODO: &lang=zh
 			`https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`,
 		);
-		return {
+		const airQuality = {
 			metadata: {
 				...metadata,
 				providerName: `${metadata.providerName}（国标，12年2月版）`,
@@ -817,6 +836,8 @@ export default class QWeather {
 			primaryPollutant: forcePrimaryPollutant && apiPrimaryPollutant === "NOT_AVAILABLE" ? getPrimaryPollutant(supportedIndex.code, airQualityCurrent.pollutants) : apiPrimaryPollutant,
 			scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 		};
+		Console.info("✅ CurrentAirQuality");
+		return airQuality;
 	}
 
 	async YesterdayAirQuality(locationInfo) {
@@ -843,8 +864,8 @@ export default class QWeather {
 		const categoryIndex = Number.parseInt(historicalAir.airHourly[hour].level, 10);
 		const index = Number.parseInt(historicalAir.airHourly[hour].aqi, 10);
 		const pollutants = this.#CreatePollutantsV7(historicalAir.airHourly[hour]);
-		Console.debug(`pollutants: ${JSON.stringify(pollutants)}`);
-		Console.info("✅ YesterdayAirQuality", `categoryIndex: ${categoryIndex}`, `index: ${index}`);
+		Console.debug(`hour: ${hour}`, `index: ${index}`);
+		Console.info("✅ YesterdayAirQuality", `pollutants: ${JSON.stringify(pollutants)}`, `categoryIndex: ${categoryIndex}`);
 		const metadata = this.#Metadata(historicalAir.fxLink);
 		return {
 			metadata: {

@@ -31,9 +31,12 @@ export default class AirQuality {
 
 	static CategoryIndex(index, categories) {
 		Console.info("☑️ CategoryIndex", `index: ${index}`);
+
 		const failedCategoryIndex = -1;
+
 		if (!categories?.ranges || !Array.isArray(categories.ranges) || categories.ranges.length === 0) {
-			Console.error("GetPrimaryPollutant", "categories is invalid");
+			Console.debug(`categories: ${JSON.stringify(categories)}`);
+			Console.error("GetPrimaryPollutant", "categories无效");
 			return failedCategoryIndex;
 		}
 
@@ -42,7 +45,7 @@ export default class AirQuality {
 			return AirQuality.#CeilByPrecision(index, min) >= min && AirQuality.#CeilByPrecision(index, max) <= max;
 		});
 		if (!range) {
-			Console.error("CategoryIndex", `No category found for index: ${index}`);
+			Console.error("CategoryIndex", `找不到index: ${index}对应的category`);
 			return failedCategoryIndex;
 		}
 
@@ -54,33 +57,37 @@ export default class AirQuality {
 	static CompareCategoryIndexes(todayCategoryIndex, yesterdayCategoryIndex) {
 		Console.info("☑️ CompareCategoryIndexes", `todayCategoryIndex: ${todayCategoryIndex}`, `yesterdayCategoryIndex: ${yesterdayCategoryIndex}`);
 
+		const { UNKNOWN, SAME, WORSE, BETTER } = AirQuality.Config.CompareCategoryIndexes;
 		const diff = Number(todayCategoryIndex) - Number(yesterdayCategoryIndex);
 
 		if (Number.isNaN(diff)) {
-			Console.error("CompareCategoryIndexes", "Invalid categoryIndex");
-			return AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
+			Console.error("CompareCategoryIndexes", "categoryIndex无效");
+			return UNKNOWN;
 		} else {
-			Console.info("✅ CompareCategoryIndexes");
 			if (diff === 0) {
-				return AirQuality.Config.CompareCategoryIndexes.SAME;
+				Console.info("✅ CompareCategoryIndexes");
+				return SAME;
 			} else if (diff > 0) {
-				return AirQuality.Config.CompareCategoryIndexes.WORSE;
+				Console.info("✅ CompareCategoryIndexes");
+				return WORSE;
 			} else {
-				return AirQuality.Config.CompareCategoryIndexes.BETTER;
+				Console.info("✅ CompareCategoryIndexes");
+				return BETTER;
 			}
 		}
 	}
 
 	static ConvertUnits(pollutants, stpConversionFactors, pollutantScales) {
 		Console.info("☑️ ConvertUnits");
+
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
-		Console.info("✅ ConvertUnits");
-		return pollutants.map(pollutant => {
+
+		const convertedPollutants = pollutants.map(pollutant => {
 			const { pollutantType } = pollutant;
 			const pollutantScale = pollutantScales[pollutantType];
 
 			if (!pollutantScale) {
-				Console.debug("ConvertUnits", `No scale for ${pollutantType}, skip`);
+				Console.info("ConvertUnits", `No scale for ${pollutantType}, skip`);
 				return pollutant;
 			}
 
@@ -89,15 +96,17 @@ export default class AirQuality {
 			if (amount < 0) {
 				Console.error(
 					"ConvertUnits",
-					`Failed to convert unit for ${pollutantType}`,
-					`${pollutant.amount} ${friendlyUnits[pollutant.units] ?? pollutant.units} with ${stpConversionFactors?.[pollutantType] || -1} -> ${amount} ${friendlyUnits[pollutantScale.units] ?? pollutantScale.units} with ${pollutantScale?.stpConversionFactor || -1}`,
+					`无法转换${pollutantType}的单位`,
+					`${pollutant.amount} ${friendlyUnits[pollutant.units] ?? pollutant.units} (STP conversion factor: ${stpConversionFactors?.[pollutantType] || -1}) -> ${amount} ${friendlyUnits[pollutantScale.units] ?? pollutantScale.units} (STP conversion factor: ${pollutantScale?.stpConversionFactor || -1})`,
 				);
 				return pollutant;
 			}
 
-			Console.debug("ConvertUnits", `Converted ${pollutantType}: ${amount} ${friendlyUnits[pollutantScale.units] ?? pollutantScale.units}`);
+			Console.info("ConvertUnits", `Converted ${pollutantType}: ${amount} ${friendlyUnits[pollutantScale.units] ?? pollutantScale.units}`);
 			return { ...pollutant, amount, units: pollutantScale.units };
 		});
+		Console.info("✅ ConvertUnits");
+		return convertedPollutants;
 	}
 
 	/**
@@ -106,16 +115,16 @@ export default class AirQuality {
 	 */
 	static FixQWeatherCO(airQuality) {
 		Console.info("☑️ FixQWeatherCO");
+
 		if (!Array.isArray(airQuality?.pollutants)) {
-			Console.error("FixQWeatherCO", "airQuality.pollutants is invalid");
+			Console.error("FixQWeatherCO", "无效的airQuality.pollutants");
 			return airQuality;
 		}
 
 		switch (airQuality?.metadata?.providerName) {
 			case "和风天气":
 			case "QWeather": {
-				Console.info("✅ FixQWeatherCO");
-				return {
+				const fixedAirQuality = {
 					...airQuality,
 					pollutants: airQuality.pollutants.map(pollutant => {
 						const { pollutantType, amount } = pollutant;
@@ -126,6 +135,9 @@ export default class AirQuality {
 						};
 					}),
 				};
+
+				Console.info("✅ FixQWeatherCO");
+				return fixedAirQuality;
 			}
 			default: {
 				Console.info("✅ FixQWeatherCO", `Provider ${airQuality?.metadata?.providerName} is no need to fix.`);
@@ -136,10 +148,11 @@ export default class AirQuality {
 
 	static ToWeatherKitScale = ({ name, version }) => `${name}.${version}`;
 	static GetNameFromScale(scale) {
-		Console.info("☑️ GetNameFromScale");
+		Console.info("☑️ GetNameFromScale", `scale: ${scale}`);
+
 		const lastDotIndex = scale?.lastIndexOf(".");
 		if (!scale || lastDotIndex === -1) {
-			Console.error("GetNameFromScale", `Cannot find version part of ${scale}`);
+			Console.error("GetNameFromScale", `无法找到${scale}的版本号`);
 			return scale;
 		}
 
@@ -156,23 +169,23 @@ export default class AirQuality {
 			const pollutant = pollutants.find(pollutant => pollutant.pollutantType === pollutantType);
 
 			if (!pollutant) {
-				Console.warn("PollutantsToIndexes", `No required pollutant "${pollutantType}" for scale. Index may be inaccurate.`);
+				Console.warn("PollutantsToIndexes", `没有找到标准所需的污染物${pollutantType}，结果可能不准确`);
 				return { pollutantType, index: -1 };
 			}
 
 			const { amount } = pollutant;
-			Console.debug("PollutantsToIndexes", `${pollutantType}: ${amount} ${friendlyUnits[pollutant.units] ?? pollutant.units}`);
+			Console.debug(`${pollutantType}: ${amount} ${friendlyUnits[pollutant.units] ?? pollutant.units}`);
 
 			const minValidAmount = pollutantScale.ranges.min.amounts[0];
 			if (amount < minValidAmount) {
-				Console.error("PollutantsToIndexes", `Invalid amount of ${pollutantType}: ${amount} ${friendlyUnits[pollutantScale.units]}, should >= ${minValidAmount}`);
+				Console.error("PollutantsToIndexes", `${pollutantType}的含量无效：${amount} ${friendlyUnits[pollutantScale.units]}需要 >= ${minValidAmount}`);
 				return pollutantScale.ranges.min.indexes[0];
 			}
 
 			const isOverRange = amount > pollutantScale.ranges.max.amounts[1];
 			if (isOverRange) {
-				Console.warn("PollutantsToIndexes", `Over range detected! ${pollutantType}: ${amount} ${friendlyUnits[pollutantScale.units]}`);
-				Console.warn("PollutantsToIndexes", "Take care of yourself!");
+				Console.warn("PollutantsToIndexes", `检测到爆表指数！${pollutantType}：${amount} ${friendlyUnits[pollutantScale.units]}`);
+				Console.warn("PollutantsToIndexes", "注意身体！");
 			}
 
 			// Use range before infinity for calculation if over range
@@ -182,6 +195,7 @@ export default class AirQuality {
 						const [minAmount, maxAmount] = amounts;
 						return AirQuality.#CeilByPrecision(amount, minAmount) >= minAmount && AirQuality.#CeilByPrecision(amount, maxAmount) <= maxAmount;
 					});
+			Console.debug(`indexes: ${JSON.stringify(indexes)}`, `amounts: ${JSON.stringify(amounts)}`);
 
 			const [minIndex, maxIndex] = indexes;
 			const [minAmount, maxAmount] = amounts;
@@ -206,7 +220,8 @@ export default class AirQuality {
 		const failedPollutant = { pollutantType: "NOT_AVAILABLE", index: -1, categoryIndex: -1 };
 
 		if (!Array.isArray(indexes) || indexes.length === 0) {
-			Console.error("GetPrimaryPollutant", "indexes is invalid");
+			Console.debug(`indexes: ${JSON.stringify(indexes)}`);
+			Console.error("GetPrimaryPollutant", "indexes无效");
 			return failedPollutant;
 		}
 
@@ -219,7 +234,8 @@ export default class AirQuality {
 			.sort((a, b) => b.index - a.index);
 
 		if (indexesWithCategory.length === 0) {
-			Console.error("GetPrimaryPollutant", "No valid pollutant index found");
+			Console.debug(`indexes: ${JSON.stringify(indexes)}`, `indexesWithCategory: ${JSON.stringify(indexesWithCategory)}`);
+			Console.error("GetPrimaryPollutant", "找不到有效的index");
 			return failedPollutant;
 		}
 
@@ -227,8 +243,8 @@ export default class AirQuality {
 		const primaryPollutants = indexesWithCategory.filter(({ categoryIndex }) => categoryIndex === maxCategoryIndex);
 
 		if (primaryPollutants.length > 1) {
-			Console.warn("GetPrimaryPollutant", `Multiple primary pollutants in categoryIndex ${maxCategoryIndex}`);
-			primaryPollutants.map(({ pollutantType, index }) => Console.warn("GetPrimaryPollutants", `Index of ${pollutantType}: ${index}`));
+			Console.warn("GetPrimaryPollutant", `检测到多个同级别的污染物，maxCategoryIndex：${maxCategoryIndex}`);
+			primaryPollutants.map(({ pollutantType, index }) => Console.warn("GetPrimaryPollutants", `${pollutantType}：${index}`));
 		}
 
 		const primaryPollutant = primaryPollutants[0];
@@ -238,8 +254,10 @@ export default class AirQuality {
 
 	static #PollutantsToAirQuality(pollutants, scale) {
 		Console.info("☑️ PollutantsToAirQuality");
+
 		if (!Array.isArray(pollutants) || pollutants.length === 0) {
-			Console.error("PollutantsToAirQuality", "pollutants is invalid");
+			Console.debug(`pollutants: ${JSON.stringify(pollutants)}`);
+			Console.error("PollutantsToAirQuality", "pollutants无效");
 			return { metadata: { providerName: "iRingo", temporarilyUnavailable: true } };
 		}
 
@@ -1581,7 +1599,7 @@ export default class AirQuality {
 		const ppx = [ppb, ppm];
 		const units = [...ppx, ugm3, mgm3];
 		if (!units.includes(from) || !units.includes(to)) {
-			Console.error("ConvertUnit", "Unsupported unit(s)", `from: ${from}`, `to: ${to}`);
+			Console.error("ConvertUnit", "不支持的单位", `from: ${from}`, `to: ${to}`);
 			return -1;
 		}
 
@@ -1590,7 +1608,7 @@ export default class AirQuality {
 		const isBothPpx = isPpxFrom && isPpxTo;
 		if (isBothPpx && fromStpConversionFactor !== toStpConversionFactor) {
 			if (fromStpConversionFactor <= 0 || toStpConversionFactor <= 0) {
-				Console.error("ConvertUnit", "STP conversion factor(s) invalid", `fromStpConversionFactor: ${fromStpConversionFactor}`, `toStpConversionFactor: ${toStpConversionFactor}`);
+				Console.error("ConvertUnit", "无效的STP conversion factor", `fromStpConversionFactor: ${fromStpConversionFactor}`, `toStpConversionFactor: ${toStpConversionFactor}`);
 				return -1;
 			}
 
@@ -1613,13 +1631,17 @@ export default class AirQuality {
 			case ppm:
 				switch (to) {
 					case ppm:
+						Console.info("✅ ConvertUnit");
 						return numAmount;
 					case ppb:
+						Console.info("✅ ConvertUnit");
 						return multiply(numAmount, 1000);
 					case mgm3:
+						Console.info("✅ ConvertUnit");
 						return multiply(numAmount, fromStpConversionFactor);
 					case ugm3: {
 						const inPpb = AirQuality.ConvertUnit(numAmount, from, ppb);
+						Console.info("✅ ConvertUnit");
 						return multiply(inPpb, fromStpConversionFactor);
 					}
 					default:
@@ -1628,14 +1650,18 @@ export default class AirQuality {
 			case ppb:
 				switch (to) {
 					case ppb:
+						Console.info("✅ ConvertUnit");
 						return numAmount;
 					case ppm:
+						Console.info("✅ ConvertUnit");
 						return multiply(numAmount, 0.001);
 					case mgm3: {
 						const inPpm = AirQuality.ConvertUnit(numAmount, from, ppm);
+						Console.info("✅ ConvertUnit");
 						return multiply(inPpm, fromStpConversionFactor);
 					}
 					case ugm3:
+						Console.info("✅ ConvertUnit");
 						return multiply(numAmount, fromStpConversionFactor);
 					default:
 						return -1;
@@ -1643,13 +1669,17 @@ export default class AirQuality {
 			case mgm3:
 				switch (to) {
 					case mgm3:
+						Console.info("✅ ConvertUnit");
 						return numAmount;
 					case ugm3:
+						Console.info("✅ ConvertUnit");
 						return multiply(numAmount, 1000);
 					case ppm:
+						Console.info("✅ ConvertUnit");
 						return divide(numAmount, toStpConversionFactor);
 					case ppb: {
 						const inUgM3 = AirQuality.ConvertUnit(numAmount, from, ugm3);
+						Console.info("✅ ConvertUnit");
 						return divide(inUgM3, toStpConversionFactor);
 					}
 					default:
@@ -1658,14 +1688,18 @@ export default class AirQuality {
 			case ugm3:
 				switch (to) {
 					case ugm3:
+						Console.info("✅ ConvertUnit");
 						return numAmount;
 					case mgm3:
+						Console.info("✅ ConvertUnit");
 						return multiply(numAmount, 0.001);
 					case ppm: {
 						const inMgM3 = AirQuality.ConvertUnit(numAmount, from, mgm3);
+						Console.info("✅ ConvertUnit");
 						return divide(inMgM3, toStpConversionFactor);
 					}
 					case ppb:
+						Console.info("✅ ConvertUnit");
 						return divide(numAmount, toStpConversionFactor);
 					default:
 						return -1;

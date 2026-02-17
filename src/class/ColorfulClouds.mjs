@@ -155,7 +155,7 @@ export default class ColorfulClouds {
 	}
 
 	async #Hourly(hourlysteps = 273, begin = undefined) {
-		Console.info("☑️ Hourly");
+		Console.info("☑️ Hourly", `hourlysteps: ${hourlysteps}`, `begin: ${begin}`);
 		const request = {
 			url: `${this.endpoint}/hourly?hourlysteps=${hourlysteps}`,
 			headers: this.headers,
@@ -352,16 +352,19 @@ export default class ColorfulClouds {
 	 */
 	#CreatePollutants(realtimeAirQuality) {
 		Console.info("☑️ CreatePollutants");
+		Console.debug(`realtimeAirQuality: ${JSON.stringify(realtimeAirQuality)}`);
 
-		Console.info("✅ CreatePollutants");
 		const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
-		return Object.entries(realtimeAirQuality)
+		const pollutants = Object.entries(realtimeAirQuality)
 			.map(([name, amount]) => ({
 				amount: name === "co" ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
 				pollutantType: this.#Config.Pollutants[name],
 				units: ugm3,
 			}))
 			.filter(({ pollutantType }) => pollutantType);
+
+		Console.info("✅ CreatePollutants");
+		return pollutants;
 	}
 
 	async CurrentAirQuality(useUsa = true, forcePrimaryPollutant = true) {
@@ -374,12 +377,12 @@ export default class ColorfulClouds {
 		};
 
 		if (!realtime.result) {
-			Console.error("CurrentAirQuality", "Failed to get realtime data");
+			Console.error("CurrentAirQuality", "无法获取realtime数据");
 			return failedAirQuality;
 		}
 
 		if (realtime.result.realtime.air_quality.description.usa === "") {
-			Console.error("CurrentAirQuality", `Unsupported location`);
+			Console.error("CurrentAirQuality", `不支持的位置`);
 			return failedAirQuality;
 		}
 
@@ -397,7 +400,8 @@ export default class ColorfulClouds {
 			const scale = AirQuality.Config.Scales.EPA_NowCast;
 			const index = realtime.result.realtime.air_quality.aqi.usa;
 			const categoryIndex = AirQuality.CategoryIndex(index, scale.categories);
-			return {
+
+			const airQuality = {
 				...particularAirQuality,
 				categoryIndex,
 				index,
@@ -405,6 +409,8 @@ export default class ColorfulClouds {
 				primaryPollutant: "NOT_AVAILABLE",
 				scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 			};
+			Console.info("✅ CurrentAirQuality");
+			return airQuality;
 		} else {
 			const scale = AirQuality.Config.Scales.HJ6332012;
 			const index = realtime.result.realtime.air_quality.aqi.chn;
@@ -425,8 +431,7 @@ export default class ColorfulClouds {
 				Console.info("CurrentAirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, primaryPollutant will be set to NOT_AVAILABLE.`);
 			}
 
-			Console.info("✅ CurrentAirQuality");
-			return {
+			const airQuality = {
 				...particularAirQuality,
 				categoryIndex,
 				index,
@@ -434,6 +439,8 @@ export default class ColorfulClouds {
 				primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : primaryPollutant.pollutantType,
 				scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
 			};
+			Console.info("✅ CurrentAirQuality");
+			return airQuality;
 		}
 	}
 
@@ -441,7 +448,7 @@ export default class ColorfulClouds {
 		Console.info("☑️ CurrentWeather");
 		const realtime = await this.#RealTime();
 		if (!realtime.result) {
-			Console.error("CurrentWeather", "Failed to get realtime data");
+			Console.error("CurrentWeather", "无法获取realtime数");
 			return {
 				metadata: this.#Metadata(undefined, undefined, true),
 			};
@@ -466,6 +473,7 @@ export default class ColorfulClouds {
 
 	async YesterdayAirQuality(useUsa = true) {
 		Console.info("☑️ YesterdayAirQuality");
+
 		const yesterdayHourly = await this.#Hourly(1, Math.trunc((Date.now() - 864e5) / 1000));
 		const scale = useUsa ? AirQuality.Config.Scales.EPA_NowCast : AirQuality.Config.Scales.HJ6332012;
 		const particularAirQuality = {
@@ -476,7 +484,7 @@ export default class ColorfulClouds {
 		};
 
 		if (!yesterdayHourly.result) {
-			Console.error("YesterdayAirQuality", "Failed to get hourly data");
+			Console.error("YesterdayAirQuality", "无法获取hourly数据");
 			return {
 				...particularAirQuality,
 				categoryIndex: -1,
@@ -486,13 +494,14 @@ export default class ColorfulClouds {
 
 		const { usa, chn } = yesterdayHourly.result.hourly.air_quality.aqi[0].value;
 		if (usa === 0 && chn === 0) {
-			Console.warn("YesterdayAirQuality", "Both usa and chn of AQI are 0, unsupported location?");
+			Console.warn("YesterdayAirQuality", "usa和chn的AQI值都为0，不支持的位置？");
 		}
 
 		const index = useUsa ? usa : chn;
 		const categoryIndex = AirQuality.CategoryIndex(index, scale.categories);
 		const isSignificant = categoryIndex >= scale.categories.significantIndex;
-		Console.info("✅ YesterdayAirQuality", `index: ${index}`, `categoryIndex: ${categoryIndex}`);
+		Console.debug(`index: ${index}`);
+		Console.info("✅ YesterdayAirQuality", `categoryIndex: ${categoryIndex}`);
 
 		const metadata = this.#Metadata(yesterdayHourly.result.server_time, yesterdayHourly.location);
 		return {
