@@ -18,17 +18,6 @@ export default class AirQuality {
 		return Math.ceil(a * multiplier) / multiplier;
 	}
 
-	static #RoundByPrecision(a, b) {
-		// 获取 b 的小数位数
-		const decimals = (b.toString().split(".")[1] || "").length;
-
-		// 根据小数位数计算倍数
-		const multiplier = 10 ** decimals;
-
-		// 四舍五入
-		return Math.round(a * multiplier) / multiplier;
-	}
-
 	static CategoryIndex(index, categories) {
 		Console.info("☑️ CategoryIndex", `index: ${index}`);
 
@@ -215,7 +204,7 @@ export default class AirQuality {
 		});
 	}
 
-	static GetPrimaryPollutant(indexes = [], categories = {}) {
+	static GetPrimaryPollutant(indexes, categories) {
 		Console.info("☑️ GetPrimaryPollutant");
 		const failedPollutant = { pollutantType: "NOT_AVAILABLE", index: -1, categoryIndex: -1 };
 
@@ -1558,31 +1547,6 @@ export default class AirQuality {
 			},
 		},
 	};
-
-	static #Pollutants(pollutants = [], scale = "WAQI_InstantCast") {
-		Console.info("☑️ Pollutants", `scale: ${scale}`);
-		pollutants = pollutants.map(pollutant => {
-			// Convert unit based on standard
-			const PollutantStandard = AirQuality.Config.Scales[scale].pollutants[pollutant.pollutantType];
-			pollutant.convertedAmount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, PollutantStandard.units, PollutantStandard.ppxToXGM3);
-			pollutant.convertedUnits = PollutantStandard.units;
-			pollutant = { ...PollutantStandard, ...pollutant };
-			// Calculate AQI for each pollutant
-			let categoryIndexKey;
-			for (const [key, value] of Object.entries(pollutant.ranges)) {
-				categoryIndexKey = Number.parseInt(key, 10);
-				if (pollutant.convertedAmount >= value[0] && pollutant.convertedAmount <= value[1]) break;
-			}
-			pollutant.range = pollutant.ranges[categoryIndexKey];
-			pollutant.categoryIndex = Number.parseInt(categoryIndexKey, 10);
-			pollutant.category = AirQuality.Config.Scales[scale].categoryIndex[categoryIndexKey];
-			pollutant.AQI = Math.round(((pollutant.category[1] - pollutant.category[0]) * (pollutant.convertedAmount - pollutant.range[0])) / (pollutant.range[1] - pollutant.range[0]) + pollutant.category[0]);
-			return pollutant;
-		});
-		//Console.debug(`pollutants: ${JSON.stringify(pollutants, null, 2)}`);
-		Console.info("✅ Pollutants");
-		return pollutants;
-	}
 
 	static ConvertUnit(amount, from, to, fromStpConversionFactor = -1, toStpConversionFactor = -1) {
 		Console.info("☑️ ConvertUnit");
