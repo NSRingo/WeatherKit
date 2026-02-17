@@ -588,66 +588,6 @@ function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, inje
 }
 
 /**
- * 获取历史空气质量数据
- * @param {any} airQuality - 空气质量数据对象
- * @param {import('./types').Settings} Settings - 设置对象
- * @param {any} enviroments - 环境变量
- * @returns {Promise<any>} 获取后的历史空气质量数据
- */
-async function HistoricalAirQuality(airQuality, Settings, enviroments) {
-	Console.info("☑️ HistoricalAirQuality");
-	let historicalAirQuality;
-	// 自动选项与空气质量数据源相同
-	if (Settings?.AQI?.ComparisonProvider === "Auto") Settings.AQI.ComparisonProvider = Settings.AQI.Provider;
-	switch (Settings?.AQI?.ComparisonProvider || Settings?.AQI?.Provider) {
-		case "WeatherKit":
-			historicalAirQuality = {};
-			break;
-		case "QWeather": {
-			if (!airQuality?.metadata?.locationID) {
-				const metadata = await enviroments.qWeather.GeoAPI();
-				if (!airQuality?.metadata?.attributionUrl) airQuality.metadata.attributionUrl = metadata.attributionUrl;
-				airQuality.metadata.locationID = metadata?.locationID;
-			}
-			historicalAirQuality = await enviroments.qWeather.HistoricalAir(airQuality?.metadata?.locationID);
-			break;
-		}
-		case "ColorfulClouds": {
-			historicalAirQuality = (await enviroments.colorfulClouds.Hourly(1, ((Date.now() - 864e5) / 1000) | 0)).airQuality;
-			// 因为彩云天气提供双标准 AQI，所以这里要保持与当前地区数据相同的标准，以处理 Settings?.AQI?.Local?.Scale === "NONE" 的回退情况
-			//historicalAirQuality.scale = airQuality.scale;
-			break;
-		}
-		case "WAQI": {
-			// todo
-			historicalAirQuality = {};
-			break;
-		}
-	}
-	// ConvertAirQuality 现在是必要操作
-	historicalAirQuality = AirQuality.ConvertScale(historicalAirQuality, Settings);
-	Console.info("✅ HistoricalAirQuality");
-	return historicalAirQuality;
-}
-
-/**
- * 比较空气质量数据
- * @param {any} airQuality - 空气质量数据对象
- * @param {import('./types').Settings} Settings - 设置对象
- * @param {any} enviroments - 环境变量
- * @returns {Promise<any>} 比较后的空气质量数据
- */
-async function CompareAirQuality(airQuality, Settings, enviroments) {
-	Console.info("☑️ CompareAirQuality", `airQuality.scale: ${airQuality?.scale}`);
-	// 获取历史空气质量数据（昨日）
-	const historicalAirQuality = await HistoricalAirQuality(airQuality, Settings, enviroments);
-	// 比较两日数据并确定变化趋势
-	airQuality.previousDayComparison = AirQuality.ComparisonTrend(airQuality?.index, historicalAirQuality?.index);
-	Console.info("✅ CompareAirQuality");
-	return airQuality;
-}
-
-/**
  * 注入当前天气数据
  * @param {any} currentWeather - 当前天气数据对象
  * @param {import('./types').Settings} Settings - 设置对象
