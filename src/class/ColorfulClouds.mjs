@@ -355,11 +355,13 @@ export default class ColorfulClouds {
 
 		Console.info("✅ CreatePollutants");
 		const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
-		return Object.entries(realtimeAirQuality).map(([name, amount]) => ({
-			amount: name === "co" ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
-			pollutantType: this.#Config.Pollutants[name],
-			units: ugm3,
-		}));
+		return Object.entries(realtimeAirQuality)
+			.map(([name, amount]) => ({
+				amount: name === "co" ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
+				pollutantType: this.#Config.Pollutants[name],
+				units: ugm3,
+			}))
+			.filter(({ pollutantType }) => pollutantType);
 	}
 
 	async CurrentAirQuality(useUsa = true, forcePrimaryPollutant = true) {
