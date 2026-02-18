@@ -406,7 +406,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 		}
 	};
 	const chooseAlogrithm = (currentIndexProvider, airQuality, Settings) => {
-		Console.info("☑️ chooseAlogrithm", `currentIndexProvider ${currentIndexProvider}`);
+		Console.info("☑️ chooseAlogrithm", `currentIndexProvider: ${currentIndexProvider}`);
 
 		switch (currentIndexProvider) {
 			case "Calculate": {
