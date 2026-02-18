@@ -184,7 +184,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									const providers = [
 										...(weatherKitMetadata?.providerName && !weatherKitMetadata.temporarilyUnavailable ? [weatherKitMetadata.providerName] : []),
 										...(needPollutants && pollutantMetadata?.providerName && !pollutantMetadata.temporarilyUnavailable ? [`污染物：${pollutantMetadata.providerName}`] : []),
-										...(needInjectIndex && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${indexMetadata.providerName}`] : []),
+										...(needInjectIndex && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${appendScaleToProviderName(injectedIndex, Settings)}`] : []),
 										...(needInjectComparison && comparisonMetadata?.providerName && !comparisonMetadata.temporarilyUnavailable ? [`对比昨日：${comparisonMetadata.providerName}`] : []),
 									];
 
@@ -262,6 +262,34 @@ function getArrayFromSetting(setting) {
 		return setting;
 	} else {
 		return [setting];
+	}
+}
+
+function appendScaleToProviderName(airQuality, Settings) {
+	const providerName = airQuality.metadata.providerName;
+	switch (providerName) {
+		case "和风天气":
+			return `${providerName}（国标，12年2月版）`;
+		case "彩云天气": {
+			const useUsa = airQuality.scale === AirQuality.ToWeatherKitScale(AirQuality.Config.Scales.EPA_NowCast.weatherKitScale);
+			return `${providerName}（${useUsa ? "美标，18年9月版" : "国标，12年2月版"}）`;
+		}
+		case "iRingo":
+			switch (Settings?.AirQuality?.Calculate?.Algorithm) {
+				case "EU_EAQI":
+					return `${providerName} (ETC HE Report 2024/17)`;
+				case "WAQI_InstantCast_US":
+					return `${providerName} (WAQI InstantCast with EPA-454/B-24-002)`;
+				case "WAQI_InstantCast_CN":
+					return `${providerName} (InstantCast with HJ 633—2012)`;
+				case "WAQI_InstantCast_CN_25_DRAFT":
+					return `${providerName} (InstantCast with HJ 633 2025 DRAFT)`;
+				case "UBA":
+				default:
+					return `${providerName} (FB001846)`;
+			}
+		default:
+			return providerName;
 	}
 }
 
@@ -497,7 +525,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 
 		const getMetadata = (temporarilyUnavailable = false) => ({
 			...yesterdayAirQuality.metadata,
-			providerName: `指数：${yesterdayAirQuality.metadata.providerName}（${useUsa ? "美标，18年9月版" : "国标，12年2月版"}）`,
+			providerName: `指数：${appendScaleToProviderName(yesterdayAirQuality)}`,
 			temporarilyUnavailable,
 		});
 
@@ -552,13 +580,20 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 		});
 
 		if (!yesterdayQWeather.metadata.temporarilyUnavailable) {
+			const airQualityFromPollutants = pollutantsToAirQuality(yesterdayQWeather);
 			const yesterdayAirQuality = pollutantsToAirQuality
-				? pollutantsToAirQuality(yesterdayQWeather)
+				? {
+						...airQualityFromPollutants,
+						metadata: {
+							...airQualityFromPollutants.metadata,
+							providerName: appendScaleToProviderName(airQualityFromPollutants, Settings),
+						},
+					}
 				: {
 						...yesterdayQWeather,
 						metadata: {
 							...yesterdayQWeather.metadata,
-							providerName: `${yesterdayQWeather.metadata.providerName}（国标，12年2月版）`,
+							providerName: appendScaleToProviderName(yesterdayQWeather),
 						},
 					};
 
