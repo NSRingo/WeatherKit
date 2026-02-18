@@ -386,12 +386,8 @@ export default class ColorfulClouds {
 			return failedAirQuality;
 		}
 
-		const metadata = this.#Metadata(realtime.result.realtime.air_quality.obs_time, realtime.location);
 		const particularAirQuality = {
-			metadata: {
-				...metadata,
-				providerName: `${metadata.providerName}（${useUsa ? "美标，18年9月版" : "国标，12年2月版"}）`,
-			},
+			metadata: this.#Metadata(realtime.result.realtime.air_quality.obs_time, realtime.location),
 			pollutants: this.#CreatePollutants(realtime.result.realtime.air_quality),
 			previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
 		};
@@ -501,18 +497,14 @@ export default class ColorfulClouds {
 		const categoryIndex = AirQuality.CategoryIndex(index, scale.categories);
 		const isSignificant = categoryIndex >= scale.categories.significantIndex;
 		Console.debug(`index: ${index}`);
-		Console.info("✅ YesterdayAirQuality", `categoryIndex: ${categoryIndex}`);
 
-		const metadata = this.#Metadata(yesterdayHourly.result.server_time, yesterdayHourly.location);
+		Console.info("✅ YesterdayAirQuality", `categoryIndex: ${categoryIndex}`);
 		return {
 			...particularAirQuality,
 			index,
 			categoryIndex,
 			isSignificant,
-			metadata: {
-				...metadata,
-				providerName: `${metadata.providerName}（${useUsa ? "美标，18年9月版" : "国标，12年2月版"}）`,
-			},
+			metadata: this.#Metadata(yesterdayHourly.result.server_time, yesterdayHourly.location),
 		};
 	}
 

@@ -820,15 +820,11 @@ export default class QWeather {
 			Console.info("CurrentAirQuality", "Max index of pollutants is <= 50, primaryPollutant will be NOT_AVAILABLE.");
 		}
 
-		const metadata = this.#Metadata(
-			// TODO: &lang=zh
-			`https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`,
-		);
 		const airQuality = {
-			metadata: {
-				...metadata,
-				providerName: `${metadata.providerName}（国标，12年2月版）`,
-			},
+			metadata: this.#Metadata(
+				// TODO: &lang=zh
+				`https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`,
+			),
 			categoryIndex,
 			index: supportedIndex.aqi,
 			isSignificant: categoryIndex >= scale.categories.significantIndex,
@@ -865,13 +861,10 @@ export default class QWeather {
 		const index = Number.parseInt(historicalAir.airHourly[hour].aqi, 10);
 		const pollutants = this.#CreatePollutantsV7(historicalAir.airHourly[hour]);
 		Console.debug(`hour: ${hour}`, `index: ${index}`);
+
 		Console.info("✅ YesterdayAirQuality", `pollutants: ${JSON.stringify(pollutants)}`, `categoryIndex: ${categoryIndex}`);
-		const metadata = this.#Metadata(historicalAir.fxLink);
 		return {
-			metadata: {
-				...metadata,
-				providerName: `${metadata.providerName}（国标，12年2月版）`,
-			},
+			metadata: this.#Metadata(historicalAir.fxLink),
 			categoryIndex,
 			index,
 			pollutants,

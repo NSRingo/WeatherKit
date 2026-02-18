@@ -210,29 +210,13 @@ async function InjectPollutants(Settings, enviroments) {
 
 	switch (Settings?.AirQuality?.Current?.Pollutants?.Provider) {
 		case "QWeather": {
-			const qweatherAirQuality = await enviroments.qWeather.CurrentAirQuality();
-			const currentAirQuality = {
-				...qweatherAirQuality,
-				metadata: {
-					...qweatherAirQuality.metadata,
-					providerName: "和风天气",
-				},
-			};
-
+			const currentAirQuality = await enviroments.qWeather.CurrentAirQuality();
 			Console.info("✅ InjectPollutants");
 			return currentAirQuality;
 		}
 		case "ColorfulClouds":
 		default: {
-			const colorfulCloudsAirQuality = await enviroments.colorfulClouds.CurrentAirQuality();
-			const currentAirQuality = {
-				...colorfulCloudsAirQuality,
-				metadata: {
-					...colorfulCloudsAirQuality.metadata,
-					providerName: "彩云天气",
-				},
-			};
-
+			const currentAirQuality = await enviroments.colorfulClouds.CurrentAirQuality();
 			Console.info("✅ InjectPollutants");
 			return currentAirQuality;
 		}
@@ -453,7 +437,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 
 		const getMetadata = (temporarilyUnavailable = false) => ({
 			...yesterdayAirQuality.metadata,
-			providerName: `指数：${yesterdayAirQuality.metadata.providerName}`,
+			providerName: `指数：${yesterdayAirQuality.metadata.providerName}（${useUsa ? "美标，18年9月版" : "国标，12年2月版"}）`,
 			temporarilyUnavailable,
 		});
 
@@ -508,7 +492,16 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 		});
 
 		if (!yesterdayQWeather.metadata.temporarilyUnavailable) {
-			const yesterdayAirQuality = pollutantsToAirQuality ? pollutantsToAirQuality(yesterdayQWeather) : { ...yesterdayQWeather, metadata: { ...yesterdayQWeather.metadata, providerName: `${yesterdayQWeather.metadata.providerName}（国标）` } };
+			const yesterdayAirQuality = pollutantsToAirQuality
+				? pollutantsToAirQuality(yesterdayQWeather)
+				: {
+						...yesterdayQWeather,
+						metadata: {
+							...yesterdayQWeather.metadata,
+							providerName: `${yesterdayQWeather.metadata.providerName}（国标，12年2月版）`,
+						},
+					};
+
 			if (currentCategoryIndex) {
 				const comparisonAirQuality = {
 					...yesterdayQWeather,
