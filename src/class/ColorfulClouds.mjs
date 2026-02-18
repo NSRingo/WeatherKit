@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(parameters, token) {
 		this.Name = "ColorfulClouds";
-		this.Version = "3.3.8";
+		this.Version = "4.0.0-beta1";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
 		this.headers = { Referer: "https://caiyunapp.com/" };

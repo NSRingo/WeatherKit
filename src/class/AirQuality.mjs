@@ -3,7 +3,7 @@ import SimplePrecisionMath from "./SimplePrecisionMath.mjs";
 
 export default class AirQuality {
 	static Name = "AirQuality";
-	static Version = "2.8.5";
+	static Version = "3.0.0";
 	static Author = "Virgil Clyne & Wordless Echo";
 
 	// Code by Claude
