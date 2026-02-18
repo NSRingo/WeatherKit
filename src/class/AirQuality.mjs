@@ -254,8 +254,7 @@ export default class AirQuality {
 		Console.debug("PollutantsToAirQuality", `indexes: ${JSON.stringify(indexes)}`);
 
 		const primaryPollutant = AirQuality.GetPrimaryPollutant(indexes, scale.categories);
-
-		Console.info("✅ PollutantsToAirQuality", `Info of primaryPollutant: ${JSON.stringify(primaryPollutant)}`);
+		Console.info("✅ PollutantsToAirQuality");
 		return {
 			index: Math.round(primaryPollutant.index),
 			isSignificant: primaryPollutant.categoryIndex >= scale.categories.significantIndex,
