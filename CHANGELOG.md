@@ -22,7 +22,9 @@
   * 今日空气质量和对比昨日默认限制在彩云天气的支持范围内。
   * 默认使用彩云天气替换了CN天气。
   * 默认使用内置算法，转为德国LQI。
-  * 适配[NSNanoCat/util](https://github.com/NSNanoCat/util/tree/v2.1.0) v2.1.0，将部分设置剥离到BoxJS。
+  * 适配[NSNanoCat/util](https://github.com/NSNanoCat/util/tree/v2.1.0) v2.1.3
+    * 将部分设置剥离到 BoxJs。
+    * 增加了新的配置优先级选项
   * 清除了不再使用的代码。
   * 完善了AirQuality、ColorfulClouds和QWeather的类型检查。
   * 重写了查找主要污染物的逻辑。
