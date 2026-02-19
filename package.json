@@ -38,7 +38,8 @@
 		"build:full-args": "arguments-builder boxjs -c arguments-builder-full.config.ts",
 		"build:args": "npm-run-all --serial build:lite-args build:full-args",
 		"dts": "arguments-builder dts -c arguments-builder-full.config.ts",
-		"submodule": "git submodule update --remote"
+		"submodule": "git submodule update --remote",
+		"update": "npm update --save"
 	},
 	"browserslist": [
 		"iOS >= 18"
@@ -53,7 +54,7 @@
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {
-		"@nsnanocat/util": "^2.1.0",
+		"@nsnanocat/util": "^2.1.2",
 		"flatbuffers": "^24.12.23",
 		"node-polyfill-webpack-plugin": "^4.1.0"
 	}
