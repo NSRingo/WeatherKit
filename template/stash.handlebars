@@ -18,6 +18,7 @@ rules:
   - DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
   - DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
   - DOMAIN,tether.edge.apple,REJECT-DROP
+  - AND,((IP-ASN,714,no-resolve),(PROTOCOL,QUIC)),REJECT-DROP
 
 http:
   mitm:
