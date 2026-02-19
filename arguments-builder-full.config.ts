@@ -1,19 +1,21 @@
 import { defineConfig } from "@iringo/arguments-builder";
 
 type Args = {
-    key: string;
-    type: "string" | "number" | "boolean" | "array";
-    boxJsType?: "number" | "boolean" | "text" | "slider" | "textarea" | "radios" | "checkboxes" | "colorpicker" | "selects" | "modalSelects" | undefined;
-    name?: string | undefined;
-    description?: string | undefined;
-    // biome-ignore lint/suspicious/noExplicitAny: Copy from upstream `@iringo/arguments-builder`
-    defaultValue?: any;
-    options?: {
-        key: string;
-        label?: string | undefined;
-    }[] | undefined;
-    placeholder?: string | undefined;
-    exclude?: ("surge" | "loon" | "boxjs" | "dts")[] | undefined;
+	key: string;
+	type: "string" | "number" | "boolean" | "array";
+	boxJsType?: "number" | "boolean" | "text" | "slider" | "textarea" | "radios" | "checkboxes" | "colorpicker" | "selects" | "modalSelects" | undefined;
+	name?: string | undefined;
+	description?: string | undefined;
+	// biome-ignore lint/suspicious/noExplicitAny: Copy from upstream `@iringo/arguments-builder`
+	defaultValue?: any;
+	options?:
+		| {
+				key: string;
+				label?: string | undefined;
+		  }[]
+		| undefined;
+	placeholder?: string | undefined;
+	exclude?: ("surge" | "loon" | "boxjs" | "dts")[] | undefined;
 }[];
 
 export const output = {
@@ -225,18 +227,9 @@ const currentAirQualityUnits: Args = [
 	},
 ];
 
-const currentAirQualityWithUnits: Args = [
-	...currentAirQualityFill,
-	...currentAirQualityPollutantsProvider,
-	...currentAirQualityUnits,
-	...currentAirQualityIndex,
-];
+const currentAirQualityWithUnits: Args = [...currentAirQualityFill, ...currentAirQualityPollutantsProvider, ...currentAirQualityUnits, ...currentAirQualityIndex];
 
-export const currentAirQuality: Args = [
-	...currentAirQualityFill,
-	...currentAirQualityPollutantsProvider,
-	...currentAirQualityIndex,
-];
+export const currentAirQuality: Args = [...currentAirQualityFill, ...currentAirQualityPollutantsProvider, ...currentAirQualityIndex];
 
 const airQualityComparisonFill: Args = [
 	{
@@ -264,9 +257,7 @@ const airQualityComparisonYesterday: Args = [
 		name: "[昨日污染物] 数据源",
 		defaultValue: "QWeather",
 		type: "string",
-		options: [
-			{ key: "QWeather", label: "和风天气" },
-		],
+		options: [{ key: "QWeather", label: "和风天气" }],
 		description: "为iRingo内置算法提供污染物数据，计算出昨日的空气质量指数。",
 	},
 	{
@@ -284,16 +275,9 @@ const airQualityComparisonYesterday: Args = [
 	},
 ];
 
-const airQualityComparisonWithReplace: Args = [
-	...airQualityComparisonFill,
-	...airQualityComparisonReplace,
-	...airQualityComparisonYesterday,
-];
+const airQualityComparisonWithReplace: Args = [...airQualityComparisonFill, ...airQualityComparisonReplace, ...airQualityComparisonYesterday];
 
-export const airQualityComparison: Args = [
-	...airQualityComparisonFill,
-	...airQualityComparisonYesterday,
-];
+export const airQualityComparison: Args = [...airQualityComparisonFill, ...airQualityComparisonYesterday];
 
 export const calculate: Args = [
 	{
@@ -353,6 +337,20 @@ export const api: Args = [
 		description: "WAQI API 令牌，填写此字段将自动使用WAQI高级API",
 	},
 ];
+export const storage: Args = [
+	{
+		key: "Storage",
+		name: "[储存] 配置类型",
+		defaultValue: "$argument",
+		type: "string",
+		options: [
+			{ key: "$argument", label: "优先使用来自 $argument 的配置，$argument 不包含的设置项由 PersistentStore(BoxJs) 提供" },
+			{ key: "PersistentStore", label: "只使用 PersistentStore(BoxJs) 提供的配置" },
+			{ key: "database", label: "只使用由作者的 database.mjs 文件提供的默认配置，其他任何自定义配置不再起作用" },
+		],
+		description: "选择要使用的配置类型。未设置此选项或不通过此选项的旧版本的配置顺序依旧是 PersistentStore(BoxJs) > $argument > database。",
+	},
+];
 
 export const logLevel: Args = [
 	{
@@ -374,14 +372,5 @@ export const logLevel: Args = [
 
 export default defineConfig({
 	output,
-	args: [
-		...datasets,
-		...weather,
-		...nextHour,
-		...currentAirQualityWithUnits,
-		...airQualityComparisonWithReplace,
-		...calculate,
-		...api,
-		...logLevel,
-	],
+	args: [...datasets, ...weather, ...nextHour, ...currentAirQualityWithUnits, ...airQualityComparisonWithReplace, ...calculate, ...api, ...storage, ...logLevel],
 });
