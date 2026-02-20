@@ -289,7 +289,7 @@ const airQualityFull = [...airQualityCurrentFull, ...airQualityComparisonFull];
 const calculateAlgorithm: Arg = {
 	key: "AirQuality.Calculate.Algorithm",
 	name: "[iRingo内置算法] 算法",
-	defaultValue: "UBA",
+	defaultValue: "EU_EAQI",
 	type: "string",
 	options: [
 		{ key: "Disabled", label: "不转换" },
