@@ -33,7 +33,7 @@ export default {
 					Fill: "CN|HK|MO",
 					ReplaceWhenCurrentChange: false,
 					Yesterday: {
-						PollutantProvider: "QWeather",
+						PollutantsProvider: "QWeather",
 						IndexProvider: "ColorfulCloudsUS",
 					},
 				},
