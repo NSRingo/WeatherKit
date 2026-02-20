@@ -1,4 +1,4 @@
-import { getStorage } from "@nsnanocat/util/getStorage.mjs";
+import getStorage from "@nsnanocat/util/getStorage.mjs";
 import { Console, Lodash as _ } from "@nsnanocat/util";
 
 /**
