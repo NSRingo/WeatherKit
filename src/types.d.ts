@@ -185,13 +185,12 @@ export interface Settings {
                  * Possible values:
                  * - `'Calculate'` - iRingo内置算法
                  * - `'ColorfulCloudsUS'` - 彩云天气（美标，18年9月版）
-                 * - `'ColorfulCloudsCN'` - 彩云天气（国标）
-                 * - `'QWeather'` - 和风天气（国标）
-                 * - `'WAQI'` - WAQI（美标InstantCast，18年9月版）
+                 * - `'ColorfulCloudsCN'` - 彩云天气（国标，12年2月版）
+                 * - `'QWeather'` - 和风天气（国标，12年2月版）
                  *
                  * @defaultValue "Calculate"
                  */
-                Provider?: 'Calculate' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather' | 'WAQI';
+                Provider?: 'Calculate' | 'ColorfulCloudsUS' | 'ColorfulCloudsCN' | 'QWeather';
                 /**
                  * [今日空气指数] 强制主要污染物
                  *
@@ -267,7 +266,7 @@ export interface Settings {
          * - `'WAQI_InstantCast_CN'` - 国标InstantCast（HJ 633—2012）
          * - `'WAQI_InstantCast_CN_25_DRAFT'` - 国标InstantCast（HJ 633 2025年草案）
          *
-         * @defaultValue "UBA"
+         * @defaultValue "EU_EAQI"
          */
         Algorithm?: 'Disabled' | 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN' | 'WAQI_InstantCast_CN_25_DRAFT';
         /**
