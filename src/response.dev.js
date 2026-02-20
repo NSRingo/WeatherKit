@@ -110,10 +110,9 @@ Console.info(`FORMAT: ${FORMAT}`);
 								};
 								const country = url.searchParams.get("country");
 
+								const disableWeather = Settings?.Weather?.Provider === "Disabled";
 								const weatherTargets = new RegExp(Settings?.Weather?.Replace || "(?!)");
-								const nextHourTargets = new RegExp(Settings?.NextHour?.Fill || "(?!)");
-
-								if (weatherTargets.test(country)) {
+								if (!disableWeather && weatherTargets.test(country)) {
 									if (url.searchParams.get("dataSets").includes("currentWeather")) {
 										// Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
 										if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
@@ -135,7 +134,9 @@ Console.info(`FORMAT: ${FORMAT}`);
 									}
 								}
 
-								if (nextHourTargets.test(country)) {
+								const disableNextHour = Settings?.NextHour?.Provider === "Disabled";
+								const nextHourTargets = new RegExp(Settings?.NextHour?.Fill || "(?!)");
+								if (!disableNextHour && nextHourTargets.test(country)) {
 									if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
 										Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
 										if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
@@ -346,6 +347,9 @@ function GetAirQualityFromPollutants(algorithm, forcePrimaryPollutant, allowOver
 	const { pollutants } = airQuality;
 	const stpConversionFactors = getStpConversionFactors(airQuality);
 	switch (algorithm) {
+		case "Disabled": {
+			return airQuality;
+		}
 		case "EU_EAQI": {
 			const newAirQuality = AirQuality.PollutantsToEAQI(pollutants, stpConversionFactors);
 			Console.info("✅ GetAirQualityFromPollutants");

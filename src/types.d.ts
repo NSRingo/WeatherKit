@@ -33,7 +33,7 @@ export interface Settings {
 };
     Weather?: {
     /**
-         * [天气] 替换地区
+         * [天气] 替换范围
          *
          * 正则表达式，只替换指定地区的天气。
          *
@@ -48,16 +48,17 @@ export interface Settings {
          * @remarks
          *
          * Possible values:
+         * - `'Disabled'` - 不替换
          * - `'ColorfulClouds'` - 彩云天气
          * - `'QWeather'` - 和风天气
          *
          * @defaultValue "ColorfulClouds"
          */
-        Provider?: 'ColorfulClouds' | 'QWeather';
+        Provider?: 'Disabled' | 'ColorfulClouds' | 'QWeather';
 };
     NextHour?: {
     /**
-         * [未来一小时降水强度] 填补地区
+         * [未来一小时降水强度] 添加范围
          *
          * 正则表达式，只填补指定地区的未来一小时降水强度。
          *
@@ -72,12 +73,13 @@ export interface Settings {
          * @remarks
          *
          * Possible values:
+         * - `'Disabled'` - 不添加
          * - `'ColorfulClouds'` - 彩云天气
          * - `'QWeather'` - 和风天气
          *
          * @defaultValue "ColorfulClouds"
          */
-        Provider?: 'ColorfulClouds' | 'QWeather';
+        Provider?: 'Disabled' | 'ColorfulClouds' | 'QWeather';
 };
     AirQuality?: {
     Current?: {
@@ -258,6 +260,7 @@ export interface Settings {
          * @remarks
          *
          * Possible values:
+         * - `'Disabled'` - 不转换
          * - `'UBA'` - 德国LQI（FB001846）
          * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
          * - `'WAQI_InstantCast_US'` - 美标InstantCast（EPA-454/B-24-002）
@@ -266,7 +269,7 @@ export interface Settings {
          *
          * @defaultValue "UBA"
          */
-        Algorithm?: 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN' | 'WAQI_InstantCast_CN_25_DRAFT';
+        Algorithm?: 'Disabled' | 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN' | 'WAQI_InstantCast_CN_25_DRAFT';
         /**
          * [iRingo内置算法] 允许指数超标
          *
@@ -320,18 +323,18 @@ export interface Settings {
     /**
      * [储存] 配置类型
      *
-     * 选择要使用的配置类型。未设置此选项或不通过此选项的旧版本的配置顺序依旧是 PersistentStore(BoxJs) > $argument > database。
+     * 选择要使用的配置类型。未设置此选项或不通过此选项的旧版本的配置顺序依旧是 $persistentStore (BoxJs) > $argument > database。
      *
      * @remarks
      *
      * Possible values:
-     * - `'$argument'` - 优先使用来自 $argument 的配置，$argument 不包含的设置项由 PersistentStore(BoxJs) 提供
-     * - `'PersistentStore'` - 只使用 PersistentStore(BoxJs) 提供的配置
+     * - `'Argument'` - 优先使用插件选项与模块参数等，由 $argument 传入的配置，$argument 不包含的设置项由 PersistentStore (BoxJs) 提供
+     * - `'PersistentStore'` - 只使用来自 BoxJs 等，由 $persistentStore 提供的配置
      * - `'database'` - 只使用由作者的 database.mjs 文件提供的默认配置，其他任何自定义配置不再起作用
      *
-     * @defaultValue "$argument"
+     * @defaultValue "Argument"
      */
-    Storage?: '$argument' | 'PersistentStore' | 'database';
+    Storage?: 'Argument' | 'PersistentStore' | 'database';
     /**
      * [调试] 日志等级
      *

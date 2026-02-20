@@ -92,10 +92,9 @@ Console.info(`FORMAT: ${FORMAT}`);
 								};
 								const country = url.searchParams.get("country");
 
+								const disableWeather = Settings?.Weather?.Provider === "Disabled";
 								const weatherTargets = new RegExp(Settings?.Weather?.Replace || "(?!)");
-								const nextHourTargets = new RegExp(Settings?.NextHour?.Fill || "(?!)");
-
-								if (weatherTargets.test(country)) {
+								if (!disableWeather && weatherTargets.test(country)) {
 									if (url.searchParams.get("dataSets").includes("currentWeather")) {
 										body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
 										if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
@@ -110,7 +109,9 @@ Console.info(`FORMAT: ${FORMAT}`);
 									}
 								}
 
-								if (nextHourTargets.test(country)) {
+								const disableNextHour = Settings?.NextHour?.Provider === "Disabled";
+								const nextHourTargets = new RegExp(Settings?.NextHour?.Fill || "(?!)");
+								if (!disableNextHour && nextHourTargets.test(country)) {
 									if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
 										if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
 										if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
@@ -286,6 +287,9 @@ function GetAirQualityFromPollutants(algorithm, forcePrimaryPollutant, allowOver
 	const { pollutants } = airQuality;
 	const stpConversionFactors = getStpConversionFactors(airQuality);
 	switch (algorithm) {
+		case "Disabled": {
+			return airQuality;
+		}
 		case "EU_EAQI": {
 			const newAirQuality = AirQuality.PollutantsToEAQI(pollutants, stpConversionFactors);
 			Console.info("✅ GetAirQualityFromPollutants");
