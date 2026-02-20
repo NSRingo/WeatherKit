@@ -215,7 +215,6 @@ const airQualityCurrentIndexProvider: Arg = {
 		{ key: "ColorfulCloudsUS", label: "彩云天气（美标，18年9月版）" },
 		{ key: "ColorfulCloudsCN", label: "彩云天气（国标）" },
 		{ key: "QWeather", label: "和风天气（国标）" },
-		{ key: "WAQI", label: "WAQI（美标InstantCast，18年9月版）" },
 	],
 	description: "使用选定的数据源填补和替换空气质量指数。",
 };
