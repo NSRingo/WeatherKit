@@ -382,5 +382,5 @@ export const logLevel: Arg[] = [
 
 export default defineConfig({
 	output,
-	args: [...datasetsFull, ...weatherFull, ...nextHourFull, ...airQualityFull, ...calculateFull, ...api, ...storage, ...logLevel],
+	args: [...weatherFull, ...nextHourFull, ...airQualityFull, ...calculateFull, ...api, ...storage, ...logLevel],
 });
