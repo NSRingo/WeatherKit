@@ -92,7 +92,7 @@ const weatherProvider: Arg = {
 	defaultValue: "ColorfulClouds",
 	type: "string",
 	options: [
-		{ key: "Disabled", label: "不替换" },
+		{ key: "WeatherKit", label: "不替换" },
 		{ key: "ColorfulClouds", label: "彩云天气" },
 		{ key: "QWeather", label: "和风天气" },
 	],
@@ -116,7 +116,7 @@ const nextHourProvider: Arg = {
 	defaultValue: "ColorfulClouds",
 	type: "string",
 	options: [
-		{ key: "Disabled", label: "不添加" },
+		{ key: "WeatherKit", label: "不添加" },
 		{ key: "ColorfulClouds", label: "彩云天气" },
 		{ key: "QWeather", label: "和风天气" },
 	],
@@ -291,7 +291,7 @@ const calculateAlgorithm: Arg = {
 	defaultValue: "EU_EAQI",
 	type: "string",
 	options: [
-		{ key: "Disabled", label: "不转换" },
+		{ key: "None", label: "不转换" },
 		{ key: "UBA", label: "德国LQI（FB001846）" },
 		{ key: "EU_EAQI", label: "欧盟EAQI（ETC HE Report 2024/17）" },
 		{ key: "WAQI_InstantCast_US", label: "美标InstantCast（EPA-454/B-24-002）" },
