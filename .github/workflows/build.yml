@@ -21,6 +21,10 @@ jobs:
         with:
           node-version: 'latest'
           cache: 'npm'
+      # https://github.com/puppeteer/puppeteer/issues/13595#issuecomment-2640309385
+      # https://github.com/puppeteer/puppeteer/blob/cdfbde6247fbe286c31a91ac62ffed6f2f801ee4/.github/workflows/ci.yml#L140
+      - name: Disable AppArmor
+        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
       - name: Install dependencies
         run: npm install
         env:
