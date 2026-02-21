@@ -186,7 +186,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 										...(weatherKitMetadata?.providerName && !weatherKitMetadata.temporarilyUnavailable ? [weatherKitMetadata.providerName] : []),
 										...(needPollutants && pollutantMetadata?.providerName && !pollutantMetadata.temporarilyUnavailable ? [`污染物：${pollutantMetadata.providerName}`] : []),
 										...(needInjectIndex && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${appendScaleToProviderName(injectedIndex, Settings)}`] : []),
-										...(needInjectComparison && comparisonMetadata?.providerName && !comparisonMetadata.temporarilyUnavailable ? [`对比昨日：${comparisonMetadata.providerName}`] : []),
+										...(needInjectComparison && comparisonMetadata?.providerName && !comparisonMetadata.temporarilyUnavailable ? [`对比昨日：\n${comparisonMetadata.providerName}`] : []),
 									];
 
 									const firstValidProvider = weatherKitMetadata?.providerName || pollutantMetadata?.providerName || indexMetadata?.providerName || comparisonMetadata?.providerName;
@@ -195,7 +195,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 										...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
 										metadata: {
 											...(body.airQuality?.metadata ? body.airQuality.metadata : injectedPollutants?.metadata),
-											providerName: providers.join("、"),
+											providerName: providers.join("\n"),
 											...(firstValidProvider ? { providerLogo: providerNameToLogo(firstValidProvider, "v2") } : {}),
 										},
 										pollutants: ConvertPollutants(body.airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) ?? [],
