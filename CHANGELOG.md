@@ -3,6 +3,9 @@
 ### 🆕 New Features
   * 为数据源添加了选项，可以关闭部分模块的功能
 
+### 🛠️ Bug Fixes
+  * 修复了昨日污染物数据源默认设置不生效的问题
+
 ### ‼️ Breaking Changes
   * 暂时移除了WAQI选项
 
