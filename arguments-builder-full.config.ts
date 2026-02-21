@@ -92,7 +92,7 @@ const weatherProvider: Arg = {
 	defaultValue: "ColorfulClouds",
 	type: "string",
 	options: [
-		{ key: "WeatherKit", label: "不替换" },
+		{ key: "WeatherKit", label: "WeatherKit（不替换）" },
 		{ key: "ColorfulClouds", label: "彩云天气" },
 		{ key: "QWeather", label: "和风天气" },
 	],
@@ -116,7 +116,7 @@ const nextHourProvider: Arg = {
 	defaultValue: "ColorfulClouds",
 	type: "string",
 	options: [
-		{ key: "WeatherKit", label: "不添加" },
+		{ key: "WeatherKit", label: "WeatherKit（不添加）" },
 		{ key: "ColorfulClouds", label: "彩云天气" },
 		{ key: "QWeather", label: "和风天气" },
 	],

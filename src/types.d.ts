@@ -48,13 +48,13 @@ export interface Settings {
          * @remarks
          *
          * Possible values:
-         * - `'Disabled'` - 不替换
+         * - `'WeatherKit'` - WeatherKit（不替换）
          * - `'ColorfulClouds'` - 彩云天气
          * - `'QWeather'` - 和风天气
          *
          * @defaultValue "ColorfulClouds"
          */
-        Provider?: 'Disabled' | 'ColorfulClouds' | 'QWeather';
+        Provider?: 'WeatherKit' | 'ColorfulClouds' | 'QWeather';
 };
     NextHour?: {
     /**
@@ -73,13 +73,13 @@ export interface Settings {
          * @remarks
          *
          * Possible values:
-         * - `'Disabled'` - 不添加
+         * - `'WeatherKit'` - WeatherKit（不添加）
          * - `'ColorfulClouds'` - 彩云天气
          * - `'QWeather'` - 和风天气
          *
          * @defaultValue "ColorfulClouds"
          */
-        Provider?: 'Disabled' | 'ColorfulClouds' | 'QWeather';
+        Provider?: 'WeatherKit' | 'ColorfulClouds' | 'QWeather';
 };
     AirQuality?: {
     Current?: {
@@ -259,7 +259,7 @@ export interface Settings {
          * @remarks
          *
          * Possible values:
-         * - `'Disabled'` - 不转换
+         * - `'None'` - 不转换
          * - `'UBA'` - 德国LQI（FB001846）
          * - `'EU_EAQI'` - 欧盟EAQI（ETC HE Report 2024/17）
          * - `'WAQI_InstantCast_US'` - 美标InstantCast（EPA-454/B-24-002）
@@ -268,7 +268,7 @@ export interface Settings {
          *
          * @defaultValue "EU_EAQI"
          */
-        Algorithm?: 'Disabled' | 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN' | 'WAQI_InstantCast_CN_25_DRAFT';
+        Algorithm?: 'None' | 'UBA' | 'EU_EAQI' | 'WAQI_InstantCast_US' | 'WAQI_InstantCast_CN' | 'WAQI_InstantCast_CN_25_DRAFT';
         /**
          * [iRingo内置算法] 允许指数超标
          *
