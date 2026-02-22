@@ -92,25 +92,25 @@ Console.info(`FORMAT: ${FORMAT}`);
 									country: parameters.country,
 								};
 
-								if (url.searchParams.get("dataSets").includes("currentWeather")) {
+								if (parameters.dataSets.includes("currentWeather")) {
 									body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
 									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
 								}
-								if (url.searchParams.get("dataSets").includes("forecastDaily")) {
+								if (parameters.dataSets.includes("forecastDaily")) {
 									body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
 									if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
 								}
-								if (url.searchParams.get("dataSets").includes("forecastHourly")) {
+								if (parameters.dataSets.includes("forecastHourly")) {
 									body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
 									if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
 								}
 
-								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
+								if (parameters.dataSets.includes("forecastNextHour")) {
 									if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
 									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
 								}
 
-								if (url.searchParams.get("dataSets").includes("airQuality")) {
+								if (parameters.dataSets.includes("airQuality")) {
 									const isPollutantEmpty = !Array.isArray(body?.airQuality?.pollutants) || body.airQuality.pollutants.length === 0;
 									if (!isPollutantEmpty) {
 										body.airQuality = AirQuality.FixQWeatherCO(body.airQuality);

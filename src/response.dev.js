@@ -110,11 +110,25 @@ Console.info(`FORMAT: ${FORMAT}`);
 									country: parameters.country,
 								};
 
-								if (parameters.dataSets.includes("currentWeather")) {
-									// Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
-									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
-										matchEnum.weatherCondition();
-										matchEnum.pressureTrend();
+								if (Settings?.Weather?.Replace?.includes(enviroments.country)) {
+									if (parameters.dataSets.includes("currentWeather")) {
+										// Console.debug(`body.currentWeather: ${JSON.stringify(body?.currentWeather, null, 2)}`);
+										if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+											matchEnum.weatherCondition();
+											matchEnum.pressureTrend();
+										}
+										body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
+										if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
+									}
+									if (parameters.dataSets.includes("forecastDaily")) {
+										//Console.debug(`body.forecastDaily: ${JSON.stringify(body?.forecastDaily, null, 2)}`);
+										body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
+										if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
+									}
+									if (parameters.dataSets.includes("forecastHourly")) {
+										//Console.debug(`body.forecastHourly: ${JSON.stringify(body?.forecastHourly, null, 2)}`);
+										body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
+										if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
 									}
 									body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
 									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
@@ -130,7 +144,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
 								}
 
-								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
+								if (parameters.dataSets.includes("forecastNextHour")) {
 									Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
 									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
 										matchEnum.conditionType();
@@ -140,7 +154,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
 								}
 
-								if (url.searchParams.get("dataSets").includes("airQuality")) {
+								if (parameters.dataSets.includes("airQuality")) {
 									//Console.debug(`body.airQuality: ${JSON.stringify(body?.airQuality, null, 2)}`);
 									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
 										matchEnum.airQuality();
@@ -193,7 +207,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 									};
 								}
 
-								if (url.searchParams.get("dataSets").includes("weatherAlerts")) {
+								if (parameters.dataSets.includes("weatherAlerts")) {
 									if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
 										matchEnum.severity();
 										matchEnum.significanceType();
@@ -205,15 +219,15 @@ Console.info(`FORMAT: ${FORMAT}`);
 									if (body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
 									Console.debug(`body.weatherAlerts: ${JSON.stringify(body?.weatherAlerts, null, 2)}`);
 								}
-								if (url.searchParams.get("dataSets").includes("WeatherChange")) {
+								if (parameters.dataSets.includes("WeatherChange")) {
 									if (body?.WeatherChanges?.metadata?.providerName && !body?.WeatherChanges?.metadata?.providerLogo) body.WeatherChanges.metadata.providerLogo = providerNameToLogo(body?.WeatherChanges?.metadata?.providerName, "v2");
 									//Console.debug(`body.WeatherChanges: ${JSON.stringify(body?.WeatherChanges, null, 2)}`);
 								}
-								if (url.searchParams.get("dataSets").includes("trendComparison")) {
+								if (parameters.dataSets.includes("trendComparison")) {
 									if (body?.historicalComparisons?.metadata?.providerName && !body?.historicalComparisons?.metadata?.providerLogo) body.historicalComparisons.metadata.providerLogo = providerNameToLogo(body?.historicalComparisons?.metadata?.providerName, "v2");
 									//Console.debug(`body.historicalComparisons: ${JSON.stringify(body?.historicalComparisons, null, 2)}`);
 								}
-								if (url.searchParams.get("dataSets").includes("locationInfo")) {
+								if (parameters.dataSets.includes("locationInfo")) {
 									if (body?.locationInfo?.metadata?.providerName && !body?.locationInfo?.metadata?.providerLogo) body.locationInfo.metadata.providerLogo = providerNameToLogo(body?.locationInfo?.metadata?.providerName, "v2");
 									Console.debug(`body.locationInfo: ${JSON.stringify(body?.locationInfo, null, 2)}`);
 								}
