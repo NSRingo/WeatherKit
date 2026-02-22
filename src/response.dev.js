@@ -146,47 +146,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 												if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
 													matchEnum.airQuality();
 												}
-
-												const isPollutantEmpty = !Array.isArray(body?.airQuality?.pollutants) || body.airQuality.pollutants.length === 0;
-												if (!isPollutantEmpty) {
-													body.airQuality = AirQuality.FixQWeatherCO(body.airQuality);
-												}
-
-												const injectedPollutants = isPollutantEmpty ? await InjectPollutants(Settings, enviroments) : body.airQuality;
-												const needPollutants = isPollutantEmpty && !!(injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable);
-
-												const needInjectIndex = needPollutants || Settings?.AirQuality?.Current?.Index?.Replace?.includes(AirQuality.GetNameFromScale(body.airQuality?.scale));
-												const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
-
-												const weatherKitComparison = body?.airQuality?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
-												const previousDayComparison = needInjectIndex && Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange ? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : weatherKitComparison;
-												const needInjectComparison = previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
-												const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
-												const injectedComparison = needInjectComparison ? await InjectComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : { ...injectedIndex, previousDayComparison: weatherKitComparison };
-
-												const weatherKitMetadata = body.airQuality?.metadata;
-												const pollutantMetadata = injectedPollutants?.metadata;
-												const indexMetadata = injectedIndex?.metadata;
-												const comparisonMetadata = injectedComparison?.metadata;
-												const providers = [
-													...(weatherKitMetadata?.providerName && !weatherKitMetadata.temporarilyUnavailable ? [weatherKitMetadata.providerName] : []),
-													...(needPollutants && pollutantMetadata?.providerName && !pollutantMetadata.temporarilyUnavailable ? [`污染物：${pollutantMetadata.providerName}`] : []),
-													...(needInjectIndex && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${appendScaleToProviderName(injectedIndex, Settings)}`] : []),
-													...(needInjectComparison && comparisonMetadata?.providerName && !comparisonMetadata.temporarilyUnavailable ? [`对比昨日：\n${comparisonMetadata.providerName}`] : []),
-												];
-
-												const firstValidProvider = weatherKitMetadata?.providerName || pollutantMetadata?.providerName || indexMetadata?.providerName || comparisonMetadata?.providerName;
-												body.airQuality = {
-													...body.airQuality,
-													...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
-													metadata: {
-														...(body.airQuality?.metadata ? body.airQuality.metadata : injectedPollutants?.metadata),
-														providerName: providers.join("\n"),
-														...(firstValidProvider ? { providerLogo: providerNameToLogo(firstValidProvider, "v2") } : {}),
-													},
-													pollutants: AirQuality.ConvertPollutants(body.airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) ?? [],
-													previousDayComparison: injectedComparison?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
-												};
+												body.airQuality = await InjectAirQuality(body.airQuality, Settings, Caches, enviroments);
 												break;
 											}
 											case "weatherAlerts": {
@@ -248,32 +208,204 @@ Console.info(`FORMAT: ${FORMAT}`);
 	.catch(e => Console.error(e))
 	.finally(() => done($response));
 
-function appendScaleToProviderName(airQuality, Settings) {
-	const providerName = airQuality.metadata.providerName;
-	switch (providerName) {
-		case "和风天气":
-			return `${providerName}（国标，12年2月版）`;
-		case "彩云天气": {
-			const useUsa = airQuality.scale === AirQuality.ToWeatherKitScale(AirQuality.Config.Scales.EPA_NowCast.weatherKitScale);
-			return `${providerName}（${useUsa ? "美标，18年9月版" : "国标，12年2月版"}）`;
-		}
-		case "iRingo":
-			switch (Settings?.AirQuality?.Calculate?.Algorithm) {
-				case "EU_EAQI":
-					return `${providerName} (ETC HE Report 2024/17)`;
-				case "WAQI_InstantCast_US":
-					return `${providerName} (WAQI InstantCast with EPA-454/B-24-002)`;
-				case "WAQI_InstantCast_CN":
-					return `${providerName} (InstantCast with HJ 633—2012)`;
-				case "WAQI_InstantCast_CN_25_DRAFT":
-					return `${providerName} (InstantCast with HJ 633 2025 DRAFT)`;
-				case "UBA":
-				default:
-					return `${providerName} (FB001846)`;
-			}
-		default:
-			return providerName;
+/**
+ * 注入当前天气数据
+ * @param {any} currentWeather - 当前天气数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {any} enviroments - 环境变量
+ * @returns {Promise<any>} 注入后的当前天气数据
+ */
+async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
+	Console.info("☑️ InjectCurrentWeather");
+	if (!Settings?.Weather?.Replace?.includes(enviroments.country)) {
+		Console.warn("InjectCurrentWeather", `Unreplaced country: ${enviroments.country}`);
+		Console.info("✅ InjectCurrentWeather");
+		return currentWeather;
 	}
+	let newCurrentWeather;
+	switch (Settings?.Weather?.Provider) {
+		case "WeatherKit":
+		default:
+			break;
+		case "QWeather": {
+			newCurrentWeather = await enviroments.qWeather.WeatherNow();
+			break;
+		}
+		case "ColorfulClouds": {
+			newCurrentWeather = await enviroments.colorfulClouds.CurrentWeather();
+			break;
+		}
+	}
+	if (newCurrentWeather?.metadata) {
+		newCurrentWeather.metadata = { ...currentWeather?.metadata, ...newCurrentWeather.metadata };
+		currentWeather = { ...currentWeather, ...newCurrentWeather };
+		//Console.debug(`currentWeather: ${JSON.stringify(currentWeather, null, 2)}`);
+	}
+	Console.info("✅ InjectCurrentWeather");
+	return currentWeather;
+}
+
+/**
+ * 注入每日天气预报数据
+ * @param {any} forecastDaily - 每日预报数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {any} enviroments - 环境变量
+ * @returns {Promise<any>} 注入后的每日预报数据
+ */
+async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
+	Console.info("☑️ InjectForecastDaily");
+	if (!Settings?.Weather?.Replace?.includes(enviroments.country)) {
+		Console.warn("InjectForecastDaily", `Unreplaced country: ${enviroments.country}`);
+		Console.info("✅ InjectForecastDaily");
+		return forecastDaily;
+	}
+	let newForecastDaily;
+	switch (Settings?.Weather?.Provider) {
+		case "WeatherKit":
+		default:
+			break;
+		case "QWeather": {
+			newForecastDaily = await enviroments.qWeather.Daily();
+			break;
+		}
+		case "ColorfulClouds": {
+			const dailysteps = forecastDaily.days?.length || 11;
+			const begin = forecastDaily.days?.[0]?.forecastStart || undefined;
+			//Console.debug(`dailysteps: ${dailysteps}, begin: ${begin}`);
+			newForecastDaily = await enviroments.colorfulClouds.Daily(dailysteps, begin);
+			break;
+		}
+	}
+	if (newForecastDaily?.metadata) {
+		forecastDaily.metadata = { ...forecastDaily?.metadata, ...newForecastDaily.metadata };
+		Weather.mergeForecast(forecastDaily?.days, newForecastDaily?.days);
+		//Console.debug(`forecastDaily: ${JSON.stringify(forecastDaily, null, 2)}`);
+	}
+	Console.info("✅ InjectForecastDaily");
+	return forecastDaily;
+}
+
+/**
+ * 注入小时天气预报数据
+ * @param {any} forecastHourly - 小时预报数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {any} enviroments - 环境变量
+ * @returns {Promise<any>} 注入后的小时预报数据
+ */
+async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
+	Console.info("☑️ InjectForecastHourly");
+	if (!Settings?.Weather?.Replace?.includes(enviroments.country)) {
+		Console.warn("InjectForecastHourly", `Unreplaced country: ${enviroments.country}`);
+		Console.info("✅ InjectForecastHourly");
+		return forecastHourly;
+	}
+	let newForecastHourly;
+	switch (Settings?.Weather?.Provider) {
+		case "WeatherKit":
+		default:
+			break;
+		case "QWeather": {
+			newForecastHourly = await enviroments.qWeather.Hourly();
+			break;
+		}
+		case "ColorfulClouds": {
+			const hourlysteps = forecastHourly.hours?.length || 273;
+			const begin = forecastHourly.hours?.[0]?.forecastStart || undefined;
+			//Console.debug(`hourlysteps: ${hourlysteps}, begin: ${begin}`);
+			newForecastHourly = await enviroments.colorfulClouds.ForecastHourly(hourlysteps, begin);
+			break;
+		}
+	}
+	if (newForecastHourly?.metadata) {
+		forecastHourly.metadata = { ...forecastHourly?.metadata, ...newForecastHourly.metadata };
+		forecastHourly.hours = Weather.mergeForecast(forecastHourly?.hours, newForecastHourly?.hours);
+		//Console.debug(`forecastHourly: ${JSON.stringify(forecastHourly, null, 2)}`);
+	}
+	Console.info("✅ InjectForecastHourly");
+	return forecastHourly;
+}
+
+/**
+ * 注入下一小时天气预报数据
+ * @param {any} forecastNextHour - 下一小时预报数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {any} enviroments - 环境变量
+ * @returns {Promise<any>} 注入后的下一小时预报数据
+ */
+async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
+	Console.info("☑️ InjectForecastNextHour");
+	let newForecastNextHour;
+	switch (Settings?.NextHour?.Provider) {
+		case "WeatherKit":
+			break;
+		case "QWeather": {
+			newForecastNextHour = await enviroments.qWeather.Minutely();
+			break;
+		}
+		case "ColorfulClouds":
+		default: {
+			newForecastNextHour = await enviroments.colorfulClouds.Minutely();
+			break;
+		}
+	}
+	if (newForecastNextHour?.metadata) {
+		newForecastNextHour.metadata = { ...forecastNextHour?.metadata, ...newForecastNextHour.metadata };
+		forecastNextHour = { ...forecastNextHour, ...newForecastNextHour };
+		Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
+	}
+	Console.info("✅ InjectForecastNextHour");
+	return forecastNextHour;
+}
+
+/**
+ * 注入并合并空气质量数据（污染物、指数、昨日对比）
+ * @param {any} airQuality - WeatherKit 原始空气质量对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {any} Caches - 缓存对象
+ * @param {any} enviroments - 各数据源实例与定位信息
+ * @returns {Promise<any>} 合并后的空气质量对象
+ */
+async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
+	const isPollutantEmpty = !Array.isArray(airQuality?.pollutants) || airQuality.pollutants.length === 0;
+	if (!isPollutantEmpty) {
+		airQuality = AirQuality.FixQWeatherCO(airQuality);
+	}
+
+	const injectedPollutants = isPollutantEmpty ? await InjectPollutants(Settings, enviroments) : airQuality;
+	const needPollutants = isPollutantEmpty && !!(injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable);
+
+	const needInjectIndex = needPollutants || Settings?.AirQuality?.Current?.Index?.Replace?.includes(AirQuality.GetNameFromScale(airQuality?.scale));
+	const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
+
+	const weatherKitComparison = airQuality?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
+	const previousDayComparison = needInjectIndex && Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange ? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : weatherKitComparison;
+	const needInjectComparison = previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
+	const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
+	const injectedComparison = needInjectComparison ? await InjectComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : { ...injectedIndex, previousDayComparison: weatherKitComparison };
+
+	const weatherKitMetadata = airQuality?.metadata;
+	const pollutantMetadata = injectedPollutants?.metadata;
+	const indexMetadata = injectedIndex?.metadata;
+	const comparisonMetadata = injectedComparison?.metadata;
+	const providers = [
+		...(weatherKitMetadata?.providerName && !weatherKitMetadata.temporarilyUnavailable ? [weatherKitMetadata.providerName] : []),
+		...(needPollutants && pollutantMetadata?.providerName && !pollutantMetadata.temporarilyUnavailable ? [`污染物：${pollutantMetadata.providerName}`] : []),
+		...(needInjectIndex && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${appendScaleToProviderName(injectedIndex, Settings)}`] : []),
+		...(needInjectComparison && comparisonMetadata?.providerName && !comparisonMetadata.temporarilyUnavailable ? [`对比昨日：\n${comparisonMetadata.providerName}`] : []),
+	];
+
+	const firstValidProvider = weatherKitMetadata?.providerName || pollutantMetadata?.providerName || indexMetadata?.providerName || comparisonMetadata?.providerName;
+	return {
+		...airQuality,
+		...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
+		metadata: {
+			...(airQuality?.metadata ? airQuality.metadata : injectedPollutants?.metadata),
+			providerName: providers.join("\n"),
+			...(firstValidProvider ? { providerLogo: providerNameToLogo(firstValidProvider, "v2") } : {}),
+		},
+		pollutants: AirQuality.ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) ?? [],
+		previousDayComparison: injectedComparison?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
+	};
 }
 
 async function InjectPollutants(Settings, enviroments) {
@@ -589,151 +721,30 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 	}
 }
 
-/**
- * 注入当前天气数据
- * @param {any} currentWeather - 当前天气数据对象
- * @param {import('./types').Settings} Settings - 设置对象
- * @param {any} enviroments - 环境变量
- * @returns {Promise<any>} 注入后的当前天气数据
- */
-async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
-	Console.info("☑️ InjectCurrentWeather");
-	if (!Settings?.Weather?.Replace?.includes(enviroments.country)) {
-		Console.warn("InjectCurrentWeather", `Unreplaced country: ${enviroments.country}`);
-		Console.info("✅ InjectCurrentWeather");
-		return currentWeather;
-	}
-	let newCurrentWeather;
-	switch (Settings?.Weather?.Provider) {
-		case "WeatherKit":
+function appendScaleToProviderName(airQuality, Settings) {
+	const providerName = airQuality.metadata.providerName;
+	switch (providerName) {
+		case "和风天气":
+			return `${providerName}（国标，12年2月版）`;
+		case "彩云天气": {
+			const useUsa = airQuality.scale === AirQuality.ToWeatherKitScale(AirQuality.Config.Scales.EPA_NowCast.weatherKitScale);
+			return `${providerName}（${useUsa ? "美标，18年9月版" : "国标，12年2月版"}）`;
+		}
+		case "iRingo":
+			switch (Settings?.AirQuality?.Calculate?.Algorithm) {
+				case "EU_EAQI":
+					return `${providerName} (ETC HE Report 2024/17)`;
+				case "WAQI_InstantCast_US":
+					return `${providerName} (WAQI InstantCast with EPA-454/B-24-002)`;
+				case "WAQI_InstantCast_CN":
+					return `${providerName} (InstantCast with HJ 633—2012)`;
+				case "WAQI_InstantCast_CN_25_DRAFT":
+					return `${providerName} (InstantCast with HJ 633 2025 DRAFT)`;
+				case "UBA":
+				default:
+					return `${providerName} (FB001846)`;
+			}
 		default:
-			break;
-		case "QWeather": {
-			newCurrentWeather = await enviroments.qWeather.WeatherNow();
-			break;
-		}
-		case "ColorfulClouds": {
-			newCurrentWeather = await enviroments.colorfulClouds.CurrentWeather();
-			break;
-		}
+			return providerName;
 	}
-	if (newCurrentWeather?.metadata) {
-		newCurrentWeather.metadata = { ...currentWeather?.metadata, ...newCurrentWeather.metadata };
-		currentWeather = { ...currentWeather, ...newCurrentWeather };
-		//Console.debug(`currentWeather: ${JSON.stringify(currentWeather, null, 2)}`);
-	}
-	Console.info("✅ InjectCurrentWeather");
-	return currentWeather;
-}
-
-/**
- * 注入每日天气预报数据
- * @param {any} forecastDaily - 每日预报数据对象
- * @param {import('./types').Settings} Settings - 设置对象
- * @param {any} enviroments - 环境变量
- * @returns {Promise<any>} 注入后的每日预报数据
- */
-async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
-	Console.info("☑️ InjectForecastDaily");
-	if (!Settings?.Weather?.Replace?.includes(enviroments.country)) {
-		Console.warn("InjectForecastDaily", `Unreplaced country: ${enviroments.country}`);
-		Console.info("✅ InjectForecastDaily");
-		return forecastDaily;
-	}
-	let newForecastDaily;
-	switch (Settings?.Weather?.Provider) {
-		case "WeatherKit":
-		default:
-			break;
-		case "QWeather": {
-			newForecastDaily = await enviroments.qWeather.Daily();
-			break;
-		}
-		case "ColorfulClouds": {
-			const dailysteps = forecastDaily.days?.length || 11;
-			const begin = forecastDaily.days?.[0]?.forecastStart || undefined;
-			//Console.debug(`dailysteps: ${dailysteps}, begin: ${begin}`);
-			newForecastDaily = await enviroments.colorfulClouds.Daily(dailysteps, begin);
-			break;
-		}
-	}
-	if (newForecastDaily?.metadata) {
-		forecastDaily.metadata = { ...forecastDaily?.metadata, ...newForecastDaily.metadata };
-		Weather.mergeForecast(forecastDaily?.days, newForecastDaily?.days);
-		//Console.debug(`forecastDaily: ${JSON.stringify(forecastDaily, null, 2)}`);
-	}
-	Console.info("✅ InjectForecastDaily");
-	return forecastDaily;
-}
-
-/**
- * 注入小时天气预报数据
- * @param {any} forecastHourly - 小时预报数据对象
- * @param {import('./types').Settings} Settings - 设置对象
- * @param {any} enviroments - 环境变量
- * @returns {Promise<any>} 注入后的小时预报数据
- */
-async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
-	Console.info("☑️ InjectForecastHourly");
-	if (!Settings?.Weather?.Replace?.includes(enviroments.country)) {
-		Console.warn("InjectForecastHourly", `Unreplaced country: ${enviroments.country}`);
-		Console.info("✅ InjectForecastHourly");
-		return forecastHourly;
-	}
-	let newForecastHourly;
-	switch (Settings?.Weather?.Provider) {
-		case "WeatherKit":
-		default:
-			break;
-		case "QWeather": {
-			newForecastHourly = await enviroments.qWeather.Hourly();
-			break;
-		}
-		case "ColorfulClouds": {
-			const hourlysteps = forecastHourly.hours?.length || 273;
-			const begin = forecastHourly.hours?.[0]?.forecastStart || undefined;
-			//Console.debug(`hourlysteps: ${hourlysteps}, begin: ${begin}`);
-			newForecastHourly = await enviroments.colorfulClouds.ForecastHourly(hourlysteps, begin);
-			break;
-		}
-	}
-	if (newForecastHourly?.metadata) {
-		forecastHourly.metadata = { ...forecastHourly?.metadata, ...newForecastHourly.metadata };
-		forecastHourly.hours = Weather.mergeForecast(forecastHourly?.hours, newForecastHourly?.hours);
-		//Console.debug(`forecastHourly: ${JSON.stringify(forecastHourly, null, 2)}`);
-	}
-	Console.info("✅ InjectForecastHourly");
-	return forecastHourly;
-}
-
-/**
- * 注入下一小时天气预报数据
- * @param {any} forecastNextHour - 下一小时预报数据对象
- * @param {import('./types').Settings} Settings - 设置对象
- * @param {any} enviroments - 环境变量
- * @returns {Promise<any>} 注入后的下一小时预报数据
- */
-async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
-	Console.info("☑️ InjectForecastNextHour");
-	let newForecastNextHour;
-	switch (Settings?.NextHour?.Provider) {
-		case "WeatherKit":
-			break;
-		case "QWeather": {
-			newForecastNextHour = await enviroments.qWeather.Minutely();
-			break;
-		}
-		case "ColorfulClouds":
-		default: {
-			newForecastNextHour = await enviroments.colorfulClouds.Minutely();
-			break;
-		}
-	}
-	if (newForecastNextHour?.metadata) {
-		newForecastNextHour.metadata = { ...forecastNextHour?.metadata, ...newForecastNextHour.metadata };
-		forecastNextHour = { ...forecastNextHour, ...newForecastNextHour };
-		Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
-	}
-	Console.info("✅ InjectForecastNextHour");
-	return forecastNextHour;
 }
