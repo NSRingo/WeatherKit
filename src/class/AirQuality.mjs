@@ -413,12 +413,51 @@ export default class AirQuality {
 		};
 	}
 
+	/**
+	 * 按指定空气质量标准（scale）构建统一 airQuality 结果。
+	 *
+	 * 作用：
+	 * 1) 先将输入污染物浓度换算到该标准要求的单位；
+	 * 2) 再根据标准区间计算 index/category/primaryPollutant，并组装 WeatherKit 结构。
+	 *
+	 * @param {Array<{pollutantType: string, amount: number, units: string}>} pollutants
+	 * 原始污染物数组。
+	 * - amount 单位由每个污染物的 units 字段决定（例如 µg/m³、mg/m³、ppb）。
+	 *
+	 * @param {Record<string, number>} stpConversionFactors
+	 * STP（标准状态）换算因子表，键为污染物类型（如 OZONE/NO2/CO）。
+	 * - 当发生质量浓度（µg/m³）与体积分数（ppb）互转时参与换算。
+	 * - 因子本身为换算系数（无量纲）。
+	 *
+	 * @param {{
+	 *   weatherKitScale: {name: string, version: string},
+	 *   pollutants: Record<string, {units: string, stpConversionFactor?: number}>,
+	 *   categories: {significantIndex: number}
+	 * }} scale
+	 * 目标空气质量标准定义。
+	 * - scale.pollutants[*].units 为目标单位（例如 µg/m³ 或 ppb）。
+	 *
+	 * @returns {{
+	 *   index: number,
+	 *   isSignificant: boolean,
+	 *   categoryIndex: number,
+	 *   pollutants: Array<{pollutantType: string, amount: number, units: string}>,
+	 *   metadata: {providerName: string, temporarilyUnavailable: boolean},
+	 *   primaryPollutant: string,
+	 *   scale: string
+	 * } | {metadata: {providerName: string, temporarilyUnavailable: boolean}}}
+	 * 统一 airQuality 输出；当输入污染物无效时返回 temporarilyUnavailable 结果。
+	 */
+	static #BuildAQIFromScale(pollutants, stpConversionFactors, scale) {
+		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
+		return AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
+	}
+
 	static PollutantsToUBA(pollutants, stpConversionFactors) {
 		Console.info("☑️ PollutantsToUBA");
 
 		const scale = AirQuality.Config.Scales.UBA;
-		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
-		const airQuality = AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
+		const airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
 
 		Console.info("✅ PollutantsToUBA");
 		return {
@@ -434,8 +473,7 @@ export default class AirQuality {
 		Console.info("☑️ PollutantsToEAQI");
 
 		const scale = AirQuality.Config.Scales.EU_EAQI;
-		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
-		const airQuality = AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
+		const airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
 
 		Console.info("✅ PollutantsToEAQI");
 		return {
@@ -451,8 +489,7 @@ export default class AirQuality {
 		Console.info("☑️ PollutantsToInstantCastUS", `allowOverRange: ${allowOverRange}`);
 
 		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
-		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
-		const airQuality = AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
+		const airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
 
 		Console.info("✅ PollutantsToInstantCastUS");
 		return {
@@ -467,8 +504,7 @@ export default class AirQuality {
 
 		Console.info("☑️ PollutantsToInstantCastCN", `allowOverRange: ${allowOverRange}`, `forcePrimaryPollutant: ${forcePrimaryPollutant}`);
 
-		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
-		const airQuality = AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
+		const airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
 
 		const isNotAvailable = !forcePrimaryPollutant && airQuality.index <= 50;
 		if (isNotAvailable) {
