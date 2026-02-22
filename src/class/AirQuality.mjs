@@ -157,37 +157,72 @@ export default class AirQuality {
 
 		const { pollutants } = airQuality;
 		const stpConversionFactors = AirQuality.#GetStpConversionFactors(airQuality);
+		const scale = AirQuality.Config.Scales[algorithm] ?? AirQuality.Config.Scales.UBA;
+
 		switch (algorithm) {
 			case "None": {
 				return airQuality;
 			}
 			case "EU_EAQI": {
-				const newAirQuality = AirQuality.PollutantsToEAQI(pollutants, stpConversionFactors);
-				Console.info("✅ Pollutants2AQI");
-				return newAirQuality;
+				// PollutantsToEAQI
+				Console.info("☑️ PollutantsToEAQI");
+				const MAX_INDEX = 60;
+				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
+				airQuality = {
+					...airQuality,
+					index: Math.min(airQuality.index, MAX_INDEX),
+				};
+				Console.info("✅ PollutantsToEAQI");
+				break;
 			}
 			case "WAQI_InstantCast_US": {
-				const newAirQuality = AirQuality.PollutantsToInstantCastUS(pollutants, stpConversionFactors, allowOverRange);
-				Console.info("✅ Pollutants2AQI");
-				return newAirQuality;
+				// PollutantsToInstantCastUS
+				Console.info("☑️ PollutantsToInstantCastUS", `allowOverRange: ${allowOverRange}`);
+				const MAX_INDEX = 500;
+				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
+				airQuality = {
+					...airQuality,
+					index: allowOverRange ? airQuality.index : Math.min(airQuality.index, MAX_INDEX),
+				};
+				Console.info("✅ PollutantsToInstantCastUS");
+				break;
 			}
-			case "WAQI_InstantCast_CN": {
-				const newAirQuality = AirQuality.PollutantsToInstantCastCN12(pollutants, stpConversionFactors, allowOverRange, forcePrimaryPollutant);
-				Console.info("✅ Pollutants2AQI");
-				return newAirQuality;
-			}
+			case "WAQI_InstantCast_CN":
 			case "WAQI_InstantCast_CN_25_DRAFT": {
-				const newAirQuality = AirQuality.PollutantsToInstantCastCN25(pollutants, stpConversionFactors, allowOverRange, forcePrimaryPollutant);
-				Console.info("✅ Pollutants2AQI");
-				return newAirQuality;
+				// PollutantsToInstantCastCN12 / PollutantsToInstantCastCN25 / #PollutantsToInstantCastCN
+				Console.info("☑️ PollutantsToInstantCastCN", `allowOverRange: ${allowOverRange}`, `forcePrimaryPollutant: ${forcePrimaryPollutant}`);
+				const MAX_INDEX = 500;
+				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
+
+				const isNotAvailable = !forcePrimaryPollutant && airQuality.index <= 50;
+				if (isNotAvailable) {
+					Console.info("PollutantsToInstantCastCN", `Max index of pollutants ${airQuality.primaryPollutant} = ${airQuality.index} is <= 50, primaryPollutant will be set to NOT_AVAILABLE.`);
+				}
+
+				airQuality = {
+					...airQuality,
+					index: allowOverRange ? airQuality.index : Math.min(airQuality.index, MAX_INDEX),
+					primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : airQuality.primaryPollutant,
+				};
+				Console.info("✅ PollutantsToInstantCastCN");
+				break;
 			}
 			case "UBA":
 			default: {
-				const newAirQuality = AirQuality.PollutantsToUBA(pollutants, stpConversionFactors);
-				Console.info("✅ Pollutants2AQI");
-				return newAirQuality;
+				// PollutantsToUBA
+				Console.info("☑️ PollutantsToUBA");
+				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
+				airQuality = {
+					...airQuality,
+					index: airQuality.categoryIndex,
+				};
+				Console.info("✅ PollutantsToUBA");
+				break;
 			}
 		}
+
+		Console.info("✅ Pollutants2AQI");
+		return airQuality;
 	}
 
 	static ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) {
@@ -452,75 +487,6 @@ export default class AirQuality {
 		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
 		return AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
 	}
-
-	static PollutantsToUBA(pollutants, stpConversionFactors) {
-		Console.info("☑️ PollutantsToUBA");
-
-		const scale = AirQuality.Config.Scales.UBA;
-		const airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
-
-		Console.info("✅ PollutantsToUBA");
-		return {
-			...airQuality,
-			index: airQuality.categoryIndex,
-		};
-	}
-
-	static PollutantsToEAQI(pollutants, stpConversionFactors) {
-		// Max index in Apple Weather
-		const MAX_INDEX = 60;
-
-		Console.info("☑️ PollutantsToEAQI");
-
-		const scale = AirQuality.Config.Scales.EU_EAQI;
-		const airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
-
-		Console.info("✅ PollutantsToEAQI");
-		return {
-			...airQuality,
-			index: Math.min(airQuality.index, MAX_INDEX),
-		};
-	}
-
-	static PollutantsToInstantCastUS(pollutants, stpConversionFactors, allowOverRange = true) {
-		// Max index in Apple Weather
-		const MAX_INDEX = 500;
-
-		Console.info("☑️ PollutantsToInstantCastUS", `allowOverRange: ${allowOverRange}`);
-
-		const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
-		const airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
-
-		Console.info("✅ PollutantsToInstantCastUS");
-		return {
-			...airQuality,
-			index: allowOverRange ? airQuality.index : Math.min(airQuality.index, MAX_INDEX),
-		};
-	}
-
-	static #PollutantsToInstantCastCN(pollutants, stpConversionFactors, scale = AirQuality.Config.Scales.WAQI_InstantCast_CN, allowOverRange = true, forcePrimaryPollutant = true) {
-		// Max index in Apple Weather
-		const MAX_INDEX = 500;
-
-		Console.info("☑️ PollutantsToInstantCastCN", `allowOverRange: ${allowOverRange}`, `forcePrimaryPollutant: ${forcePrimaryPollutant}`);
-
-		const airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
-
-		const isNotAvailable = !forcePrimaryPollutant && airQuality.index <= 50;
-		if (isNotAvailable) {
-			Console.info("PollutantsToInstantCastCN", `Max index of pollutants ${airQuality.primaryPollutant} = ${airQuality.index} is <= 50, primaryPollutant will be set to NOT_AVAILABLE.`);
-		}
-
-		Console.info("✅ PollutantsToInstantCastCN");
-		return {
-			...airQuality,
-			index: allowOverRange ? airQuality.index : Math.min(airQuality.index, MAX_INDEX),
-			primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : airQuality.primaryPollutant,
-		};
-	}
-
-	static PollutantsToInstantCastCN12 = (pollutants, stpConversionFactors, allowOverRange, forcePrimaryPollutant) => this.#PollutantsToInstantCastCN(pollutants, stpConversionFactors, AirQuality.Config.Scales.WAQI_InstantCast_CN, allowOverRange, forcePrimaryPollutant);
-	static PollutantsToInstantCastCN25 = (pollutants, stpConversionFactors, allowOverRange, forcePrimaryPollutant) => this.#PollutantsToInstantCastCN(pollutants, stpConversionFactors, AirQuality.Config.Scales.WAQI_InstantCast_CN_25_DRAFT, allowOverRange, forcePrimaryPollutant);
 
 	static Config = {
 		Scales: {
