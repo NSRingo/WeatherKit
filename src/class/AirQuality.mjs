@@ -342,11 +342,68 @@ export default class AirQuality {
 	}
 
 	/**
+	 * 计算单个污染物在目标标准下的 index。
+	 *
+	 * @param {{pollutantType: string, amount: number, units: string}} pollutant
+	 * 单个污染物数据。
+	 *
+	 * @param {string} pollutantType
+	 * 污染物类型（如 OZONE/PM2_5/NO2）。
+	 *
+	 * @param {{
+	 *   units: string,
+	 *   ranges: {
+	 *     min: { indexes: [number, number], amounts: [number, number] },
+	 *     max: { indexes: [number, number], amounts: [number, number] },
+	 *     value: Array<{ indexes: [number, number], amounts: [number, number] }>
+	 *   }
+	 * }} pollutantScale
+	 * 该污染物在目标标准下的分段阈值与单位。
+	 *
+	 * @param {Record<string, string>} friendlyUnits
+	 * 友好单位映射表（用于日志展示）。
+	 *
+	 * @returns {number}
+	 * 该污染物的 index；低于最小阈值时返回 min.indexes[0]；超上限时使用 max 区间外推。
+	 */
+	static #ComputePollutantIndex(pollutant, pollutantType, pollutantScale, friendlyUnits) {
+		const { add, subtract, multiply, divide } = SimplePrecisionMath;
+
+		const { amount } = pollutant;
+		Console.debug(`${pollutantType}: ${amount} ${friendlyUnits[pollutant.units] ?? pollutant.units}`);
+
+		const minValidAmount = pollutantScale.ranges.min.amounts[0];
+		if (amount < minValidAmount) {
+			Console.error("PollutantsToIndexes", `${pollutantType}的含量无效：${amount} ${friendlyUnits[pollutantScale.units]}需要 >= ${minValidAmount}`);
+			return pollutantScale.ranges.min.indexes[0];
+		}
+
+		const isOverRange = amount > pollutantScale.ranges.max.amounts[1];
+		if (isOverRange) {
+			Console.warn("PollutantsToIndexes", `检测到爆表指数！${pollutantType}：${amount} ${friendlyUnits[pollutantScale.units]}`);
+			Console.warn("PollutantsToIndexes", "注意身体！");
+		}
+
+		const { indexes, amounts } = isOverRange
+			? pollutantScale.ranges.max
+			: pollutantScale.ranges.value.find(({ amounts }) => {
+					const [minAmount, maxAmount] = amounts;
+					return AirQuality.#CeilByPrecision(amount, minAmount) >= minAmount && AirQuality.#CeilByPrecision(amount, maxAmount) <= maxAmount;
+				});
+		Console.debug(`indexes: ${JSON.stringify(indexes)}`, `amounts: ${JSON.stringify(amounts)}`);
+
+		const [minIndex, maxIndex] = indexes;
+		const [minAmount, maxAmount] = amounts;
+		const index = add(multiply(divide(subtract(maxIndex, minIndex), subtract(maxAmount, minAmount)), subtract(amount, minAmount)), amount > maxAmount ? maxIndex : minIndex);
+		return index;
+	}
+
+	/**
 	 * 将污染物浓度映射为对应标准下的污染物指数（index）。
 	 *
 	 * 作用：
 	 * 1) 按 pollutantScales 定义，逐个污染物查找浓度区间；
-	 * 2) 使用线性插值计算该污染物的 index；
+	 * 2) 使用 #ComputePollutantIndex 计算单污染物 index；
 	 * 3) 返回用于后续主污染物判定的一组 { pollutantType, index }。
 	 *
 	 * @param {Array<{pollutantType: string, amount: number, units: string}>} pollutants
@@ -366,13 +423,9 @@ export default class AirQuality {
 	 *
 	 * @returns {Array<{pollutantType: string, index: number}>}
 	 * 每种标准污染物对应的 index 列表。
-	 * - 若标准所需污染物缺失，返回该污染物 index=-1；
-	 * - 若浓度低于最小有效阈值，返回 min.indexes[0]；
-	 * - 若浓度超上限，使用 max 区间进行外推并记录告警。
+	 * - 若标准所需污染物缺失，返回该污染物 index=-1。
 	 */
-
 	static #PollutantsToIndexes(pollutants, pollutantScales) {
-		const { add, subtract, multiply, divide } = SimplePrecisionMath;
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
 
 		return Object.entries(pollutantScales).map(([pollutantType, pollutantScale]) => {
@@ -383,44 +436,7 @@ export default class AirQuality {
 				return { pollutantType, index: -1 };
 			}
 
-			const { amount } = pollutant;
-			Console.debug(`${pollutantType}: ${amount} ${friendlyUnits[pollutant.units] ?? pollutant.units}`);
-
-			const minValidAmount = pollutantScale.ranges.min.amounts[0];
-			if (amount < minValidAmount) {
-				Console.error("PollutantsToIndexes", `${pollutantType}的含量无效：${amount} ${friendlyUnits[pollutantScale.units]}需要 >= ${minValidAmount}`);
-				return pollutantScale.ranges.min.indexes[0];
-			}
-
-			const isOverRange = amount > pollutantScale.ranges.max.amounts[1];
-			if (isOverRange) {
-				Console.warn("PollutantsToIndexes", `检测到爆表指数！${pollutantType}：${amount} ${friendlyUnits[pollutantScale.units]}`);
-				Console.warn("PollutantsToIndexes", "注意身体！");
-			}
-
-			// Use range before infinity for calculation if over range
-			const { indexes, amounts } = isOverRange
-				? pollutantScale.ranges.max
-				: pollutantScale.ranges.value.find(({ amounts }) => {
-						const [minAmount, maxAmount] = amounts;
-						return AirQuality.#CeilByPrecision(amount, minAmount) >= minAmount && AirQuality.#CeilByPrecision(amount, maxAmount) <= maxAmount;
-					});
-			Console.debug(`indexes: ${JSON.stringify(indexes)}`, `amounts: ${JSON.stringify(amounts)}`);
-
-			const [minIndex, maxIndex] = indexes;
-			const [minAmount, maxAmount] = amounts;
-			// (((maxIndex - minIndex) / (maxAmount - minAmount)) * (amount - minAmount)) + (amount > maxAmount ? maxIndex : minIndex)
-			const index = add(
-				// ((maxIndex - minIndex) / (maxAmount - minAmount)) * (amount - minAmount)
-				multiply(
-					// (maxIndex - minIndex) / (maxAmount - minAmount)
-					divide(subtract(maxIndex, minIndex), subtract(maxAmount, minAmount)),
-					// (amount - minAmount)
-					subtract(amount, minAmount),
-				),
-				// Use max index as base if over range
-				amount > maxAmount ? maxIndex : minIndex,
-			);
+			const index = AirQuality.#ComputePollutantIndex(pollutant, pollutantType, pollutantScale, friendlyUnits);
 			return { pollutantType, index };
 		});
 	}
