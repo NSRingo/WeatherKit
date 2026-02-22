@@ -11,6 +11,7 @@ export default function parseWeatherKitURL(url = new URL($request.url)) {
 		latitude: Parameters?.latitude,
 		longitude: Parameters?.longitude,
 		country: Parameters?.country || url?.searchParams?.get("country"),
+		dataSets: url?.searchParams?.get("dataSets")?.split(",") || [],
 	};
 	//log(JSON.stringify(result, null, 2));
 	//const LanguageParameters = result.language.match(LanguageRegExp)?.groups;
