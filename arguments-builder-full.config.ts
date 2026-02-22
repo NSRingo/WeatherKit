@@ -49,16 +49,9 @@ export const output = {
 	},
 };
 
-const datasetsFull: Arg[] = [
+const dataSets: Arg[] = [
 	{
-		key: "DataSets.Replace",
-		name: "[数据集] 替换地区",
-		defaultValue: "CN|HK|MO|TW|IT|LT|MT|FR|SK|NO|BY|IS|CZ|SI|DE|ES|UA|DK|PL|FI|SE|HR|RU|RO|PT|EE|RS|AT|GR|HU|FJ|GU|MH|NC|TR|BH|SA|ID|IR|SG|OM|PH|IN|KH|CY|MY|VN|KW|TH|KR|KP|CA|BS|KY|MX|PA|MQ|CU|BM|PR|CW|GP|NI|BR|GF|CO|GY|PY|AR",
-		type: "string",
-		description: "正则表达式，只替换指定地区的数据集。",
-	},
-	{
-		key: "DataSets.Value",
+		key: "DataSets",
 		name: "[数据集]",
 		defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
 		type: "array",
@@ -81,8 +74,8 @@ const datasetsFull: Arg[] = [
 const weatherReplace: Arg = {
 	key: "Weather.Replace",
 	name: "[天气] 替换范围",
-	defaultValue: "CN",
-	type: "string",
+	defaultValue: ["CN"],
+	type: "array",
 	description: "正则表达式，只替换指定地区的天气。",
 };
 
@@ -102,14 +95,6 @@ const weatherProvider: Arg = {
 export const weather = [weatherProvider];
 const weatherFull = [weatherReplace, weatherProvider];
 
-const nextHourFill: Arg = {
-	key: "NextHour.Fill",
-	name: "[未来一小时降水强度] 添加范围",
-	defaultValue: "CN|HK|MO|TW|IT|LT|MT|FR|SK|NO|BY|IS|CZ|SI|DE|ES|UA|DK|PL|FI|SE|HR|RU|RO|PT|EE|RS|AT|GR|HU|FJ|GU|MH|NC|TR|BH|SA|ID|IR|SG|OM|PH|IN|KH|CY|MY|VN|KW|TH|KR|KP|CA|BS|KY|MX|PA|MQ|CU|BM|PR|CW|GP|NI|BR|GF|CO|GY|PY|AR",
-	type: "string",
-	description: "正则表达式，只填补指定地区的未来一小时降水强度。",
-};
-
 const nextHourProvider: Arg = {
 	key: "NextHour.Provider",
 	name: "[未来一小时降水强度] 数据源",
@@ -124,15 +109,7 @@ const nextHourProvider: Arg = {
 };
 
 export const nextHour = [nextHourProvider];
-const nextHourFull = [nextHourFill, nextHourProvider];
-
-const airQualityCurrentFill: Arg = {
-	key: "AirQuality.Current.Fill",
-	name: "[空气质量 - 今日] 填补地区",
-	defaultValue: "CN|HK|MO",
-	type: "string",
-	description: "正则表达式，只填补指定地区的今日空气质量数据。",
-};
+const nextHourFull = [nextHourProvider];
 
 const airQualityCurrentPollutantsProvider: Arg = {
 	key: "AirQuality.Current.Pollutants.Provider",
@@ -227,23 +204,7 @@ const airQualityCurrentIndexForceCNPrimaryPollutants: Arg = {
 	description: "忽略国标（HJ 633—2012）的AQI > 50规定，始终将IAQI最大的空气污染物作为主要污染物。",
 };
 
-const airQualityCurrentFull = [
-	airQualityCurrentFill,
-	airQualityCurrentPollutantsProvider,
-	airQualityCurrentPollutantsUnitsReplace,
-	airQualityCurrentPollutantsUnitsMode,
-	airQualityCurrentIndexReplace,
-	airQualityCurrentIndexProvider,
-	airQualityCurrentIndexForceCNPrimaryPollutants,
-];
-
-const airQualityComparisonFill: Arg = {
-	key: "AirQuality.Comparison.Fill",
-	name: "[空气质量 - 对比昨日] 填补地区",
-	defaultValue: "CN|HK|MO",
-	type: "string",
-	description: "正则表达式，只填补指定地区的对比昨日数据。",
-};
+const airQualityCurrentFull = [airQualityCurrentPollutantsProvider, airQualityCurrentPollutantsUnitsReplace, airQualityCurrentPollutantsUnitsMode, airQualityCurrentIndexReplace, airQualityCurrentIndexProvider, airQualityCurrentIndexForceCNPrimaryPollutants];
 
 const airQualityComparisonReplace: Arg = {
 	key: "AirQuality.Comparison.ReplaceWhenCurrentChange",
@@ -276,12 +237,7 @@ const airQualityComparisonYesterdayIndexProvider: Arg = {
 	description: "用来和今日空气质量指数对比的数据。",
 };
 
-const airQualityComparisonFull = [
-	airQualityComparisonFill,
-	airQualityComparisonReplace,
-	airQualityComparisonYesterdayPollutantsProvider,
-	airQualityComparisonYesterdayIndexProvider,
-];
+const airQualityComparisonFull = [airQualityComparisonReplace, airQualityComparisonYesterdayPollutantsProvider, airQualityComparisonYesterdayIndexProvider];
 
 const airQualityFull = [...airQualityCurrentFull, ...airQualityComparisonFull];
 
@@ -382,5 +338,5 @@ export const logLevel: Arg[] = [
 
 export default defineConfig({
 	output,
-	args: [...weatherFull, ...nextHourFull, ...airQualityFull, ...calculateFull, ...api, ...storage, ...logLevel],
+	args: [...dataSets, ...weatherFull, ...nextHourFull, ...airQualityFull, ...calculateFull, ...api, ...storage, ...logLevel],
 });
