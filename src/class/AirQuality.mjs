@@ -391,6 +391,40 @@ export default class AirQuality {
     }
 
     /**
+     * 为 providerName 附加空气质量标准描述。
+     * @param {any} airQuality - 空气质量对象
+     * @param {any} Settings - 全局设置对象
+     * @returns {string} 带标准描述的 providerName
+     */
+    static appendScaleToProviderName(airQuality, Settings) {
+        const providerName = airQuality?.metadata?.providerName;
+        switch (providerName) {
+            case "和风天气":
+                return `${providerName}（国标，12年2月版）`;
+            case "彩云天气": {
+                const useUsa = airQuality?.scale === AirQuality.ToWeatherKitScale(AirQuality.Config.Scales.EPA_NowCast.weatherKitScale);
+                return `${providerName}（${useUsa ? "美标，18年9月版" : "国标，12年2月版"}）`;
+            }
+            case "iRingo":
+                switch (Settings?.AirQuality?.Calculate?.Algorithm) {
+                    case "EU_EAQI":
+                        return `${providerName} (ETC HE Report 2024/17)`;
+                    case "WAQI_InstantCast_US":
+                        return `${providerName} (WAQI InstantCast with EPA-454/B-24-002)`;
+                    case "WAQI_InstantCast_CN":
+                        return `${providerName} (InstantCast with HJ 633—2012)`;
+                    case "WAQI_InstantCast_CN_25_DRAFT":
+                        return `${providerName} (InstantCast with HJ 633 2025 DRAFT)`;
+                    case "UBA":
+                    default:
+                        return `${providerName} (FB001846)`;
+                }
+            default:
+                return providerName;
+        }
+    }
+
+    /**
      * 计算单个污染物在目标标准下的 index。
      *
      * @param {{pollutantType: string, amount: number, units: string}} pollutant
