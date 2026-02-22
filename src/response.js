@@ -92,70 +92,77 @@ Console.info(`FORMAT: ${FORMAT}`);
 									country: parameters.country,
 								};
 
-								if (parameters.dataSets.includes("currentWeather")) {
-									body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
-									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
-								}
-								if (parameters.dataSets.includes("forecastDaily")) {
-									body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
-									if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
-								}
-								if (parameters.dataSets.includes("forecastHourly")) {
-									body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
-									if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
-								}
+								await Promise.all(
+									parameters.dataSets.map(async dataSet => {
+										switch (dataSet) {
+											case "currentWeather": {
+												body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
+												if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
+												break;
+											}
+											case "forecastDaily": {
+												body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
+												if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
+												break;
+											}
+											case "forecastHourly": {
+												body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
+												if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
+												break;
+											}
+											case "forecastNextHour": {
+												if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
+												if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
+												break;
+											}
+											case "airQuality": {
+												const isPollutantEmpty = !Array.isArray(body?.airQuality?.pollutants) || body.airQuality.pollutants.length === 0;
+												if (!isPollutantEmpty) {
+													body.airQuality = AirQuality.FixQWeatherCO(body.airQuality);
+												}
 
-								if (parameters.dataSets.includes("forecastNextHour")) {
-									if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
-									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
-								}
+												const injectedPollutants = isPollutantEmpty ? await InjectPollutants(Settings, enviroments) : body.airQuality;
+												const needPollutants = isPollutantEmpty && !!(injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable);
 
-								if (parameters.dataSets.includes("airQuality")) {
-									const isPollutantEmpty = !Array.isArray(body?.airQuality?.pollutants) || body.airQuality.pollutants.length === 0;
-									if (!isPollutantEmpty) {
-										body.airQuality = AirQuality.FixQWeatherCO(body.airQuality);
-									}
+												const needInjectIndex = needPollutants || Settings?.AirQuality?.Current?.Index?.Replace?.includes(AirQuality.GetNameFromScale(body.airQuality?.scale));
+												const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
 
-									// injectedPollutants
-									const injectedPollutants = isPollutantEmpty ? await InjectPollutants(Settings, enviroments) : body.airQuality;
-									const needPollutants = isPollutantEmpty && !!(injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable);
+												const weatherKitComparison = body?.airQuality?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
+												const previousDayComparison = needInjectIndex && Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange ? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : weatherKitComparison;
+												const needInjectComparison = previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
+												const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
+												const injectedComparison = needInjectComparison ? await InjectComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : { ...injectedIndex, previousDayComparison: weatherKitComparison };
 
-									// InjectIndex
-									const needInjectIndex = needPollutants || Settings?.AirQuality?.Current?.Index?.Replace?.includes(AirQuality.GetNameFromScale(body.airQuality?.scale));
-									const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
+												const weatherKitMetadata = body.airQuality?.metadata;
+												const pollutantMetadata = injectedPollutants?.metadata;
+												const indexMetadata = injectedIndex?.metadata;
+												const comparisonMetadata = injectedComparison?.metadata;
+												const providers = [
+													...(weatherKitMetadata?.providerName && !weatherKitMetadata.temporarilyUnavailable ? [weatherKitMetadata.providerName] : []),
+													...(needPollutants && pollutantMetadata?.providerName && !pollutantMetadata.temporarilyUnavailable ? [`污染物：${pollutantMetadata.providerName}`] : []),
+													...(needInjectIndex && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${appendScaleToProviderName(injectedIndex, Settings)}`] : []),
+													...(needInjectComparison && comparisonMetadata?.providerName && !comparisonMetadata.temporarilyUnavailable ? [`对比昨日：\n${comparisonMetadata.providerName}`] : []),
+												];
 
-									// injectedComparison
-									const weatherKitComparison = body?.airQuality?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
-									const previousDayComparison = needInjectIndex && Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange ? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : weatherKitComparison;
-									const needInjectComparison = previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
-									const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
-									const injectedComparison = needInjectComparison ? await InjectComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : { ...injectedIndex, previousDayComparison: weatherKitComparison };
-
-									// metadata
-									const weatherKitMetadata = body.airQuality?.metadata;
-									const pollutantMetadata = injectedPollutants?.metadata;
-									const indexMetadata = injectedIndex?.metadata;
-									const comparisonMetadata = injectedComparison?.metadata;
-									const providers = [
-										...(weatherKitMetadata?.providerName && !weatherKitMetadata.temporarilyUnavailable ? [weatherKitMetadata.providerName] : []),
-										...(needPollutants && pollutantMetadata?.providerName && !pollutantMetadata.temporarilyUnavailable ? [`污染物：${pollutantMetadata.providerName}`] : []),
-										...(needInjectIndex && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${appendScaleToProviderName(injectedIndex, Settings)}`] : []),
-										...(needInjectComparison && comparisonMetadata?.providerName && !comparisonMetadata.temporarilyUnavailable ? [`对比昨日：\n${comparisonMetadata.providerName}`] : []),
-									];
-
-									const firstValidProvider = weatherKitMetadata?.providerName || pollutantMetadata?.providerName || indexMetadata?.providerName || comparisonMetadata?.providerName;
-									body.airQuality = {
-										...body.airQuality,
-										...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
-										metadata: {
-											...(body.airQuality?.metadata ? body.airQuality.metadata : injectedPollutants?.metadata),
-											providerName: providers.join("\n"),
-											...(firstValidProvider ? { providerLogo: providerNameToLogo(firstValidProvider, "v2") } : {}),
-										},
-										pollutants: ConvertPollutants(body.airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) ?? [],
-										previousDayComparison: injectedComparison?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
-									};
-								}
+												const firstValidProvider = weatherKitMetadata?.providerName || pollutantMetadata?.providerName || indexMetadata?.providerName || comparisonMetadata?.providerName;
+												body.airQuality = {
+													...body.airQuality,
+													...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
+													metadata: {
+														...(body.airQuality?.metadata ? body.airQuality.metadata : injectedPollutants?.metadata),
+														providerName: providers.join("\n"),
+														...(firstValidProvider ? { providerLogo: providerNameToLogo(firstValidProvider, "v2") } : {}),
+													},
+													pollutants: ConvertPollutants(body.airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) ?? [],
+													previousDayComparison: injectedComparison?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
+												};
+												break;
+											}
+											default:
+												break;
+										}
+									}),
+								);
 								const WeatherData = WeatherKit2.encode(Builder, "all", body);
 								Builder.finish(WeatherData);
 								break;
