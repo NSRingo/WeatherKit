@@ -166,24 +166,14 @@ export default class AirQuality {
 			case "EU_EAQI": {
 				// PollutantsToEAQI
 				Console.info("☑️ PollutantsToEAQI");
-				const maxIndex = scale.weatherKitScale.maxIndex;
-				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
-				airQuality = {
-					...airQuality,
-					index: Math.min(airQuality.index, maxIndex),
-				};
+				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale, false);
 				Console.info("✅ PollutantsToEAQI");
 				break;
 			}
 			case "WAQI_InstantCast_US": {
 				// PollutantsToInstantCastUS
 				Console.info("☑️ PollutantsToInstantCastUS", `allowOverRange: ${allowOverRange}`);
-				const maxIndex = scale.weatherKitScale.maxIndex;
-				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
-				airQuality = {
-					...airQuality,
-					index: allowOverRange ? airQuality.index : Math.min(airQuality.index, maxIndex),
-				};
+				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale, allowOverRange);
 				Console.info("✅ PollutantsToInstantCastUS");
 				break;
 			}
@@ -191,8 +181,7 @@ export default class AirQuality {
 			case "WAQI_InstantCast_CN_25_DRAFT": {
 				// PollutantsToInstantCastCN12 / PollutantsToInstantCastCN25 / #PollutantsToInstantCastCN
 				Console.info("☑️ PollutantsToInstantCastCN", `allowOverRange: ${allowOverRange}`, `forcePrimaryPollutant: ${forcePrimaryPollutant}`);
-				const maxIndex = scale.weatherKitScale.maxIndex;
-				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
+				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale, allowOverRange);
 
 				const isNotAvailable = !forcePrimaryPollutant && airQuality.index <= 50;
 				if (isNotAvailable) {
@@ -211,7 +200,7 @@ export default class AirQuality {
 			default: {
 				// PollutantsToUBA
 				Console.info("☑️ PollutantsToUBA");
-				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
+				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale, true);
 				airQuality = {
 					...airQuality,
 					index: airQuality.categoryIndex,
@@ -465,12 +454,18 @@ export default class AirQuality {
 	 * - 因子本身为换算系数（无量纲）。
 	 *
 	 * @param {{
-	 *   weatherKitScale: {name: string, version: string},
+	 *   weatherKitScale: {name: string, version: string, maxIndex?: number},
 	 *   pollutants: Record<string, {units: string, stpConversionFactor?: number}>,
 	 *   categories: {significantIndex: number}
 	 * }} scale
 	 * 目标空气质量标准定义。
 	 * - scale.pollutants[*].units 为目标单位（例如 µg/m³ 或 ppb）。
+	 * - scale.weatherKitScale.maxIndex 为可选上限（例如 EU_EAQI 为 60）。
+	 *
+	 * @param {boolean} [allowOverRange=true]
+	 * 是否允许指数超出 scale.weatherKitScale.maxIndex。
+	 * - true：保留计算结果原始 index。
+	 * - false：将 index 裁剪为 Math.min(index, maxIndex)。
 	 *
 	 * @returns {{
 	 *   index: number,
@@ -483,9 +478,15 @@ export default class AirQuality {
 	 * } | {metadata: {providerName: string, temporarilyUnavailable: boolean}}}
 	 * 统一 airQuality 输出；当输入污染物无效时返回 temporarilyUnavailable 结果。
 	 */
-	static #BuildAQIFromScale(pollutants, stpConversionFactors, scale) {
+	static #BuildAQIFromScale(pollutants, stpConversionFactors, scale, allowOverRange = true) {
 		const convertedPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
-		return AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
+		const airQuality = AirQuality.#PollutantsToAirQuality(convertedPollutants, scale);
+		const maxIndex = scale?.weatherKitScale?.maxIndex;
+		if (allowOverRange || !Number.isFinite(maxIndex)) return airQuality;
+		return {
+			...airQuality,
+			index: Math.min(airQuality.index, maxIndex),
+		};
 	}
 
 	static Config = {
