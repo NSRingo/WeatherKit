@@ -18,6 +18,27 @@ export default class AirQuality {
 		return Math.ceil(a * multiplier) / multiplier;
 	}
 
+	/**
+	 * 根据 AQI 数值定位其所属的分类等级（categoryIndex）。
+	 *
+	 * 作用：
+	 * - 在给定的 categories.ranges 中查找 index 落入的区间；
+	 * - 返回该区间对应的 categoryIndex，供主污染物判断与展示层分级使用。
+	 *
+	 * @param {number} index
+	 * 待判定的 AQI 指数值。
+	 *
+	 * @param {{
+	 *   ranges?: Array<{ categoryIndex: number, indexes: [number, number] }>
+	 * }} categories
+	 * 分类配置对象。
+	 * - ranges[*].indexes 为 [min, max] 区间；
+	 * - 使用 #CeilByPrecision 处理小数精度后再进行区间比较。
+	 *
+	 * @returns {number}
+	 * 命中的 categoryIndex；若 categories 无效或未命中区间，返回 -1。
+	 */
+
 	static CategoryIndex(index, categories) {
 		Console.info("☑️ CategoryIndex", `index: ${index}`);
 
