@@ -166,11 +166,11 @@ export default class AirQuality {
 			case "EU_EAQI": {
 				// PollutantsToEAQI
 				Console.info("☑️ PollutantsToEAQI");
-				const MAX_INDEX = 60;
+				const maxIndex = scale.weatherKitScale.maxIndex;
 				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
 				airQuality = {
 					...airQuality,
-					index: Math.min(airQuality.index, MAX_INDEX),
+					index: Math.min(airQuality.index, maxIndex),
 				};
 				Console.info("✅ PollutantsToEAQI");
 				break;
@@ -178,11 +178,11 @@ export default class AirQuality {
 			case "WAQI_InstantCast_US": {
 				// PollutantsToInstantCastUS
 				Console.info("☑️ PollutantsToInstantCastUS", `allowOverRange: ${allowOverRange}`);
-				const MAX_INDEX = 500;
+				const maxIndex = scale.weatherKitScale.maxIndex;
 				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
 				airQuality = {
 					...airQuality,
-					index: allowOverRange ? airQuality.index : Math.min(airQuality.index, MAX_INDEX),
+					index: allowOverRange ? airQuality.index : Math.min(airQuality.index, maxIndex),
 				};
 				Console.info("✅ PollutantsToInstantCastUS");
 				break;
@@ -191,7 +191,7 @@ export default class AirQuality {
 			case "WAQI_InstantCast_CN_25_DRAFT": {
 				// PollutantsToInstantCastCN12 / PollutantsToInstantCastCN25 / #PollutantsToInstantCastCN
 				Console.info("☑️ PollutantsToInstantCastCN", `allowOverRange: ${allowOverRange}`, `forcePrimaryPollutant: ${forcePrimaryPollutant}`);
-				const MAX_INDEX = 500;
+				const maxIndex = scale.weatherKitScale.maxIndex;
 				airQuality = AirQuality.#BuildAQIFromScale(pollutants, stpConversionFactors, scale);
 
 				const isNotAvailable = !forcePrimaryPollutant && airQuality.index <= 50;
@@ -201,7 +201,7 @@ export default class AirQuality {
 
 				airQuality = {
 					...airQuality,
-					index: allowOverRange ? airQuality.index : Math.min(airQuality.index, MAX_INDEX),
+					index: allowOverRange ? airQuality.index : Math.min(airQuality.index, maxIndex),
 					primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : airQuality.primaryPollutant,
 				};
 				Console.info("✅ PollutantsToInstantCastCN");
@@ -598,6 +598,7 @@ export default class AirQuality {
 				weatherKitScale: {
 					name: "EU.EAQI",
 					version: "2414",
+					maxIndex: 60,
 				},
 				// Indexes below for calculation only, not for display
 				categories: {
@@ -1245,6 +1246,7 @@ export default class AirQuality {
 				weatherKitScale: {
 					name: "EPA_NowCast",
 					version: "2414",
+					maxIndex: 500,
 				},
 				categories: {
 					significantIndex: 3, // Unhealthy for Sensitive Groups
@@ -1373,6 +1375,7 @@ export default class AirQuality {
 				weatherKitScale: {
 					name: "HJ6332012",
 					version: "2414",
+					maxIndex: 500,
 				},
 				categories: {
 					significantIndex: 3, // 轻度污染
@@ -1500,6 +1503,7 @@ export default class AirQuality {
 				weatherKitScale: {
 					name: "HJ6332012",
 					version: "2414",
+					maxIndex: 500,
 				},
 				categories: {
 					significantIndex: 3, // 轻度污染
