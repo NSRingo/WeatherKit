@@ -368,7 +368,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
 async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
 	const isPollutantEmpty = !Array.isArray(airQuality?.pollutants) || airQuality.pollutants.length === 0;
 	if (!isPollutantEmpty) {
-		airQuality = AirQuality.FixQWeatherCO(airQuality);
+		airQuality = AirQuality.FixPollutantsUnits(airQuality);
 	}
 
 	const injectedPollutants = isPollutantEmpty ? await InjectPollutants(Settings, enviroments) : airQuality;

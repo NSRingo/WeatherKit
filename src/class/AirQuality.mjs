@@ -120,40 +120,43 @@ export default class AirQuality {
 	}
 
 	/**
-	 * 修复和风天气一氧化碳（CO）数据过小的问题。
-	 * 和风天气的CO数据单位实际上为mg/m3，将数值乘1000转为WeatherKit的µg/m3单位。
+	 * 修复污染物单位。
+	 *
+	 * 说明：
+	 * - 这是空气质量数据修复的统一入口（当前聚焦污染物单位修复）；
+	 * - 当前仅处理和风天气（QWeather）CO 单位场景：其 CO 原始单位为 mg/m3，
+	 *   需转换为 WeatherKit 使用的 µg/m3；
+	 * - 后续同类修复请统一收敛到本方法内，必要时可将本方法升级为 FixAirQuality。
+	 *
+	 * @param {any} airQuality - 空气质量数据对象
+	 * @returns {any} 单位修复后的空气质量数据对象
 	 */
-	static FixQWeatherCO(airQuality) {
-		Console.info("☑️ FixQWeatherCO");
-
-		if (!Array.isArray(airQuality?.pollutants)) {
-			Console.error("FixQWeatherCO", "无效的airQuality.pollutants");
-			return airQuality;
-		}
-
+	static FixPollutantsUnits(airQuality) {
+		Console.info("☑️ FixPollutantsUnits");
 		switch (airQuality?.metadata?.providerName) {
 			case "和风天气":
 			case "QWeather": {
-				const fixedAirQuality = {
-					...airQuality,
-					pollutants: airQuality.pollutants.map(pollutant => {
-						const { pollutantType, amount } = pollutant;
-						const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
-						return {
-							...pollutant,
-							amount: pollutantType === "CO" ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
-						};
-					}),
-				};
-
-				Console.info("✅ FixQWeatherCO");
-				return fixedAirQuality;
+				airQuality.pollutants = airQuality?.pollutants?.map(pollutant => {
+					switch (pollutant.pollutantType) {
+						case "CO": {
+							const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
+							pollutant.amount = AirQuality.ConvertUnit(pollutant.amount, mgm3, ugm3);
+							break;
+						}
+						default:
+							break;
+					}
+					return pollutant;
+				});
+				break;
 			}
 			default: {
-				Console.info("✅ FixQWeatherCO", `Provider ${airQuality?.metadata?.providerName} is no need to fix.`);
-				return airQuality;
+				Console.info(`Provider ${airQuality?.metadata?.providerName} is no need to fix.`);
+				break;
 			}
 		}
+		Console.info("✅ FixPollutantsUnits");
+		return airQuality;
 	}
 
 	static #GetStpConversionFactors(airQuality) {
