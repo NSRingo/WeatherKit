@@ -304,23 +304,26 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  * @returns {Promise<any>} 合并后的空气质量对象
  */
 async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
-	const isPollutantEmpty = !Array.isArray(airQuality?.pollutants) || airQuality.pollutants.length === 0;
-	if (!isPollutantEmpty) {
-		airQuality = AirQuality.FixPollutantsUnits(airQuality);
-	}
+	// Step1. 修复污染物单位
+	airQuality = AirQuality.FixPollutantsUnits(airQuality);
 
+	// Step2. 判断原始污染物是否为空，并在需要时注入污染物数据
+	const isPollutantEmpty = !Array.isArray(airQuality?.pollutants) || airQuality.pollutants.length === 0;
 	const injectedPollutants = isPollutantEmpty ? await InjectPollutants(Settings, enviroments) : airQuality;
 	const needPollutants = isPollutantEmpty && !!(injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable);
 
+	// Step3. 根据污染物补齐情况与替换配置，决定是否注入 AQI 指数
 	const needInjectIndex = needPollutants || Settings?.AirQuality?.Current?.Index?.Replace?.includes(AirQuality.GetNameFromScale(airQuality?.scale));
 	const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
 
+	// Step4. 计算昨日对比是否需要重算；若未知则注入昨日对比结果
 	const weatherKitComparison = airQuality?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
 	const previousDayComparison = needInjectIndex && Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange ? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : weatherKitComparison;
 	const needInjectComparison = previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
 	const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
 	const injectedComparison = needInjectComparison ? await InjectComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : { ...injectedIndex, previousDayComparison: weatherKitComparison };
 
+	// Step5. 收集各阶段元数据，拼接最终 providerName 展示文案
 	const weatherKitMetadata = airQuality?.metadata;
 	const pollutantMetadata = injectedPollutants?.metadata;
 	const indexMetadata = injectedIndex?.metadata;
@@ -332,7 +335,10 @@ async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
 		...(needInjectComparison && comparisonMetadata?.providerName && !comparisonMetadata.temporarilyUnavailable ? [`对比昨日：\n${comparisonMetadata.providerName}`] : []),
 	];
 
+	// Step6. 选取首个有效 provider，生成统一 logo
 	const firstValidProvider = weatherKitMetadata?.providerName || pollutantMetadata?.providerName || indexMetadata?.providerName || comparisonMetadata?.providerName;
+
+	// Step7. 合并输出：优先使用可用注入结果，并统一 metadata / pollutants / previousDayComparison
 	return {
 		...airQuality,
 		...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
