@@ -426,59 +426,117 @@ export default class ColorfulClouds {
     }
 
     /**
-     * 创建WeatherKit格式的污染物对象
+     * 创建 WeatherKit 格式的污染物对象
      * @link https://docs.caiyunapp.com/weather-api/v2/v2.6/1-realtime.html
-     * @returns {Array<{amount: number, pollutantType: string, units: string}>}
+     * @param {Object} pollutantsObj - 污染物对象
+     * @param {String} [scale] - AQI 标准（如 HJ6332012）
+     * @returns {Object} 修复后的污染物对象
      */
-    #CreatePollutants(realtimeAirQuality) {
+    #CreatePollutants(pollutantsObj = {}, scale = "") {
         Console.info("☑️ CreatePollutants");
-        Console.debug(`realtimeAirQuality: ${JSON.stringify(realtimeAirQuality)}`);
-
         const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
-        const pollutants = Object.entries(realtimeAirQuality)
-            .map(([name, amount]) => ({
-                amount: name === "co" ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
-                pollutantType: this.#Config.Pollutants[name],
-                units: ugm3,
-            }))
-            .filter(({ pollutantType }) => pollutantType);
+        const pollutants = Object.entries(pollutantsObj)
+            .map(([name, amount]) => {
+                switch (name) {
+                    case "co":
+                        return {
+                            amount: AirQuality.ConvertUnit(amount ?? -1, mgm3, ugm3),
+                            pollutantType: this.#Config.Pollutants[name],
+                            units: ugm3,
+                            index: scale === "HJ6332012" ? pollutantsObj.co_iaqi_chn : undefined,
+                        };
+                    case "no":
+                    case "no2":
+                    case "so2":
+                    case "o3":
+                    case "nox":
+                    case "pm25":
+                    case "pm10":
+                        return {
+                            amount: amount ?? -1,
+                            pollutantType: this.#Config.Pollutants[name],
+                            units: ugm3,
+                            index: scale === "HJ6332012" ? pollutantsObj[`${name}_iaqi_chn`] : undefined,
+                        };
+                    default:
+                        return null;
+                }
+            })
+            .filter(Boolean);
 
         Console.info("✅ CreatePollutants");
         return pollutants;
     }
 
+    /**
+     * 获取当前空气质量并转换为 WeatherKit 风格结构。
+     *
+     * 逻辑概览：
+     * 1) 校验国家/地区是否支持空气质量；
+     * 2) 拉取 realtime 数据并做可用性检查；
+     * 3) 构建通用空气质量基础结构（metadata/pollutants）；
+     * 4) 按 useUsa 选择 US 或 CN 口径生成 index、categoryIndex 与 primaryPollutant。
+     *
+     * @param {boolean} [useUsa=true]
+     * 是否使用美国 AQI 口径。
+     * - true: 使用 `EPA_NowCast`（usa）；
+     * - false: 使用 `HJ6332012`（chn）。
+     *
+     * @param {boolean} [forcePrimaryPollutant=true]
+     * 在 CN 口径下是否强制展示主污染物。
+     * - true: 始终展示计算得到的主污染物；
+     * - false: 当主污染物 index <= 50 时返回 `NOT_AVAILABLE`。
+     *
+     * @returns {Promise<{
+     *   metadata: any,
+     *   pollutants: Array<{amount: number, pollutantType: string, units: string}>,
+     *   previousDayComparison: string,
+     *   categoryIndex?: number,
+     *   index?: number,
+     *   isSignificant?: boolean,
+     *   primaryPollutant?: string,
+     *   scale?: string
+     * }>}
+     * 成功时返回完整空气质量对象；不可用时返回 temporarilyUnavailable 的降级对象。
+     */
     async CurrentAirQuality(useUsa = true, forcePrimaryPollutant = true) {
         Console.info("☑️ CurrentAirQuality");
+        // 统一失败兜底对象，任一关键步骤失败时直接返回。
         const failedAirQuality = {
             metadata: this.#Metadata(undefined, undefined, true),
             pollutants: [],
             previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
         };
 
-        // 判断可用性：当前数据源不支持这个国家/地区
+        // 可用性判断：当前数据源不支持该国家/地区时直接返回兜底结果。
         if (!this.#Config.Availability.AirQuality.includes(this.country)) {
             Console.warn("CurrentAirQuality", `Unsupported country: ${this.country}`);
             return failedAirQuality;
         }
 
+        // 拉取实时数据（内部已带缓存）。
         const realtime = await this.#RealTime();
 
+        // realtime 主体缺失，视为不可用。
         if (!realtime.result) {
             Console.error("CurrentAirQuality", "无法获取realtime数据");
             return failedAirQuality;
         }
 
+        // 彩云在不支持位置时 usa 描述为空字符串。
         if (realtime.result.realtime.air_quality.description.usa === "") {
             Console.error("CurrentAirQuality", `不支持的位置`);
             return failedAirQuality;
         }
 
+        // 构建与算法无关的基础空气质量结构。
         const particularAirQuality = {
             metadata: this.#Metadata(realtime.result.realtime.air_quality.obs_time, realtime.location),
-            pollutants: this.#CreatePollutants(realtime.result.realtime.air_quality),
+            pollutants: this.#CreatePollutants(realtime.result.realtime.air_quality, useUsa ? undefined : "HJ6332012"),
             previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
         };
 
+        // US 口径：直接使用 usa AQI，并按 EPA_NowCast 分类。
         if (useUsa) {
             const scale = AirQuality.Config.Scales.EPA_NowCast;
             const index = realtime.result.realtime.air_quality.aqi.usa;
@@ -495,20 +553,13 @@ export default class ColorfulClouds {
             Console.info("✅ CurrentAirQuality");
             return airQuality;
         } else {
+            // CN 口径：使用 chn AQI，并基于分污染物 IAQI 判定主污染物。
             const scale = AirQuality.Config.Scales.HJ6332012;
             const index = realtime.result.realtime.air_quality.aqi.chn;
             const categoryIndex = AirQuality.CategoryIndex(index, scale.categories);
 
-            const chnIaqi = [
-                { pollutantType: "PM2_5", index: realtime.result.realtime.air_quality.pm25_iaqi_chn },
-                { pollutantType: "PM10", index: realtime.result.realtime.air_quality.pm10_iaqi_chn },
-                { pollutantType: "OZONE", index: realtime.result.realtime.air_quality.o3_iaqi_chn },
-                { pollutantType: "SO2", index: realtime.result.realtime.air_quality.so2_iaqi_chn },
-                { pollutantType: "NO2", index: realtime.result.realtime.air_quality.no2_iaqi_chn },
-                { pollutantType: "CO", index: realtime.result.realtime.air_quality.co_iaqi_chn },
-            ];
-
-            const primaryPollutant = AirQuality.GetPrimaryPollutant(chnIaqi, scale.categories);
+            const primaryPollutant = AirQuality.GetPrimaryPollutant(particularAirQuality.pollutants, scale.categories);
+            // 当不强制展示主污染物且整体空气质量较好（<=50）时，主污染物置为不可用。
             const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
             if (isNotAvailable) {
                 Console.info("CurrentAirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, primaryPollutant will be set to NOT_AVAILABLE.`);
