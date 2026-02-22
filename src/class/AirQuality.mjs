@@ -135,6 +135,61 @@ export default class AirQuality {
 		}
 	}
 
+	static GetStpConversionFactors(airQuality) {
+		Console.info("☑️ GetStpConversionFactors");
+
+		const { US } = AirQuality.Config.STP_ConversionFactors;
+		switch (airQuality?.metadata?.providerName) {
+			case "和风天气":
+			case "BreezoMeter":
+			default: {
+				Console.info("✅ GetStpConversionFactors", `STP conversion factors for ${airQuality?.metadata?.providerName}: US`);
+				return US;
+			}
+		}
+	}
+
+	static Pollutants2AQI(airQuality, Settings, options = {}) {
+		Console.info("☑️ Pollutants2AQI");
+		const algorithm = options?.algorithm ?? Settings?.AirQuality?.Calculate?.Algorithm;
+		const forcePrimaryPollutant = options?.forcePrimaryPollutant ?? Settings?.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants;
+		const allowOverRange = options?.allowOverRange ?? Settings?.AirQuality?.Calculate?.AllowOverRange;
+
+		const { pollutants } = airQuality;
+		const stpConversionFactors = AirQuality.GetStpConversionFactors(airQuality);
+		switch (algorithm) {
+			case "None": {
+				return airQuality;
+			}
+			case "EU_EAQI": {
+				const newAirQuality = AirQuality.PollutantsToEAQI(pollutants, stpConversionFactors);
+				Console.info("✅ Pollutants2AQI");
+				return newAirQuality;
+			}
+			case "WAQI_InstantCast_US": {
+				const newAirQuality = AirQuality.PollutantsToInstantCastUS(pollutants, stpConversionFactors, allowOverRange);
+				Console.info("✅ Pollutants2AQI");
+				return newAirQuality;
+			}
+			case "WAQI_InstantCast_CN": {
+				const newAirQuality = AirQuality.PollutantsToInstantCastCN12(pollutants, stpConversionFactors, allowOverRange, forcePrimaryPollutant);
+				Console.info("✅ Pollutants2AQI");
+				return newAirQuality;
+			}
+			case "WAQI_InstantCast_CN_25_DRAFT": {
+				const newAirQuality = AirQuality.PollutantsToInstantCastCN25(pollutants, stpConversionFactors, allowOverRange, forcePrimaryPollutant);
+				Console.info("✅ Pollutants2AQI");
+				return newAirQuality;
+			}
+			case "UBA":
+			default: {
+				const newAirQuality = AirQuality.PollutantsToUBA(pollutants, stpConversionFactors);
+				Console.info("✅ Pollutants2AQI");
+				return newAirQuality;
+			}
+		}
+	}
+
 	static ToWeatherKitScale = ({ name, version }) => `${name}.${version}`;
 	static GetNameFromScale(scale) {
 		Console.info("☑️ GetNameFromScale", `scale: ${scale}`);

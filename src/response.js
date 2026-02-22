@@ -237,73 +237,6 @@ async function InjectPollutants(Settings, enviroments) {
 	}
 }
 
-function getStpConversionFactors(airQuality) {
-	Console.info("☑️ getStpConversionFactors");
-
-	const { US } = AirQuality.Config.STP_ConversionFactors;
-	switch (airQuality?.metadata?.providerName) {
-		// case "和风天气": {
-		// 	// TODO: Is US the only country to use ppb in QWeather?
-		// 	const epaNowCast = AirQuality.Config.Scales.EPA_NowCast;
-		// 	const currentScaleName = AirQuality.GetNameFromScale(airQuality.scale);
-		// 	if (currentScaleName === epaNowCast.weatherKitScale.name) {
-		// 		Console.info("✅ getStpConversionFactors", `STP conversion factors for ${airQuality?.metadata?.providerName}: US`);
-		// 		return US;
-		// 	} else {
-		// 		Console.info("✅ getStpConversionFactors", `STP conversion factors for ${airQuality?.metadata?.providerName}: EU`);
-		// 		return EU;
-		// 	}
-		// }
-		// ColorfulClouds will not returns ppb
-		// case "彩云天气":
-		// BreeezoMeter is using 25 degree Celsius STP for EU also
-		case "和风天气":
-		case "BreezoMeter":
-		default: {
-			Console.info("✅ getStpConversionFactors", `STP conversion factors for ${airQuality?.metadata?.providerName}: US`);
-			return US;
-		}
-	}
-}
-
-function GetAirQualityFromPollutants(algorithm, forcePrimaryPollutant, allowOverRange, airQuality) {
-	Console.info("☑️ GetAirQualityFromPollutants");
-
-	const { pollutants } = airQuality;
-	const stpConversionFactors = getStpConversionFactors(airQuality);
-	switch (algorithm) {
-		case "None": {
-			return airQuality;
-		}
-		case "EU_EAQI": {
-			const newAirQuality = AirQuality.PollutantsToEAQI(pollutants, stpConversionFactors);
-			Console.info("✅ GetAirQualityFromPollutants");
-			return newAirQuality;
-		}
-		case "WAQI_InstantCast_US": {
-			const newAirQuality = AirQuality.PollutantsToInstantCastUS(pollutants, stpConversionFactors, allowOverRange);
-			Console.info("✅ GetAirQualityFromPollutants");
-			return newAirQuality;
-		}
-		case "WAQI_InstantCast_CN": {
-			const newAirQuality = AirQuality.PollutantsToInstantCastCN12(pollutants, stpConversionFactors, allowOverRange, forcePrimaryPollutant);
-			Console.info("✅ GetAirQualityFromPollutants");
-			return newAirQuality;
-		}
-		case "WAQI_InstantCast_CN_25_DRAFT": {
-			const newAirQuality = AirQuality.PollutantsToInstantCastCN25(pollutants, stpConversionFactors, allowOverRange, forcePrimaryPollutant);
-			Console.info("✅ GetAirQualityFromPollutants");
-			return newAirQuality;
-		}
-		case "UBA":
-		default: {
-			const newAirQuality = AirQuality.PollutantsToUBA(pollutants, stpConversionFactors);
-			Console.info("✅ GetAirQualityFromPollutants");
-			return newAirQuality;
-		}
-	}
-}
-
 /**
  * 注入空气质量数据
  * @param {any} airQuality - 空气质量数据对象
@@ -328,7 +261,7 @@ async function InjectIndex(airQuality, Settings, enviroments) {
 		}
 		case "Calculate":
 		default: {
-			const currentAirQuality = GetAirQualityFromPollutants(Settings.AirQuality?.Calculate?.Algorithm, Settings.AirQuality.Current.Index?.ForceCNPrimaryPollutants, Settings.AirQuality?.Calculate?.AllowOverRange, airQuality);
+			const currentAirQuality = AirQuality.Pollutants2AQI(airQuality, Settings);
 			Console.info("✅ InjectIndex");
 			return currentAirQuality;
 		}
@@ -568,7 +501,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 				switch (PollutantsProvider) {
 					case "QWeather":
 					default: {
-						const pollutantsToAirQuality = airQuality => GetAirQualityFromPollutants(algorithm, Settings.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants, Settings.AirQuality?.Calculate?.AllowOverRange, airQuality);
+						const pollutantsToAirQuality = airQuality => AirQuality.Pollutants2AQI(airQuality, Settings, { algorithm });
 						const comparisonAirQuality = await qweatherComparison(airQuality?.categoryIndex, pollutantsToAirQuality);
 						Console.info("✅ InjectComparison");
 						return comparisonAirQuality;
@@ -684,7 +617,7 @@ function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, inje
 				return pollutants;
 			}
 
-			return AirQuality.ConvertUnits(pollutants, getStpConversionFactors(airQuality), getPollutantScales(scale.pollutants));
+			return AirQuality.ConvertUnits(pollutants, AirQuality.GetStpConversionFactors(airQuality), getPollutantScales(scale.pollutants));
 		}
 	} else {
 		return pollutants;
