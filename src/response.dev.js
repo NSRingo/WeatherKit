@@ -184,7 +184,7 @@ Console.info(`FORMAT: ${FORMAT}`);
 														providerName: providers.join("\n"),
 														...(firstValidProvider ? { providerLogo: providerNameToLogo(firstValidProvider, "v2") } : {}),
 													},
-													pollutants: ConvertPollutants(body.airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) ?? [],
+													pollutants: AirQuality.ConvertPollutants(body.airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) ?? [],
 													previousDayComparison: injectedComparison?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
 												};
 												break;
@@ -586,98 +586,6 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 			Console.info("✅ InjectComparison");
 			return comparisonAirQuality;
 		}
-	}
-}
-
-function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) {
-	const unitsMode = Settings?.AirQuality?.Current?.Pollutants?.Units?.Mode || "Scale";
-	Console.info("☑️ ConvertPollutants", `mode: ${unitsMode}`);
-
-	const getScale = scaleName => {
-		const scales = AirQuality.Config.Scales;
-		switch (scaleName) {
-			case scales.HJ6332012.weatherKitScale.name:
-				return scales.WAQI_InstantCast_CN;
-			case scales.EPA_NowCast.weatherKitScale.name:
-				return scales.WAQI_InstantCast_US;
-			case scales.EU_EAQI.weatherKitScale.name:
-				return scales.EU_EAQI;
-			default:
-				return scales[scaleName];
-		}
-	};
-
-	const getPollutantScales = pollutantScales => {
-		const { ugm3, ppb } = AirQuality.Config.Units.WeatherKit;
-		const { US, EU } = AirQuality.Config.STP_ConversionFactors;
-		const ugm3Scale = {
-			OZONE: { units: ugm3, stpConversionFactor: -1 },
-			NO2: { units: ugm3, stpConversionFactor: -1 },
-			SO2: { units: ugm3, stpConversionFactor: -1 },
-			CO: { units: ugm3, stpConversionFactor: -1 },
-			C6H6: { units: ugm3, stpConversionFactor: -1 },
-			NH3: { units: ugm3, stpConversionFactor: -1 },
-			NO: { units: ugm3, stpConversionFactor: -1 },
-		};
-		const usPpbScale = {
-			OZONE: { units: ppb, stpConversionFactor: US.OZONE },
-			NO2: { units: ppb, stpConversionFactor: US.NO2 },
-			SO2: { units: ppb, stpConversionFactor: US.SO2 },
-			CO: { units: ppb, stpConversionFactor: US.CO },
-			C6H6: { units: ppb, stpConversionFactor: US.C6H6 },
-			NH3: { units: ppb, stpConversionFactor: US.NH3 },
-			NO: { units: ppb, stpConversionFactor: US.NO },
-		};
-		const euPpbScale = {
-			OZONE: { units: ppb, stpConversionFactor: EU.OZONE },
-			NO2: { units: ppb, stpConversionFactor: EU.NO2 },
-			SO2: { units: ppb, stpConversionFactor: EU.SO2 },
-			CO: { units: ppb, stpConversionFactor: EU.CO },
-			C6H6: { units: ppb, stpConversionFactor: EU.C6H6 },
-			NH3: { units: ppb, stpConversionFactor: EU.NH3 },
-			NO: { units: ppb, stpConversionFactor: EU.NO },
-		};
-
-		switch (unitsMode) {
-			case "ugm3":
-				return { ...ugm3Scale, ...pollutantScales };
-			case "EU_ppb":
-				return { ...euPpbScale, ...pollutantScales };
-			case "US_ppb":
-				return { ...usPpbScale, ...pollutantScales };
-			case "Force_ugm3":
-				return ugm3Scale;
-			case "Force_EU_ppb":
-				return euPpbScale;
-			case "Force_US_ppb":
-				return usPpbScale;
-			case "Scale":
-			default:
-				return pollutantScales;
-		}
-	};
-
-	const replaceUnits = Settings?.AirQuality?.Current?.Pollutants?.Units?.Replace ?? [];
-	const isIndexInjected = needInjectIndex && injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable;
-	const scaleName = AirQuality.GetNameFromScale(isIndexInjected ? injectedIndex?.scale : airQuality?.scale);
-
-	const pollutants = injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable ? injectedPollutants.pollutants : airQuality?.pollutants;
-	Console.info("✅ ConvertPollutants");
-	if (replaceUnits.includes(scaleName)) {
-		if (isIndexInjected && Settings?.AirQuality?.Current?.Index?.Provider === "Calculate" && unitsMode === "Scale") {
-			Console.info("ConvertPollutants", `Use pollutants from iRingo`);
-			return injectedIndex.pollutants;
-		} else {
-			const scale = getScale(scaleName);
-			if (!scale) {
-				Console.error("ConvertPollutants", `Unsupported scale name: ${scaleName}`);
-				return pollutants;
-			}
-
-			return AirQuality.ConvertUnits(pollutants, AirQuality.GetStpConversionFactors(airQuality), getPollutantScales(scale.pollutants));
-		}
-	} else {
-		return pollutants;
 	}
 }
 
