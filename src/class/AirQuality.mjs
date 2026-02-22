@@ -341,6 +341,36 @@ export default class AirQuality {
 		return scaleName;
 	}
 
+	/**
+	 * 将污染物浓度映射为对应标准下的污染物指数（index）。
+	 *
+	 * 作用：
+	 * 1) 按 pollutantScales 定义，逐个污染物查找浓度区间；
+	 * 2) 使用线性插值计算该污染物的 index；
+	 * 3) 返回用于后续主污染物判定的一组 { pollutantType, index }。
+	 *
+	 * @param {Array<{pollutantType: string, amount: number, units: string}>} pollutants
+	 * 污染物列表。
+	 * - amount 的单位由 units 字段表示（如 µg/m³、mg/m³、ppb、ppm）。
+	 * - 进入该方法前应已与 pollutantScales 的目标单位对齐。
+	 *
+	 * @param {Record<string, {
+	 *   units: string,
+	 *   ranges: {
+	 *     min: { indexes: [number, number], amounts: [number, number] },
+	 *     max: { indexes: [number, number], amounts: [number, number] },
+	 *     value: Array<{ indexes: [number, number], amounts: [number, number] }>
+	 *   }
+	 * }>} pollutantScales
+	 * 指标标准定义，包含每种污染物的单位及分段阈值。
+	 *
+	 * @returns {Array<{pollutantType: string, index: number}>}
+	 * 每种标准污染物对应的 index 列表。
+	 * - 若标准所需污染物缺失，返回该污染物 index=-1；
+	 * - 若浓度低于最小有效阈值，返回 min.indexes[0]；
+	 * - 若浓度超上限，使用 max 区间进行外推并记录告警。
+	 */
+
 	static #PollutantsToIndexes(pollutants, pollutantScales) {
 		const { add, subtract, multiply, divide } = SimplePrecisionMath;
 		const friendlyUnits = AirQuality.Config.Units.Friendly;
