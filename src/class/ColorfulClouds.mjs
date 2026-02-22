@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
 	constructor(parameters, token) {
 		this.Name = "ColorfulClouds";
-		this.Version = "4.0.0-beta1";
+		this.Version = "4.1.0";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
 		this.headers = { Referer: "https://caiyunapp.com/" };
@@ -33,6 +33,80 @@ export default class ColorfulClouds {
 			pm25: "PM2_5",
 			pm10: "PM10",
 			other: "NOT_AVAILABLE",
+		},
+		Availability: {
+			Minutely: [
+				"CN",
+				"HK",
+				"MO",
+				"TW",
+				"IT",
+				"LT",
+				"MT",
+				"FR",
+				"SK",
+				"NO",
+				"BY",
+				"IS",
+				"CZ",
+				"SI",
+				"DE",
+				"ES",
+				"UA",
+				"DK",
+				"PL",
+				"FI",
+				"SE",
+				"HR",
+				"RU",
+				"RO",
+				"PT",
+				"EE",
+				"RS",
+				"AT",
+				"GR",
+				"HU",
+				"FJ",
+				"GU",
+				"MH",
+				"NC",
+				"TR",
+				"BH",
+				"SA",
+				"ID",
+				"IR",
+				"SG",
+				"OM",
+				"PH",
+				"IN",
+				"KH",
+				"CY",
+				"MY",
+				"VN",
+				"KW",
+				"TH",
+				"KR",
+				"KP",
+				"CA",
+				"BS",
+				"KY",
+				"MX",
+				"PA",
+				"MQ",
+				"CU",
+				"BM",
+				"PR",
+				"CW",
+				"GP",
+				"NI",
+				"BR",
+				"GF",
+				"CO",
+				"GY",
+				"PY",
+				"AR",
+			],
+			AirQuality: ["CN", "HK", "MO"],
 		},
 	};
 
@@ -79,6 +153,12 @@ export default class ColorfulClouds {
 
 	async Minutely() {
 		Console.info("☑️ Minutely");
+		// 判断可用性：当前数据源不支持这个国家/地区
+		if (!this.#Config.Availability.Minutely.includes(this.country)) {
+			Console.warn("Minutely", `Unsupported country: ${this.country}`);
+			return;
+		}
+
 		const request = {
 			url: `${this.endpoint}/minutely?unit=metric:v2`,
 			headers: this.headers,
@@ -369,12 +449,19 @@ export default class ColorfulClouds {
 
 	async CurrentAirQuality(useUsa = true, forcePrimaryPollutant = true) {
 		Console.info("☑️ CurrentAirQuality");
-		const realtime = await this.#RealTime();
 		const failedAirQuality = {
 			metadata: this.#Metadata(undefined, undefined, true),
 			pollutants: [],
 			previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
 		};
+
+		// 判断可用性：当前数据源不支持这个国家/地区
+		if (!this.#Config.Availability.AirQuality.includes(this.country)) {
+			Console.warn("CurrentAirQuality", `Unsupported country: ${this.country}`);
+			return failedAirQuality;
+		}
+
+		const realtime = await this.#RealTime();
 
 		if (!realtime.result) {
 			Console.error("CurrentAirQuality", "无法获取realtime数据");

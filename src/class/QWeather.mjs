@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class QWeather {
 	constructor(parameters, token, host = "devapi.qweather.com") {
 		this.Name = "QWeather";
-		this.Version = "5.0.0-beta1";
+		this.Version = "5.1.0";
 		Console.log(`🟧 ${this.Name} v${this.Version}`);
 		this.endpoint = `https://${host}`;
 		this.headers = { "X-QW-Api-Key": token };
@@ -43,6 +43,10 @@ export default class QWeather {
 			"mg/m3": "MILLIGRAMS_PER_CUBIC_METER",
 			ppb: "PARTS_PER_BILLION",
 			ppm: "PARTS_PER_MILLION",
+		},
+		Availability: {
+			Minutely: ["CN", "HK", "MO"],
+			AirQuality: ["AD", "BE", "BG", "CA", "CN", "HR", "CZ", "DK", "FI", "FR", "DE", "GI", "GR", "HK", "HU", "IE", "JP", "KR", "LV", "LT", "MO", "MT", "NL", "MK", "NO", "PL", "PT", "RO", "RS", "SG", "SK", "SI", "ES", "SE", "CH", "TW", "TH", "GB", "US"],
 		},
 	};
 
@@ -312,6 +316,12 @@ export default class QWeather {
 
 	async Minutely() {
 		Console.info("☑️ Minutely");
+		// 判断可用性：当前数据源不支持这个国家/地区
+		if (!this.#Config.Availability.Minutely.includes(this.country)) {
+			Console.warn("Minutely", `Unsupported country: ${this.country}`);
+			return;
+		}
+
 		const request = {
 			url: `${this.endpoint}/v7/minutely/5m?location=${this.longitude},${this.latitude}`,
 			headers: this.headers,
@@ -709,6 +719,16 @@ export default class QWeather {
 	}
 
 	async CurrentAirQuality(forcePrimaryPollutant = true) {
+		// 判断可用性：当前数据源不支持这个国家/地区
+		if (!this.#Config.Availability.AirQuality.includes(this.country)) {
+			Console.warn("CurrentAirQuality", `Unsupported country: ${this.country}`);
+			return {
+				metadata: this.#Metadata(`https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`, undefined, true),
+				pollutants: [],
+				previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
+			};
+		}
+
 		const findSupportedIndex = indexes => {
 			Console.info("☑️ findSupportedIndex");
 
@@ -843,6 +863,12 @@ export default class QWeather {
 			categoryIndex: -1,
 			pollutants: [],
 		};
+
+		// 判断可用性：当前数据源不支持这个国家/地区
+		if (!this.#Config.Availability.AirQuality.includes(this.country)) {
+			Console.warn("YesterdayAirQuality", `Unsupported country: ${this.country}`);
+			return failedAirQuality;
+		}
 
 		// Some locationID at Hong Kong and Macau with length 9 is supported
 		if (locationInfo.iso === "TW" || locationInfo.id.length !== 9) {
