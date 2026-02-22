@@ -2,19 +2,23 @@
   * none
 
 ### 🛠️ Bug Fixes
-  * 在 `parseWeatherKitURL.mjs` 的 `parseWeatherKitURL` 中修复国家参数解析优先级，现在优先使用查询参数中的国家信息，减少地区识别偏差。
-  * 将 `Pollutants2AQI` 的默认空气质量计算算法更新为 `EU_EAQI`。
+  * 修复并收敛污染物指数缺失场景：现在会在污染物对象上统一回填指数，减少因字段不完整导致的结果偏差。
+  * 优化中国区主污染物识别流程，提升在不同数据源下的判定一致性。
+  * 优化下一小时天气注入条件判断，减少误注入或重复覆盖的情况。
+  * 将 `FixQWeatherCO` 重命名为 `FixPollutantsUnits` 并统一污染物单位修复策略，减少因单位换算差异导致的空气质量展示误差。
 
 ### 🔣 Dependencies
   * none
 
 ### ‼️ Breaking Changes
-  * 数据集与天气相关配置结构已简化并合并；若依赖旧字段名或旧配置路径，需要同步调整。
+  * none
 
 ### 🔄 Other Changes
-  * 在 `AirQuality.mjs` 中抽离 `Pollutants2AQI` 与 `ConvertPollutants`，增强空气质量通用处理能力，便于在不同响应流程复用。
-  * 调整天气注入条件与可用性判断逻辑，减少不必要覆盖并简化分支处理。
-  * 将响应侧数据集注入流程改为并行执行，减少处理耗时。
-  * 在 `AirQuality.mjs` 中将 `GetStpConversionFactors` 收敛为私有方法 `#GetStpConversionFactors`。
-  * 统一使用 `parameters.dataSets` 驱动 DataSets 处理链路，简化请求侧过滤逻辑（移除不必要的正则），并统一响应注入阶段的执行路径。
-  * 将原先通过正则进行的地区与可用性判断逻辑下沉到 `ColorfulClouds.mjs` 与 `QWeather.mjs` 的配置中统一管理。
+  * 在 `Pollutants2AQI` 与 `ConvertPollutants` 中补充污染物浓度到污染物指数的映射能力，为统一 AQI 计算与主污染物判定打基础。
+  * 统一空气质量结果的生成与展示路径，减少不同来源数据在展示侧的差异。
+  * 优化 `appendScaleToProviderName` 的空气质量展示信息拼接逻辑，减少同类场景下的重复处理。
+  * 统一 `InjectAirQuality` 注入入口并整理执行顺序，提升处理链路稳定性与可维护性。
+  * 重构空气质量计算流水线：去重 AQI 构建流程，并将算法映射、指数裁剪、最大指数配置等能力下沉到统一模块。
+  * 在 `BuildAQIFromScale` 中将指数裁剪与上限约束统一配置化，减少边界条件下的不一致结果。
+  * 对空气质量相关方法命名、执行顺序和内部结构进行了整理，代码可读性与可扩展性进一步提升。
+  * 全仓统一格式化策略（空格缩进及缩进宽度），提升多人协作时的风格一致性。
