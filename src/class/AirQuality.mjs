@@ -59,9 +59,8 @@ export default class AirQuality {
             return failedCategoryIndex;
         }
 
-        const { categoryIndex } = range;
-        Console.info("✅ CategoryIndex", `categoryIndex: ${categoryIndex}`);
-        return categoryIndex;
+        Console.info("✅ CategoryIndex", `categoryIndex: ${range.categoryIndex}`);
+        return range.categoryIndex;
     }
 
     static CompareCategoryIndexes(todayCategoryIndex, yesterdayCategoryIndex) {
@@ -93,26 +92,25 @@ export default class AirQuality {
         const friendlyUnits = AirQuality.Config.Units.Friendly;
 
         const convertedPollutants = pollutants.map(pollutant => {
-            const { pollutantType } = pollutant;
-            const pollutantScale = pollutantScales[pollutantType];
+            const pollutantScale = pollutantScales[pollutant.pollutantType];
 
             if (!pollutantScale) {
-                Console.info("ConvertUnits", `No scale for ${pollutantType}, skip`);
+                Console.info("ConvertUnits", `No scale for ${pollutant.pollutantType}, skip`);
                 return pollutant;
             }
 
-            Console.info("ConvertUnits", `Converting ${pollutantType}`);
-            const amount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, pollutantScale.units, stpConversionFactors?.[pollutantType] || -1, pollutantScale?.stpConversionFactor || -1);
+            Console.info("ConvertUnits", `Converting ${pollutant.pollutantType}`);
+            const amount = AirQuality.ConvertUnit(pollutant.amount, pollutant.units, pollutantScale.units, stpConversionFactors?.[pollutant.pollutantType] || -1, pollutantScale?.stpConversionFactor || -1);
             if (amount < 0) {
                 Console.error(
                     "ConvertUnits",
-                    `无法转换${pollutantType}的单位`,
-                    `${pollutant.amount} ${friendlyUnits[pollutant.units] ?? pollutant.units} (STP conversion factor: ${stpConversionFactors?.[pollutantType] || -1}) -> ${amount} ${friendlyUnits[pollutantScale.units] ?? pollutantScale.units} (STP conversion factor: ${pollutantScale?.stpConversionFactor || -1})`,
+                    `无法转换${pollutant.pollutantType}的单位`,
+                    `${pollutant.amount} ${friendlyUnits[pollutant.units] ?? pollutant.units} (STP conversion factor: ${stpConversionFactors?.[pollutant.pollutantType] || -1}) -> ${amount} ${friendlyUnits[pollutantScale.units] ?? pollutantScale.units} (STP conversion factor: ${pollutantScale?.stpConversionFactor || -1})`,
                 );
                 return pollutant;
             }
 
-            Console.info("ConvertUnits", `Converted ${pollutantType}: ${amount} ${friendlyUnits[pollutantScale.units] ?? pollutantScale.units}`);
+            Console.info("ConvertUnits", `Converted ${pollutant.pollutantType}: ${amount} ${friendlyUnits[pollutantScale.units] ?? pollutantScale.units}`);
             return { ...pollutant, amount, units: pollutantScale.units };
         });
         Console.info("✅ ConvertUnits");
@@ -162,13 +160,12 @@ export default class AirQuality {
     static #GetStpConversionFactors(airQuality) {
         Console.info("☑️ GetStpConversionFactors");
 
-        const { US } = AirQuality.Config.STP_ConversionFactors;
         switch (airQuality?.metadata?.providerName) {
             case "和风天气":
             case "BreezoMeter":
             default: {
                 Console.info("✅ GetStpConversionFactors", `STP conversion factors for ${airQuality?.metadata?.providerName}: US`);
-                return US;
+                return AirQuality.Config.STP_ConversionFactors.US;
             }
         }
     }
@@ -179,7 +176,6 @@ export default class AirQuality {
         const forcePrimaryPollutant = options?.forcePrimaryPollutant ?? Settings?.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants;
         const allowOverRange = options?.allowOverRange ?? Settings?.AirQuality?.Calculate?.AllowOverRange;
 
-        const { pollutants } = airQuality;
         const stpConversionFactors = AirQuality.#GetStpConversionFactors(airQuality);
         const scale = AirQuality.Config.Scales[algorithm] ?? AirQuality.Config.Scales.UBA;
 
@@ -190,14 +186,14 @@ export default class AirQuality {
             case "EU_EAQI": {
                 // PollutantsToEAQI
                 Console.info("☑️ PollutantsToEAQI");
-                airQuality = AirQuality.#PollutantsToAirQuality(pollutants, scale, { stpConversionFactors, allowOverRange: false });
+                airQuality = AirQuality.#PollutantsToAirQuality(airQuality.pollutants, scale, { stpConversionFactors, allowOverRange: false });
                 Console.info("✅ PollutantsToEAQI");
                 break;
             }
             case "WAQI_InstantCast_US": {
                 // PollutantsToInstantCastUS
                 Console.info("☑️ PollutantsToInstantCastUS", `allowOverRange: ${allowOverRange}`);
-                airQuality = AirQuality.#PollutantsToAirQuality(pollutants, scale, { stpConversionFactors, allowOverRange });
+                airQuality = AirQuality.#PollutantsToAirQuality(airQuality.pollutants, scale, { stpConversionFactors, allowOverRange });
                 Console.info("✅ PollutantsToInstantCastUS");
                 break;
             }
@@ -205,7 +201,7 @@ export default class AirQuality {
             case "WAQI_InstantCast_CN_25_DRAFT": {
                 // PollutantsToInstantCastCN12 / PollutantsToInstantCastCN25 / #PollutantsToInstantCastCN
                 Console.info("☑️ PollutantsToInstantCastCN", `allowOverRange: ${allowOverRange}`, `forcePrimaryPollutant: ${forcePrimaryPollutant}`);
-                airQuality = AirQuality.#PollutantsToAirQuality(pollutants, scale, { stpConversionFactors, allowOverRange });
+                airQuality = AirQuality.#PollutantsToAirQuality(airQuality.pollutants, scale, { stpConversionFactors, allowOverRange });
 
                 const isNotAvailable = !forcePrimaryPollutant && airQuality.index <= 50;
                 if (isNotAvailable) {
@@ -223,7 +219,7 @@ export default class AirQuality {
             default: {
                 // PollutantsToUBA
                 Console.info("☑️ PollutantsToUBA");
-                airQuality = AirQuality.#PollutantsToAirQuality(pollutants, scale, { stpConversionFactors, allowOverRange: true });
+                airQuality = AirQuality.#PollutantsToAirQuality(airQuality.pollutants, scale, { stpConversionFactors, allowOverRange: true });
                 airQuality = {
                     ...airQuality,
                     index: airQuality.categoryIndex,
@@ -372,18 +368,17 @@ export default class AirQuality {
     static #ComputePollutantIndex(pollutant, pollutantType, pollutantScale, friendlyUnits) {
         const { add, subtract, multiply, divide } = SimplePrecisionMath;
 
-        const { amount } = pollutant;
-        Console.debug(`${pollutantType}: ${amount} ${friendlyUnits[pollutant.units] ?? pollutant.units}`);
+        Console.debug(`${pollutantType}: ${pollutant.amount} ${friendlyUnits[pollutant.units] ?? pollutant.units}`);
 
         const minValidAmount = pollutantScale.ranges.min.amounts[0];
-        if (amount < minValidAmount) {
-            Console.error("PollutantsToIndexes", `${pollutantType}的含量无效：${amount} ${friendlyUnits[pollutantScale.units]}需要 >= ${minValidAmount}`);
+        if (pollutant.amount < minValidAmount) {
+            Console.error("PollutantsToIndexes", `${pollutantType}的含量无效：${pollutant.amount} ${friendlyUnits[pollutantScale.units]}需要 >= ${minValidAmount}`);
             return pollutantScale.ranges.min.indexes[0];
         }
 
-        const isOverRange = amount > pollutantScale.ranges.max.amounts[1];
+        const isOverRange = pollutant.amount > pollutantScale.ranges.max.amounts[1];
         if (isOverRange) {
-            Console.warn("PollutantsToIndexes", `检测到爆表指数！${pollutantType}：${amount} ${friendlyUnits[pollutantScale.units]}`);
+            Console.warn("PollutantsToIndexes", `检测到爆表指数！${pollutantType}：${pollutant.amount} ${friendlyUnits[pollutantScale.units]}`);
             Console.warn("PollutantsToIndexes", "注意身体！");
         }
 
@@ -391,13 +386,13 @@ export default class AirQuality {
             ? pollutantScale.ranges.max
             : pollutantScale.ranges.value.find(({ amounts }) => {
                   const [minAmount, maxAmount] = amounts;
-                  return AirQuality.#CeilByPrecision(amount, minAmount) >= minAmount && AirQuality.#CeilByPrecision(amount, maxAmount) <= maxAmount;
+                  return AirQuality.#CeilByPrecision(pollutant.amount, minAmount) >= minAmount && AirQuality.#CeilByPrecision(pollutant.amount, maxAmount) <= maxAmount;
               });
         Console.debug(`indexes: ${JSON.stringify(indexes)}`, `amounts: ${JSON.stringify(amounts)}`);
 
         const [minIndex, maxIndex] = indexes;
         const [minAmount, maxAmount] = amounts;
-        const index = add(multiply(divide(subtract(maxIndex, minIndex), subtract(maxAmount, minAmount)), subtract(amount, minAmount)), amount > maxAmount ? maxIndex : minIndex);
+        const index = add(multiply(divide(subtract(maxIndex, minIndex), subtract(maxAmount, minAmount)), subtract(pollutant.amount, minAmount)), pollutant.amount > maxAmount ? maxIndex : minIndex);
         return index;
     }
 
