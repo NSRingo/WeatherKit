@@ -366,6 +366,11 @@ export default class AirQuality {
      * 该污染物的 index；低于最小阈值时返回 min.indexes[0]；超上限时使用 max 区间外推。
      */
     static #ComputePollutantIndex(pollutant, pollutantType, pollutantScale, friendlyUnits) {
+        if (!pollutantScale) {
+            Console.warn("PollutantsToIndexes", `标准未定义污染物${pollutantType}，index将标记为-1`);
+            return -1;
+        }
+
         const { add, subtract, multiply, divide } = SimplePrecisionMath;
 
         Console.debug(`${pollutantType}: ${pollutant.amount} ${friendlyUnits[pollutant.units] ?? pollutant.units}`);
@@ -423,19 +428,11 @@ export default class AirQuality {
      * 每种标准污染物对应的 index 列表。
      * - 若标准所需污染物缺失，返回该污染物 index=-1。
      */
-    static #PollutantsToIndexes(pollutants, pollutantScales) {
-        const friendlyUnits = AirQuality.Config.Units.Friendly;
-
-        return Object.entries(pollutantScales).map(([pollutantType, pollutantScale]) => {
-            const pollutant = pollutants.find(pollutant => pollutant.pollutantType === pollutantType);
-
-            if (!pollutant) {
-                Console.warn("PollutantsToIndexes", `没有找到标准所需的污染物${pollutantType}，结果可能不准确`);
-                return { pollutantType, index: -1 };
-            }
-
-            const index = AirQuality.#ComputePollutantIndex(pollutant, pollutantType, pollutantScale, friendlyUnits);
-            return { pollutantType, index };
+    static #PollutantsToIndexes(pollutants = [], pollutantScales) {
+        return pollutants.map(pollutant => {
+            const index = AirQuality.#ComputePollutantIndex(pollutant, pollutant.pollutantType, pollutantScales?.[pollutant.pollutantType], AirQuality.Config.Units.Friendly);
+            pollutant.index = index;
+            return pollutant;
         });
     }
 
@@ -527,12 +524,15 @@ export default class AirQuality {
             return { metadata: { providerName: "iRingo", temporarilyUnavailable: true } };
         }
 
-        const convertedPollutants = stpConversionFactors ? AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants) : pollutants;
+        let newPollutants = [];
+        if (stpConversionFactors) {
+            newPollutants = AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants);
+        }
 
-        const indexes = AirQuality.#PollutantsToIndexes(convertedPollutants, scale.pollutants);
-        Console.debug("PollutantsToAirQuality", `indexes: ${JSON.stringify(indexes)}`);
+        newPollutants = AirQuality.#PollutantsToIndexes(newPollutants, scale.pollutants);
+        Console.debug("PollutantsToAirQuality", `convertedPollutants: ${JSON.stringify(newPollutants)}`);
 
-        const primaryPollutant = AirQuality.PrimaryPollutant(indexes, scale.categories);
+        const primaryPollutant = AirQuality.PrimaryPollutant(newPollutants, scale.categories);
         const maxIndex = scale?.weatherKitScale?.maxIndex;
         const index = allowOverRange || !Number.isFinite(maxIndex) ? Math.round(primaryPollutant.index) : Math.min(Math.round(primaryPollutant.index), maxIndex);
         Console.info("✅ PollutantsToAirQuality");
@@ -540,7 +540,7 @@ export default class AirQuality {
             index,
             isSignificant: primaryPollutant.categoryIndex >= scale.categories.significantIndex,
             categoryIndex: primaryPollutant.categoryIndex,
-            pollutants: convertedPollutants,
+            pollutants: newPollutants,
             metadata: { providerName: "iRingo", temporarilyUnavailable: false },
             primaryPollutant: primaryPollutant.pollutantType,
             scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
