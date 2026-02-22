@@ -341,6 +341,56 @@ export default class AirQuality {
     }
 
     /**
+     * 根据“昨日对比指数来源”和当前空气质量 scale，选择用于昨日对比计算的算法。
+     * - Calculate: 直接采用用户配置算法
+     * - QWeather / ColorfulCloudsCN: 固定使用国标 InstantCast
+     * - WeatherKit: 根据 scale 自动映射到内置算法
+     * @param {any} airQuality - 当前空气质量对象（用于读取 scale）
+     * @param {any} Settings - 全局设置对象
+     * @returns {string} 选中的算法名；无法匹配时返回空字符串
+     */
+    static chooseAlogrithm(airQuality, Settings) {
+        Console.info("☑️ chooseAlogrithm", `currentIndexProvider: ${Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider}`);
+
+        switch (Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider) {
+            case "Calculate": {
+                Console.info("✅ chooseAlogrithm", `algorithm: ${Settings?.AirQuality?.Calculate?.Algorithm}`);
+                return Settings?.AirQuality?.Calculate?.Algorithm;
+            }
+            case "QWeather":
+            case "ColorfulCloudsCN": {
+                Console.info("✅ chooseAlogrithm", `algorithm: WAQI_InstantCast_CN`);
+                return "WAQI_InstantCast_CN";
+            }
+            case "WeatherKit": {
+                const currentScale = AirQuality.GetNameFromScale(airQuality?.scale);
+                const scales = AirQuality.Config.Scales;
+
+                if (currentScale === scales.HJ6332012.weatherKitScale.name) {
+                    Console.info("✅ chooseAlogrithm", `algorithm: WAQI_InstantCast_CN`);
+                    return "WAQI_InstantCast_CN";
+                } else if (currentScale === scales.EPA_NowCast.weatherKitScale.name) {
+                    Console.info("✅ chooseAlogrithm", `algorithm: WAQI_InstantCast_US`);
+                    return "WAQI_InstantCast_US";
+                } else {
+                    const supportedScales = [scales.EU_EAQI.weatherKitScale.name, scales.UBA.weatherKitScale.name];
+                    if (supportedScales.includes(currentScale)) {
+                        Console.info("✅ chooseAlogrithm", `algorithm: ${currentScale}`);
+                        return currentScale;
+                    }
+
+                    Console.error("chooseAlogrithm", "没有找到合适的内置算法");
+                    return "";
+                }
+            }
+            default: {
+                Console.error("chooseAlogrithm", "未知的currentIndexProvider");
+                return "";
+            }
+        }
+    }
+
+    /**
      * 计算单个污染物在目标标准下的 index。
      *
      * @param {{pollutantType: string, amount: number, units: string}} pollutant

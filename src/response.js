@@ -478,47 +478,6 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
             }
         }
     };
-    const chooseAlogrithm = (currentIndexProvider, airQuality, Settings) => {
-        Console.info("☑️ chooseAlogrithm", `currentIndexProvider: ${currentIndexProvider}`);
-
-        switch (currentIndexProvider) {
-            case "Calculate": {
-                const algorithm = Settings?.AirQuality?.Calculate?.Algorithm;
-                Console.info("✅ chooseAlogrithm", `algorithm: ${algorithm}`);
-                return algorithm;
-            }
-            case "QWeather":
-            case "ColorfulCloudsCN": {
-                Console.info("✅ chooseAlogrithm", `algorithm: WAQI_InstantCast_CN`);
-                return "WAQI_InstantCast_CN";
-            }
-            case "WeatherKit": {
-                const currentScale = AirQuality.GetNameFromScale(airQuality?.scale);
-                const scales = AirQuality.Config.Scales;
-
-                if (currentScale === scales.HJ6332012.weatherKitScale.name) {
-                    Console.info("✅ chooseAlogrithm", `algorithm: WAQI_InstantCast_CN`);
-                    return "WAQI_InstantCast_CN";
-                } else if (currentScale === scales.EPA_NowCast.weatherKitScale.name) {
-                    Console.info("✅ chooseAlogrithm", `algorithm: WAQI_InstantCast_US`);
-                    return "WAQI_InstantCast_US";
-                } else {
-                    const supportedScales = [scales.EU_EAQI.weatherKitScale.name, scales.UBA.weatherKitScale.name];
-                    if (supportedScales.includes(currentScale)) {
-                        Console.info("✅ chooseAlogrithm", `algorithm: ${currentScale}`);
-                        return currentScale;
-                    }
-
-                    Console.error("chooseAlogrithm", "没有找到合适的内置算法");
-                    return "";
-                }
-            }
-            default: {
-                Console.error("chooseAlogrithm", "未知的currentIndexProvider");
-                return "";
-            }
-        }
-    };
 
     const colorfulCloudsComparison = async (useUsa, currentCategoryIndex) => {
         Console.info("☑️ colorfulCloudsComparison", `currentCategoryIndex: ${currentCategoryIndex}`);
@@ -632,7 +591,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
 
     switch (Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider) {
         case "Calculate": {
-            const algorithm = chooseAlogrithm(Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider, airQuality, Settings);
+            const algorithm = AirQuality.chooseAlogrithm(airQuality, Settings);
             const PollutantsProvider = Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider;
             Console.debug(`Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider: ${PollutantsProvider}`);
 
