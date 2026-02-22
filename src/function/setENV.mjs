@@ -10,24 +10,24 @@ import { Console, Lodash as _ } from "@nsnanocat/util";
  * @return {Object} { Settings, Caches, Configs }
  */
 export default function setENV(name, platforms, database) {
-	Console.info("☑️ Set Environment Variables");
-	const { Settings, Caches, Configs } = getStorage(name, platforms, database);
-	/***************** Settings *****************/
-	Console.info(`typeof Settings: ${typeof Settings}`, `Settings: ${JSON.stringify(Settings, null, 2)}`);
-	string2array("Weather.Replace");
-	string2array("AirQuality.Current.Index.Replace");
-	string2array("AirQuality.Current.Pollutants.Units.Replace");
-	/***************** Caches *****************/
-	//Console.debug(`typeof Caches: ${typeof Caches}`, `Caches: ${JSON.stringify(Caches)}`);
-	/***************** Configs *****************/
-	//Configs.Storefront = new Map(Configs.Storefront);
-	if (Configs.Locale) Configs.Locale = new Map(Configs.Locale);
-	if (Configs.i18n) for (const type in Configs.i18n) Configs.i18n[type] = new Map(Configs.i18n[type]);
-	Console.info("✅ Set Environment Variables");
-	return { Settings, Caches, Configs };
+    Console.info("☑️ Set Environment Variables");
+    const { Settings, Caches, Configs } = getStorage(name, platforms, database);
+    /***************** Settings *****************/
+    Console.info(`typeof Settings: ${typeof Settings}`, `Settings: ${JSON.stringify(Settings, null, 2)}`);
+    string2array("Weather.Replace");
+    string2array("AirQuality.Current.Index.Replace");
+    string2array("AirQuality.Current.Pollutants.Units.Replace");
+    /***************** Caches *****************/
+    //Console.debug(`typeof Caches: ${typeof Caches}`, `Caches: ${JSON.stringify(Caches)}`);
+    /***************** Configs *****************/
+    //Configs.Storefront = new Map(Configs.Storefront);
+    if (Configs.Locale) Configs.Locale = new Map(Configs.Locale);
+    if (Configs.i18n) for (const type in Configs.i18n) Configs.i18n[type] = new Map(Configs.i18n[type]);
+    Console.info("✅ Set Environment Variables");
+    return { Settings, Caches, Configs };
 
-	function string2array(path) {
-		const setting = _.get(Settings, path);
-		if (!Array.isArray(setting)) _.set(Settings, path, setting ? [setting] : []);
-	}
+    function string2array(path) {
+        const setting = _.get(Settings, path);
+        if (!Array.isArray(setting)) _.set(Settings, path, setting ? [setting] : []);
+    }
 }
