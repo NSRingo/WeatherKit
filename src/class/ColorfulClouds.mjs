@@ -558,7 +558,7 @@ export default class ColorfulClouds {
             const index = realtime.result.realtime.air_quality.aqi.chn;
             const categoryIndex = AirQuality.CategoryIndex(index, scale.categories);
 
-            const primaryPollutant = AirQuality.GetPrimaryPollutant(particularAirQuality.pollutants, scale.categories);
+            const primaryPollutant = AirQuality.PrimaryPollutant(particularAirQuality.pollutants, scale.categories);
             // 当不强制展示主污染物且整体空气质量较好（<=50）时，主污染物置为不可用。
             const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
             if (isNotAvailable) {

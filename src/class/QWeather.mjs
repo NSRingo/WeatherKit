@@ -664,26 +664,44 @@ export default class QWeather {
         };
     }
 
-    #CreatePollutants(pollutantsObj) {
+    /**
+     * 创建 WeatherKit 格式污染物对象（airquality/v1/current 数据源）。
+     * @link https://dev.qweather.com/docs/airquality/
+     * @param {Array<{
+     *   code: string,
+     *   concentration: { value: number, unit: string },
+     *   subIndexes?: Array<{ code: string, aqi: number }>
+     * }>} pollutantsObj - 原始污染物数组。
+     * @param {string} [scaleCode] - 目标指数口径 code（如 cn-mee / us-epa）。
+     * @returns {Array<{
+     *   pollutantType: string,
+     *   amount: number,
+     *   units: string,
+     *   index?: number
+     * }>} 转换后的污染物数组。
+     */
+    #CreatePollutants(pollutantsObj, scaleCode) {
         Console.info("☑️ CreatePollutants");
         Console.debug(`pollutantsObj: ${JSON.stringify(pollutantsObj)}`);
 
         // TODO: what is ppmC? https://dev.qweather.com/docs/resource/air-info/#pollutants
         const pollutants = pollutantsObj
             .filter(pollutant => pollutant.concentration.unit !== "ppmC")
-            .map(({ code, concentration }) => {
+            .map(({ code, concentration, subIndexes = [] }) => {
                 const { value, unit } = concentration;
                 const pollutantType = this.#Config.Pollutants[code];
+                const indexObj = subIndexes.find(subIndex => subIndex.code === scaleCode);
+                if (scaleCode && !indexObj) Console.warn("CreatePollutants", `No index for ${pollutantType} was found for required scale`);
 
                 const friendlyUnits = AirQuality.Config.Units.Friendly;
                 const { ugm3, mgm3, ppb, ppm } = AirQuality.Config.Units.WeatherKit;
                 switch (unit) {
                     case friendlyUnits.MILLIGRAMS_PER_CUBIC_METER:
-                        return { pollutantType, amount: AirQuality.ConvertUnit(value, mgm3, ugm3), units: ugm3 };
+                        return { pollutantType, amount: AirQuality.ConvertUnit(value, mgm3, ugm3), units: ugm3, index: scaleCode ? (indexObj?.aqi ?? -1) : undefined };
                     case friendlyUnits.PARTS_PER_MILLION:
-                        return { pollutantType, amount: AirQuality.ConvertUnit(value, ppm, ppb), units: ppb };
+                        return { pollutantType, amount: AirQuality.ConvertUnit(value, ppm, ppb), units: ppb, index: scaleCode ? (indexObj?.aqi ?? -1) : undefined };
                     default:
-                        return { pollutantType, amount: value, units: this.#Config.Units[unit] };
+                        return { pollutantType, amount: value, units: this.#Config.Units[unit], index: scaleCode ? (indexObj?.aqi ?? -1) : undefined };
                 }
             });
 
@@ -692,27 +710,43 @@ export default class QWeather {
     }
 
     /**
-     * 创建苹果格式的污染物对象
+     * 创建 WeatherKit 格式污染物对象（v7/air/now 与 historical/air 数据源）。
      * @link https://dev.qweather.com/docs/resource/unit/
-     * @param {Object} pollutantsObj - 污染物对象
-     * @returns {Object} 修复后的污染物对象
+     * @param {Object} pollutantsObj - v7 接口返回的污染物键值对象。
+     * @returns {Array<{amount: number, pollutantType: string, units: string}>} 转换后的污染物数组。
      */
     #CreatePollutantsV7(pollutantsObj) {
         Console.info("☑️ CreatePollutantsV7");
         Console.debug(`pollutantsObj: ${JSON.stringify(pollutantsObj)}`);
 
+        const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
         const pollutants = Object.entries(pollutantsObj)
-            .filter(([name]) => this.#Config.Pollutants[name] !== undefined)
-            .map(([name, rawAmount]) => {
-                const amount = Number.parseFloat(rawAmount);
-
-                const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
-                return {
-                    amount: name === "co" ? AirQuality.ConvertUnit(amount, mgm3, ugm3) : amount,
-                    pollutantType: this.#Config.Pollutants[name],
-                    units: ugm3,
-                };
-            });
+            .map(([name, amount]) => {
+                const parsedAmount = Number.parseFloat(amount);
+                switch (name) {
+                    case "co":
+                        return {
+                            amount: AirQuality.ConvertUnit(parsedAmount ?? -1, mgm3, ugm3),
+                            pollutantType: this.#Config.Pollutants[name],
+                            units: ugm3,
+                        };
+                    case "no":
+                    case "no2":
+                    case "so2":
+                    case "o3":
+                    case "nox":
+                    case "pm25":
+                    case "pm10":
+                        return {
+                            amount: parsedAmount ?? -1,
+                            pollutantType: this.#Config.Pollutants[name],
+                            units: ugm3,
+                        };
+                    default:
+                        return null;
+                }
+            })
+            .filter(Boolean);
 
         Console.info("✅ CreatePollutantsV7");
         return pollutants;
@@ -766,32 +800,6 @@ export default class QWeather {
             }
         };
 
-        const getPrimaryPollutant = (scaleCode, pollutants) => {
-            Console.info("☑️ getPrimaryPollutant", `scaleCode: ${scaleCode}`);
-            if (pollutants.length === 0) {
-                Console.error("getPrimaryPollutant", "pollutants is empty!");
-                return "NOT_AVAILABLE";
-            }
-
-            const pollutantIndexes = pollutants.map(pollutant => {
-                const pollutantType = this.#Config.Pollutants[pollutant.code];
-                for (const subIndex of pollutant.subIndexes) {
-                    if (subIndex.code === scaleCode) {
-                        return { pollutantType, index: subIndex.aqi };
-                    }
-                }
-
-                Console.warn("getPrimaryPollutant", `No index for ${pollutantType} was found for required scale`);
-                return { pollutantType, index: -1 };
-            });
-
-            const scale = indexCodeToScale(scaleCode);
-            const primaryPollutant = AirQuality.GetPrimaryPollutant(pollutantIndexes, scale.categories);
-
-            Console.info("✅ getPrimaryPollutant");
-            return primaryPollutant.pollutantType;
-        };
-
         Console.info("☑️ CurrentAirQuality");
         const airQualityCurrent = await this.#AirQualityCurrent();
         if (!Array.isArray(airQualityCurrent.pollutants)) {
@@ -808,17 +816,17 @@ export default class QWeather {
             };
         }
 
+        const supportedIndex = findSupportedIndex(airQualityCurrent.indexes);
+        const scale = indexCodeToScale(supportedIndex?.code);
+
         const particularAirQuality = {
             metadata: this.#Metadata(
                 // TODO: &lang=zh
                 `https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`,
             ),
-            pollutants: this.#CreatePollutants(airQualityCurrent.pollutants),
+            pollutants: this.#CreatePollutants(airQualityCurrent.pollutants, supportedIndex?.code),
             previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
         };
-
-        const supportedIndex = findSupportedIndex(airQualityCurrent.indexes);
-        const scale = indexCodeToScale(supportedIndex?.code);
 
         if (!supportedIndex?.code || !scale?.categories) {
             Console.error("AirQuality", "No supported index found", `airQualityCurrent.indexes[].code = ${JSON.stringify(airQualityCurrent.indexes?.map(({ code }) => code))}`);
@@ -849,9 +857,19 @@ export default class QWeather {
             index: supportedIndex.aqi,
             isSignificant: categoryIndex >= scale.categories.significantIndex,
             ...particularAirQuality,
-            primaryPollutant: forcePrimaryPollutant && apiPrimaryPollutant === "NOT_AVAILABLE" ? getPrimaryPollutant(supportedIndex.code, airQualityCurrent.pollutants) : apiPrimaryPollutant,
+            primaryPollutant: apiPrimaryPollutant,
             scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
         };
+
+        if (airQuality.primaryPollutant === "NOT_AVAILABLE") {
+            const calculatedPrimaryPollutant = AirQuality.PrimaryPollutant(particularAirQuality.pollutants, scale.categories);
+            const isNotAvailable = !forcePrimaryPollutant && calculatedPrimaryPollutant.index <= 50;
+            if (isNotAvailable) {
+                Console.info("CurrentAirQuality", `Max index of pollutants ${calculatedPrimaryPollutant.pollutantType} = ${calculatedPrimaryPollutant.index} is <= 50, primaryPollutant will be set to NOT_AVAILABLE.`);
+            }
+            if (!isNotAvailable) airQuality.primaryPollutant = calculatedPrimaryPollutant.pollutantType;
+        }
+
         Console.info("✅ CurrentAirQuality");
         return airQuality;
     }
