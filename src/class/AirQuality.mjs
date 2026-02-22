@@ -135,7 +135,7 @@ export default class AirQuality {
 		}
 	}
 
-	static GetStpConversionFactors(airQuality) {
+	static #GetStpConversionFactors(airQuality) {
 		Console.info("☑️ GetStpConversionFactors");
 
 		const { US } = AirQuality.Config.STP_ConversionFactors;
@@ -156,7 +156,7 @@ export default class AirQuality {
 		const allowOverRange = options?.allowOverRange ?? Settings?.AirQuality?.Calculate?.AllowOverRange;
 
 		const { pollutants } = airQuality;
-		const stpConversionFactors = AirQuality.GetStpConversionFactors(airQuality);
+		const stpConversionFactors = AirQuality.#GetStpConversionFactors(airQuality);
 		switch (algorithm) {
 			case "None": {
 				return airQuality;
@@ -275,7 +275,7 @@ export default class AirQuality {
 					return pollutants;
 				}
 
-				return AirQuality.ConvertUnits(pollutants, AirQuality.GetStpConversionFactors(airQuality), getPollutantScales(scale.pollutants));
+				return AirQuality.ConvertUnits(pollutants, AirQuality.#GetStpConversionFactors(airQuality), getPollutantScales(scale.pollutants));
 			}
 		} else {
 			return pollutants;
