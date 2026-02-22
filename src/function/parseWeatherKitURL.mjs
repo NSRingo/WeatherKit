@@ -10,7 +10,7 @@ export default function parseWeatherKitURL(url = new URL($request.url)) {
 		language: Parameters?.language,
 		latitude: Parameters?.latitude,
 		longitude: Parameters?.longitude,
-		country: Parameters?.country || url?.searchParams?.get("country"),
+		country: url?.searchParams?.get("country") || Parameters?.country,
 		dataSets: url?.searchParams?.get("dataSets")?.split(",") || [],
 	};
 	//log(JSON.stringify(result, null, 2));
