@@ -138,7 +138,7 @@ Console.info(`FORMAT: ${FORMAT}`);
                                                     matchEnum.conditionType();
                                                     matchEnum.forecastToken();
                                                 }
-                                                if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
+                                                body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
                                                 if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
                                                 break;
                                             }
@@ -334,6 +334,12 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
  */
 async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
     Console.info("☑️ InjectForecastNextHour");
+
+    if (forecastNextHour) {
+        Console.info("✅ InjectForecastNextHour");
+        return forecastNextHour;
+    }
+
     let newForecastNextHour;
     switch (Settings?.NextHour?.Provider) {
         case "WeatherKit":
