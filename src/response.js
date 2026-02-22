@@ -89,33 +89,25 @@ Console.info(`FORMAT: ${FORMAT}`);
 									colorfulClouds: new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
 									qWeather: new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host),
 									waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
+									country: parameters.country,
 								};
-								const country = url.searchParams.get("country");
 
-								const disableWeather = Settings?.Weather?.Provider === "WeatherKit";
-								const weatherTargets = new RegExp(Settings?.Weather?.Replace || "(?!)");
-								if (!disableWeather && weatherTargets.test(country)) {
-									if (url.searchParams.get("dataSets").includes("currentWeather")) {
-										body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
-										if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
-									}
-									if (url.searchParams.get("dataSets").includes("forecastDaily")) {
-										body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
-										if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
-									}
-									if (url.searchParams.get("dataSets").includes("forecastHourly")) {
-										body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
-										if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
-									}
+								if (url.searchParams.get("dataSets").includes("currentWeather")) {
+									body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
+									if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
+								}
+								if (url.searchParams.get("dataSets").includes("forecastDaily")) {
+									body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
+									if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
+								}
+								if (url.searchParams.get("dataSets").includes("forecastHourly")) {
+									body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
+									if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
 								}
 
-								const disableNextHour = Settings?.NextHour?.Provider === "WeatherKit";
-								const nextHourTargets = new RegExp(Settings?.NextHour?.Fill || "(?!)");
-								if (!disableNextHour && nextHourTargets.test(country)) {
-									if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
-										if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
-										if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
-									}
+								if (url.searchParams.get("dataSets").includes("forecastNextHour")) {
+									if (!body?.forecastNextHour) body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
+									if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
 								}
 
 								if (url.searchParams.get("dataSets").includes("airQuality")) {
@@ -125,20 +117,17 @@ Console.info(`FORMAT: ${FORMAT}`);
 									}
 
 									// injectedPollutants
-									const isCurrentFill = new RegExp(Settings?.AirQuality?.Current?.Fill || "(?!)").test(country);
-									const needPollutants = isCurrentFill && isPollutantEmpty;
-									const injectedPollutants = needPollutants ? await InjectPollutants(Settings, enviroments) : body.airQuality;
+									const injectedPollutants = isPollutantEmpty ? await InjectPollutants(Settings, enviroments) : body.airQuality;
+									const needPollutants = isPollutantEmpty && !!(injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable);
 
 									// InjectIndex
-									const replaceScales = getArrayFromSetting(Settings?.AirQuality?.Current?.Index?.Replace);
-									const needInjectIndex = needPollutants || replaceScales.includes(AirQuality.GetNameFromScale(body.airQuality?.scale));
+									const needInjectIndex = needPollutants || Settings?.AirQuality?.Current?.Index?.Replace?.includes(AirQuality.GetNameFromScale(body.airQuality?.scale));
 									const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
 
 									// injectedComparison
-									const isComparisonFill = new RegExp(Settings?.AirQuality?.Comparison?.Fill || "(?!)").test(country);
 									const weatherKitComparison = body?.airQuality?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
 									const previousDayComparison = needInjectIndex && Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange ? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : weatherKitComparison;
-									const needInjectComparison = isComparisonFill && previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
+									const needInjectComparison = previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
 									const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
 									const injectedComparison = needInjectComparison ? await InjectComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : { ...injectedIndex, previousDayComparison: weatherKitComparison };
 
@@ -194,17 +183,6 @@ Console.info(`FORMAT: ${FORMAT}`);
 })()
 	.catch(e => Console.error(e))
 	.finally(() => done($response));
-
-// BoxJS returns string if only one selected
-function getArrayFromSetting(setting) {
-	if (!setting) {
-		return [];
-	} else if (Array.isArray(setting)) {
-		return setting;
-	} else {
-		return [setting];
-	}
-}
 
 function appendScaleToProviderName(airQuality, Settings) {
 	const providerName = airQuality.metadata.providerName;
@@ -682,7 +660,7 @@ function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, inje
 		}
 	};
 
-	const replaceUnits = getArrayFromSetting(Settings?.AirQuality?.Current?.Pollutants?.Units?.Replace);
+	const replaceUnits = Settings?.AirQuality?.Current?.Pollutants?.Units?.Replace ?? [];
 	const isIndexInjected = needInjectIndex && injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable;
 	const scaleName = AirQuality.GetNameFromScale(isIndexInjected ? injectedIndex?.scale : airQuality?.scale);
 
@@ -715,6 +693,11 @@ function ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, inje
  */
 async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
 	Console.info("☑️ InjectCurrentWeather");
+	if (!Settings?.Weather?.Replace?.includes(enviroments.country)) {
+		Console.warn("InjectCurrentWeather", `Unreplaced country: ${enviroments.country}`);
+		Console.info("✅ InjectCurrentWeather");
+		return currentWeather;
+	}
 	let newCurrentWeather;
 	switch (Settings?.Weather?.Provider) {
 		case "WeatherKit":
@@ -746,6 +729,11 @@ async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
  */
 async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
 	Console.info("☑️ InjectForecastDaily");
+	if (!Settings?.Weather?.Replace?.includes(enviroments.country)) {
+		Console.warn("InjectForecastDaily", `Unreplaced country: ${enviroments.country}`);
+		Console.info("✅ InjectForecastDaily");
+		return forecastDaily;
+	}
 	let newForecastDaily;
 	switch (Settings?.Weather?.Provider) {
 		case "WeatherKit":
@@ -779,6 +767,11 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
  */
 async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
 	Console.info("☑️ InjectForecastHourly");
+	if (!Settings?.Weather?.Replace?.includes(enviroments.country)) {
+		Console.warn("InjectForecastHourly", `Unreplaced country: ${enviroments.country}`);
+		Console.info("✅ InjectForecastHourly");
+		return forecastHourly;
+	}
 	let newForecastHourly;
 	switch (Settings?.Weather?.Provider) {
 		case "WeatherKit":
