@@ -1,5 +1,5 @@
-import { $app, Console } from "@nsnanocat/util";
-
+import { Hono } from "hono";
+import { Console } from "@nsnanocat/util";
 import database from "./function/database.mjs";
 import setENV from "./function/setENV.mjs";
 import * as flatbuffers from "flatbuffers";
@@ -11,52 +11,43 @@ import QWeather from "./class/QWeather.mjs";
 import WAQI from "./class/WAQI.mjs";
 import Weather from "./class/Weather.mjs";
 import AirQuality from "./class/AirQuality.mjs";
-
-import { Hono } from "hono";
-
 /***************** Processing *****************/
 
-const app = new Hono();
-
-app.all("/:rest{.*}", async c => {
-    const url = new URL(c.req.url);
-    url.hostname = "weatherkit.apple.com";
-    url.pathname = "/" + c.req.param("rest");
-    url.protocol = "https:";
-    url.port = "443";
-
-    const res = await fetch(url.toString(), {
+export default new Hono().all("/:rest{.*}", async c => {
+    // 构造请求
+    const $url = new URL(c.req.url);
+    $url.protocol = "https:";
+    $url.hostname = "weatherkit.apple.com";
+    $url.port = "443";
+    $url.pathname = "/" + c.req.param("rest");
+    const $res = await fetch($url.toString(), {
         method: c.req.method,
         headers: c.req.header(),
-        body: c.req.method === "GET" ? null : await c.req.arrayBuffer(),
+        body: c.req.method === "GET" ? undefined : await c.req.arrayBuffer(),
     });
-
-    // const $response = { headers: Object.fromEntries(res.headers.entries()) };
-
-    const $response = {
-        headers: Object.fromEntries([...res.headers.entries()].filter(([k]) => k.toLowerCase() !== "content-length")),
-    };
-
+    const $headers = new Headers($res.headers);
+    $headers.delete("content-length");
+    const $response = { headers: Object.fromEntries($headers) };
     // 解析格式
     const FORMAT = ($response.headers?.["Content-Type"] ?? $response.headers?.["content-type"])?.split(";")?.[0];
-
     /**
      * 设置
      * @type {{Settings: import('./types').Settings}}
      */
     const { Settings, Caches, Configs } = setENV("iRingo", "WeatherKit", database);
     Console.logLevel = Settings.LogLevel;
-
-    // Todo
-
-    /* 设置 URL 参数 */
-    // url.searchParams.set("country", parameters.country);
-    // console.log(JSON.stringify(Settings));
-
+    Settings.Weather.Provider = $url.searchParams.get("Weather_Provider") ?? Settings.Weather.Provider;
+    Settings.NextHour.Provider = $url.searchParams.get("NextHour_Provider") ?? Settings.NextHour.Provider;
+    Settings.Weather.Provider = $url.searchParams.get("Weather_Provider") ?? Settings.Weather.Provider;
+    Settings.AirQuality.Calculate.Algorithm = $url.searchParams.get("AirQuality_Calculate_Algorithm") ?? Settings.AirQuality.Calculate.Algorithm;
+    Settings.API.ColorfulClouds.Token = $url.searchParams.get("API_ColorfulClouds_Token") ?? Settings.API.ColorfulClouds.Token;
+    Settings.API.QWeather.Host = $url.searchParams.get("API_QWeather_Host") ?? Settings.API.QWeather.Host;
+    Settings.API.QWeather.Token = $url.searchParams.get("API_QWeather_Token") ?? Settings.API.QWeather.Token;
+    Settings.API.WAQI.Token = $url.searchParams.get("API_WAQI_Token") ?? Settings.API.WAQI.Token;
+    Settings.LogLevel = $url.searchParams.get("LogLevel") ?? Settings.LogLevel;
     // 创建空数据
     let body = {};
     // 格式判断
-
     try {
         switch (FORMAT) {
             case undefined: // 视为无body
@@ -82,11 +73,11 @@ app.all("/:rest{.*}", async c => {
                 break;
             case "text/json":
             case "application/json":
-                body = JSON.parse((await res.text()) ?? "{}");
-                switch (url.hostname) {
+                body = JSON.parse((await $res.text()) ?? "{}");
+                switch ($url.hostname) {
                     case "weatherkit.apple.com":
                         // 路径判断
-                        if (url.pathname.startsWith("/api/v1/availability/")) {
+                        if ($url.pathname.startsWith("/api/v1/availability/")) {
                             body = Configs?.Availability?.v2;
                         }
                         break;
@@ -100,19 +91,19 @@ app.all("/:rest{.*}", async c => {
             case "application/grpc":
             case "application/grpc+proto":
             case "application/octet-stream": {
-                let rawBody = new Uint8Array(await res.arrayBuffer());
+                let rawBody = new Uint8Array(await $res.arrayBuffer());
                 switch (FORMAT) {
                     case "application/vnd.apple.flatbuffer": {
                         // 解析FlatBuffer
                         const ByteBuffer = new flatbuffers.ByteBuffer(rawBody);
                         const Builder = new flatbuffers.Builder();
                         // 主机判断
-                        switch (url.hostname) {
+                        switch ($url.hostname) {
                             case "weatherkit.apple.com":
                                 // 路径判断
-                                if (url.pathname.startsWith("/api/v2/weather/")) {
+                                if ($url.pathname.startsWith("/api/v2/weather/")) {
                                     body = WeatherKit2.decode(ByteBuffer, "all");
-                                    const parameters = parseWeatherKitURL(url);
+                                    const parameters = parseWeatherKitURL($url);
 
                                     const enviroments = {
                                         colorfulClouds: new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
@@ -182,14 +173,9 @@ app.all("/:rest{.*}", async c => {
         Console.error(e);
     }
 
-    Object.keys($response.headers).forEach(key => {
-        c.header(key, $response.headers[key]);
-    });
-
+    Object.keys($response.headers).forEach(k => c.header(k, $response.headers[k]));
     return c.body($response.body);
 });
-
-export default app;
 
 /**
  * 注入当前天气数据
@@ -332,7 +318,6 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
             break;
         }
     }
-
     if (newForecastNextHour?.metadata) {
         newForecastNextHour.metadata = { ...forecastNextHour?.metadata, ...newForecastNextHour.metadata };
         forecastNextHour = { ...forecastNextHour, ...newForecastNextHour };
@@ -562,11 +547,11 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
             previousDayComparison: UNKNOWN,
         };
     };
-
     const qweatherComparison = async (currentCategoryIndex, pollutantsToAirQuality) => {
         Console.info("☑️ qweatherComparison", `currentCategoryIndex: ${currentCategoryIndex}`);
         const setQWeatherCache = qweatherCache => {
             Caches.qweather = qweatherCache;
+            Storage.setItem("@iRingo.WeatherKit.Caches", { ...Caches, qweather: qweatherCache });
         };
 
         const locationsGrid = await QWeather.GetLocationsGrid(Caches?.qweather, setQWeatherCache);
