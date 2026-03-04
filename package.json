@@ -30,6 +30,10 @@
     },
     "scripts": {
         "dev": "npm-run-all --parallel build:dev sgmoudle:dev",
+        "dev:vercel": "npx vercel dev",
+        "dev:wrangler": "npx wrangler dev",
+        "deploy:vercel": "npx vercel deploy --prod",
+        "deploy:wrangler": "npx wrangler deploy --minify",
         "serve": "webpack serve",
         "build": "rspack build",
         "build:dev": "rspack build -c rspack.dev.config.js --mode=development",
@@ -56,6 +60,7 @@
     "dependencies": {
         "@nsnanocat/util": "^2.1.5",
         "flatbuffers": "^24.12.23",
+        "hono": "^4.12.2",
         "node-polyfill-webpack-plugin": "^4.1.0"
     }
 }

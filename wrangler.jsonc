@@ -1,0 +1,6 @@
+{
+  "name": "weatherkit",
+  "main": "src/index.js",
+  "compatibility_date": "2025-11-21",
+  "compatibility_flags": ["nodejs_compat"]
+}

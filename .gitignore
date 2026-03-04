@@ -131,3 +131,6 @@ dist
 
 .DS_Store
 .bun.lock
+.vercel
+.wrangler
+.env*.local
