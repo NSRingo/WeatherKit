@@ -59,6 +59,7 @@
     },
     "dependencies": {
         "@nsnanocat/util": "^2.1.5",
+        "fetch-cookie": "^3.2.0",
         "flatbuffers": "^24.12.23",
         "hono": "^4.12.2",
         "node-polyfill-webpack-plugin": "^4.1.0"
