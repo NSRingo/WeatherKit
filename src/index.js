@@ -38,7 +38,6 @@ export default new Hono().all("/:rest{.*}", async c => {
     Console.logLevel = Settings.LogLevel;
     Settings.Weather.Provider = $url.searchParams.get("Weather_Provider") ?? Settings.Weather.Provider;
     Settings.NextHour.Provider = $url.searchParams.get("NextHour_Provider") ?? Settings.NextHour.Provider;
-    Settings.Weather.Provider = $url.searchParams.get("Weather_Provider") ?? Settings.Weather.Provider;
     Settings.AirQuality.Calculate.Algorithm = $url.searchParams.get("AirQuality_Calculate_Algorithm") ?? Settings.AirQuality.Calculate.Algorithm;
     Settings.API.ColorfulClouds.Token = $url.searchParams.get("API_ColorfulClouds_Token") ?? Settings.API.ColorfulClouds.Token;
     Settings.API.QWeather.Host = $url.searchParams.get("API_QWeather_Host") ?? Settings.API.QWeather.Host;
