@@ -65,7 +65,7 @@ export async function Response($request, $response) {
             break;
         case "text/json":
         case "application/json":
-            body = $app === "Node.js" ? new TextDecoder().decode($response.body ?? new Uint8Array()) : JSON.parse($response.body ?? "{}");
+            body = JSON.parse($app === "Node.js" ? new TextDecoder().decode($response.body ?? new Uint8Array()) : ($response.body ?? "{}"));
             switch (url.hostname) {
                 case "weatherkit.apple.com":
                     // 路径判断
