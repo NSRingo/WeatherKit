@@ -62,6 +62,7 @@
         "fetch-cookie": "^3.2.0",
         "flatbuffers": "^24.12.23",
         "hono": "^4.12.5",
+        "node-fetch": "^3.3.2",
         "node-polyfill-webpack-plugin": "^4.1.0"
     }
 }
