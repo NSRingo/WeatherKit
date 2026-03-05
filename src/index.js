@@ -25,9 +25,8 @@ export default new Hono().all("/:rest{.*}", async c => {
         headers: c.req.header(),
         body: c.req.method === "GET" ? undefined : await c.req.arrayBuffer(),
     });
-    const $headers = new Headers($res.headers);
-    $headers.delete("content-length");
-    const $response = { headers: Object.fromEntries($headers) };
+    const $response = { headers: Object.fromEntries(new Headers($res.headers).entries()) };
+    delete $response.headers["content-length"];
     // 解析格式
     const FORMAT = ($response.headers?.["Content-Type"] ?? $response.headers?.["content-type"])?.split(";")?.[0];
     /**
