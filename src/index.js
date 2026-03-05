@@ -14,18 +14,21 @@ import AirQuality from "./class/AirQuality.mjs";
 /***************** Processing *****************/
 
 export default new Hono().all("/:rest{.*}", async c => {
-    // 构造请求
     const $url = new URL(c.req.url);
     $url.protocol = "https:";
     $url.hostname = "weatherkit.apple.com";
     $url.port = "443";
-    $url.pathname = "/" + c.req.param("rest");
-    const $res = await fetch($url.toString(), {
+    $url.pathname = c.req.param("rest");
+    const response = await fetch($url.toString(), {
         method: c.req.method,
         headers: c.req.header(),
         body: c.req.method === "GET" ? undefined : await c.req.arrayBuffer(),
     });
-    const $response = { headers: Object.fromEntries(new Headers($res.headers).entries()) };
+    globalThis.$response = {
+        status: response.status,
+        headers: Object.fromEntries(new Headers(response.headers).entries()),
+        body: await response.arrayBuffer(),
+    };
     delete $response.headers["content-length"];
     // 解析格式
     const FORMAT = ($response.headers?.["Content-Type"] ?? $response.headers?.["content-type"])?.split(";")?.[0];
@@ -71,7 +74,7 @@ export default new Hono().all("/:rest{.*}", async c => {
                 break;
             case "text/json":
             case "application/json":
-                body = (await $res.json()) ?? "{}";
+                body = JSON.parse(new TextDecoder().decode($response.body)) ?? "{}";
                 switch ($url.hostname) {
                     case "weatherkit.apple.com":
                         // 路径判断
@@ -89,7 +92,7 @@ export default new Hono().all("/:rest{.*}", async c => {
             case "application/grpc":
             case "application/grpc+proto":
             case "application/octet-stream": {
-                let rawBody = new Uint8Array(await $res.arrayBuffer());
+                let rawBody = new Uint8Array($response.body);
                 switch (FORMAT) {
                     case "application/vnd.apple.flatbuffer": {
                         // 解析FlatBuffer
@@ -102,7 +105,6 @@ export default new Hono().all("/:rest{.*}", async c => {
                                 if ($url.pathname.startsWith("/api/v2/weather/")) {
                                     body = WeatherKit2.decode(ByteBuffer, "all");
                                     const parameters = parseWeatherKitURL($url);
-
                                     const enviroments = {
                                         colorfulClouds: new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
                                         qWeather: new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host),
@@ -142,7 +144,6 @@ export default new Hono().all("/:rest{.*}", async c => {
                                             }
                                         }),
                                     );
-
                                     const WeatherData = WeatherKit2.encode(Builder, "all", body);
                                     Builder.finish(WeatherData);
                                     break;
