@@ -72,7 +72,7 @@ export default new Hono().all("/:rest{.*}", async c => {
                 break;
             case "text/json":
             case "application/json":
-                body = JSON.parse((await $res.text()) ?? "{}");
+                body = (await $res.json()) ?? "{}";
                 switch ($url.hostname) {
                     case "weatherkit.apple.com":
                         // 路径判断
