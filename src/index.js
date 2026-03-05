@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { Response } from "./process/response.js";
+// import { Request } from "./process/request.js";
 /***************** Processing *****************/
 export default new Hono().all("/:rest{.*}", async c => {
     const url = new URL(c.req.url);
@@ -11,9 +12,11 @@ export default new Hono().all("/:rest{.*}", async c => {
         url: url.toString(),
         method: c.req.method,
         headers: c.req.header(),
-        body: ["GET", "HEAD"].includes(c.req.method) ? undefined : await c.req.arrayBuffer(),
+        body: ["GET", "HEAD"].includes(c.req.method) ? undefined : new Uint8Array(await c.req.arrayBuffer()),
     };
-    globalThis.$response = await fetch(url.toString(), {
+    // Object.assign(globalThis, await Request($request));
+    // if ($response) return c.body($response.body);
+    globalThis.$response = await fetch($request.url, {
         method: $request.method,
         headers: $request.headers,
         body: $request.body,
@@ -28,6 +31,6 @@ export default new Hono().all("/:rest{.*}", async c => {
     // globalThis.$arguments = url.searchParams.get("Weather_Provider");
 
     Object.assign(globalThis, await Response($request, $response));
-    Object.keys($response.headers).forEach(k => c.header(k, $response.headers[k]));
+    Object.keys($response.headers).map(k => c.header(k, $response.headers[k]));
     return c.body($response.body);
 });
