@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { Response } from "./process/response.js";
-// import { Request } from "./process/request.js";
+import { Response } from "./process/Response.js";
+// import { Request } from "./process/Request.js";
 /***************** Processing *****************/
 export default new Hono().all("/:rest{.*}", async c => {
     const url = new URL(c.req.url);
@@ -16,11 +16,7 @@ export default new Hono().all("/:rest{.*}", async c => {
     };
     // Object.assign(globalThis, await Request($request));
     // if ($response) return c.body($response.body);
-    globalThis.$response = await fetch($request.url, {
-        method: $request.method,
-        headers: $request.headers,
-        body: $request.body,
-    }).then(async r => ({
+    globalThis.$response = await fetch($request.url, $request).then(async r => ({
         status: r.status,
         headers: Object.fromEntries(new Headers(r.headers).entries()),
         body: new Uint8Array(await r.arrayBuffer()),

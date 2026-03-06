@@ -1,10 +1,10 @@
 import { $app, Console, Lodash as _, Storage } from "@nsnanocat/util";
-import database from "./function/database.mjs";
-import setENV from "./function/setENV.mjs";
+import database from "../function/database.mjs";
+import setENV from "../function/setENV.mjs";
 /***************** Processing *****************/
 export async function Request($request) {
     // 构造回复数据
-    let $response = undefined;
+    let $response;
     // 解构URL
     const url = new URL($request.url);
     Console.info(`url: ${url.toJSON()}`);
@@ -95,7 +95,6 @@ export async function Request($request) {
                                 case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
                                 case $request.headers["user-agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
                                     if (url.searchParams.has("country")) {
-                                        //if (url.searchParams.get("country") === "CN") url.searchParams.set("country", "TW");
                                     } else {
                                         const gcc = Storage.getItem("@iRingo.Location.Caches")?.pep?.gcc;
                                         if (gcc) url.searchParams.set("country", gcc);
@@ -111,31 +110,6 @@ export async function Request($request) {
                         }
                     }
                     break;
-                case "weather-map2.apple.com": {
-                    // 路径判断
-                    switch (url.pathname) {
-                        case "/v1/mapOverlay/precipitationRadarMap":
-                        case "/v1/mapOverlay/precipitationForecastByFrameTime": {
-                            /*
-							switch (true) {
-								case $request.headers["User-Agent"]?.startsWith("Weather_macOS_Version"):
-								case $request.headers["user-agent"]?.startsWith("Weather_macOS_Version"):
-									switch (true) {
-										case $request?.headers?.geocountrycode === "CN":
-											$request.headers.geocountrycode = "US";
-											break;
-										case $request?.headers?.GeoCountryCode === "CN":
-											$request.headers.GeoCountryCode = "US";
-											break;
-									}
-									break;
-							}
-							*/
-                            break;
-                        }
-                    }
-                    break;
-                }
             }
             break;
         case "CONNECT":
