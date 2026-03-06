@@ -8,15 +8,16 @@ export default new Hono().all("/:rest{.*}", async c => {
     url.hostname = "weatherkit.apple.com";
     url.port = "443";
     url.pathname = c.req.param("rest");
-    globalThis.$request = {
+    let $request = {
         url: url.toString(),
         method: c.req.method,
         headers: c.req.header(),
         body: ["GET", "HEAD"].includes(c.req.method) ? undefined : new Uint8Array(await c.req.arrayBuffer()),
     };
-    // Object.assign(globalThis, await Request($request));
+    let $response;
+    // ({ $request , $response } = await Request($request));
     // if ($response) return c.body($response.body);
-    globalThis.$response = await fetch($request.url, $request).then(async r => ({
+    $response = await fetch($request.url, $request).then(async r => ({
         status: r.status,
         headers: Object.fromEntries(new Headers(r.headers).entries()),
         body: new Uint8Array(await r.arrayBuffer()),
@@ -26,7 +27,7 @@ export default new Hono().all("/:rest{.*}", async c => {
     /* todo */
     // globalThis.$arguments = url.searchParams.get("Weather_Provider");
 
-    Object.assign(globalThis, await Response($request, $response));
+    $response = await Response($request, $response);
     Object.keys($response.headers).map(k => c.header(k, $response.headers[k]));
     return c.body($response.body);
 });
