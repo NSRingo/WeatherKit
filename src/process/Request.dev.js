@@ -2,7 +2,9 @@ import { $app, Console, Lodash as _, Storage } from "@nsnanocat/util";
 import database from "../function/database.mjs";
 import setENV from "../function/setENV.mjs";
 /***************** Processing *****************/
-export async function Request($request, $response) {
+export async function Request($request) {
+    // 构造回复数据
+    let $response = undefined;
     // 解构URL
     const url = new URL($request.url);
     Console.info(`url: ${url.toJSON()}`);

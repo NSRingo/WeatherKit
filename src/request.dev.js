@@ -2,6 +2,7 @@ import { $app, Console, done, Lodash as _ } from "@nsnanocat/util";
 import { Request } from "./process/Request.dev.js";
 /***************** Processing *****************/
 !(async () => {
+    let $response;
     ({ $request, $response } = await Request($request));
 })()
     .catch(e => Console.error(e))
