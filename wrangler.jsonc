@@ -1,6 +1,8 @@
 {
   "name": "weatherkit",
-  "main": "src/index.js",
+  "main": "src/Hono.js",
   "compatibility_date": "2025-11-21",
-  "compatibility_flags": ["nodejs_compat"]
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
 }
