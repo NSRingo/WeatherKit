@@ -2,9 +2,7 @@ import { $app, Console, Lodash as _, Storage } from "@nsnanocat/util";
 import database from "../function/database.mjs";
 import setENV from "../function/setENV.mjs";
 /***************** Processing *****************/
-export async function Request($request) {
-    // 构造回复数据
-    let $response;
+export async function Request($request, $response) {
     // 解构URL
     const url = new URL($request.url);
     Console.info(`url: ${url.toJSON()}`);
@@ -16,8 +14,6 @@ export async function Request($request) {
      * @type {{Settings: import('./types').Settings}}
      */
     const { Settings, Caches, Configs } = setENV("iRingo", "WeatherKit", database);
-    // 创建空数据
-    let body = {};
     // 方法判断
     switch ($request.method) {
         case "POST":
