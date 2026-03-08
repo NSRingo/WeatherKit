@@ -253,6 +253,10 @@ const calculateAlgorithm: Arg = {
         { key: "WAQI_InstantCast_US", label: "美标InstantCast（EPA-454/B-24-002）" },
         { key: "WAQI_InstantCast_CN", label: "国标InstantCast（HJ 633—2012）" },
         { key: "WAQI_InstantCast_CN_25_DRAFT", label: "国标InstantCast（HJ 633 2025年草案）" },
+        { key: "CA_AQHI", label: "加拿大AQHI（10.17269/s41997-019-00237-w）" },
+        { key: "HK_AQHI", label: "香港AQHI" },
+        { key: "CN_DEATH_AQHI", label: "中国（致死风险）AQHI" },
+        { key: "CN_DEATH_HK_AQHI", label: "中国（致死风险）+香港AQHI" },
     ],
     description: "使用内置算法，通过污染物数据本地计算空气指数。InstantCast源自于WAQI，美标版本使用了WAQI的臭氧标准。",
 };
