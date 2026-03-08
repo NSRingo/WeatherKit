@@ -11,6 +11,14 @@
 
 // ─── 多语言字符串常量 ──────────────────────────────────────────────────────────
 
+/** 空气质量标尺通用标签 */
+const SCALE_DISPLAY_LABEL = {
+    "zh-Hant-HK": "空氣質素",
+    "zh-Hant": "空氣品質",
+    "zh-Hans": "空气质量",
+    "en": "Air Quality",
+};
+
 /** HK AQHI 顶层元数据 */
 const HK_AQHI_META = {
     displayName: {
@@ -27,11 +35,6 @@ const HK_AQHI_META = {
         "zh-Hant": "香港 (AQHI)",
         "zh-Hans": "香港 (AQHI)",
         "en":      "Hong Kong (AQHI)",
-    },
-    displayLabel: {
-        "zh-Hant": "空氣質素",
-        "zh-Hans": "空气质量",
-        "en":      "Air Quality",
     },
 };
 
@@ -210,7 +213,7 @@ export default class AirQualityScale {
             displayName:      i18n(HK_AQHI_META.displayName, lang),
             shortDisplayName: i18n(HK_AQHI_META.shortDisplayName, lang),
             longDisplayName:  i18n(HK_AQHI_META.longDisplayName, lang),
-            displayLabel:     i18n(HK_AQHI_META.displayLabel, lang),
+            displayLabel:     i18n(SCALE_DISPLAY_LABEL, lang),
             language: normalizeScaleLanguage(language),
             version: 1,
             aqi: {
