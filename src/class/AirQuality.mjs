@@ -215,8 +215,10 @@ export default class AirQuality {
                 Console.info("✅ PollutantsToInstantCastCN");
                 break;
             }
+            case "CN_DEATH_AQHI":
             case "CA_AQHI":
-            case "HK_AQHI": {
+            case "HK_AQHI":
+            case "CN_DEATH_HK_AQHI": {
                 // PollutantsToAQHI
                 Console.info("☑️ PollutantsToAQHI");
                 airQuality = AirQuality.#PollutantsToAQHI(airQuality.pollutants, scale, { stpConversionFactors });
@@ -252,6 +254,12 @@ export default class AirQuality {
         const getScale = scaleName => {
             const scales = AirQuality.Config.Scales;
             switch (scaleName) {
+                case scales.CN_AQHI.weatherKitScale.name:
+                    return scales.CN_AQHI;
+                case scales.HK_AQHI.weatherKitScale.name:
+                    return scales.HK_AQHI;
+                case scales.CA_AQHI.weatherKitScale.name:
+                    return scales.CA_AQHI;
                 case scales.HJ6332012.weatherKitScale.name:
                     return scales.WAQI_InstantCast_CN;
                 case scales.EPA_NowCast.weatherKitScale.name:
@@ -427,10 +435,14 @@ export default class AirQuality {
                         return `${providerName} (InstantCast with HJ 633—2012)`;
                     case "WAQI_InstantCast_CN_25_DRAFT":
                         return `${providerName} (InstantCast with HJ 633 2025 DRAFT)`;
+                    case "CN_DEATH_AQHI":
+                        return `${providerName} (China CDC Death Risk AQHI)`;
                     case "CA_AQHI":
                         return `${providerName} (InstantCast with CA AQHI)`;
                     case "HK_AQHI":
                         return `${providerName} (InstantCast with HK AQHI)`;
+                    case "CN_DEATH_HK_AQHI":
+                        return `${providerName} (China CDC Death Risk + HK AQHI)`;
                     case "UBA":
                     default:
                         return `${providerName} (FB001846)`;
@@ -1964,6 +1976,88 @@ export default class AirQuality {
                 pollutants: {
                     NO2: { units: "PARTS_PER_BILLION", stpConversionFactor: -1 },
                     OZONE: { units: "PARTS_PER_BILLION", stpConversionFactor: -1 },
+                    PM2_5: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                },
+            },
+            /**
+             * China Air Quality Health Index (AQHI).
+             * [10.1016/j.atmosenv.2024.120473]{@link https://doi.org/10.1016/j.atmosenv.2024.120473}
+             */
+            CN_DEATH_AQHI: {
+                weatherKitScale: {
+                    name: "CN.AQHI",
+                    version: "2414",
+                },
+                categories: {
+                    significantIndex: 6, // 四级 (AQHI 6 及以上)
+                    // Categories in AQHI: 一级：0~1，二级：2~3.5，三级：3.6~5，四级：6~10，五级：11
+                    ranges: [
+                        { categoryIndex: 1, indexes: [0, 2.004] },
+                        { categoryIndex: 2, indexes: [2.005, 4.008] },
+                        // 3: 4.009~6.012
+                        { categoryIndex: 3, indexes: [4.009, 7.018] },
+                        // 4: 6.013~8.016
+                        { categoryIndex: 4, indexes: [7.018, 8.016] },
+                        { categoryIndex: 5, indexes: [8.017, 10.02] },
+                        { categoryIndex: 6, indexes: [10.021, 12.024] },
+                        { categoryIndex: 7, indexes: [12.025, 14.028] },
+                        { categoryIndex: 8, indexes: [14.029, 16.032] },
+                        { categoryIndex: 9, indexes: [16.033, 18.036] },
+                        { categoryIndex: 10, indexes: [18.037, 20.04] },
+                        { categoryIndex: 11, indexes: [20.041, Number.POSITIVE_INFINITY] },
+                    ],
+                },
+                // β 系数（回归系数），浓度单位 µg/m³
+                betas: {
+                    NO2: 0.0009,
+                    SO2: 0.00059,
+                    O3: 0.00024,
+                    PM2_5: 0.00022,
+                },
+                pollutants: {
+                    NO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    SO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    OZONE: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    PM2_5: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                },
+            },
+            CN_DEATH_HK_AQHI: {
+                weatherKitScale: {
+                    name: "CN.AQHI",
+                    version: "2414",
+                },
+                categories: {
+                    significantIndex: 6, // 四级 (AQHI 6 及以上)
+                    // Categories in AQHI: 一级：0~1，二级：2~3.5，三级：3.6~5，四级：6~10，五级：11
+                    ranges: [
+                        { categoryIndex: 1, indexes: [0, 2.004] },
+                        { categoryIndex: 2, indexes: [2.005, 4.008] },
+                        // 3: 4.009~6.012
+                        { categoryIndex: 3, indexes: [4.009, 7.018] },
+                        // 4: 6.013~8.016
+                        { categoryIndex: 4, indexes: [7.018, 8.016] },
+                        { categoryIndex: 5, indexes: [8.017, 10.02] },
+                        { categoryIndex: 6, indexes: [10.021, 12.024] },
+                        { categoryIndex: 7, indexes: [12.025, 14.028] },
+                        { categoryIndex: 8, indexes: [14.029, 16.032] },
+                        { categoryIndex: 9, indexes: [16.033, 18.036] },
+                        { categoryIndex: 10, indexes: [18.037, 20.04] },
+                        { categoryIndex: 11, indexes: [20.041, Number.POSITIVE_INFINITY] },
+                    ],
+                },
+                // β 系数（回归系数），浓度单位 µg/m³
+                betas: {
+                    NO2: 0.0009,
+                    SO2: 0.00059,
+                    O3: 0.00024,
+                    PM10: 0.0002821751,
+                    PM2_5: 0.0002180567,
+                },
+                pollutants: {
+                    NO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    SO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    OZONE: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    PM10: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
                     PM2_5: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
                 },
             },

@@ -114,6 +114,8 @@ export async function Request($request) {
                             const scaleName = pathParts[4] ?? "";
                             if (/^HK\.AQHI\./i.test(scaleName)) {
                                 $response = AirQualityScale.buildHKAQHIScale(language, scaleName);
+                            } else if (/^CN\.AQHI\./i.test(scaleName)) {
+                                $response = AirQualityScale.buildCNAQHIScale(language, scaleName);
                             }
                             break;
                         }

@@ -136,6 +136,91 @@ const HK_AQHI = {
     },
 };
 
+/** CN AQHI 常量 */
+const CN_AQHI = {
+    displayName: {
+        "zh-Hans": "AQHI (CN)",
+    },
+    shortDisplayName: {
+        "zh-Hans": "AQHI",
+    },
+    longDisplayName: {
+        "zh-Hans": "中国 (AQHI)",
+    },
+    /**
+     * 中国 AQHI 五级健康风险（极低/低/中/高/极高）。
+     * 级别: 极低(1), 低(2-4), 中(5), 高(6-10), 极高(11)
+     */
+    categories: [
+        {
+            range: [1, 1],
+            glyph: "aqi.low",
+            colors: ["#2094FA"],
+            categoryName: {
+                "zh-Hans": "极低",
+            },
+            recommendation: {
+                "zh-Hans": "适宜进行户外活动。",
+            },
+        },
+        {
+            range: [2, 3],
+            glyph: "aqi.low",
+            colors: ["#04DE71", "#CCFF66"],
+            categoryName: {
+                "zh-Hans": "低",
+            },
+            recommendation: {
+                "zh-Hans": "正常进行户外活动。心肺疾病患者可遵照医嘱进行身体锻炼。",
+            },
+        },
+        {
+            range: [4, 5],
+            glyph: "aqi.medium",
+            colors: ["#FFE620", "#FF9500"],
+            categoryName: {
+                "zh-Hans": "中",
+            },
+            recommendation: {
+                "zh-Hans": "心肺疾病患者应减少长时间、高强度的户外活动，并遵照医嘱进行身体锻炼。",
+            },
+        },
+        {
+            range: [6, 10],
+            glyph: "aqi.high",
+            colors: ["#FA114F", "#DC1346", "#BD143D", "#9F1634", "#80172B"],
+            categoryName: {
+                "zh-Hans": "高",
+            },
+            recommendation: {
+                "zh-Hans": "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+            },
+        },
+        {
+            range: [11, 11],
+            glyph: "aqi.high",
+            colors: ["#80172B"],
+            categoryName: {
+                "zh-Hans": "极高",
+            },
+            recommendation: {
+                "zh-Hans": "心肺疾病患者、老人、儿童及孕妇应避免户外活动，避免体力消耗。一般人群应尽量减少户外活动，特别是在交通繁忙的地方。",
+            },
+        },
+    ],
+    gradient: {
+        stops: [
+            { location: 1,   color: "#2094FA" },
+            { location: 2,   color: "#04DE71" },
+            { location: 3.5, color: "#CCFF66" },
+            { location: 4,   color: "#FFE620" },
+            { location: 6,   color: "#FA114F" },
+            { location: 8,   color: "#BD143D" },
+            { location: 10,  color: "#80172B" },
+        ],
+    },
+};
+
 // ─── 工具函数 ──────────────────────────────────────────────────────────────────
 
 /**
@@ -219,6 +304,59 @@ export default class AirQualityScale {
                 range: [1, 11],
                 categories,
                 gradient: HK_AQHI.gradient,
+            },
+        };
+
+        return {
+            status: 200,
+            headers: {
+                "Content-Type": "application/json",
+                "Cache-Control": "max-age=31536000, public, s-maxage=31536000",
+            },
+            body: JSON.stringify(scale),
+        };
+    }
+
+    /**
+     * 构建 CN AQHI 标尺 JSON 响应体。
+     * 格式与 WeatherKit /api/v1/airQualityScale/{lang}/CA.AQHI.2414 保持一致。
+     *
+     * @param {string} language - 请求的语言标签，如 "zh-Hans-CN"、"en"
+     * @param {string} scaleName - 标尺名称，如 "CN.AQHI.2414"
+     * @returns {{ status: number, headers: Record<string, string>, body: string }}
+     */
+    static buildCNAQHIScale(language, scaleName) {
+        const lang = "zh-Hans";
+
+        const categories = [];
+        for (const band of CN_AQHI.categories) {
+            const [min, max] = band.range;
+            for (let idx = min; idx <= max; idx++) {
+                categories.push({
+                    categoryNumber: idx,
+                    range: [idx, idx],
+                    color: band.colors[idx - min],
+                    categoryName: i18n(band.categoryName, lang),
+                    recommendation: i18n(band.recommendation, lang),
+                    glyph: band.glyph,
+                });
+            }
+        }
+
+        const scale = {
+            name: scaleName,
+            displayName:      i18n(CN_AQHI.displayName, lang),
+            shortDisplayName: i18n(CN_AQHI.shortDisplayName, lang),
+            longDisplayName:  i18n(CN_AQHI.longDisplayName, lang),
+            displayLabel:     i18n(SCALE_DISPLAY_LABEL, lang),
+            language: normalizeScaleLanguage(language),
+            version: 1,
+            aqi: {
+                numerical: true,
+                ascending: true,
+                range: [1, 11],
+                categories,
+                gradient: CN_AQHI.gradient,
             },
         };
 

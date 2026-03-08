@@ -108,13 +108,15 @@ export async function Request($request) {
                             break;
                         }
                         case url.pathname.startsWith("/api/v1/airQualityScale/"): {
-                            // 拦截 HK.AQHI 标尺请求，返回本地内置定义
+                            // 拦截 AQHI 标尺请求，返回本地内置定义
                             const pathParts = url.pathname.split("/").filter(Boolean);
                             // /api/v1/airQualityScale/{language}/{scaleName}
                             const language = pathParts[3] ?? "en";
                             const scaleName = pathParts[4] ?? "";
                             if (/^HK\.AQHI\./i.test(scaleName)) {
                                 $response = AirQualityScale.buildHKAQHIScale(language, scaleName);
+                            } else if (/^CN\.AQHI\./i.test(scaleName)) {
+                                $response = AirQualityScale.buildCNAQHIScale(language, scaleName);
                             }
                             break;
                         }
