@@ -215,6 +215,7 @@ export default class AirQuality {
                 Console.info("✅ PollutantsToInstantCastCN");
                 break;
             }
+            case "CA_AQHI":
             case "HK_AQHI": {
                 // PollutantsToAQHI
                 Console.info("☑️ PollutantsToAQHI");
@@ -426,6 +427,8 @@ export default class AirQuality {
                         return `${providerName} (InstantCast with HJ 633—2012)`;
                     case "WAQI_InstantCast_CN_25_DRAFT":
                         return `${providerName} (InstantCast with HJ 633 2025 DRAFT)`;
+                    case "CA_AQHI":
+                        return `${providerName} (InstantCast with CA AQHI)`;
                     case "HK_AQHI":
                         return `${providerName} (InstantCast with HK AQHI)`;
                     case "UBA":
@@ -1924,6 +1927,43 @@ export default class AirQuality {
                     SO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
                     OZONE: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
                     PM10: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    PM2_5: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                },
+            },
+            /**
+             * Canada Air Quality Health Index (AQHI).
+             * [10.1016/j.atmosenv.2024.120473]{@link https://doi.org/10.1016/j.atmosenv.2024.120473}
+             */
+            CA_AQHI: {
+                weatherKitScale: {
+                    name: "CA.AQHI",
+                    version: "2414",
+                },
+                categories: {
+                    significantIndex: 7, // High Health Risk (AQHI > 7)
+                    ranges: [
+                        { categoryIndex: 1, indexes: [0, 1.04] },
+                        { categoryIndex: 2, indexes: [1.05, 2.08] },
+                        { categoryIndex: 3, indexes: [2.09, 3.12] },
+                        { categoryIndex: 4, indexes: [3.13, 4.16] },
+                        { categoryIndex: 5, indexes: [4.17, 5.2] },
+                        { categoryIndex: 6, indexes: [5.21, 6.24] },
+                        { categoryIndex: 7, indexes: [6.25, 7.28] },
+                        { categoryIndex: 8, indexes: [7.29, 8.32] },
+                        { categoryIndex: 9, indexes: [8.33, 9.36] },
+                        { categoryIndex: 10, indexes: [9.37, 10.4] },
+                        { categoryIndex: 11, indexes: [10.41, Number.POSITIVE_INFINITY] },
+                    ],
+                },
+                // β 系数（回归系数），浓度单位 µg/m³
+                betas: {
+                    NO2: 0.000871,
+                    O3: 0.000537,
+                    PM2_5: 0.000487,
+                },
+                pollutants: {
+                    NO2: { units: "PARTS_PER_BILLION", stpConversionFactor: -1 },
+                    OZONE: { units: "PARTS_PER_BILLION", stpConversionFactor: -1 },
                     PM2_5: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
                 },
             },
