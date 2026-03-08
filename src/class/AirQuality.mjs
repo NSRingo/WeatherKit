@@ -1891,7 +1891,7 @@ export default class AirQuality {
              */
             HK_AQHI: {
                 weatherKitScale: {
-                    name: "CA.AQHI",
+                    name: "HK.AQHI",
                     version: "2414",
                 },
                 categories: {
