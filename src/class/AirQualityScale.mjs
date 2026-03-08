@@ -14,23 +14,23 @@
 /** HK AQHI 顶层元数据 */
 const HK_AQHI_META = {
     displayName: {
-        "zh-Hans": "AQHI（香港）",
-        "zh-Hant": "AQHI（香港）",
+        "zh-Hant": "AQHI (HK)",
+        "zh-Hans": "AQHI (HK)",
         "en":      "AQHI (HK)",
     },
     shortDisplayName: {
-        "zh-Hans": "AQHI",
         "zh-Hant": "AQHI",
+        "zh-Hans": "AQHI",
         "en":      "AQHI",
     },
     longDisplayName: {
-        "zh-Hans": "香港 (AQHI)",
         "zh-Hant": "香港 (AQHI)",
+        "zh-Hans": "香港 (AQHI)",
         "en":      "Hong Kong (AQHI)",
     },
     displayLabel: {
-        "zh-Hans": "空气质量",
         "zh-Hant": "空氣質素",
+        "zh-Hans": "空气质量",
         "en":      "Air Quality",
     },
 };
@@ -44,16 +44,17 @@ const HK_AQHI_CATEGORIES = [
     {
         range: [1, 3],
         glyph: "aqi.low",
-        colors: ["#2094FA", "#2094FA", "#6AAFB1"],
+        // #58E156 RGB(88, 225, 86) = 2/3 #04DE71 RGB(4, 222, 113) + 1/3 #FFE620 RGB(255, 230, 32)
+        colors: ["#04DE71", "#04DE71", "#58E156"],
         categoryName: {
-            "zh-Hans": "健康风险低",
-            "zh-Hant": "健康風險低",
-            "en":      "Low Health Risk",
+            "zh-Hant": "低",
+            "zh-Hans": "低",
+            "en":      "Low",
         },
         recommendation: {
-            "zh-Hans": "空气质量良好，适合户外活动。",
-            "zh-Hant": "空氣質素良好，適合戶外活動。",
-            "en":      "The air quality is good. Enjoy your usual outdoor activities.",
+            "zh-Hant": "可如常活動。",
+            "zh-Hans": "可如常活动。",
+            "en":      "No response action is required.",
         },
     },
     // 中 (4-6)
@@ -62,46 +63,46 @@ const HK_AQHI_CATEGORIES = [
         glyph: "aqi.medium",
         colors: ["#FFE620", "#FFBE10", "#FF9500"],
         categoryName: {
-            "zh-Hans": "健康风险中等",
-            "zh-Hant": "健康風險中等",
-            "en":      "Moderate Health Risk",
+            "zh-Hant": "中",
+            "zh-Hans": "中",
+            "en":      "Moderate",
         },
         recommendation: {
-            "zh-Hans": "如无不适，无需减少户外活动。高危人士若感不适，应考虑减少高强度户外活动。",
-            "zh-Hant": "如無不適，無需減少戶外活動。高危人士若感不適，應考慮減少高強度戶外活動。",
-            "en":      "No need to reduce outdoor activities unless you experience symptoms such as coughing and throat irritation. People with high health risk should consider reducing or rescheduling strenuous outdoor activities if they experience symptoms.",
+            "zh-Hant": "一般可如常活動，但個別出現症狀的人士應考慮減少戶外體力消耗。",
+            "zh-Hans": "一般可如常活动，但個別出现症状的人士应考虑减少户外体力消耗。",
+            "en":      "No response action is normally required. Individuals who are experiencing symptoms are advised to consider reducing outdoor physical exertion.",
         },
     },
     // 高 (7)
     {
         range: [7, 7],
         glyph: "aqi.high",
-        colors: ["#FD5328"],
+        colors: ["#FA114F"],
         categoryName: {
-            "zh-Hans": "健康风险高",
-            "zh-Hant": "健康風險高",
-            "en":      "High Health Risk",
+            "zh-Hant": "高",
+            "zh-Hans": "高",
+            "en":      "High",
         },
         recommendation: {
-            "zh-Hans": "如出现不适，应考虑减少高强度户外活动。高危人士、儿童及老人应减少高强度户外活动。",
-            "zh-Hant": "如出現不適，應考慮減少高強度戶外活動。高危人士、兒童及老人應減少高強度戶外活動。",
-            "en":      "Reduce or reschedule strenuous outdoor activities if you experience symptoms such as coughing and throat irritation. People with high health risk, children and the elderly should reduce or reschedule strenuous outdoor activities.",
+            "zh-Hant": "心臟病或呼吸系統疾病患者、兒童及長者應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。心臟病或呼吸系統疾病患者在參與體育活動前應諮詢醫生意見，在體能活動期間應多作歇息。",
+            "zh-Hans": "心脏病或呼吸系统疾病患者、儿童及长者应减少户外体力消耗，以及减少在户外逗留的时间，特别在交通繁忙地方。心脏病或呼吸系统疾病患者在参与体育活动前应咨询医生意见，在体能活动期间应多作歇息。",
+            "en":      "People with existing heart or respiratory illnesses, Children and the elderly are advised to reduce outdoor physical exertion, and to reduce the time of their stay outdoors, especially in areas with heavy traffic. People with existing heart or respiratory illnesses should also seek advice from a medical doctor before participating in sport activities and take more breaks during physical activities.",
         },
     },
     // 甚高 (8-10)
     {
         range: [8, 10],
         glyph: "aqi.high",
-        colors: ["#FA114F", "#A91537", "#80172B"],
+        colors: ["#D11343", "#A91537", "#80172B"],
         categoryName: {
-            "zh-Hans": "健康风险甚高",
-            "zh-Hant": "健康風險甚高",
-            "en":      "Very High Health Risk",
+            "zh-Hant": "甚高",
+            "zh-Hans": "甚高",
+            "en":      "Very High",
         },
         recommendation: {
-            "zh-Hans": "应减少高强度户外活动，尤其在出现不适时。高危人士、儿童及老人应避免高强度户外活动。",
-            "zh-Hant": "應減少高強度戶外活動，尤其在出現不適時。高危人士、兒童及老人應避免高強度戶外活動。",
-            "en":      "Reduce or reschedule strenuous outdoor activities. People with high health risk, children and the elderly should avoid strenuous outdoor activities.",
+            "zh-Hant": "心臟病或呼吸系統疾病患者、兒童及長者應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。",
+            "zh-Hans": "心脏病或呼吸系统疾病患者、儿童及长者应尽量减少户外体力消耗，以及尽量减少在户外逗留的时间，特别在交通繁忙地方。从事重体力劳动的户外工作僱员的僱主应评估户外工作的风险，并採取适当的预防措施保障僱员的健康。一般市民应减少户外体力消耗，以及减少在户外逗留的时间，特别在交通繁忙地方。",
+            "en":      "People with existing heart or respiratory illnesses, Children and the elderly are advised to reduce to the minimum outdoor physical exertion, and to reduce to the minimum the time of their stay outdoors, especially in areas with heavy traffic. Employers of outdoor workers performing heavy manual work are advised to assess the risk of outdoor work, and take appropriate preventive measures to protect the health of their employees. The general public is advised to reduce outdoor physical exertion, and to reduce the time of their stay outdoors, especially in areas with heavy traffic.",
         },
     },
     // 严重 (11 = 10+)
@@ -110,14 +111,14 @@ const HK_AQHI_CATEGORIES = [
         glyph: "aqi.high",
         colors: ["#80172B"],
         categoryName: {
-            "zh-Hans": "健康风险严重",
-            "zh-Hant": "健康風險嚴重",
-            "en":      "Serious Health Risk",
+            "zh-Hant": "嚴重",
+            "zh-Hans": "严重",
+            "en":      "Serious",
         },
         recommendation: {
-            "zh-Hans": "减少或调整户外活动，尤其在出现咳嗽和喉咙刺激等症状时。高危人士、儿童及老人应避免户外活动。",
-            "zh-Hant": "減少或調整戶外活動，尤其在出現咳嗽和喉嚨刺激等症狀時。高危人士、兒童及老人應避免戶外活動。",
-            "en":      "Reduce or reschedule outdoor activities, especially if you experience symptoms such as coughing and throat irritation. People with high health risk, children and the elderly should avoid outdoor activities.",
+            "zh-Hant": "心臟病或呼吸系統疾病患者、兒童及長者應避免戶外體力消耗，以及避免在戶外逗留，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。",
+            "zh-Hans": "心脏病或呼吸系统疾病患者、儿童及长者应避免户外体力消耗，以及避免在户外逗留，特别在交通繁忙地方。从事重体力劳动的户外工作雇员的雇主应评估户外工作的风险，并采取适当的预防措施保障雇员的健康。一般市民应尽量减少户外体力消耗，以及尽量减少在户外逗留的时间，特别在交通繁忙地方。",
+            "en":      "People with existing heart or respiratory illnesses, Children and the elderly are advised to avoid outdoor physical exertion, and to avoid staying outdoors, especially in areas with heavy traffic. Employers of outdoor workers performing heavy manual work are advised to assess the risk of outdoor work, and take appropriate preventive measures to protect the health of their employees. The general public is advised to reduce to the minimum outdoor physical exertion, and to reduce to the minimum the time of their stay outdoors, especially in areas with heavy traffic.",
         },
     },
 ];
@@ -125,12 +126,12 @@ const HK_AQHI_CATEGORIES = [
 /** 渐变色 stops（与 CA.AQHI 参考保持一致） */
 const HK_AQHI_GRADIENT = {
     stops: [
-        { location: 1,   color: "#2094FA" },
-        { location: 2.5, color: "#2094FA" },
+        { location: 1,   color: "#04DE71" },
+        { location: 2.5, color: "#04DE71" },
         { location: 4,   color: "#FFE620" },
         { location: 6,   color: "#FF9500" },
-        { location: 7,   color: "#FD5328" },
-        { location: 8,   color: "#FA114F" },
+        { location: 7,   color: "#FA114F" },
+        { location: 8,   color: "#D11343" },
         { location: 9.5, color: "#80172B" },
     ],
 };
@@ -160,7 +161,7 @@ export default class AirQualityScale {
     static normalizeLanguage(language) {
         if (/zh-Hans/i.test(language)) return "zh-Hans";
         if (/zh-Hant/i.test(language)) return "zh-Hant";
-        if (/^zh/i.test(language))     return "zh-Hans"; // 无脚本标签的 zh-* 默认简体
+        if (/^zh/i.test(language))     return "zh-Hant"; // 无脚本标签的 zh-* 默认繁体
         return "en";
     }
 
