@@ -4,9 +4,9 @@
  * 用于替代 WeatherKit /api/v1/airQualityScale 接口返回。
  *
  * 语言键说明：
- *   zh-Hans  简体中文
- *   zh-Hant  繁体中文
- *   en       英文（默认回退）
+ *   zh-Hans-CN  简体中文
+ *   zh-Hant-HK  繁体中文
+ *   en-US       英文（默认回退）
  */
 
 // ─── 多语言字符串常量 ──────────────────────────────────────────────────────────
@@ -14,27 +14,27 @@
 /** 空气质量标尺通用标签 */
 const SCALE_DISPLAY_LABEL = {
     "zh-Hant-HK": "空氣質素",
-    "zh-Hant": "空氣品質",
-    "zh-Hans": "空气质量",
-    "en": "Air Quality",
+    "zh-Hant-TW": "空氣品質",
+    "zh-Hans-CN": "空气质量",
+    "en-US":      "Air Quality",
 };
 
 /** HK AQHI 常量 */
 const HK_AQHI = {
     displayName: {
-        "zh-Hant": "AQHI (HK)",
-        "zh-Hans": "AQHI (HK)",
-        "en":      "AQHI (HK)",
+        "zh-Hant-HK": "AQHI (HK)",
+        "zh-Hans-CN": "AQHI (HK)",
+        "en-US":      "AQHI (HK)",
     },
     shortDisplayName: {
-        "zh-Hant": "AQHI",
-        "zh-Hans": "AQHI",
-        "en":      "AQHI",
+        "zh-Hant-HK": "AQHI",
+        "zh-Hans-CN": "AQHI",
+        "en-US":      "AQHI",
     },
     longDisplayName: {
-        "zh-Hant": "香港 (AQHI)",
-        "zh-Hans": "香港 (AQHI)",
-        "en":      "Hong Kong (AQHI)",
+        "zh-Hant-HK": "香港 (AQHI)",
+        "zh-Hans-CN": "香港 (AQHI)",
+        "en-US":      "Hong Kong (AQHI)",
     },
     /**
      * HK EPD 五大风险等级（低/中/高/甚高/严重），每级含 categoryName、recommendation、颜色与图标。
@@ -48,14 +48,14 @@ const HK_AQHI = {
             // #58E156 RGB(88, 225, 86) = 2/3 #04DE71 RGB(4, 222, 113) + 1/3 #FFE620 RGB(255, 230, 32)
             colors: ["#04DE71", "#04DE71", "#58E156"],
             categoryName: {
-                "zh-Hant": "低",
-                "zh-Hans": "低",
-                "en":      "Low",
+                "zh-Hant-HK": "低",
+                "zh-Hans-CN": "低",
+                "en-US":      "Low",
             },
             recommendation: {
-                "zh-Hant": "可如常活動。",
-                "zh-Hans": "可如常活动。",
-                "en":      "No response action is required.",
+                "zh-Hant-HK": "可如常活動。",
+                "zh-Hans-CN": "可如常活动。",
+                "en-US":      "No response action is required.",
             },
         },
         // 中 (4-6)
@@ -64,14 +64,14 @@ const HK_AQHI = {
             glyph: "aqi.medium",
             colors: ["#FFE620", "#FFBE10", "#FF9500"],
             categoryName: {
-                "zh-Hant": "中",
-                "zh-Hans": "中",
-                "en":      "Moderate",
+                "zh-Hant-HK": "中",
+                "zh-Hans-CN": "中",
+                "en-US":      "Moderate",
             },
             recommendation: {
-                "zh-Hant": "一般可如常活動，但個別出現症狀的人士應考慮減少戶外體力消耗。",
-                "zh-Hans": "一般可如常活动，但個別出现症状的人士应考虑减少户外体力消耗。",
-                "en":      "No response action is normally required. Individuals who are experiencing symptoms are advised to consider reducing outdoor physical exertion.",
+                "zh-Hant-HK": "一般可如常活動，但個別出現症狀的人士應考慮減少戶外體力消耗。",
+                "zh-Hans-CN": "一般可如常活动，但個別出现症状的人士应考虑减少户外体力消耗。",
+                "en-US":      "No response action is normally required. Individuals who are experiencing symptoms are advised to consider reducing outdoor physical exertion.",
             },
         },
         // 高 (7)
@@ -80,14 +80,14 @@ const HK_AQHI = {
             glyph: "aqi.high",
             colors: ["#FA114F"],
             categoryName: {
-                "zh-Hant": "高",
-                "zh-Hans": "高",
-                "en":      "High",
+                "zh-Hant-HK": "高",
+                "zh-Hans-CN": "高",
+                "en-US":      "High",
             },
             recommendation: {
-                "zh-Hant": "心臟病或呼吸系統疾病患者、兒童及長者應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。心臟病或呼吸系統疾病患者在參與體育活動前應諮詢醫生意見，在體能活動期間應多作歇息。",
-                "zh-Hans": "心脏病或呼吸系统疾病患者、儿童及长者应减少户外体力消耗，以及减少在户外逗留的时间，特别在交通繁忙地方。心脏病或呼吸系统疾病患者在参与体育活动前应咨询医生意见，在体能活动期间应多作歇息。",
-                "en":      "People with existing heart or respiratory illnesses, Children and the elderly are advised to reduce outdoor physical exertion, and to reduce the time of their stay outdoors, especially in areas with heavy traffic. People with existing heart or respiratory illnesses should also seek advice from a medical doctor before participating in sport activities and take more breaks during physical activities.",
+                "zh-Hant-HK": "心臟病或呼吸系統疾病患者、兒童及長者應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。心臟病或呼吸系統疾病患者在參與體育活動前應諮詢醫生意見，在體能活動期間應多作歇息。",
+                "zh-Hans-CN": "心脏病或呼吸系统疾病患者、儿童及长者应减少户外体力消耗，以及减少在户外逗留的时间，特别在交通繁忙地方。心脏病或呼吸系统疾病患者在参与体育活动前应咨询医生意见，在体能活动期间应多作歇息。",
+                "en-US":      "People with existing heart or respiratory illnesses, Children and the elderly are advised to reduce outdoor physical exertion, and to reduce the time of their stay outdoors, especially in areas with heavy traffic. People with existing heart or respiratory illnesses should also seek advice from a medical doctor before participating in sport activities and take more breaks during physical activities.",
             },
         },
         // 甚高 (8-10)
@@ -96,14 +96,14 @@ const HK_AQHI = {
             glyph: "aqi.high",
             colors: ["#D11343", "#A91537", "#80172B"],
             categoryName: {
-                "zh-Hant": "甚高",
-                "zh-Hans": "甚高",
-                "en":      "Very High",
+                "zh-Hant-HK": "甚高",
+                "zh-Hans-CN": "甚高",
+                "en-US":      "Very High",
             },
             recommendation: {
-                "zh-Hant": "心臟病或呼吸系統疾病患者、兒童及長者應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。",
-                "zh-Hans": "心脏病或呼吸系统疾病患者、儿童及长者应尽量减少户外体力消耗，以及尽量减少在户外逗留的时间，特别在交通繁忙地方。从事重体力劳动的户外工作僱员的僱主应评估户外工作的风险，并採取适当的预防措施保障僱员的健康。一般市民应减少户外体力消耗，以及减少在户外逗留的时间，特别在交通繁忙地方。",
-                "en":      "People with existing heart or respiratory illnesses, Children and the elderly are advised to reduce to the minimum outdoor physical exertion, and to reduce to the minimum the time of their stay outdoors, especially in areas with heavy traffic. Employers of outdoor workers performing heavy manual work are advised to assess the risk of outdoor work, and take appropriate preventive measures to protect the health of their employees. The general public is advised to reduce outdoor physical exertion, and to reduce the time of their stay outdoors, especially in areas with heavy traffic.",
+                "zh-Hant-HK": "心臟病或呼吸系統疾病患者、兒童及長者應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。",
+                "zh-Hans-CN": "心脏病或呼吸系统疾病患者、儿童及长者应尽量减少户外体力消耗，以及尽量减少在户外逗留的时间，特别在交通繁忙地方。从事重体力劳动的户外工作僱员的僱主应评估户外工作的风险，并採取适当的预防措施保障僱员的健康。一般市民应减少户外体力消耗，以及减少在户外逗留的时间，特别在交通繁忙地方。",
+                "en-US":      "People with existing heart or respiratory illnesses, Children and the elderly are advised to reduce to the minimum outdoor physical exertion, and to reduce to the minimum the time of their stay outdoors, especially in areas with heavy traffic. Employers of outdoor workers performing heavy manual work are advised to assess the risk of outdoor work, and take appropriate preventive measures to protect the health of their employees. The general public is advised to reduce outdoor physical exertion, and to reduce the time of their stay outdoors, especially in areas with heavy traffic.",
             },
         },
         // 严重 (11 = 10+)
@@ -112,14 +112,14 @@ const HK_AQHI = {
             glyph: "aqi.high",
             colors: ["#80172B"],
             categoryName: {
-                "zh-Hant": "嚴重",
-                "zh-Hans": "严重",
-                "en":      "Serious",
+                "zh-Hant-HK": "嚴重",
+                "zh-Hans-CN": "严重",
+                "en-US":      "Serious",
             },
             recommendation: {
-                "zh-Hant": "心臟病或呼吸系統疾病患者、兒童及長者應避免戶外體力消耗，以及避免在戶外逗留，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。",
-                "zh-Hans": "心脏病或呼吸系统疾病患者、儿童及长者应避免户外体力消耗，以及避免在户外逗留，特别在交通繁忙地方。从事重体力劳动的户外工作雇员的雇主应评估户外工作的风险，并采取适当的预防措施保障雇员的健康。一般市民应尽量减少户外体力消耗，以及尽量减少在户外逗留的时间，特别在交通繁忙地方。",
-                "en":      "People with existing heart or respiratory illnesses, Children and the elderly are advised to avoid outdoor physical exertion, and to avoid staying outdoors, especially in areas with heavy traffic. Employers of outdoor workers performing heavy manual work are advised to assess the risk of outdoor work, and take appropriate preventive measures to protect the health of their employees. The general public is advised to reduce to the minimum outdoor physical exertion, and to reduce to the minimum the time of their stay outdoors, especially in areas with heavy traffic.",
+                "zh-Hant-HK": "心臟病或呼吸系統疾病患者、兒童及長者應避免戶外體力消耗，以及避免在戶外逗留，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。",
+                "zh-Hans-CN": "心脏病或呼吸系统疾病患者、儿童及长者应避免户外体力消耗，以及避免在户外逗留，特别在交通繁忙地方。从事重体力劳动的户外工作雇员的雇主应评估户外工作的风险，并采取适当的预防措施保障雇员的健康。一般市民应尽量减少户外体力消耗，以及尽量减少在户外逗留的时间，特别在交通繁忙地方。",
+                "en-US":      "People with existing heart or respiratory illnesses, Children and the elderly are advised to avoid outdoor physical exertion, and to avoid staying outdoors, especially in areas with heavy traffic. Employers of outdoor workers performing heavy manual work are advised to assess the risk of outdoor work, and take appropriate preventive measures to protect the health of their employees. The general public is advised to reduce to the minimum outdoor physical exertion, and to reduce to the minimum the time of their stay outdoors, especially in areas with heavy traffic.",
             },
         },
     ],
@@ -139,13 +139,13 @@ const HK_AQHI = {
 /** CN AQHI 常量 */
 const CN_AQHI = {
     displayName: {
-        "zh-Hans": "AQHI (CN)",
+        "zh-Hans-CN": "AQHI (CN)",
     },
     shortDisplayName: {
-        "zh-Hans": "AQHI",
+        "zh-Hans-CN": "AQHI",
     },
     longDisplayName: {
-        "zh-Hans": "中国 (AQHI)",
+        "zh-Hans-CN": "中国 (AQHI)",
     },
     /**
      * 中国 AQHI 五级健康风险（极低/低/中/高/极高）。
@@ -157,10 +157,10 @@ const CN_AQHI = {
             glyph: "aqi.low",
             colors: ["#2094FA"],
             categoryName: {
-                "zh-Hans": "极低",
+                "zh-Hans-CN": "极低",
             },
             recommendation: {
-                "zh-Hans": "适宜进行户外活动。",
+                "zh-Hans-CN": "适宜进行户外活动。",
             },
         },
         {
@@ -168,10 +168,10 @@ const CN_AQHI = {
             glyph: "aqi.low",
             colors: ["#04DE71", "#CCFF66"],
             categoryName: {
-                "zh-Hans": "低",
+                "zh-Hans-CN": "低",
             },
             recommendation: {
-                "zh-Hans": "正常进行户外活动。心肺疾病患者可遵照医嘱进行身体锻炼。",
+                "zh-Hans-CN": "正常进行户外活动。心肺疾病患者可遵照医嘱进行身体锻炼。",
             },
         },
         {
@@ -179,10 +179,10 @@ const CN_AQHI = {
             glyph: "aqi.medium",
             colors: ["#FFE620", "#FF9500"],
             categoryName: {
-                "zh-Hans": "中",
+                "zh-Hans-CN": "中",
             },
             recommendation: {
-                "zh-Hans": "心肺疾病患者应减少长时间、高强度的户外活动，并遵照医嘱进行身体锻炼。",
+                "zh-Hans-CN": "心肺疾病患者应减少长时间、高强度的户外活动，并遵照医嘱进行身体锻炼。",
             },
         },
         {
@@ -190,10 +190,10 @@ const CN_AQHI = {
             glyph: "aqi.high",
             colors: ["#FA114F", "#DC1346", "#BD143D", "#9F1634", "#80172B"],
             categoryName: {
-                "zh-Hans": "高",
+                "zh-Hans-CN": "高",
             },
             recommendation: {
-                "zh-Hans": "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                "zh-Hans-CN": "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
             },
         },
         {
@@ -201,10 +201,10 @@ const CN_AQHI = {
             glyph: "aqi.high",
             colors: ["#80172B"],
             categoryName: {
-                "zh-Hans": "极高",
+                "zh-Hans-CN": "极高",
             },
             recommendation: {
-                "zh-Hans": "心肺疾病患者、老人、儿童及孕妇应避免户外活动，避免体力消耗。一般人群应尽量减少户外活动，特别是在交通繁忙的地方。",
+                "zh-Hans-CN": "心肺疾病患者、老人、儿童及孕妇应避免户外活动，避免体力消耗。一般人群应尽量减少户外活动，特别是在交通繁忙的地方。",
             },
         },
     ],
@@ -225,25 +225,25 @@ const CN_AQHI = {
 
 /**
  * 从三键 i18n map 中根据语言标签获取字符串。
- * 回退链：zh-Hans → zh-Hant → en
- * @param {{ "zh-Hans": string, "zh-Hant": string, "en": string }} map
- * @param {"zh-Hans"|"zh-Hant"|"en"} lang
+ * 回退链：zh-Hans-CN → zh-Hant-TW → zh-Hant-HK → en
+ * @param {{ "zh-Hans-CN": string, "zh-Hant-HK": string, "en": string }} map
+ * @param {"zh-Hans-CN"|"zh-Hant-TW"|"zh-Hant-HK"|"en-US"} lang
  * @returns {string}
  */
 function i18n(map, lang) {
-    return map[lang] ?? map["en"] ?? "";
+    return map[lang] ?? map["en-US"] ?? "";
 }
 
 /**
  * 将请求语言映射为响应中的地区语言标签：
- * zh-Hans* -> zh-CN, zh-Hant-TW -> zh-TW, 其余 zh* -> zh-HK, 非中文 -> en
+ * zh-Hans-CN -> zh-CN, zh-Hant-HK -> zh-HK, 其余 zh* -> zh-TW, 非中文 -> en
  * @param {string} language
  * @returns {"zh-HK"|"zh-CN"|"zh-TW"|"en"}
  */
 function normalizeScaleLanguage(language) {
-    if (/zh-Hans/i.test(language)) return "zh-CN";
-    if (/^zh-Hant-TW$/i.test(language)) return "zh-TW";
-    if (/^zh/i.test(language)) return "zh-HK";
+    if (/zh-Hans-CN/i.test(language)) return "zh-CN";
+    if (/^zh-Hant-HK$/i.test(language)) return "zh-HK";
+    if (/^zh/i.test(language)) return "zh-TW";
     return "en";
 }
 
@@ -251,28 +251,29 @@ function normalizeScaleLanguage(language) {
 
 export default class AirQualityScale {
     /**
-     * 将 Apple WeatherKit BCP47 语言标签规范化为三键形式：zh-Hans / zh-Hant / en。
-     * 例：zh-Hans-HK → zh-Hans，zh-Hant-TW → zh-Hant，en-GB → en
+     * 将 Apple WeatherKit BCP47 语言标签规范化为三键形式：zh-Hans-CN / zh-Hant-HK / en-US。
+     * 例：zh-Hans-CN → zh-Hans-CN，zh-Hant-HK → zh-Hant-HK，zh* → zh-Hant-TW，* → en
      * @param {string} language
-     * @returns {"zh-Hans"|"zh-Hant"|"en"}
+     * @returns {"zh-Hans-CN"|"zh-Hant-HK"|"en-US"}
      */
     static normalizeLanguage(language) {
-        if (/zh-Hans/i.test(language)) return "zh-Hans";
-        if (/zh-Hant/i.test(language)) return "zh-Hant";
-        if (/^zh/i.test(language))     return "zh-Hant"; // 无脚本标签的 zh-* 默认繁体
-        return "en";
+        if (/zh-Hans-CN/i.test(language)) return "zh-Hans-CN";
+        if (/zh-Hant-HK/i.test(language)) return "zh-Hant-HK";
+        if (/^zh/i.test(language)) return "zh-Hant-TW"; // 无脚本标签的 zh-* 默认繁体
+        return "en-US";
     }
 
     /**
      * 构建 HK AQHI 标尺 JSON 响应体。
      * 格式与 WeatherKit /api/v1/airQualityScale/{lang}/CA.AQHI.2414 保持一致。
      *
-     * @param {string} language - 请求的语言标签，如 "zh-Hans-HK"、"en"
+     * @param {string} language - 请求的语言标签，如 "zh-Hant-HK"、"en-US"
      * @param {string} scaleName - 标尺名称，如 "HK.AQHI.2414"
      * @returns {{ status: number, headers: Record<string, string>, body: string }}
      */
     static buildHKAQHIScale(language, scaleName) {
-        const lang = AirQualityScale.normalizeLanguage(language);
+        const normalizeLang = AirQualityScale.normalizeLanguage(language);
+        const lang = normalizeLang === "zh-Hant-TW" ? "zh-Hant-HK" : normalizeLang;
 
         // 展开每一级 categoryNumber (1~11)
         const categories = [];
@@ -295,7 +296,7 @@ export default class AirQualityScale {
             displayName:      i18n(HK_AQHI.displayName, lang),
             shortDisplayName: i18n(HK_AQHI.shortDisplayName, lang),
             longDisplayName:  i18n(HK_AQHI.longDisplayName, lang),
-            displayLabel:     i18n(SCALE_DISPLAY_LABEL, lang),
+            displayLabel:     i18n(SCALE_DISPLAY_LABEL, normalizeLang),
             language: normalizeScaleLanguage(language),
             version: 1,
             aqi: {
@@ -321,12 +322,12 @@ export default class AirQualityScale {
      * 构建 CN AQHI 标尺 JSON 响应体。
      * 格式与 WeatherKit /api/v1/airQualityScale/{lang}/CA.AQHI.2414 保持一致。
      *
-     * @param {string} language - 请求的语言标签，如 "zh-Hans-CN"、"en"
+     * @param {string} language - 请求的语言标签，如 "zh-Hans-CN"、"en-US"
      * @param {string} scaleName - 标尺名称，如 "CN.AQHI.2414"
      * @returns {{ status: number, headers: Record<string, string>, body: string }}
      */
     static buildCNAQHIScale(language, scaleName) {
-        const lang = "zh-Hans";
+        const lang = "zh-Hans-CN";
 
         const categories = [];
         for (const band of CN_AQHI.categories) {
