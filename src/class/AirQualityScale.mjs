@@ -149,6 +149,19 @@ function i18n(map, lang) {
     return map[lang] ?? map["en"] ?? "";
 }
 
+/**
+ * 将请求语言映射为响应中的地区语言标签：
+ * zh-Hans* -> zh-CN, zh-Hant-TW -> zh-TW, 其余 zh* -> zh-HK, 非中文 -> en
+ * @param {string} language
+ * @returns {"zh-HK"|"zh-CN"|"zh-TW"|"en"}
+ */
+function normalizeScaleLanguage(language) {
+    if (/zh-Hans/i.test(language)) return "zh-CN";
+    if (/^zh-Hant-TW$/i.test(language)) return "zh-TW";
+    if (/^zh/i.test(language)) return "zh-HK";
+    return "en";
+}
+
 // ─── AirQualityScale 类 ────────────────────────────────────────────────────────
 
 export default class AirQualityScale {
@@ -198,7 +211,7 @@ export default class AirQualityScale {
             shortDisplayName: i18n(HK_AQHI_META.shortDisplayName, lang),
             longDisplayName:  i18n(HK_AQHI_META.longDisplayName, lang),
             displayLabel:     i18n(HK_AQHI_META.displayLabel, lang),
-            language: lang,
+            language: normalizeScaleLanguage(language),
             version: 1,
             aqi: {
                 numerical: true,
