@@ -228,8 +228,8 @@ export default class AirQualityScale {
         return {
             status: 200,
             headers: {
-                "Content-Type": "application/json; charset=utf-8",
-                "Cache-Control": "max-age=86400",
+                "Content-Type": "application/json",
+                "Cache-Control": "max-age=31536000, public, s-maxage=31536000",
             },
             body: JSON.stringify(scale),
         };
