@@ -1,27 +1,38 @@
 import { Hono } from "hono";
-import { Response } from "./process/Response.js";
-// import { Request } from "./process/Request.js";
+import { fetch } from "@nsnanocat/util";
+// import { Request } from "./process/Request.mjs";
+import { Response } from "./process/Response.mjs";
 /***************** Processing *****************/
 export default new Hono().all("/:rest{.*}", async c => {
     const url = new URL(c.req.url);
-    url.protocol = "https:";
-    url.hostname = "weatherkit.apple.com";
-    url.port = "443";
-    url.pathname = c.req.param("rest");
+    switch (true) {
+        case url.hostname.startsWith("weatherkit."): {
+            url.hostname = "weatherkit.apple.com";
+            break;
+        }
+        default: {
+            url.protocol = "https:";
+            url.hostname = "weatherkit.apple.com";
+            url.port = "443";
+            url.pathname = c.req.param("rest");
+        }
+    }
     let $request = {
-        url: url.toString(),
         method: c.req.method,
+        url: url.toString(),
         headers: c.req.header(),
-        body: ["GET", "HEAD"].includes(c.req.method) ? undefined : new Uint8Array(await c.req.arrayBuffer()),
+        bodyBytes: await c.req.arrayBuffer().catch(error => {
+            console.info(error);
+            return undefined;
+        }),
     };
     let $response;
-    // ({ $request , $response } = await Request($request));
-    // if ($response) return c.body($response.body);
-    $response = await fetch($request.url, $request).then(async r => ({
-        status: r.status,
-        headers: Object.fromEntries(new Headers(r.headers).entries()),
-        body: new Uint8Array(await r.arrayBuffer()),
-    }));
+    // ({ $request, $response } = await Request($request));
+    // if ($response) {
+    //     Object.keys($response.headers).map(k => c.header(k, $response.headers[k]));
+    //     return c.body($response.body);
+    // }
+    $response = await fetch($request);
     delete $response.headers["content-length"];
 
     /* todo */

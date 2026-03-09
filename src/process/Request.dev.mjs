@@ -1,4 +1,4 @@
-import { $app, Console, Lodash as _, Storage } from "@nsnanocat/util";
+import { Console, Lodash as _, Storage } from "@nsnanocat/util";
 import database from "../function/database.mjs";
 import setENV from "../function/setENV.mjs";
 /***************** Processing *****************/
@@ -68,7 +68,7 @@ export async function Request($request) {
                 case "application/grpc+proto":
                 case "application/octet-stream": {
                     //Console.debug(`$request: ${JSON.stringify($request, null, 2)}`);
-                    let rawBody = $app === "Quantumult X" ? new Uint8Array($request.bodyBytes ?? []) : ($request.body ?? new Uint8Array());
+                    let rawBody = $request.bodyBytes ? new Uint8Array($request.bodyBytes) : ($request.body ?? new Uint8Array());
                     //Console.debug(`isBuffer? ${ArrayBuffer.isView(rawBody)}: ${JSON.stringify(rawBody, null, 2)}`);
                     // 写入二进制数据
                     $request.body = rawBody;
@@ -93,6 +93,7 @@ export async function Request($request) {
                                 case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
                                 case $request.headers["user-agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
                                     if (url.searchParams.has("country")) {
+                                        //if (url.searchParams.get("country") === "CN") url.searchParams.set("country", "TW");
                                     } else {
                                         const gcc = Storage.getItem("@iRingo.Location.Caches")?.pep?.gcc;
                                         if (gcc) url.searchParams.set("country", gcc);
@@ -108,6 +109,31 @@ export async function Request($request) {
                         }
                     }
                     break;
+                case "weather-map2.apple.com": {
+                    // 路径判断
+                    switch (url.pathname) {
+                        case "/v1/mapOverlay/precipitationRadarMap":
+                        case "/v1/mapOverlay/precipitationForecastByFrameTime": {
+                            /*
+							switch (true) {
+								case $request.headers["User-Agent"]?.startsWith("Weather_macOS_Version"):
+								case $request.headers["user-agent"]?.startsWith("Weather_macOS_Version"):
+									switch (true) {
+										case $request?.headers?.geocountrycode === "CN":
+											$request.headers.geocountrycode = "US";
+											break;
+										case $request?.headers?.GeoCountryCode === "CN":
+											$request.headers.GeoCountryCode = "US";
+											break;
+									}
+									break;
+							}
+							*/
+                            break;
+                        }
+                    }
+                    break;
+                }
             }
             break;
         case "CONNECT":

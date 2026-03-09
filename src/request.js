@@ -1,5 +1,5 @@
 import { $app, Console, done, Lodash as _ } from "@nsnanocat/util";
-import { Request } from "./process/Request.js";
+import { Request } from "./process/Request.mjs";
 /***************** Processing *****************/
 let $response;
 !(async () => {

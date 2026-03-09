@@ -1,4 +1,4 @@
-import { $app, Console, Lodash as _, Storage } from "@nsnanocat/util";
+import { Console, Lodash as _, Storage } from "@nsnanocat/util";
 import database from "../function/database.mjs";
 import setENV from "../function/setENV.mjs";
 import * as flatbuffers from "flatbuffers";
@@ -54,7 +54,7 @@ export async function Response($request, $response) {
             break;
         case "text/json":
         case "application/json":
-            body = JSON.parse($app === "Node.js" ? new TextDecoder().decode($response.body ?? new Uint8Array()) : ($response.body ?? "{}"));
+            body = JSON.parse($response.body);
             switch (url.hostname) {
                 case "weatherkit.apple.com":
                     // 路径判断
@@ -72,7 +72,7 @@ export async function Response($request, $response) {
         case "application/grpc":
         case "application/grpc+proto":
         case "application/octet-stream": {
-            let rawBody = $app === "Quantumult X" ? new Uint8Array($response.bodyBytes ?? []) : ($response.body ?? new Uint8Array());
+            let rawBody = $response.bodyBytes ? new Uint8Array($response.bodyBytes) : ($response.body ?? new Uint8Array());
             switch (FORMAT) {
                 case "application/vnd.apple.flatbuffer": {
                     // 解析FlatBuffer
