@@ -1,0 +1,31 @@
+name: "{{@package 'displayName'}}"
+desc: |-
+  {{#each (split (@package 'description') "\n")}}
+  {{{this}}}
+  {{/each}}
+openUrl: "{{@package 'openUrl'}}"
+author: |-
+  {{#each (@package 'contributors')}}
+  {{this}}
+  {{/each}}
+homepage: "{{@package 'homepage'}}"
+icon: "{{@package 'icon'}}"
+category: "{{@package 'organizationName'}}"
+date: "{{now "yyyy-MM-dd HH:mm:ss"}}"
+version: "{{@package 'version'}}"
+
+rules:
+  # 🗺️ Amap
+  - DOMAIN-SUFFIX,is.autonavi.com,DIRECT
+  # 🗺️ Maps
+  - DOMAIN,gspe11-2-cn-ssl.ls.apple.com,DIRECT
+  - DOMAIN,gspe12-cn-ssl.ls.apple.com,DIRECT
+  - DOMAIN,gspe19-cn-ssl.ls.apple.com,DIRECT
+  - DOMAIN,gspe19-2-cn-ssl.ls.apple.com,DIRECT
+  - DOMAIN,gspe79-cn-ssl.ls.apple.com,DIRECT
+
+http:
+  mitm:
+    - "weatherkit.apple.com"
+  url-rewrite:
+    - ^https?:\/\/weatherkit\.apple\.com\/api\/(v1\/availability|v2\/weather)\/ https://weatherkit.nanocat.workers.dev/api/$1/ transparent
