@@ -29,6 +29,10 @@ http:
       type: response
       require-body: true
       argument:
+    - match: ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/airQualityScale\/
+      name: WeatherKit.api.v1.airQualityScale.request
+      type: request
+      argument:
     - match: ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/
       name: WeatherKit.api.v2.weather.response
       type: response
