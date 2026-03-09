@@ -255,6 +255,8 @@ const calculateAlgorithm: Arg = {
         { key: "WAQI_InstantCast_CN_25_DRAFT", label: "国标InstantCast（HJ 633 2025年草案）" },
         { key: "CA_AQHI", label: "加拿大AQHI（10.17269/s41997-019-00237-w）" },
         { key: "HK_AQHI", label: "香港AQHI" },
+        { key: "AQHI_Multi_CN", label: "AQHI-Multi（中国）" },
+        { key: "AQHI_Multi_CN_HK", label: "AQHI-Multi（中国+香港）" },
         { key: "CN_DEATH_AQHI", label: "中国（致死风险）AQHI" },
         { key: "CN_DEATH_HK_AQHI", label: "中国（致死风险）+香港AQHI" },
     ],
