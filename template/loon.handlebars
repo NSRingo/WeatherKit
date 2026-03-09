@@ -21,6 +21,7 @@ AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),RE
 
 [Script]
 http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ requires-body=1, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js, tag=🌤 WeatherKit.api.v1.availability.response, argument={{{scriptParams}}}
+http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/airQualityScale\/ script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/request.bundle.js, tag=🌤 WeatherKit.api.v1.airQualityScale.request, argument={{{scriptParams}}}
 http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&|$) script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/request.bundle.js, tag=🌤 WeatherKit.api.v1.weatherAlerts.html.request, argument={{{scriptParams}}}
 http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?(?:&|$) script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/request.bundle.js, tag=🌤 WeatherKit.api.v1.weatherAlerts.api.request, argument={{{scriptParams}}}
 http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ requires-body=1, binary-body-mode=1, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js, tag=🌤 WeatherKit.api.v2.weather.response, argument={{{scriptParams}}}
