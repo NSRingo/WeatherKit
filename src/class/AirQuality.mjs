@@ -218,6 +218,31 @@ export default class AirQuality {
                 Console.info("✅ PollutantsToInstantCastCN");
                 break;
             }
+            case "CN_DEATH_AQHI":
+            case "CA_AQHI":
+            case "HK_AQHI":
+            case "CN_DEATH_HK_AQHI": {
+                // PollutantsToAQHI
+                Console.info("☑️ PollutantsToAQHI");
+                airQuality = AirQuality.#PollutantsToAQHI(airQuality.pollutants, scale, { stpConversionFactors });
+                airQuality = {
+                    ...airQuality,
+                    index: airQuality.categoryIndex,
+                };
+                Console.info("✅ PollutantsToAQHI");
+                break;
+            }
+            case "AQHI_Multi_CN":
+            case "AQHI_Multi_CN_HK": {
+                Console.info("☑️ PollutantsToAQHIMulti");
+                airQuality = AirQuality.#PollutantsToAQHIMulti(airQuality.pollutants, scale, { stpConversionFactors });
+                airQuality = {
+                    ...airQuality,
+                    index: airQuality.categoryIndex,
+                };
+                Console.info("✅ PollutantsToAQHIMulti");
+                break;
+            }
             case "UBA":
             default: {
                 // PollutantsToUBA
@@ -243,6 +268,12 @@ export default class AirQuality {
         const getScale = scaleName => {
             const scales = AirQuality.Config.Scales;
             switch (scaleName) {
+                case scales.CN_AQHI.weatherKitScale.name:
+                    return scales.CN_AQHI;
+                case scales.HK_AQHI.weatherKitScale.name:
+                    return scales.HK_AQHI;
+                case scales.CA_AQHI.weatherKitScale.name:
+                    return scales.CA_AQHI;
                 case scales.HJ6332012.weatherKitScale.name:
                     return scales.WAQI_InstantCast_CN;
                 case scales.EPA_NowCast.weatherKitScale.name:
@@ -409,6 +440,18 @@ export default class AirQuality {
                         return `${providerName} (InstantCast with HJ 633—2012)`;
                     case "WAQI_InstantCast_CN_25_DRAFT":
                         return `${providerName} (InstantCast with HJ 633 2025 DRAFT)`;
+                    case "CN_DEATH_AQHI":
+                        return `${providerName} (China CDC Death Risk AQHI)`;
+                    case "CA_AQHI":
+                        return `${providerName} (InstantCast with CA AQHI)`;
+                    case "HK_AQHI":
+                        return `${providerName} (InstantCast with HK AQHI)`;
+                    case "CN_DEATH_HK_AQHI":
+                        return `${providerName} (China CDC Death Risk + HK AQHI)`;
+                    case "AQHI_Multi_CN":
+                        return `${providerName} (AQHI-Multi for CN)`;
+                    case "AQHI_Multi_CN_HK":
+                        return `${providerName} (AQHI-Multi for CN+HK)`;
                     case "UBA":
                     default:
                         return `${providerName} (FB001846)`;
@@ -619,6 +662,184 @@ export default class AirQuality {
             isSignificant: primaryPollutant.categoryIndex >= scale.categories.significantIndex,
             categoryIndex: primaryPollutant.categoryIndex,
             pollutants: newPollutants,
+            metadata: { providerName: "iRingo", temporarilyUnavailable: false },
+            primaryPollutant: primaryPollutant.pollutantType,
+            scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
+        };
+    }
+
+    /**
+     * 将污染物浓度转换为空气质量健康指数（AQHI）。
+     *
+     * 公式来源：
+     * [10.1016/j.atmosenv.2024.120473]{@link https://doi.org/10.1016/j.atmosenv.2024.120473}
+     *
+     * 健康风险增幅（%AR）：
+     * %AR(total) = %AR(NO2) + %AR(SO2) + %AR(O3) + max(%AR(PM10), %AR(PM2.5))
+     * %AR(X) = [exp(β(X) × C(X)) – 1] × 100
+     * C(X) 为各污染物 3 小时移动平均浓度（µg/m³）。
+     *
+     * @param {Array<{pollutantType: string, amount: number, units: string}>} pollutants
+     * @param {{ weatherKitScale: object, categories: object, betas: object }} scale
+     * @param {{ stpConversionFactors?: object }} [options]
+     * @returns {object} 标准化 airQuality 对象
+     */
+    static #PollutantsToAQHI(pollutants, scale, options = {}) {
+        Console.info("☑️ PollutantsToAQHI");
+
+        if (!Array.isArray(pollutants) || pollutants.length === 0) {
+            Console.debug(`pollutants: ${JSON.stringify(pollutants)}`);
+            Console.error("PollutantsToAQHI", "pollutants无效");
+            return { metadata: { providerName: "iRingo", temporarilyUnavailable: true } };
+        }
+
+        const stpConversionFactors = options?.stpConversionFactors;
+        const { ugm3 } = AirQuality.Config.Units.WeatherKit;
+
+        // 先做单位转换（目标单位均为 µg/m³）
+        const convertedPollutants = stpConversionFactors ? AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants) : pollutants;
+
+        // 按 pollutantType 索引浓度
+        const getAmount = type => {
+            const p = convertedPollutants.find(({ pollutantType }) => pollutantType === type);
+            if (!p) return null;
+            if (p.units !== ugm3) {
+                Console.warn("PollutantsToAQHI", `${type} 单位不是 µg/m³（${p.units}），跳过`);
+                return null;
+            }
+            return p.amount;
+        };
+
+        const { betas } = scale;
+        const ar = (beta, concentration) => {
+            if (concentration === null || concentration < 0) return 0;
+            return (Math.exp(beta * concentration) - 1) * 100;
+        };
+
+        const arNO2 = ar(betas.NO2 || 0, getAmount("NO2"));
+        const arSO2 = ar(betas.SO2 || 0, getAmount("SO2"));
+        const arO3 = ar(betas.O3 || 0, getAmount("OZONE"));
+        const arPM10 = ar(betas.PM10 || 0, getAmount("PM10"));
+        const arPM2_5 = ar(betas.PM2_5 || 0, getAmount("PM2_5"));
+        const arPM = Math.max(arPM10, arPM2_5);
+
+        const totalAR = arNO2 + arSO2 + arO3 + arPM;
+        Console.info("PollutantsToAQHI", `%AR: NO2=${arNO2.toFixed(4)}, SO2=${arSO2.toFixed(4)}, O3=${arO3.toFixed(4)}, PM=${arPM.toFixed(4)} (PM10=${arPM10.toFixed(4)}, PM2.5=${arPM2_5.toFixed(4)}), total=${totalAR.toFixed(4)}`);
+
+        // 设置每个污染物的内部 index 为它的 %AR 值
+        convertedPollutants.forEach(p => {
+            switch (p.pollutantType) {
+                case "NO2":
+                    p.index = arNO2;
+                    break;
+                case "SO2":
+                    p.index = arSO2;
+                    break;
+                case "OZONE":
+                    p.index = arO3;
+                    break;
+                case "PM10":
+                    p.index = arPM10;
+                    break;
+                case "PM2_5":
+                    p.index = arPM2_5;
+                    break;
+                default:
+                    p.index = -1;
+            }
+        });
+
+        // 将 %AR 映射到 1–11 的 categoryIndex (即 AQHI 指数)
+        const categoryIndex = AirQuality.CategoryIndex(totalAR, scale.categories);
+
+        // 以最大 %AR 对应的污染物作为主污染物
+        const primaryPollutant = convertedPollutants.reduce((max, cur) => (cur.index > max.index ? cur : max), { pollutantType: "NOT_AVAILABLE", index: -1 });
+
+        Console.info("✅ PollutantsToAQHI", `AQHI: ${categoryIndex}, primaryPollutant: ${primaryPollutant.pollutantType}`);
+        return {
+            index: totalAR,
+            isSignificant: categoryIndex >= scale.categories.significantIndex,
+            categoryIndex,
+            pollutants: convertedPollutants,
+            metadata: { providerName: "iRingo", temporarilyUnavailable: false },
+            primaryPollutant: primaryPollutant.pollutantType,
+            scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
+        };
+    }
+
+    static #PollutantsToAQHIMulti(pollutants, scale, options = {}) {
+        Console.info("☑️ PollutantsToAQHIMulti");
+
+        if (!Array.isArray(pollutants) || pollutants.length === 0) {
+            Console.debug(`pollutants: ${JSON.stringify(pollutants)}`);
+            Console.error("PollutantsToAQHIMulti", "pollutants无效");
+            return { metadata: { providerName: "iRingo", temporarilyUnavailable: true } };
+        }
+
+        const stpConversionFactors = options?.stpConversionFactors;
+        const { ugm3 } = AirQuality.Config.Units.WeatherKit;
+        const convertedPollutants = stpConversionFactors ? AirQuality.ConvertUnits(pollutants, stpConversionFactors, scale.pollutants) : pollutants;
+
+        const getAmount = type => {
+            const p = convertedPollutants.find(({ pollutantType }) => pollutantType === type);
+            if (!p) return null;
+            if (p.units !== ugm3) {
+                Console.warn("PollutantsToAQHIMulti", `${type} 单位不是 µg/m³（${p.units}），跳过`);
+                return null;
+            }
+            return p.amount;
+        };
+
+        const { beta, weights } = scale;
+        const contributions = {
+            OZONE: (weights.O3 || 0) * Math.max(getAmount("OZONE") || 0, 0),
+            NO2: (weights.NO2 || 0) * Math.max(getAmount("NO2") || 0, 0),
+            PM10: (weights.PM10 || 0) * Math.max(getAmount("PM10") || 0, 0),
+            PM2_5: (weights.PM2_5 || 0) * Math.max(getAmount("PM2_5") || 0, 0),
+            SO2: (weights.SO2 || 0) * Math.max(getAmount("SO2") || 0, 0),
+        };
+        // When risk(PM 10) > 1.2 * risk(PM 2.5)
+        const usePM10 = contributions.PM10 > 0 && (contributions.PM2_5 <= 0 || contributions.PM10 > contributions.PM2_5 * 1.2);
+        const pmContribution = usePM10 ? contributions.PM10 : contributions.PM2_5;
+        const totalWeighted = contributions.OZONE + contributions.NO2 + contributions.SO2 + pmContribution;
+        const totalRisk = (beta || 0) * totalWeighted;
+
+        Console.info(
+            "PollutantsToAQHIMulti",
+            `risk: O3=${contributions.OZONE.toFixed(4)}, NO2=${contributions.NO2.toFixed(4)}, PM10=${contributions.PM10.toFixed(4)}, PM2.5=${contributions.PM2_5.toFixed(4)}, usePM10=${usePM10}, SO2=${contributions.SO2.toFixed(4)}, totalWeighted=${totalWeighted.toFixed(4)}, totalRisk=${totalRisk.toFixed(4)}`,
+        );
+
+        convertedPollutants.forEach(p => {
+            switch (p.pollutantType) {
+                case "OZONE":
+                    p.index = contributions.OZONE;
+                    break;
+                case "NO2":
+                    p.index = contributions.NO2;
+                    break;
+                case "PM10":
+                    p.index = contributions.PM10;
+                    break;
+                case "PM2_5":
+                    p.index = contributions.PM2_5;
+                    break;
+                case "SO2":
+                    p.index = contributions.SO2;
+                    break;
+                default:
+                    p.index = -1;
+            }
+        });
+
+        const categoryIndex = AirQuality.CategoryIndex(totalRisk, scale.categories);
+        const primaryPollutant = convertedPollutants.reduce((max, cur) => (cur.index > max.index ? cur : max), { pollutantType: "NOT_AVAILABLE", index: -1 });
+
+        Console.info("✅ PollutantsToAQHIMulti", `AQHI: ${categoryIndex}, primaryPollutant: ${primaryPollutant.pollutantType}`);
+        return {
+            index: totalRisk,
+            isSignificant: categoryIndex >= scale.categories.significantIndex,
+            categoryIndex,
+            pollutants: convertedPollutants,
             metadata: { providerName: "iRingo", temporarilyUnavailable: false },
             primaryPollutant: primaryPollutant.pollutantType,
             scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
@@ -1756,6 +1977,237 @@ export default class AirQuality {
                             ],
                         },
                     },
+                },
+            },
+            /**
+             * Hong Kong Air Quality Health Index (AQHI).
+             * [10.1016/j.atmosenv.2024.120473]{@link https://doi.org/10.1016/j.atmosenv.2024.120473}
+             * [AQHI 說明 | 香港環境保護署]{@link https://www.aqhi.gov.hk/tc/what-is-aqhi/faqs.html}
+             */
+            HK_AQHI: {
+                weatherKitScale: {
+                    name: "HK.AQHI",
+                },
+                categories: {
+                    significantIndex: 7, // 高 (AQHI 7 及以上)
+                    ranges: [
+                        { categoryIndex: 1, indexes: [0, 1.87] },
+                        { categoryIndex: 2, indexes: [1.88, 3.73] },
+                        { categoryIndex: 3, indexes: [3.74, 5.6] },
+                        { categoryIndex: 4, indexes: [5.61, 7.46] },
+                        { categoryIndex: 5, indexes: [7.47, 9.33] },
+                        { categoryIndex: 6, indexes: [9.34, 11.2] },
+                        { categoryIndex: 7, indexes: [11.21, 12.81] },
+                        { categoryIndex: 8, indexes: [12.82, 14.94] },
+                        { categoryIndex: 9, indexes: [14.95, 17.08] },
+                        { categoryIndex: 10, indexes: [17.09, 19.21] },
+                        { categoryIndex: 11, indexes: [19.22, Number.POSITIVE_INFINITY] },
+                    ],
+                },
+                // β 系数（回归系数），浓度单位 µg/m³
+                betas: {
+                    NO2: 0.0004462559,
+                    SO2: 0.0001393235,
+                    O3: 0.0004888034,
+                    PM10: 0.0002821751,
+                    PM2_5: 0.0002180567,
+                },
+                // pollutants 仅声明目标单位（均为 µg/m³），供 ConvertUnits 使用
+                pollutants: {
+                    NO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    SO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    OZONE: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    PM10: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    PM2_5: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                },
+            },
+            /**
+             * Canada Air Quality Health Index (AQHI).
+             * [10.1016/j.atmosenv.2024.120473]{@link https://doi.org/10.1016/j.atmosenv.2024.120473}
+             */
+            CA_AQHI: {
+                weatherKitScale: {
+                    name: "CA.AQHI",
+                },
+                categories: {
+                    significantIndex: 7, // High Health Risk (AQHI > 7)
+                    ranges: [
+                        { categoryIndex: 1, indexes: [0, 1.04] },
+                        { categoryIndex: 2, indexes: [1.05, 2.08] },
+                        { categoryIndex: 3, indexes: [2.09, 3.12] },
+                        { categoryIndex: 4, indexes: [3.13, 4.16] },
+                        { categoryIndex: 5, indexes: [4.17, 5.2] },
+                        { categoryIndex: 6, indexes: [5.21, 6.24] },
+                        { categoryIndex: 7, indexes: [6.25, 7.28] },
+                        { categoryIndex: 8, indexes: [7.29, 8.32] },
+                        { categoryIndex: 9, indexes: [8.33, 9.36] },
+                        { categoryIndex: 10, indexes: [9.37, 10.4] },
+                        { categoryIndex: 11, indexes: [10.41, Number.POSITIVE_INFINITY] },
+                    ],
+                },
+                // β 系数（回归系数），浓度单位 µg/m³
+                betas: {
+                    NO2: 0.000871,
+                    O3: 0.000537,
+                    PM2_5: 0.000487,
+                },
+                pollutants: {
+                    NO2: { units: "PARTS_PER_BILLION", stpConversionFactor: -1 },
+                    OZONE: { units: "PARTS_PER_BILLION", stpConversionFactor: -1 },
+                    PM2_5: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                },
+            },
+            /**
+             * China Air Quality Health Index (AQHI).
+             * [10.1016/j.atmosenv.2024.120473]{@link https://doi.org/10.1016/j.atmosenv.2024.120473}
+             */
+            CN_DEATH_AQHI: {
+                weatherKitScale: {
+                    name: "CN.AQHI",
+                },
+                categories: {
+                    significantIndex: 6, // 四级 (AQHI 6 及以上)
+                    // Categories in AQHI: 一级：0~1，二级：2~3.5，三级：3.6~5，四级：6~10，五级：11
+                    ranges: [
+                        { categoryIndex: 1, indexes: [0, 2.004] },
+                        { categoryIndex: 2, indexes: [2.005, 4.008] },
+                        // 3: 4.009~6.012
+                        { categoryIndex: 3, indexes: [4.009, 7.018] },
+                        // 4: 6.013~8.016
+                        { categoryIndex: 4, indexes: [7.018, 8.016] },
+                        { categoryIndex: 5, indexes: [8.017, 10.02] },
+                        { categoryIndex: 6, indexes: [10.021, 12.024] },
+                        { categoryIndex: 7, indexes: [12.025, 14.028] },
+                        { categoryIndex: 8, indexes: [14.029, 16.032] },
+                        { categoryIndex: 9, indexes: [16.033, 18.036] },
+                        { categoryIndex: 10, indexes: [18.037, 20.04] },
+                        { categoryIndex: 11, indexes: [20.041, Number.POSITIVE_INFINITY] },
+                    ],
+                },
+                // β 系数（回归系数），浓度单位 µg/m³
+                betas: {
+                    NO2: 0.0009,
+                    SO2: 0.00059,
+                    O3: 0.00024,
+                    PM2_5: 0.00022,
+                },
+                pollutants: {
+                    NO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    SO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    OZONE: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    PM2_5: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                },
+            },
+            CN_DEATH_HK_AQHI: {
+                weatherKitScale: {
+                    name: "CN.AQHI",
+                },
+                categories: {
+                    significantIndex: 6, // 四级 (AQHI 6 及以上)
+                    // Categories in AQHI: 一级：0~1，二级：2~3.5，三级：3.6~5，四级：6~10，五级：11
+                    ranges: [
+                        { categoryIndex: 1, indexes: [0, 2.004] },
+                        { categoryIndex: 2, indexes: [2.005, 4.008] },
+                        // 3: 4.009~6.012
+                        { categoryIndex: 3, indexes: [4.009, 7.018] },
+                        // 4: 6.013~8.016
+                        { categoryIndex: 4, indexes: [7.018, 8.016] },
+                        { categoryIndex: 5, indexes: [8.017, 10.02] },
+                        { categoryIndex: 6, indexes: [10.021, 12.024] },
+                        { categoryIndex: 7, indexes: [12.025, 14.028] },
+                        { categoryIndex: 8, indexes: [14.029, 16.032] },
+                        { categoryIndex: 9, indexes: [16.033, 18.036] },
+                        { categoryIndex: 10, indexes: [18.037, 20.04] },
+                        { categoryIndex: 11, indexes: [20.041, Number.POSITIVE_INFINITY] },
+                    ],
+                },
+                // β 系数（回归系数），浓度单位 µg/m³
+                betas: {
+                    NO2: 0.0009,
+                    SO2: 0.00059,
+                    O3: 0.00024,
+                    PM10: 0.0002821751,
+                    PM2_5: 0.0002180567,
+                },
+                pollutants: {
+                    NO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    SO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    OZONE: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    PM10: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    PM2_5: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                },
+            },
+            AQHI_Multi_CN: {
+                weatherKitScale: {
+                    name: "CA.AQHI",
+                },
+                categories: {
+                    significantIndex: 7,
+                    // 以 WHO AQG 2021: PM2.5 24h=15, O3=100, NO2=25, SO2=40 对应的风险值校准 AQHI=3。
+                    ranges: [
+                        { categoryIndex: 1, indexes: [0, 5.8453] },
+                        { categoryIndex: 2, indexes: [5.8454, 11.6906] },
+                        { categoryIndex: 3, indexes: [11.6907, 17.536] },
+                        { categoryIndex: 4, indexes: [17.5361, 23.3812] },
+                        { categoryIndex: 5, indexes: [23.3813, 29.2265] },
+                        { categoryIndex: 6, indexes: [29.2266, 35.0718] },
+                        { categoryIndex: 7, indexes: [35.0719, 40.9171] },
+                        { categoryIndex: 8, indexes: [40.9172, 46.7624] },
+                        { categoryIndex: 9, indexes: [46.7625, 52.6077] },
+                        { categoryIndex: 10, indexes: [52.6078, 58.453] },
+                        { categoryIndex: 11, indexes: [58.4531, Number.POSITIVE_INFINITY] },
+                    ],
+                },
+                beta: 0.369991,
+                weights: {
+                    O3: 0.271273,
+                    NO2: 0.390781,
+                    PM2_5: 0.120648,
+                    SO2: 0.217224,
+                },
+                pollutants: {
+                    NO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    SO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    OZONE: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    PM2_5: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                },
+            },
+            AQHI_Multi_CN_HK: {
+                weatherKitScale: {
+                    name: "CA.AQHI",
+                },
+                categories: {
+                    significantIndex: 7,
+                    // 以 WHO AQG 2021: PM2.5 24h=15, O3=100, NO2=25, SO2=40 对应的风险值校准 AQHI=3。
+                    ranges: [
+                        { categoryIndex: 1, indexes: [0, 5.8453] },
+                        { categoryIndex: 2, indexes: [5.8454, 11.6906] },
+                        { categoryIndex: 3, indexes: [11.6907, 17.536] },
+                        { categoryIndex: 4, indexes: [17.5361, 23.3812] },
+                        { categoryIndex: 5, indexes: [23.3813, 29.2265] },
+                        { categoryIndex: 6, indexes: [29.2266, 35.0718] },
+                        { categoryIndex: 7, indexes: [35.0719, 40.9171] },
+                        { categoryIndex: 8, indexes: [40.9172, 46.7624] },
+                        { categoryIndex: 9, indexes: [46.7625, 52.6077] },
+                        { categoryIndex: 10, indexes: [52.6078, 58.453] },
+                        { categoryIndex: 11, indexes: [58.4531, Number.POSITIVE_INFINITY] },
+                    ],
+                },
+                beta: 0.369991,
+                weights: {
+                    O3: 0.271273,
+                    NO2: 0.390781,
+                    // Risk from HK AQHI: HK_AQHI_RR(PM10) / HK_AQHI_RR(PM2.5) * AQHI_MULTI_CN_RR(PM2.5)
+                    PM10: 0.156123,
+                    PM2_5: 0.120648,
+                    SO2: 0.217224,
+                },
+                pollutants: {
+                    NO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    SO2: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    OZONE: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    PM10: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
+                    PM2_5: { units: "MICROGRAMS_PER_CUBIC_METER", stpConversionFactor: -1 },
                 },
             },
         },

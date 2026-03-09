@@ -19,6 +19,12 @@ test("all built-in AQ algorithms use Apple versionless scale aliases", () => {
         WAQI_InstantCast_US: "EPA_NowCast",
         WAQI_InstantCast_CN: "HJ6332012",
         WAQI_InstantCast_CN_25_DRAFT: "HJ6332012",
+        HK_AQHI: "HK.AQHI",
+        CA_AQHI: "CA.AQHI",
+        CN_DEATH_AQHI: "CN.AQHI",
+        CN_DEATH_HK_AQHI: "CN.AQHI",
+        AQHI_Multi_CN: "CA.AQHI",
+        AQHI_Multi_CN_HK: "CA.AQHI",
     };
 
     for (const [algorithm, expectedScale] of Object.entries(expectedScales)) {
