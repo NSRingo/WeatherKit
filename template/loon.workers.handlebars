@@ -17,7 +17,7 @@ DOMAIN,tether.edge.apple,REJECT-DROP
 AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),REJECT-DROP
 
 [URL Rewrite]
-^https?:\/\/weatherkit\.apple\.com\/api\/(v1\/availability|v2\/weather)\/ https://weatherkit.nanocat.workers.dev/api/$1/ header
+^https?:\/\/weatherkit\.apple\.com https://weatherkit.nanocat.cloud header
 
 [MITM]
 hostname = weatherkit.apple.com
