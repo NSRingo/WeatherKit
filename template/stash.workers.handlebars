@@ -1,4 +1,4 @@
-name: "{{@package 'displayName'}}"
+name: "{{@package 'displayName'}}" (Rewrite)
 desc: |-
   {{#each (split (@package 'description') "\n")}}
   {{{this}}}
@@ -12,7 +12,6 @@ homepage: "{{@package 'homepage'}}"
 icon: "{{@package 'icon'}}"
 category: "{{@package 'organizationName'}}"
 date: "{{now "yyyy-MM-dd HH:mm:ss"}}"
-version: "{{@package 'version'}}"
 
 rules:
   - DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
