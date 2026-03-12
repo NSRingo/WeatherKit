@@ -1,0 +1,32 @@
+name: " iRingo: 🌤 WeatherKit" (Rewrite)
+desc: |-
+  iOS 18 & macOS 15 & watchOS 11
+  1.解锁全部天气功能
+  2.替换空气质量数据
+  3.添加下一小时降水数据
+  4.添加天气数据
+openUrl: "http://boxjs.com/#/app/iRingo.WeatherKit"
+author: |-
+  VirgilClyne[https://github.com/VirgilClyne]
+  WordlessEcho[https://github.com/WordlessEcho]
+  001[https://github.com/001ProMax]
+homepage: "https://NSRingo.github.io/guide/Weather/weather-kit"
+icon: "https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png"
+category: " iRingo"
+date: "2026-03-12 09:39:04"
+
+rules:
+  - DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
+  - DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
+  - DOMAIN,tether.edge.apple,REJECT-DROP
+  - AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),REJECT-DROP
+
+http:
+  mitm:
+    - "weatherkit.apple.com"
+  url-rewrite:
+    # 🌤 WeatherKit.api.v1.availability.response
+    - ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ https://weatherkit.nanocat.cloud/api/v1/availability/ transparent
+    # 🌤 WeatherKit.api.v2.weather.response
+    - ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ https://weatherkit.nanocat.cloud/api/v2/weather/ transparent
+

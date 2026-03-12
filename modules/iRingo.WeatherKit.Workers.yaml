@@ -1,0 +1,40 @@
+name: ' iRingo: 🌤 WeatherKit (Rewrite)'
+description: iOS 18 & macOS 15 & watchOS 11\n1.解锁全部天气功能\n2.替换空气质量数据\n3.添加下一小时降水数据\n4.添加天气数据
+open_url: http://boxjs.com/#/app/iRingo.WeatherKit
+author: VirgilClyne[https://github.com/VirgilClyne],WordlessEcho[https://github.com/WordlessEcho],001[https://github.com/001ProMax]
+homepage: https://NSRingo.github.io/guide/Weather/weather-kit
+icon: https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
+rules:
+- domain:
+    match: weather-analytics-events.apple.com
+    policy: REJECT
+- domain_suffix:
+    match: tthr.apple.com
+    policy: REJECT
+- domain:
+    match: tether.edge.apple
+    policy: REJECT
+- and:
+    match:
+    - or:
+        match:
+        - asn:
+            match: '714'
+            no_resolve: true
+        - asn:
+            match: '6185'
+            no_resolve: true
+    - protocol:
+        match: QUIC
+    policy: REJECT-DROP
+url_rewrites:
+- match: ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/
+  location: https://weatherkit.nanocat.cloud/api/v1/availability/
+  status_code: 307
+- match: ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/
+  location: https://weatherkit.nanocat.cloud/api/v2/weather/
+  status_code: 307
+mitm:
+  hostnames:
+    includes:
+    - weatherkit.apple.com
