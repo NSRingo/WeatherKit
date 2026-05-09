@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono } from "hono/tiny";
 import { fetch } from "@nsnanocat/util";
 import HonoWorkerAdapter from "./class/HonoWorkerAdapter.mjs";
 // import { Request } from "./process/Request.mjs";
