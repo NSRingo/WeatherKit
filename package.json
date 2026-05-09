@@ -29,7 +29,7 @@
     },
     "scripts": {
         "dev": "npm-run-all --parallel build:dev sgmoudle:dev",
-        "dev:vercel": "npx vercel dev",
+        "dev:vercel": "npx vercel dev --listen 8787",
         "dev:wrangler": "npx wrangler dev",
         "deploy:vercel": "npx vercel deploy --prod",
         "deploy:wrangler": "npx wrangler deploy --minify",
