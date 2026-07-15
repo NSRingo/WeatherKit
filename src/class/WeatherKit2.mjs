@@ -1,9 +1,39 @@
 import { Console } from "@nsnanocat/util";
+import seedFlatBufferRootOverlay from "../function/flatBufferRootOverlay.mjs";
 import * as WK2 from "../proto/apple/wk2.js";
 
 export default class WeatherKit2 {
     static Name = "WeatherKit2";
     static Version = "1.2.1";
+    static InjectableRootSlots = new Map([
+        ["airQuality", 0],
+        ["currentWeather", 1],
+        ["forecastDaily", 2],
+        ["forecastHourly", 3],
+        ["forecastNextHour", 4],
+    ]);
+
+    /**
+     * Re-encode injected root products while retaining every untouched root
+     * product as an opaque table. This keeps products introduced by newer
+     * WeatherKit schemas from disappearing during a decode/encode round trip.
+     */
+    static encodeRootOverlay(builder, source, dataSets = [], data = {}) {
+        const dataSetList = [...dataSets];
+        Console.info("☑️ WeatherKit2.encodeRootOverlay", `dataSets: ${dataSetList}`);
+        const overlay = seedFlatBufferRootOverlay(builder, source);
+        const replacements = new Map();
+
+        for (const dataSet of dataSetList) {
+            const slot = WeatherKit2.InjectableRootSlots.get(dataSet);
+            if (slot !== undefined && data?.[dataSet]) replacements.set(slot, WeatherKit2.encode(builder, dataSet, data[dataSet]));
+        }
+
+        const offset = overlay.createRoot(replacements);
+        Console.info("✅ WeatherKit2.encodeRootOverlay", `replaced slots: ${[...replacements.keys()]}`);
+        return offset;
+    }
+
     static encode(builder, dataSet = "all", data = {}) {
         Console.info("☑️ WeatherKit2.encode", `dataSet: ${dataSet}`);
         let offset;
