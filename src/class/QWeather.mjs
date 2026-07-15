@@ -337,7 +337,7 @@ export default class QWeather {
                     forecastNextHour = {
                         metadata: {
                             attributionUrl: body?.fxLink,
-                            expireTime: timeStamp + 60 * 60,
+                            expireTime: timeStamp + ForecastNextHour.ExpirationInterval,
                             language: "zh-CN", // `${this.language}-${this.country}`, // body?.lang,
                             latitude: this.latitude,
                             longitude: this.longitude,
