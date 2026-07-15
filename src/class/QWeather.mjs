@@ -515,7 +515,8 @@ export default class QWeather {
                                 moonPhase: Weather.ConvertMoonPhase(daily?.moonPhase),
                                 moonrise: this.#ConvertTimeStamp(daily?.fxDate, daily?.moonrise),
                                 moonset: this.#ConvertTimeStamp(daily?.fxDate, daily?.moonset),
-                                precipitationAmount: Number.parseFloat(daily?.precip),
+                                // QWeather does not provide WeatherKit's paired by-type totals.
+                                // Keep Apple's scalar/by-type amount pair atomic during the merge.
                                 // precipitationAmountByType: [], // Not given
                                 // precipitationChance: 0, // Not given
                                 // precipitationType: "", // Not given
@@ -550,7 +551,7 @@ export default class QWeather {
                                     // humidity 用一整天的数据代替
                                     // humidityMax: daily?.humidity, // Not Accurate
                                     // humidityMin: daily?.humidity, // Not Accurate
-                                    precipitationAmount: Number.parseFloat(daily?.precip),
+                                    // The daily total cannot be reused as a daytime-only accumulated amount.
                                     // precipitationAmountByType: [], // Not given
                                     // precipitationChance: 0, // Not given
                                     // precipitationType: "", // Not given
@@ -576,7 +577,7 @@ export default class QWeather {
                                     // humidity 用一整天的数据代替
                                     // humidityMax: daily?.humidity, // Not Accurate
                                     // humidityMin: daily?.humidity, // Not Accurate
-                                    precipitationAmount: Number.parseFloat(daily?.precip),
+                                    // The daily total cannot be reused as an overnight-only accumulated amount.
                                     // precipitationAmountByType: [], // Not given
                                     // precipitationChance: 0, // Not given
                                     // precipitationType: "", // Not given
