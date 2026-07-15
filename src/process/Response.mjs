@@ -83,8 +83,8 @@ export async function Response($request, $response) {
                         case "weatherkit.apple.com":
                             // 路径判断
                             if (url.pathname.startsWith("/api/v2/weather/")) {
-                                body = WeatherKit2.decode(ByteBuffer, "all");
                                 const parameters = parseWeatherKitURL(url);
+                                body = WeatherKit2.decode(ByteBuffer, parameters.dataSets);
                                 const originalForecastNextHour = body.forecastNextHour;
                                 const replacementDataSets = new Set();
                                 const enviroments = {
@@ -140,13 +140,15 @@ export async function Response($request, $response) {
                                         }
                                     }),
                                 );
-                                const WeatherData = WeatherKit2.encodeRootOverlay(Builder, ByteBuffer, replacementDataSets, body);
-                                Builder.finish(WeatherData);
+                                if (replacementDataSets.size) {
+                                    const WeatherData = WeatherKit2.encodeRootOverlay(Builder, ByteBuffer, replacementDataSets, body);
+                                    Builder.finish(WeatherData);
+                                    rawBody = Builder.asUint8Array(); // Of type `Uint8Array`.
+                                }
                                 break;
                             }
                             break;
                     }
-                    rawBody = Builder.asUint8Array(); // Of type `Uint8Array`.
                     break;
                 }
                 case "application/protobuf":

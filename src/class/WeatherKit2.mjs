@@ -486,30 +486,43 @@ export default class WeatherKit2 {
 
     static decode(byteBuffer, dataSet = "all", data = {}) {
         Console.info("☑️ WeatherKit2.decode", `dataSet: ${dataSet}`);
-        const Weather = WK2.Weather.getRootAsWeather(byteBuffer);
-        const AirQualityData = Weather?.airQuality();
-        const CurrentWeatherData = Weather?.currentWeather();
-        const DailyForecastData = Weather?.forecastDaily();
-        const HourlyForecastData = Weather?.forecastHourly();
-        const NextHourForecastData = Weather?.forecastNextHour();
-        const NewsData = Weather?.news();
-        const WeatherAlertCollectionData = Weather?.weatherAlerts();
-        const WeatherChangesData = Weather?.weatherChanges();
-        const HistoricalComparisonsData = Weather?.historicalComparisons();
-        const LocationInfoData = Weather?.locationInfo();
+        const requestedDataSets = typeof dataSet === "string" ? null : new Set([...dataSet].filter(name => WeatherKit2.InjectableRootSlots.has(name)));
+        if (dataSet === "all" || requestedDataSets) {
+            const Weather = WK2.Weather.getRootAsWeather(byteBuffer);
+            const decodeRootDataSet = (name, accessor, decoder = name, target = name) => {
+                if (requestedDataSets && !requestedDataSets.has(name)) return;
+                const rootData = accessor();
+                if (rootData) data[target] = WeatherKit2.decode(byteBuffer, decoder, rootData);
+            };
+
+            decodeRootDataSet("airQuality", () => Weather?.airQuality());
+            decodeRootDataSet("currentWeather", () => Weather?.currentWeather());
+            decodeRootDataSet("forecastDaily", () => Weather?.forecastDaily());
+            decodeRootDataSet("forecastHourly", () => Weather?.forecastHourly());
+            decodeRootDataSet("forecastNextHour", () => Weather?.forecastNextHour());
+            decodeRootDataSet("news", () => Weather?.news());
+            decodeRootDataSet("weatherAlerts", () => Weather?.weatherAlerts());
+            decodeRootDataSet("weatherChanges", () => Weather?.weatherChanges(), "weatherChange");
+            decodeRootDataSet("historicalComparisons", () => Weather?.historicalComparisons(), "trendComparison");
+            decodeRootDataSet("locationInfo", () => Weather?.locationInfo());
+
+            Console.info("✅ WeatherKit2.decode", `dataSet: ${dataSet}`);
+            return data;
+        }
+
+        const Weather = data?.bb || dataSet === "metadata" ? undefined : WK2.Weather.getRootAsWeather(byteBuffer);
+        const rootData = data?.bb ? data : undefined;
+        const AirQualityData = dataSet === "airQuality" ? (rootData ?? Weather?.airQuality()) : undefined;
+        const CurrentWeatherData = dataSet === "currentWeather" ? (rootData ?? Weather?.currentWeather()) : undefined;
+        const DailyForecastData = dataSet === "forecastDaily" ? (rootData ?? Weather?.forecastDaily()) : undefined;
+        const HourlyForecastData = dataSet === "forecastHourly" ? (rootData ?? Weather?.forecastHourly()) : undefined;
+        const NextHourForecastData = dataSet === "forecastNextHour" ? (rootData ?? Weather?.forecastNextHour()) : undefined;
+        const NewsData = dataSet === "news" ? (rootData ?? Weather?.news()) : undefined;
+        const WeatherAlertCollectionData = dataSet === "weatherAlert" || dataSet === "weatherAlerts" ? (rootData ?? Weather?.weatherAlerts()) : undefined;
+        const WeatherChangesData = dataSet === "weatherChange" || dataSet === "weatherChanges" ? (rootData ?? Weather?.weatherChanges()) : undefined;
+        const HistoricalComparisonsData = ["trendComparison", "trendComparisons", "historicalComparison", "historicalComparisons"].includes(dataSet) ? (rootData ?? Weather?.historicalComparisons()) : undefined;
+        const LocationInfoData = dataSet === "locationInfo" ? (rootData ?? Weather?.locationInfo()) : undefined;
         switch (dataSet) {
-            case "all":
-                if (AirQualityData) data.airQuality = WeatherKit2.decode(byteBuffer, "airQuality", AirQualityData);
-                if (CurrentWeatherData) data.currentWeather = WeatherKit2.decode(byteBuffer, "currentWeather", CurrentWeatherData);
-                if (DailyForecastData) data.forecastDaily = WeatherKit2.decode(byteBuffer, "forecastDaily", DailyForecastData);
-                if (HourlyForecastData) data.forecastHourly = WeatherKit2.decode(byteBuffer, "forecastHourly", HourlyForecastData);
-                if (NextHourForecastData) data.forecastNextHour = WeatherKit2.decode(byteBuffer, "forecastNextHour", NextHourForecastData);
-                if (NewsData) data.news = WeatherKit2.decode(byteBuffer, "news", NewsData);
-                if (WeatherAlertCollectionData) data.weatherAlerts = WeatherKit2.decode(byteBuffer, "weatherAlerts", WeatherAlertCollectionData);
-                if (WeatherChangesData) data.weatherChanges = WeatherKit2.decode(byteBuffer, "weatherChange", WeatherChangesData);
-                if (HistoricalComparisonsData) data.historicalComparisons = WeatherKit2.decode(byteBuffer, "trendComparison", HistoricalComparisonsData);
-                if (LocationInfoData) data.locationInfo = WeatherKit2.decode(byteBuffer, "locationInfo", LocationInfoData);
-                break;
             case "airQuality":
                 data = {
                     metadata: WeatherKit2.decode(byteBuffer, "metadata", AirQualityData?.metadata()),
