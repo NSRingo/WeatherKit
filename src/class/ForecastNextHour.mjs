@@ -2,8 +2,11 @@ import { Console } from "@nsnanocat/util";
 
 export default class ForecastNextHour {
     Name = "ForecastNextHour";
-    Version = "v1.6.3";
+    Version = "v1.6.4";
     Author = "iRingo";
+
+    // iOS 27 hides NextHour data once its metadata is more than 15 minutes old.
+    static ExpirationInterval = 10 * 60;
 
     static #Configs = {
         Pollutants: {
