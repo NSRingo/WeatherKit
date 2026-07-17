@@ -50,6 +50,17 @@ test("calculated EU AQI keeps its numeric fields and current scale through FlatB
     assert.equal(decoded.scale, "EU.EAQI.2604");
 });
 
+test("known stale AQ scales migrate without recalculating existing values", () => {
+    const stale = { categoryIndex: 2, index: 13, pollutants: [{ pollutantType: "NO2" }], scale: "EU.EAQI.2414" };
+    const migrated = AirQuality.FixScaleVersion(stale);
+
+    assert.notEqual(migrated, stale);
+    assert.equal(migrated.scale, "EU.EAQI.2604");
+    assert.equal(migrated.index, stale.index);
+    assert.deepEqual(migrated.pollutants, stale.pollutants);
+    assert.equal(AirQuality.FixScaleVersion({ scale: "UNKNOWN.2414" }).scale, "UNKNOWN.2414");
+});
+
 test("WAQI normalizes category and versioned scale before WeatherKit encoding", async () => {
     globalThis.$httpClient = {
         get(request, callback) {

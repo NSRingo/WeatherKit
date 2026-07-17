@@ -399,6 +399,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
 async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
     // Step1. 修复污染物单位
     airQuality = AirQuality.FixPollutantsUnits(airQuality);
+    airQuality = AirQuality.FixScaleVersion(airQuality);
 
     // Step2. 判断原始污染物是否为空，并在需要时注入污染物数据
     const isPollutantEmpty = !Array.isArray(airQuality?.pollutants) || airQuality.pollutants.length === 0;

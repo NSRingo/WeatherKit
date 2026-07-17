@@ -330,6 +330,18 @@ export default class AirQuality {
     }
 
     static ToWeatherKitScale = ({ name, version }) => `${name}.${version}`;
+
+    static FixScaleVersion(airQuality) {
+        if (!airQuality?.scale) return airQuality;
+
+        const scaleName = AirQuality.GetNameFromScale(airQuality.scale);
+        const scale = Object.values(AirQuality.Config.Scales).find(({ weatherKitScale }) => weatherKitScale.name === scaleName);
+        if (!scale) return airQuality;
+
+        const currentScale = AirQuality.ToWeatherKitScale(scale.weatherKitScale);
+        return airQuality.scale === currentScale ? airQuality : { ...airQuality, scale: currentScale };
+    }
+
     static GetNameFromScale(scale) {
         Console.info("☑️ GetNameFromScale", `scale: ${scale}`);
 
