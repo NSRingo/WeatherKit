@@ -1,8 +1,8 @@
-import { Console, fetch, Lodash as _, time } from "@nsnanocat/util";
-import Weather from "./Weather.mjs";
+import { Lodash as _, Console, fetch, time } from "@nsnanocat/util";
 import AirQuality from "../class/AirQuality.mjs";
-import ForecastNextHour from "./ForecastNextHour.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
+import ForecastNextHour from "./ForecastNextHour.mjs";
+import Weather from "./Weather.mjs";
 
 export default class QWeather {
     constructor(parameters, token, host = "devapi.qweather.com") {
@@ -841,7 +841,9 @@ export default class QWeather {
             };
         }
 
-        const categoryIndex = Number.parseInt(supportedIndex.level, 10);
+        const index = Number(supportedIndex.aqi);
+        const suppliedCategoryIndex = Number.parseInt(supportedIndex.level, 10);
+        const categoryIndex = Number.isFinite(suppliedCategoryIndex) && suppliedCategoryIndex > 0 ? suppliedCategoryIndex : AirQuality.CategoryIndex(index, scale.categories);
         const apiPrimaryPollutant = this.#Config.Pollutants[supportedIndex.primaryPollutant?.code] || "NOT_AVAILABLE";
         Console.debug(`apiPrimaryPollutant: ${apiPrimaryPollutant}`);
 
@@ -855,7 +857,7 @@ export default class QWeather {
                 `https://www.qweather.com/air/a/${this.latitude},${this.longitude}?from=AppleWeatherService`,
             ),
             categoryIndex,
-            index: supportedIndex.aqi,
+            index,
             isSignificant: categoryIndex >= scale.categories.significantIndex,
             ...particularAirQuality,
             primaryPollutant: apiPrimaryPollutant,

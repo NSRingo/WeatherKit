@@ -1,6 +1,8 @@
 import { Console } from "@nsnanocat/util";
 import SimplePrecisionMath from "./SimplePrecisionMath.mjs";
 
+const WEATHERKIT_AIR_QUALITY_SCALE_VERSION = "2604";
+
 export default class AirQuality {
     static Name = "AirQuality";
     static Version = "3.1.0";
@@ -67,12 +69,14 @@ export default class AirQuality {
         Console.info("☑️ CompareCategoryIndexes", `todayCategoryIndex: ${todayCategoryIndex}`, `yesterdayCategoryIndex: ${yesterdayCategoryIndex}`);
 
         const { UNKNOWN, SAME, WORSE, BETTER } = AirQuality.Config.CompareCategoryIndexes;
-        const diff = Number(todayCategoryIndex) - Number(yesterdayCategoryIndex);
+        const today = Number(todayCategoryIndex);
+        const yesterday = Number(yesterdayCategoryIndex);
 
-        if (Number.isNaN(diff)) {
+        if (![today, yesterday].every(categoryIndex => Number.isFinite(categoryIndex) && categoryIndex > 0)) {
             Console.error("CompareCategoryIndexes", "categoryIndex无效");
             return UNKNOWN;
         } else {
+            const diff = today - yesterday;
             if (diff === 0) {
                 Console.info("✅ CompareCategoryIndexes");
                 return SAME;
@@ -642,7 +646,7 @@ export default class AirQuality {
             UBA: {
                 weatherKitScale: {
                     name: "UBA",
-                    version: "2414",
+                    version: WEATHERKIT_AIR_QUALITY_SCALE_VERSION,
                 },
                 // Indexes below for calculation only, not for display
                 categories: {
@@ -740,7 +744,7 @@ export default class AirQuality {
             EU_EAQI: {
                 weatherKitScale: {
                     name: "EU.EAQI",
-                    version: "2414",
+                    version: WEATHERKIT_AIR_QUALITY_SCALE_VERSION,
                     maxIndex: 60,
                 },
                 // Indexes below for calculation only, not for display
@@ -845,7 +849,7 @@ export default class AirQuality {
             HJ6332012: {
                 weatherKitScale: {
                     name: "HJ6332012",
-                    version: "2414",
+                    version: WEATHERKIT_AIR_QUALITY_SCALE_VERSION,
                 },
                 categories: {
                     significantIndex: 3, // 轻度污染
@@ -1035,7 +1039,7 @@ export default class AirQuality {
             HJ6332025_DRAFT: {
                 weatherKitScale: {
                     name: "HJ6332012",
-                    version: "2414",
+                    version: WEATHERKIT_AIR_QUALITY_SCALE_VERSION,
                 },
                 categories: {
                     significantIndex: 3, // 轻度污染
@@ -1231,7 +1235,7 @@ export default class AirQuality {
             EPA_NowCast: {
                 weatherKitScale: {
                     name: "EPA_NowCast",
-                    version: "2414",
+                    version: WEATHERKIT_AIR_QUALITY_SCALE_VERSION,
                 },
                 categories: {
                     significantIndex: 3, // Unhealthy for Sensitive Groups
@@ -1388,7 +1392,7 @@ export default class AirQuality {
             WAQI_InstantCast_US: {
                 weatherKitScale: {
                     name: "EPA_NowCast",
-                    version: "2414",
+                    version: WEATHERKIT_AIR_QUALITY_SCALE_VERSION,
                     maxIndex: 500,
                 },
                 categories: {
@@ -1517,7 +1521,7 @@ export default class AirQuality {
             WAQI_InstantCast_CN: {
                 weatherKitScale: {
                     name: "HJ6332012",
-                    version: "2414",
+                    version: WEATHERKIT_AIR_QUALITY_SCALE_VERSION,
                     maxIndex: 500,
                 },
                 categories: {
@@ -1645,7 +1649,7 @@ export default class AirQuality {
             WAQI_InstantCast_CN_25_DRAFT: {
                 weatherKitScale: {
                     name: "HJ6332012",
-                    version: "2414",
+                    version: WEATHERKIT_AIR_QUALITY_SCALE_VERSION,
                     maxIndex: 500,
                 },
                 categories: {
