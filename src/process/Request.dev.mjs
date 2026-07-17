@@ -1,5 +1,6 @@
 import { Console, Lodash as _, Storage } from "@nsnanocat/util";
 import database from "../function/database.mjs";
+import filterWeatherKitDataSets from "../function/filterWeatherKitDataSets.mjs";
 import setENV from "../function/setENV.mjs";
 /***************** Processing *****************/
 export async function Request($request) {
@@ -102,7 +103,7 @@ export async function Request($request) {
                             }
                             let dataSets = url.searchParams.get("dataSets")?.split(",");
                             if (dataSets) {
-                                dataSets = dataSets?.filter(dataSet => Settings.DataSets?.includes(dataSet));
+                                dataSets = filterWeatherKitDataSets(dataSets, Settings.DataSets, database.WeatherKit.Settings.DataSets);
                                 url.searchParams.set("dataSets", dataSets?.join(","));
                             }
                             break;
