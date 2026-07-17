@@ -306,7 +306,7 @@ export default class ColorfulClouds {
                                 forecastDaily.days.push({
                                     forecastStart: timeStamp,
                                     forecastEnd: timeStamp + 24 * 3600, // 24 hours
-                                    conditionCode: Weather.ConvertWeatherCode(body?.result?.daily?.skycon?.[i]?.value),
+                                    ...Weather.ConvertWeatherCodeField(body?.result?.daily?.skycon?.[i]?.value),
                                     humidityMax: Math.round(body?.result?.daily?.humidity?.[i]?.max * 100),
                                     humidityMin: Math.round(body?.result?.daily?.humidity?.[i]?.min * 100),
                                     // maxUvIndex: Weather.ConvertDSWRF(body?.result?.daily?.dswrf?.[i]?.max), // ConvertDSWRF 转换不准确
@@ -345,7 +345,7 @@ export default class ColorfulClouds {
                                         // cloudCoverHighAltPct: 0, // Not given
                                         // cloudCoverLowAltPct: 0, // Not given
                                         // cloudCoverMidAltPct: 0, // Not given
-                                        conditionCode: Weather.ConvertWeatherCode(body?.result?.daily?.skycon_08h_20h?.[i]?.value),
+                                        ...Weather.ConvertWeatherCodeField(body?.result?.daily?.skycon_08h_20h?.[i]?.value),
                                         // humidityMax: Math.round(body?.result?.daily?.humidity?.[i]?.max * 100), // Not given
                                         // humidityMin: Math.round(body?.result?.daily?.humidity?.[i]?.min * 100), // Not given
                                         // Caiyun `avg` is mm/h and cannot replace WeatherKit's accumulated precipitation total.
@@ -369,7 +369,7 @@ export default class ColorfulClouds {
                                         // cloudCoverHighAltPct: 0, // Not given
                                         // cloudCoverLowAltPct: 0, // Not given
                                         // cloudCoverMidAltPct: 0, // Not given
-                                        conditionCode: Weather.ConvertWeatherCode(body?.result?.daily?.skycon_20h_32h?.[i]?.value),
+                                        ...Weather.ConvertWeatherCodeField(body?.result?.daily?.skycon_20h_32h?.[i]?.value),
                                         // humidityMax: Math.round(body?.result?.daily?.humidity?.[i]?.max * 100), // Not given
                                         // humidityMin: Math.round(body?.result?.daily?.humidity?.[i]?.min * 100), // Not given
                                         // Caiyun `avg` is mm/h and cannot replace WeatherKit's accumulated precipitation total.
@@ -593,7 +593,7 @@ export default class ColorfulClouds {
         return {
             metadata: this.#Metadata(realtime.result.server_time, realtime.location),
             cloudCover: Math.round(realtime.result.realtime.cloudrate * 100),
-            conditionCode: Weather.ConvertWeatherCode(realtime.result.realtime.skycon),
+            ...Weather.ConvertWeatherCodeField(realtime.result.realtime.skycon),
             humidity: Math.round(realtime.result.realtime.humidity * 100),
             // uvIndex: Weather.ConvertDSWRF(body?.result?.realtime?.dswrf), // ConvertDSWRF 转换不准确
             perceivedPrecipitationIntensity: realtime.result.realtime.precipitation.local.intensity,
@@ -665,7 +665,7 @@ export default class ColorfulClouds {
                 // cloudCoverHighAltPct: 0, // Not given
                 // cloudCoverLowAltPct: 0, // Not given
                 // cloudCoverMidAltPct: 0, // Not given
-                conditionCode: Weather.ConvertWeatherCode(hourly.result.hourly.skycon[i].value),
+                ...Weather.ConvertWeatherCodeField(hourly.result.hourly.skycon[i].value),
                 // daylight: false, // Not given
                 forecastStart: (new Date(hourly.result.hourly.skycon[i].datetime).getTime() / 1000) | 0,
                 humidity: Math.round(hourly.result.hourly.humidity[i].value * 100),

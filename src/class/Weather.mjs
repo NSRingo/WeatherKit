@@ -173,6 +173,12 @@ export default class Weather {
         }
     }
 
+    static ConvertWeatherCodeField(skycon) {
+        const conditionCode = Weather.ConvertWeatherCode(skycon);
+        // 未知 provider 值必须省略；写入 null 会覆盖 Apple 原值并被 FlatBuffer 编成 CLEAR。
+        return conditionCode == null ? {} : { conditionCode };
+    }
+
     static ConvertMoonPhase(moonPhase) {
         switch (moonPhase) {
             case "新月":

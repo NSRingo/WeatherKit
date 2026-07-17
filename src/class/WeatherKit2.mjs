@@ -369,11 +369,14 @@ export default class WeatherKit2 {
                 break;
             }
             case "forecastNextHour": {
-                const conditionOffsets = data?.condition?.map(condition => {
-                    const parametersOffsets = condition?.parameters.map(parameter => WK2.Parameter.createParameter(builder, WK2.ParameterType[parameter?.type], parameter?.date));
-                    const parametersOffset = WK2.Condition.createParametersVector(builder, parametersOffsets);
-                    return WK2.Condition.createCondition(builder, condition?.startTime, condition?.endTime, WK2.ForecastToken[condition?.forecastToken], WK2.ConditionType[condition?.beginCondition], WK2.ConditionType[condition?.endCondition], parametersOffset);
-                });
+                // 防御第三方数据：未知枚举传给 FlatBuffer 会静默编码为 CLEAR。
+                const conditionOffsets = data?.condition
+                    ?.filter(condition => [condition?.beginCondition, condition?.endCondition].every(value => typeof WK2.ConditionType[value] === "number"))
+                    .map(condition => {
+                        const parametersOffsets = condition?.parameters.map(parameter => WK2.Parameter.createParameter(builder, WK2.ParameterType[parameter?.type], parameter?.date));
+                        const parametersOffset = WK2.Condition.createParametersVector(builder, parametersOffsets);
+                        return WK2.Condition.createCondition(builder, condition?.startTime, condition?.endTime, WK2.ForecastToken[condition?.forecastToken], WK2.ConditionType[condition?.beginCondition], WK2.ConditionType[condition?.endCondition], parametersOffset);
+                    });
                 const conditionOffset = WK2.NextHourForecastData.createConditionVector(builder, conditionOffsets);
                 const summaryOffsets = data?.summary?.map(summary => WK2.ForecastPeriodSummary.createForecastPeriodSummary(builder, summary?.startTime, summary?.endTime, WK2.PrecipitationType[summary?.condition], summary?.precipitationChance, summary?.precipitationIntensity));
                 const summaryOffset = WK2.NextHourForecastData.createSummaryVector(builder, summaryOffsets);

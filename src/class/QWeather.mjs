@@ -193,7 +193,7 @@ export default class QWeather {
                             sourceType: "STATION",
                         },
                         cloudCover: Number.parseInt(body?.now?.cloud, 10),
-                        conditionCode: Weather.ConvertWeatherCode(body?.now?.text),
+                        ...Weather.ConvertWeatherCodeField(body?.now?.text),
                         humidity: Number.parseInt(body?.now?.humidity, 10),
                         perceivedPrecipitationIntensity: Number.parseFloat(body?.now?.precip),
                         pressure: Number.parseFloat(body?.now?.pressure),
@@ -429,7 +429,7 @@ export default class QWeather {
                                 // cloudCoverHighAltPct: 0, // Not given
                                 // cloudCoverLowAltPct: 0, // Not given
                                 // cloudCoverMidAltPct: 0, // Not given
-                                conditionCode: Weather.ConvertWeatherCode(hourly?.text),
+                                ...Weather.ConvertWeatherCodeField(hourly?.text),
                                 // daylight: false, // Not given
                                 forecastStart: (new Date(hourly?.fxTime).getTime() / 1000) | 0,
                                 humidity: Number.parseInt(hourly?.humidity, 10),
@@ -550,7 +550,7 @@ export default class QWeather {
                                     // cloudCoverHighAltPct: 0, // Not given
                                     // cloudCoverLowAltPct: 0, // Not given
                                     // cloudCoverMidAltPct: 0, // Not given
-                                    conditionCode: Weather.ConvertWeatherCode(daily?.textDay),
+                                    ...Weather.ConvertWeatherCodeField(daily?.textDay),
                                     // humidity 用一整天的数据代替
                                     // humidityMax: daily?.humidity, // Not Accurate
                                     // humidityMin: daily?.humidity, // Not Accurate
@@ -576,7 +576,7 @@ export default class QWeather {
                                     // cloudCoverHighAltPct: 0, // Not given
                                     // cloudCoverLowAltPct: 0, // Not given
                                     // cloudCoverMidAltPct: 0, // Not given
-                                    conditionCode: Weather.ConvertWeatherCode(daily?.textNight),
+                                    ...Weather.ConvertWeatherCodeField(daily?.textNight),
                                     // humidity 用一整天的数据代替
                                     // humidityMax: daily?.humidity, // Not Accurate
                                     // humidityMin: daily?.humidity, // Not Accurate

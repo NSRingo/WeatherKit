@@ -1,4 +1,5 @@
 import { Console } from "@nsnanocat/util";
+import * as WK2 from "../proto/apple/wk2.js";
 
 export default class ForecastNextHour {
     Name = "ForecastNextHour";
@@ -82,10 +83,8 @@ export default class ForecastNextHour {
 
     static WeatherCondition(sentence) {
         Console.info("☑️ WeatherCondition", `sentence: ${sentence}`);
-        let weatherCondition = "CLEAR";
-        Object.keys(ForecastNextHour.#Configs.WeatherCondition).forEach(key => {
-            if (sentence.includes(key)) weatherCondition = ForecastNextHour.#Configs.WeatherCondition[key];
-        });
+        // 完整短语排在通用词前，首次命中即可，避免“雨夹雪”又被“雪”覆盖。
+        const weatherCondition = Object.entries(ForecastNextHour.#Configs.WeatherCondition).find(([key]) => sentence.includes(key))?.[1] ?? "CLEAR";
         Console.info(`✅ WeatherCondition: ${weatherCondition}`);
         return weatherCondition;
     }
@@ -93,10 +92,7 @@ export default class ForecastNextHour {
     // 根据描述文本猜测降水类型
     static PrecipitationType(sentence) {
         Console.info("☑️ PrecipitationType", `sentence: ${sentence}`);
-        let precipitationType = "CLEAR";
-        Object.keys(ForecastNextHour.#Configs.PrecipitationType).forEach(key => {
-            if (sentence.includes(key)) precipitationType = ForecastNextHour.#Configs.PrecipitationType[key];
-        });
+        const precipitationType = Object.entries(ForecastNextHour.#Configs.PrecipitationType).find(([key]) => sentence.includes(key))?.[1] ?? "CLEAR";
         Console.info(`✅ PrecipitationType: ${precipitationType}`);
         return precipitationType;
     }
@@ -341,9 +337,15 @@ export default class ForecastNextHour {
                 });
             }
         }
-        Console.debug(`Conditions: ${JSON.stringify(Conditions, null, 2)}`);
+        // pinned WK2 schema 不认识的值会被 FlatBuffer 当成 0（CLEAR），因此整条条件必须跳过。
+        const safeConditions = Conditions.filter(condition => {
+            const supported = [condition.beginCondition, condition.endCondition].every(value => typeof WK2.ConditionType[value] === "number");
+            if (!supported) Console.warn("Condition", `Unsupported ConditionType: ${condition.beginCondition}/${condition.endCondition}`);
+            return supported;
+        });
+        Console.debug(`Conditions: ${JSON.stringify(safeConditions, null, 2)}`);
         Console.info("✅ Condition");
-        return Conditions;
+        return safeConditions;
     }
 
     static #ConvertPrecipitationIntensity(precipitationIntensity, units = "mmph") {
