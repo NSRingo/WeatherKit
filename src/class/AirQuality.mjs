@@ -1,6 +1,8 @@
 import { Console } from "@nsnanocat/util";
 import SimplePrecisionMath from "./SimplePrecisionMath.mjs";
 
+// 这里的版本必须对应 Apple 仍在提供的 /api/v1/airQualityScale 资源。
+// 天气响应中的 AQI 数值即使完整，只要 scale 版本返回 404，客户端也不会显示数值卡片。
 const WEATHERKIT_AIR_QUALITY_SCALE_VERSION = "2604";
 
 export default class AirQuality {
@@ -72,6 +74,7 @@ export default class AirQuality {
         const today = Number(todayCategoryIndex);
         const yesterday = Number(yesterdayCategoryIndex);
 
+        // -1、0 和 null 都表示“无可用等级”，不能参与好转/恶化比较。
         if (![today, yesterday].every(categoryIndex => Number.isFinite(categoryIndex) && categoryIndex > 0)) {
             Console.error("CompareCategoryIndexes", "categoryIndex无效");
             return UNKNOWN;
@@ -331,6 +334,12 @@ export default class AirQuality {
 
     static ToWeatherKitScale = ({ name, version }) => `${name}.${version}`;
 
+    /**
+     * 将已知 AQ scale 迁移到当前 Apple 资源版本。
+     *
+     * 这里只替换 scale 字符串，不重算 index、categoryIndex 或污染物。这样既能修复缓存中的
+     * 旧版本响应，也不会因为一次元数据升级改变用户已经拿到的空气质量结果。
+     */
     static FixScaleVersion(airQuality) {
         if (!airQuality?.scale) return airQuality;
 

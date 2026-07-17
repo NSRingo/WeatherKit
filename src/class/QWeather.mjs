@@ -843,6 +843,7 @@ export default class QWeather {
 
         const index = Number(supportedIndex.aqi);
         const suppliedCategoryIndex = Number.parseInt(supportedIndex.level, 10);
+        // QWeather 允许 level 为 null；此时按同一 scale 的区间回算，避免 NaN 编码成无效等级 0。
         const categoryIndex = Number.isFinite(suppliedCategoryIndex) && suppliedCategoryIndex > 0 ? suppliedCategoryIndex : AirQuality.CategoryIndex(index, scale.categories);
         const apiPrimaryPollutant = this.#Config.Pollutants[supportedIndex.primaryPollutant?.code] || "NOT_AVAILABLE";
         Console.debug(`apiPrimaryPollutant: ${apiPrimaryPollutant}`);

@@ -397,7 +397,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  * @returns {Promise<any>} 合并后的空气质量对象
  */
 async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
-    // Step1. 修复污染物单位
+    // Step1. 修复污染物单位，并迁移可能来自缓存的旧版 AQ scale
     airQuality = AirQuality.FixPollutantsUnits(airQuality);
     airQuality = AirQuality.FixScaleVersion(airQuality);
 

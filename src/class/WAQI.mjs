@@ -30,6 +30,10 @@ export default class WAQI {
         },
     };
 
+    /**
+     * WAQI 只返回指数，不返回 WeatherKit 所需的分级与带版本 scale。
+     * 在数据源边界一次性补齐，避免不同 WAQI 接口各自生成不一致的空气质量对象。
+     */
     #NormalizeAirQuality(index, primaryPollutant = "NOT_AVAILABLE") {
         const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
         const numericIndex = Number.parseInt(index, 10);
