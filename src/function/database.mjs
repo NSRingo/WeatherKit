@@ -1,7 +1,8 @@
 export default {
     WeatherKit: {
         Settings: {
-            DataSets: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
+            // 只有插件会修改的产品允许被配置关闭；其余 Apple 数据集必须始终透传。
+            DataSets: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour"],
             Weather: { Replace: ["CN"], Provider: "ColorfulClouds" },
             NextHour: { Provider: "ColorfulClouds" },
             AirQuality: {

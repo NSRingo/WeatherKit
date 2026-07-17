@@ -49,24 +49,20 @@ export const output = {
     },
 };
 
+// 必须与 database.mjs 中允许配置关闭的可注入数据集保持一致。
 const dataSets: Arg[] = [
     {
         key: "DataSets",
         name: "[数据集]",
-        defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
+        defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour"],
         type: "array",
-        description: "选中的数据集会被包含在请求中。",
+        description: "仅控制插件可修改的数据集；取消选中会停止请求该数据集，其他 Apple 数据集始终透传。",
         options: [
             { key: "airQuality", label: "空气质量" },
             { key: "currentWeather", label: "当前天气" },
             { key: "forecastDaily", label: "每日预报" },
             { key: "forecastHourly", label: "每小时预报" },
             { key: "forecastNextHour", label: "未来一小时降水强度" },
-            { key: "locationInfo", label: "位置信息" },
-            { key: "news", label: "新闻" },
-            { key: "historicalComparisons", label: "历史对比" },
-            { key: "weatherAlerts", label: "天气预警" },
-            { key: "weatherChanges", label: "天气变化" },
         ],
     },
 ];

@@ -6,7 +6,7 @@ globalThis.$persistentStore = { read: () => null, write: () => true };
 globalThis.$argument = {
     LogLevel: "OFF",
     Storage: "Argument",
-    DataSets: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "historicalComparisons", "weatherAlerts", "weatherChanges"],
+    DataSets: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly"],
 };
 
 const [{ default: parseWeatherKitURL }, { Request }, { Request: RequestDev }, { Response }, { Response: ResponseDev }, { default: database }] = await Promise.all([
@@ -33,8 +33,8 @@ test("WeatherKit locales split language, script, and country deterministically",
 });
 
 test("request keeps future datasets while removing a known explicitly disabled dataset", async () => {
-    const input = "airQuality,news,forecastPrecipitation,currentWeather";
-    const expected = ["airQuality", "forecastPrecipitation", "currentWeather"];
+    const input = "airQuality,news,forecastPrecipitation,forecastNextHour,currentWeather";
+    const expected = ["airQuality", "news", "forecastPrecipitation", "currentWeather"];
 
     for (const handler of [Request, RequestDev]) {
         const request = {
@@ -45,6 +45,10 @@ test("request keeps future datasets while removing a known explicitly disabled d
         const result = await handler(request);
         assert.deepEqual(new URL(result.$request.url).searchParams.get("dataSets").split(","), expected);
     }
+});
+
+test("only response-injectable datasets remain configurable", () => {
+    assert.deepEqual(database.WeatherKit.Settings.DataSets, ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour"]);
 });
 
 test("availability keeps Apple's capabilities and appends plugin requirements in prod and dev", async () => {
