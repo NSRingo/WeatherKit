@@ -418,7 +418,8 @@ export default class QWeather {
                             providerLogo: providerNameToLogo("和风天气", this.version),
                             providerName: "和风天气",
                             readTime: timeStamp,
-                            reportedTime: new Date(body?.updateTime),
+                            // WeatherKit metadata 的 uint 时间字段使用 Unix epoch 秒，不能写入 Date 的毫秒值。
+                            reportedTime: Math.trunc(new Date(body?.updateTime).getTime() / 1000),
                             temporarilyUnavailable: false,
                             sourceType: "STATION",
                         },
@@ -486,6 +487,7 @@ export default class QWeather {
             switch (body?.code) {
                 case "200": {
                     const timeStamp = (Date.now() / 1000) | 0;
+                    const reportedTime = new Date(body?.updateTime);
                     const metadata = {
                         attributionUrl: body?.fxLink,
                         expireTime: timeStamp + 60 * 60,
@@ -495,11 +497,12 @@ export default class QWeather {
                         providerLogo: providerNameToLogo("和风天气", this.version),
                         providerName: "和风天气",
                         readTime: timeStamp,
-                        reportedTime: new Date(body?.updateTime),
+                        // WeatherKit metadata 的 uint 时间字段使用 Unix epoch 秒，不能写入 Date 的毫秒值。
+                        reportedTime: Math.trunc(reportedTime.getTime() / 1000),
                         temporarilyUnavailable: false,
                         sourceType: "STATION",
                     };
-                    const timezoneOffset = metadata.reportedTime.getTimezoneOffset();
+                    const timezoneOffset = reportedTime.getTimezoneOffset();
                     forecastDaily = {
                         metadata: metadata,
                         days: body?.daily?.map(daily => {
