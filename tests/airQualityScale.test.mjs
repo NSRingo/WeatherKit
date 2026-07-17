@@ -9,21 +9,27 @@ globalThis.$argument = { LogLevel: "OFF", Storage: "database" };
 const [{ default: AirQuality }, { default: QWeather }, { default: WAQI }, { default: WeatherKit2 }, { Console }] = await Promise.all([import("../src/class/AirQuality.mjs"), import("../src/class/QWeather.mjs"), import("../src/class/WAQI.mjs"), import("../src/class/WeatherKit2.mjs"), import("@nsnanocat/util")]);
 Console.logLevel = "OFF";
 
-test("all built-in AQ algorithms reference Apple scale version 2604", () => {
+test("all built-in AQ algorithms use Apple versionless scale aliases", () => {
     const expectedScales = {
-        UBA: "UBA.2604",
-        EU_EAQI: "EU.EAQI.2604",
-        HJ6332012: "HJ6332012.2604",
-        HJ6332025_DRAFT: "HJ6332012.2604",
-        EPA_NowCast: "EPA_NowCast.2604",
-        WAQI_InstantCast_US: "EPA_NowCast.2604",
-        WAQI_InstantCast_CN: "HJ6332012.2604",
-        WAQI_InstantCast_CN_25_DRAFT: "HJ6332012.2604",
+        UBA: "UBA",
+        EU_EAQI: "EU.EAQI",
+        HJ6332012: "HJ6332012",
+        HJ6332025_DRAFT: "HJ6332012",
+        EPA_NowCast: "EPA_NowCast",
+        WAQI_InstantCast_US: "EPA_NowCast",
+        WAQI_InstantCast_CN: "HJ6332012",
+        WAQI_InstantCast_CN_25_DRAFT: "HJ6332012",
     };
 
     for (const [algorithm, expectedScale] of Object.entries(expectedScales)) {
         assert.equal(AirQuality.ToWeatherKitScale(AirQuality.Config.Scales[algorithm].weatherKitScale), expectedScale, algorithm);
     }
+});
+
+test("scale helpers preserve dotted aliases and optional custom versions", () => {
+    assert.equal(AirQuality.GetNameFromScale("EU.EAQI"), "EU.EAQI");
+    assert.equal(AirQuality.GetNameFromScale("EU.EAQI.2414"), "EU.EAQI");
+    assert.equal(AirQuality.ToWeatherKitScale({ name: "HK.AQHI", version: "2414" }), "HK.AQHI.2414");
 });
 
 test("calculated EU AQI keeps its numeric fields and current scale through FlatBuffer encoding", () => {
@@ -38,7 +44,7 @@ test("calculated EU AQI keeps its numeric fields and current scale through FlatB
 
     assert.equal(Number.isFinite(airQuality.index), true);
     assert.equal(Number.isFinite(airQuality.categoryIndex), true);
-    assert.equal(airQuality.scale, "EU.EAQI.2604");
+    assert.equal(airQuality.scale, "EU.EAQI");
 
     const builder = new Builder(1024);
     const root = WeatherKit2.encode(builder, "all", { airQuality });
@@ -47,21 +53,23 @@ test("calculated EU AQI keeps its numeric fields and current scale through FlatB
 
     assert.equal(decoded.index, airQuality.index);
     assert.equal(decoded.categoryIndex, airQuality.categoryIndex);
-    assert.equal(decoded.scale, "EU.EAQI.2604");
+    assert.equal(decoded.scale, "EU.EAQI");
 });
 
-test("known stale AQ scales migrate without recalculating existing values", () => {
+test("known stale AQ scales normalize without recalculating existing values", () => {
     const stale = { categoryIndex: 2, index: 13, pollutants: [{ pollutantType: "NO2" }], scale: "EU.EAQI.2414" };
-    const migrated = AirQuality.FixScaleVersion(stale);
+    const migrated = AirQuality.NormalizeScaleIdentifier(stale);
 
     assert.notEqual(migrated, stale);
-    assert.equal(migrated.scale, "EU.EAQI.2604");
+    assert.equal(migrated.scale, "EU.EAQI");
     assert.equal(migrated.index, stale.index);
     assert.deepEqual(migrated.pollutants, stale.pollutants);
-    assert.equal(AirQuality.FixScaleVersion({ scale: "UNKNOWN.2414" }).scale, "UNKNOWN.2414");
+    assert.equal(AirQuality.NormalizeScaleIdentifier({ scale: "EU.EAQI.2604" }).scale, "EU.EAQI");
+    assert.equal(AirQuality.NormalizeScaleIdentifier({ scale: "HK.AQHI.2414" }).scale, "HK.AQHI.2414");
+    assert.equal(AirQuality.NormalizeScaleIdentifier({ scale: "UNKNOWN.2414" }).scale, "UNKNOWN.2414");
 });
 
-test("WAQI normalizes category and versioned scale before WeatherKit encoding", async () => {
+test("WAQI normalizes category and stable scale alias before WeatherKit encoding", async () => {
     globalThis.$httpClient = {
         get(request, callback) {
             assert.match(request.url, /api2\.waqi\.info\/feed\/geo:/);
@@ -88,7 +96,7 @@ test("WAQI normalizes category and versioned scale before WeatherKit encoding", 
     assert.equal(airQuality.categoryIndex, 1);
     assert.equal(airQuality.isSignificant, false);
     assert.equal(airQuality.primaryPollutant, "PM2_5");
-    assert.equal(airQuality.scale, "EPA_NowCast.2604");
+    assert.equal(airQuality.scale, "EPA_NowCast");
 });
 
 test("QWeather derives a valid category when its index level is null", async () => {
@@ -116,7 +124,7 @@ test("QWeather derives a valid category when its index level is null", async () 
 
     assert.equal(airQuality.index, 46);
     assert.equal(airQuality.categoryIndex, 1);
-    assert.equal(airQuality.scale, "EPA_NowCast.2604");
+    assert.equal(airQuality.scale, "EPA_NowCast");
 });
 
 test("air-quality comparison rejects unavailable category sentinels", () => {

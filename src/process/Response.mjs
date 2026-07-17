@@ -328,9 +328,9 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  * @returns {Promise<any>} 合并后的空气质量对象
  */
 async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
-    // Step1. 修复污染物单位，并迁移可能来自缓存的旧版 AQ scale
+    // Step1. 修复污染物单位，并将 Apple AQ scale 归一为不绑定版本的稳定标识
     airQuality = AirQuality.FixPollutantsUnits(airQuality);
-    airQuality = AirQuality.FixScaleVersion(airQuality);
+    airQuality = AirQuality.NormalizeScaleIdentifier(airQuality);
 
     // Step2. 判断原始污染物是否为空，并在需要时注入污染物数据
     const isPollutantEmpty = !Array.isArray(airQuality?.pollutants) || airQuality.pollutants.length === 0;
