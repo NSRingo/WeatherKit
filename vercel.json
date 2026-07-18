@@ -2,14 +2,14 @@
     "version": 2,
     "builds": [
         {
-            "src": "edge/vercel.js",
+            "src": "src/Hono.js",
             "use": "@vercel/node"
         }
     ],
     "routes": [
         {
             "src": "/(.*)",
-            "dest": "edge/vercel.js"
+            "dest": "src/Hono.js"
         }
     ]
 }

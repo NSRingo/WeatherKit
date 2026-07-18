@@ -27,6 +27,7 @@
     "directories": {
         "example": "example"
     },
+    "type": "module",
     "scripts": {
         "dev": "npm-run-all --parallel build:dev sgmoudle:dev",
         "dev:pages": "npx wrangler pages dev --port 8787",
