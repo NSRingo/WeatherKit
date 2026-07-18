@@ -6,7 +6,7 @@ globalThis.$environment = { "surge-version": "test" };
 globalThis.$persistentStore = { read: () => null, write: () => true };
 globalThis.$argument = { LogLevel: "OFF", Storage: "database" };
 
-const [{ default: WeatherKit2 }, { Weather }, { Response }] = await Promise.all([import("../src/class/WeatherKit2.mjs"), import("../src/proto/apple/wk2.js"), import("../src/process/Response.mjs")]);
+const [{ default: WeatherKit2 }, { Weather }, { Response }] = await Promise.all([import("../src/class/WeatherKit2.mjs"), import("../src/output/proto.bundle.js"), import("../src/process/Response.mjs")]);
 
 const injectableDataSets = ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour"];
 const unrelatedKnownDataSets = ["news", "weatherAlerts", "weatherChanges", "historicalComparisons", "locationInfo"];

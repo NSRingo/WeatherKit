@@ -17,6 +17,6 @@ export default new Hono()
         return HonoWorkerAdapter.writeResponse(c, $response);
     })
     .onError((e, c) => {
-        console.error(`${e}`);
-        return c.body(`${e}`, 500);
+        console.error(e);
+        return c.body(e.message, 500);
     });

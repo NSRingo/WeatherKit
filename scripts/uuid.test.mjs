@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { Builder, ByteBuffer } from "flatbuffers";
 import WeatherKit2 from "../src/class/WeatherKit2.mjs";
-import * as WK2 from "../src/proto/apple/wk2.js";
+import * as WK2 from "@nsringo/weatherkit";
 
 const uuidBytesMap = new Map([
     ["c3c8fd10-dbc6-5ad5-a042-47b30db85c4b", { bytes: [195, 200, 253, 16, 219, 198, 90, 213, 160, 66, 71, 179, 13, 184, 92, 75] }],

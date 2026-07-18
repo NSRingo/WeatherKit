@@ -4,7 +4,7 @@ import { Builder, ByteBuffer } from "flatbuffers";
 import ForecastNextHour from "../src/class/ForecastNextHour.mjs";
 import Weather from "../src/class/Weather.mjs";
 import WeatherKit2 from "../src/class/WeatherKit2.mjs";
-import * as WK2 from "../src/proto/apple/wk2.js";
+import * as WK2 from "@nsringo/weatherkit";
 
 const BASE_TIME = 1_700_000_000;
 

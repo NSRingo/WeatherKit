@@ -1,5 +1,5 @@
 import { Console } from "@nsnanocat/util";
-import * as WK2 from "../proto/apple/wk2.js";
+import * as WK2 from "@nsringo/weatherkit";
 
 export default class ForecastNextHour {
     Name = "ForecastNextHour";

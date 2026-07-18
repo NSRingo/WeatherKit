@@ -1,6 +1,6 @@
 import { Console } from "@nsnanocat/util";
 import seedFlatBufferRootOverlay from "../function/flatBufferRootOverlay.mjs";
-import * as WK2 from "../proto/apple/wk2.js";
+import * as WK2 from "@nsringo/weatherkit";
 
 export default class WeatherKit2 {
     static Name = "WeatherKit2";
