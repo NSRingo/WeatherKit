@@ -1,21 +1,21 @@
 ### 🆕 New Features
-  * 新增基于云函数的 `WeatherKit (Rewrite)` 新模块，面向 `Loon`、`Surge`、`Stash`、`Shadowrocket` 提供新的 Rewrite 版本配置。
+  * 新增 `Cloudflare Pages` 部署支持，提供 `functions/[[route]].js`、`pages/_routes.json` 以及独立的 Pages / Workers 开发与部署脚本；同时调整 `Vercel` 入口为 `edge/vercel.js`，统一 `Hono` 云端入口。 @001ProMax
+  * 新增 FlatBuffer root overlay 编码能力，仅重写实际变更的数据集，并保留 Apple 未知或新增的根产品表，提升对新 `WeatherKit` schema 的兼容性。 @hhh2210
 
 ### 🛠️ Bug Fixes
-  * 修复和风天气 `YesterdayAirQuality` 在 `locationInfo` 为空时的空值访问问题，避免港澳等特殊定位条件下请求失败。
-  * 修复规则拦截范围，新增 `IP-ASN 6185` 并统一 `QUIC` 拒绝表达式，减少异常直连。
-  * 修复重复天气提供者设置逻辑。
+  * 修复 `forecastNextHour` 在 iOS 27 下因元数据过期过快而失效的问题，并完善多段降水状态推导与描述匹配，避免复合天气短语被后续关键词错误覆盖。 @hhh2210
+  * 修复 `WeatherKit` `dataSets` 与 availability 改写逻辑：仅过滤插件可注入的数据集，保留 Apple 原生 capability，避免固定列表吞掉新增能力或数据集。 @hhh2210
+  * 修复天气注入后每日降水量字段的保留逻辑，避免第三方数据覆盖或破坏 `WeatherKit` 原始的全天 / 白天 / 夜间降水总量配对关系。 @hhh2210
+  * 修复空气质量数据兼容性：统一 Apple 内置 AQ scale 为无版本别名、迁移旧 scale 标识、忽略不可用等级哨兵值，并修正和风天气 `reportedTime` 为 epoch seconds。 @hhh2210
+  * 修复 `forecastNextHour` FlatBuffer 编码时未知天气枚举被静默编码为 `CLEAR` 的问题。 @hhh2210
 
 ### 🔣 Dependencies
-  * 新增运行时依赖：`hono`、`node-fetch`、`fetch-cookie`。
-  * 更新开发与基础依赖：`@rspack/cli`、`@rspack/core` 升级至 `^1.7.7`，`@nsnanocat/util` 升级至 `^2.2.3`。
+  * 切换 `@nsnanocat/util` 到公共 npm registry 来源。 @hhh2210
 
 ### ‼️ Breaking Changes
   * none
 
 ### 🔄 Other Changes
-  * 为新的 Rewrite 版本补充基于 `Hono` 的云函数转发入口，并支持通过 `Vercel` 与 `Cloudflare Workers` 部署。
-  * 新增 workers 构建链路：增加 `arguments-builder.workers.config.ts` 与 `build:args:workers`，用于生成各平台代理模块产物。
-  * 统一工程结构：`Hono` 入口调整为 `src/Hono.js`，请求/响应处理拆分到 `src/process/Request*.mjs` 与 `src/process/Response*.mjs`，并统一模块后缀与命名。
-  * 新增并统一 workers 模板与模块命名，配置名称追加 `(Rewrite)` 后缀，提升不同版本的辨识度。
-  * 更新 `wrangler` 可观测性配置，并在 `.gitignore` 中补充 `.idea` 忽略规则。
+  * 更新 `DataSets` 参数默认值与说明，明确其仅控制插件可修改的数据集，其余 Apple 数据集继续透传。 @hhh2210
+  * 为 `Hono` 根路径新增 `GET /` 健康检查响应 `OK`。 @hhh2210
+  * 新增覆盖空气质量 scale、NextHour 条件推导、降水总量、provider metadata、request availability、FlatBuffer overlay 与 selective decode 的回归测试。 @hhh2210
