@@ -1,4 +1,4 @@
-import { type FlatBufferLogger, FlatBufferRootProcessor, type FlatBufferRootProcessorOptions, type FlatBufferTableProtocol } from "@nsringo/flatbuffer-root";
+import { FlatBufferRootProcessor, type FlatBufferRootProcessorOptions, type FlatBufferTableProtocol } from "@nsringo/flatbuffer-root";
 import type { Builder, ByteBuffer } from "flatbuffers";
 
 interface ExampleJSON {
@@ -18,12 +18,6 @@ declare class ExampleRoot implements FlatBufferTableProtocol {
     alpha(table?: ExampleTable): ExampleTable | null;
 }
 
-const logger: FlatBufferLogger = {
-    debug() {},
-    error() {},
-    warn() {},
-};
-
 const options: FlatBufferRootProcessorOptions<ExampleJSON> = {
     name: "Example",
     rootClass: ExampleRoot,
@@ -35,7 +29,6 @@ const options: FlatBufferRootProcessorOptions<ExampleJSON> = {
         },
     },
     configurableRootNames: ["alpha"],
-    logger,
 };
 
 const processor = new FlatBufferRootProcessor(options);

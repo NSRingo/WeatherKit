@@ -20,7 +20,6 @@ const processor = new FlatBufferRootProcessor({
         },
     },
     configurableRootNames: ["product"],
-    logger,
 });
 
 const json = processor.decode(byteBuffer, ["product"]);
@@ -30,3 +29,7 @@ const bytes = processor.encode(byteBuffer, { product: json.product });
 `rootClass` 的 prototype 根 accessor 顺序必须与 vtable slot 顺序一致，每个根字段必须是 table offset。没有 codec 的 schema 字段以及超出当前 schema 的物理 slot 会作为 opaque arena 保留。
 
 Root accessors on `rootClass.prototype` must follow vtable slot order, and every root field must be a table offset. Schema fields without a codec and physical slots beyond the current schema are preserved as opaque arenas.
+
+日志统一通过 `@nsnanocat/util` 的 `Console` 输出。
+
+Logs are emitted through `Console` from `@nsnanocat/util`.

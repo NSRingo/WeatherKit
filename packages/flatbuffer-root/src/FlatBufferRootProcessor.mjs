@@ -1,3 +1,4 @@
+import { Console } from "@nsnanocat/util";
 import { Builder, ByteBuffer } from "flatbuffers";
 
 const ROOT_OFFSET_SIZE = 4;
@@ -34,19 +35,11 @@ const MAX_SCALAR_ALIGNMENT = 8;
  */
 
 /**
- * @typedef {object} FlatBufferLogger
- * @property {(...values: unknown[]) => void} debug 调试日志 / Debug logger.
- * @property {(...values: unknown[]) => void} warn 警告日志 / Warning logger.
- * @property {(...values: unknown[]) => void} error 错误日志 / Error logger.
- */
-
-/**
  * @typedef {object} FlatBufferRootProcessorOptions
  * @property {string} name 处理器名称和日志前缀 / Processor name and log prefix.
  * @property {Function} rootClass FlatBuffers 生成的根表类 / Generated FlatBuffers root table class.
  * @property {Readonly<Record<string, FlatBufferRootCodec>>} codecs 按根 accessor 名称注册的 codec / Codecs keyed by root accessor name.
  * @property {readonly string[]} configurableRootNames 受业务开关控制的根名称 / Root names controlled by business settings.
- * @property {FlatBufferLogger} logger 日志实现 / Logger implementation.
  */
 
 /**
@@ -59,7 +52,6 @@ export class FlatBufferRootProcessor {
     #fieldsById;
     #fieldsByName;
     #configurableRootNames;
-    #logger;
 
     /**
      * 创建并验证根表处理器配置。
@@ -68,11 +60,6 @@ export class FlatBufferRootProcessor {
      */
     constructor(options) {
         if (!options || typeof options !== "object" || Array.isArray(options)) throw new TypeError("FlatBufferRootProcessor options must be an object");
-        const logger = options.logger;
-        if (!logger || typeof logger !== "object" || typeof logger.debug !== "function" || typeof logger.warn !== "function" || typeof logger.error !== "function") {
-            throw new TypeError("FlatBufferRootProcessor logger must provide debug, warn, and error");
-        }
-        this.#logger = logger;
 
         try {
             if (typeof options.name !== "string" || options.name.length === 0) throw new TypeError("FlatBufferRootProcessor name must be a non-empty string");
@@ -120,7 +107,7 @@ export class FlatBufferRootProcessor {
             this.#fieldsByName = new Map(fields.map(field => [field.name, field]));
             this.#configurableRootNames = configurableRootNames;
         } catch (error) {
-            logger.error(`${typeof options.name === "string" && options.name ? options.name : "FlatBufferRootProcessor"}.configure`, error);
+            Console.error(`${typeof options.name === "string" && options.name ? options.name : "FlatBufferRootProcessor"}.configure`, error);
             throw error;
         }
     }
@@ -139,7 +126,7 @@ export class FlatBufferRootProcessor {
             const enabled = new Set(enabledRootNames);
             return requestedRootNames.filter(rootName => !this.#configurableRootNames.has(rootName) || enabled.has(rootName));
         } catch (error) {
-            this.#logger.error(`${this.#name}.filterRootNames`, error);
+            Console.error(`${this.#name}.filterRootNames`, error);
             throw error;
         }
     }
@@ -155,7 +142,7 @@ export class FlatBufferRootProcessor {
         try {
             this.#assertStringArray(rootNames, "rootNames");
         } catch (error) {
-            this.#logger.error(`${this.#name}.decode`, error);
+            Console.error(`${this.#name}.decode`, error);
             throw error;
         }
 
@@ -165,7 +152,7 @@ export class FlatBufferRootProcessor {
         try {
             dictionary = this.#readRootSlots(byteBuffer);
         } catch (error) {
-            this.#logger.error(`${this.#name}.decode`, error);
+            Console.error(`${this.#name}.decode`, error);
             throw error;
         }
         const slotReport = this.#logSlotDictionary("decode", dictionary);
@@ -205,8 +192,8 @@ export class FlatBufferRootProcessor {
 
         const unknown = slotReport.unknownLabels;
         const message = `${this.#name}.decode.parse：已知 ${slotReport.knownCount}/${dictionary.presentSlotCount}，解析 ${parsed}/${dictionary.presentSlotCount}，失败 ${failures.length}/${dictionary.presentSlotCount}，未知 ${unknown.length}/${dictionary.presentSlotCount}；失败=[${failures.join(", ")}]；未知=[${unknown.join(", ")}]；请求未知=[${unknownRequested.join(", ")}]；缺失=[${missing.join(", ")}]`;
-        if (failures.length || unknown.length || unknownRequested.length) this.#logger.warn(message);
-        else this.#logger.debug(message);
+        if (failures.length || unknown.length || unknownRequested.length) Console.warn(message);
+        else Console.debug(message);
         return json;
     }
 
@@ -220,7 +207,7 @@ export class FlatBufferRootProcessor {
     encode(byteBuffer = undefined, patch = {}) {
         if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
             const error = new TypeError(`${this.#name}.encode patch must be an object`);
-            this.#logger.error(`${this.#name}.encode`, error);
+            Console.error(`${this.#name}.encode`, error);
             throw error;
         }
 
@@ -258,15 +245,15 @@ export class FlatBufferRootProcessor {
         }
 
         const compileMessage = `${this.#name}.encode.compile：已知 ${known}/${patchKeys.length}，编译 ${compiled.size}/${patchKeys.length}，失败 ${failures.length}/${patchKeys.length}，未知 ${unknown.length}/${patchKeys.length}；失败=[${failures.join(", ")}]；未知=[${unknown.join(", ")}]`;
-        if (failures.length || unknown.length) this.#logger.warn(compileMessage);
-        else this.#logger.debug(compileMessage);
+        if (failures.length || unknown.length) Console.warn(compileMessage);
+        else Console.debug(compileMessage);
 
         let sourceDictionary;
         if (byteBuffer !== undefined) {
             try {
                 sourceDictionary = this.#readRootSlots(byteBuffer);
             } catch (error) {
-                this.#logger.error(`${this.#name}.encode`, error);
+                Console.error(`${this.#name}.encode`, error);
                 throw error;
             }
         } else {
@@ -291,10 +278,10 @@ export class FlatBufferRootProcessor {
                 },
                 this.#fields.length,
             );
-            this.#logger.debug(`${this.#name}.encode.assemble：输出 ${slots.size} 个 slot，替换 ${compiled.size} 个 slot`);
+            Console.debug(`${this.#name}.encode.assemble：输出 ${slots.size} 个 slot，替换 ${compiled.size} 个 slot`);
             return rawBody;
         } catch (error) {
-            this.#logger.error(`${this.#name}.encode`, error);
+            Console.error(`${this.#name}.encode`, error);
             throw error;
         }
     }
@@ -468,8 +455,8 @@ export class FlatBufferRootProcessor {
             .map(id => this.#slotLabel(id));
         const failureLabels = dictionary.failures.map(({ id, error }) => `${this.#slotLabel(id)}(${error.message})`);
         const message = `${this.#name}.${operation}.slots：已知 ${knownCount}/${dictionary.presentSlotCount}，读取 ${dictionary.slots.size}/${dictionary.presentSlotCount}，失败 ${failureLabels.length}/${dictionary.presentSlotCount}，未知 ${unknownLabels.length}/${dictionary.presentSlotCount}；失败=[${failureLabels.join(", ")}]；未知=[${unknownLabels.join(", ")}]`;
-        if (failureLabels.length || unknownLabels.length) this.#logger.warn(message);
-        else this.#logger.debug(message);
+        if (failureLabels.length || unknownLabels.length) Console.warn(message);
+        else Console.debug(message);
         return { knownCount, unknownLabels };
     }
 

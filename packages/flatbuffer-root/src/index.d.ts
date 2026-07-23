@@ -36,16 +36,6 @@ export interface FlatBufferRootCodec<TTable extends FlatBufferTableProtocol = Fl
 }
 
 /**
- * 处理器所需的显式日志协议。
- * Explicit logger protocol required by the processor.
- */
-export interface FlatBufferLogger {
-    debug(...values: unknown[]): void;
-    warn(...values: unknown[]): void;
-    error(...values: unknown[]): void;
-}
-
-/**
  * 按生成根 accessor 名称注册的 codec 集合。
  * Codec collection keyed by generated root accessor name.
  */
@@ -62,7 +52,6 @@ export interface FlatBufferRootProcessorOptions<TJSONByRoot extends object> {
     rootClass: FlatBufferRootClassProtocol;
     codecs: FlatBufferRootCodecs<TJSONByRoot>;
     configurableRootNames: readonly (keyof TJSONByRoot & string)[];
-    logger: FlatBufferLogger;
 }
 
 /**

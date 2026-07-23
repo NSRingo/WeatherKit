@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { Console } from "@nsnanocat/util";
 import { FlatBufferRootProcessor } from "@nsringo/flatbuffer-root";
 import { Builder, ByteBuffer } from "flatbuffers";
 
@@ -74,9 +75,8 @@ class SecondRoot {
 }
 
 test("processor derives independent schemas from generated root classes", () => {
-    const firstLogs = createLogger();
-    const first = createProcessor("First", FirstRoot, ["alpha"], firstLogs);
-    const second = createProcessor("Second", SecondRoot, [], createLogger(), ["gamma"]);
+    const first = createProcessor("First", FirstRoot, ["alpha"]);
+    const second = createProcessor("Second", SecondRoot, [], ["gamma"]);
 
     const firstBytes = first.encode(undefined, {
         alpha: { text: "alpha", value: 11 },
@@ -86,7 +86,8 @@ test("processor derives independent schemas from generated root classes", () => 
         gamma: { text: "gamma", value: 33 },
     });
 
-    assert.deepEqual(first.decode(new ByteBuffer(firstBytes), ["beta", "alpha", "alpha", "future"]), {
+    const logs = captureConsole(() => first.decode(new ByteBuffer(firstBytes), ["beta", "alpha", "alpha", "future"]));
+    assert.deepEqual(logs.result, {
         alpha: { text: "alpha", value: 11 },
         beta: { text: "beta", value: 22 },
     });
@@ -94,20 +95,19 @@ test("processor derives independent schemas from generated root classes", () => 
         gamma: { text: "gamma", value: 33 },
     });
     assert.deepEqual(first.filterRootNames(["future", "alpha", "beta", "alpha"], ["beta"]), ["future", "beta"]);
-    assert.ok(firstLogs.warnMessages.some(message => message.includes("请求未知=[future]")));
+    assert.ok(logs.warn.some(message => message.includes("请求未知=[future]")));
 });
 
 test("processor validates generated model, codec, and configurable-root contracts", () => {
     const cases = [
         {
-            options: { codecs: {}, configurableRootNames: [], logger: createLogger(), name: "Invalid", rootClass: class {} },
+            options: { codecs: {}, configurableRootNames: [], name: "Invalid", rootClass: class {} },
             pattern: /generated FlatBuffers table class/,
         },
         {
             options: {
                 codecs: { future: createLeafCodec() },
                 configurableRootNames: [],
-                logger: createLogger(),
                 name: "Invalid",
                 rootClass: FirstRoot,
             },
@@ -117,7 +117,6 @@ test("processor validates generated model, codec, and configurable-root contract
             options: {
                 codecs: { alpha: { ...createLeafCodec(), tableClass: class {} } },
                 configurableRootNames: [],
-                logger: createLogger(),
                 name: "Invalid",
                 rootClass: FirstRoot,
             },
@@ -127,7 +126,6 @@ test("processor validates generated model, codec, and configurable-root contract
             options: {
                 codecs: { alpha: { encode: createLeafCodec().encode, tableClass: Leaf } },
                 configurableRootNames: [],
-                logger: createLogger(),
                 name: "Invalid",
                 rootClass: FirstRoot,
             },
@@ -137,7 +135,6 @@ test("processor validates generated model, codec, and configurable-root contract
             options: {
                 codecs: { alpha: createLeafCodec() },
                 configurableRootNames: ["future"],
-                logger: createLogger(),
                 name: "Invalid",
                 rootClass: FirstRoot,
             },
@@ -147,7 +144,6 @@ test("processor validates generated model, codec, and configurable-root contract
             options: {
                 codecs: { alpha: createLeafCodec() },
                 configurableRootNames: ["alpha", "alpha"],
-                logger: createLogger(),
                 name: "Invalid",
                 rootClass: FirstRoot,
             },
@@ -156,24 +152,21 @@ test("processor validates generated model, codec, and configurable-root contract
     ];
 
     for (const { options, pattern } of cases) {
-        assert.throws(() => new FlatBufferRootProcessor(options), pattern);
-        assert.equal(options.logger.errorMessages.length, 1);
+        const logs = captureConsole(() => assert.throws(() => new FlatBufferRootProcessor(options), pattern));
+        assert.equal(logs.error.length, 1);
     }
-    assert.throws(
-        () =>
-            new FlatBufferRootProcessor({
-                codecs: {},
-                configurableRootNames: [],
-                logger: {},
-                name: "Invalid",
-                rootClass: FirstRoot,
-            }),
-        /logger must provide debug, warn, and error/,
-    );
+});
+
+test("processor emits diagnostics through @nsnanocat/util Console", () => {
+    const processor = createProcessor("Console", FirstRoot, []);
+    const logs = captureConsole(() => processor.encode(undefined, { future: {} }));
+
+    assert.equal(logs.error.length, 0);
+    assert.match(logs.warn[0], /Console\.encode\.compile：已知 0\/1，编译 0\/1，失败 0\/1，未知 1\/1/);
 });
 
 test("processor preserves opaque slots while replacing a modeled slot", () => {
-    const processor = createProcessor("Opaque", FirstRoot, [], createLogger());
+    const processor = createProcessor("Opaque", FirstRoot, []);
     const source = createRoot([
         [0, builder => createLeaf(builder, { text: "old", value: 11 })],
         [3, builder => createContainer(builder, createLeaf(builder, { text: "opaque", value: 77 }))],
@@ -197,44 +190,44 @@ test("processor preserves opaque slots while replacing a modeled slot", () => {
 });
 
 test("processor isolates failed patch codecs and preserves their source slots", () => {
-    const logs = createLogger();
-    const processor = createProcessor("Isolated", FirstRoot, [], logs);
+    const processor = createProcessor("Isolated", FirstRoot, []);
     const source = createRoot([
         [0, builder => createLeaf(builder, { text: "alpha-old", value: 11 })],
         [1, builder => createLeaf(builder, { text: "beta-old", value: 22 })],
     ]);
 
-    const output = processor.encode(new ByteBuffer(source), {
-        alpha: {},
-        beta: { text: "beta-new", value: 44 },
-        future: {},
-    });
+    const logs = captureConsole(() =>
+        processor.encode(new ByteBuffer(source), {
+            alpha: {},
+            beta: { text: "beta-new", value: 44 },
+            future: {},
+        }),
+    );
+    const output = logs.result;
 
     assert.deepEqual(processor.decode(new ByteBuffer(output), ["alpha", "beta"]), {
         alpha: { text: "alpha-old", value: 11 },
         beta: { text: "beta-new", value: 44 },
     });
-    assert.match(logs.warnMessages[0], /Isolated\.encode\.compile：已知 2\/3，编译 1\/3，失败 1\/3，未知 1\/3/);
-    assert.match(logs.warnMessages[0], /alpha#0/);
-    assert.match(logs.warnMessages[0], /future/);
+    assert.match(logs.warn[0], /Isolated\.encode\.compile：已知 2\/3，编译 1\/3，失败 1\/3，未知 1\/3/);
+    assert.match(logs.warn[0], /alpha#0/);
+    assert.match(logs.warn[0], /future/);
 });
 
 test("processor logs and throws fatal root errors without returning output", () => {
-    const logs = createLogger();
-    const processor = createProcessor("Fatal", FirstRoot, [], logs);
+    const processor = createProcessor("Fatal", FirstRoot, []);
     const bytes = new Uint8Array(8);
     new DataView(bytes.buffer).setUint32(0, 64, true);
 
-    assert.throws(() => processor.decode(new ByteBuffer(bytes), []), /root table is outside/);
-    assert.equal(logs.errorMessages.length, 1);
-    assert.match(logs.errorMessages[0], /Fatal\.decode/);
+    const logs = captureConsole(() => assert.throws(() => processor.decode(new ByteBuffer(bytes), []), /root table is outside/));
+    assert.equal(logs.error.length, 1);
+    assert.match(logs.error[0], /Fatal\.decode/);
 });
 
-function createProcessor(name, rootClass, configurableRootNames, logger, codecNames = ["alpha", "beta"]) {
+function createProcessor(name, rootClass, configurableRootNames, codecNames = ["alpha", "beta"]) {
     return new FlatBufferRootProcessor({
         codecs: Object.fromEntries(codecNames.map(rootName => [rootName, createLeafCodec()])),
         configurableRootNames,
-        logger,
         name,
         rootClass,
     });
@@ -254,16 +247,28 @@ function createLeafCodec() {
     };
 }
 
-function createLogger() {
-    const logger = {
-        debugMessages: [],
-        errorMessages: [],
-        warn: (...values) => logger.warnMessages.push(values.map(String).join(" ")),
-        warnMessages: [],
-        debug: (...values) => logger.debugMessages.push(values.map(String).join(" ")),
-        error: (...values) => logger.errorMessages.push(values.map(String).join(" ")),
+function captureConsole(run) {
+    const original = {
+        debug: Console.debug,
+        error: Console.error,
+        warn: Console.warn,
     };
-    return logger;
+    const messages = {
+        debug: [],
+        error: [],
+        warn: [],
+    };
+    Console.debug = (...values) => messages.debug.push(values.map(String).join(" "));
+    Console.error = (...values) => messages.error.push(values.map(String).join(" "));
+    Console.warn = (...values) => messages.warn.push(values.map(String).join(" "));
+
+    try {
+        return { ...messages, result: run() };
+    } finally {
+        Console.debug = original.debug;
+        Console.error = original.error;
+        Console.warn = original.warn;
+    }
 }
 
 function createRoot(entries) {

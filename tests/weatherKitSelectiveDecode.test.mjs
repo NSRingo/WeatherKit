@@ -6,13 +6,22 @@ globalThis.$environment = { "surge-version": "test" };
 globalThis.$persistentStore = { read: () => null, write: () => true };
 globalThis.$argument = { LogLevel: "OFF", Storage: "database" };
 
-const [{ default: WeatherKit2 }, { News, Weather }, { Response }, { Response: ResponseDev }, { Console }] = await Promise.all([import("../src/class/WeatherKit2.mjs"), import("@nsringo/weatherkit"), import("../src/process/Response.mjs"), import("../src/process/Response.dev.mjs"), import("@nsnanocat/util")]);
+const [{ default: WeatherKit2 }, { FlatBufferRootProcessor }, { News, Weather }, { Response }, { Response: ResponseDev }, { Console }] = await Promise.all([
+    import("../src/class/WeatherKit2.mjs"),
+    import("@nsringo/flatbuffer-root"),
+    import("@nsringo/weatherkit"),
+    import("../src/process/Response.mjs"),
+    import("../src/process/Response.dev.mjs"),
+    import("@nsnanocat/util"),
+]);
 
 const supportedRootDataSets = Object.getOwnPropertyNames(Weather.prototype).filter(dataSet => !["constructor", "__init"].includes(dataSet));
 
-test("WeatherKit2 only exposes root decode and encode entry points", () => {
-    const staticMembers = Object.getOwnPropertyNames(WeatherKit2).filter(name => !["length", "name", "prototype"].includes(name));
-    assert.deepEqual(staticMembers, ["decode", "encode"]);
+test("WeatherKit2 is a configured reusable root processor", () => {
+    assert.ok(WeatherKit2 instanceof FlatBufferRootProcessor);
+    assert.equal(typeof WeatherKit2.filterRootNames, "function");
+    assert.equal(typeof WeatherKit2.decode, "function");
+    assert.equal(typeof WeatherKit2.encode, "function");
 });
 
 test("selected root decode follows physical slot order, deduplicates requests, and ignores unknown products", () => {

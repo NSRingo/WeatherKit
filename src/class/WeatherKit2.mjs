@@ -1,211 +1,30 @@
-import { Console } from "@nsnanocat/util";
+import { FlatBufferRootProcessor } from "@nsringo/flatbuffer-root";
 import * as WK2 from "@nsringo/weatherkit";
-import { Builder, ByteBuffer } from "flatbuffers";
-import { readFlatBufferRootSlots, writeFlatBufferRootSlots } from "../function/flatBufferRootSlots.mjs";
+import database from "../function/database.mjs";
 
-const PRODUCT_CODECS = new Map([
-    ["airQuality", { decode: decodeAirQuality, encode: encodeAirQuality, type: WK2.AirQuality }],
-    ["currentWeather", { decode: decodeCurrentWeather, encode: encodeCurrentWeather, type: WK2.CurrentWeatherData }],
-    ["forecastDaily", { decode: decodeForecastDaily, encode: encodeForecastDaily, type: WK2.DailyForecastData }],
-    ["forecastHourly", { decode: decodeForecastHourly, encode: encodeForecastHourly, type: WK2.HourlyForecastData }],
-    ["forecastNextHour", { decode: decodeForecastNextHour, encode: encodeForecastNextHour, type: WK2.NextHourForecastData }],
-    ["news", { decode: decodeNews, encode: encodeNews, type: WK2.News }],
-    ["weatherAlerts", { decode: decodeWeatherAlerts, encode: encodeWeatherAlerts, type: WK2.WeatherAlertCollectionData }],
-    ["weatherChanges", { decode: decodeWeatherChanges, encode: encodeWeatherChanges, type: WK2.WeatherChanges }],
-    ["historicalComparisons", { decode: decodeHistoricalComparisons, encode: encodeHistoricalComparisons, type: WK2.HistoricalComparison }],
-    ["locationInfo", { decode: decodeLocationInfo, encode: encodeLocationInfo, type: WK2.LocationInfo }],
-]);
+/**
+ * 使用 Weather 根模型和产品 codec 配置通用根表处理器。
+ * Configure the generic root-table processor with the Weather model and product codecs.
+ */
+const WeatherKit2 = new FlatBufferRootProcessor({
+    codecs: {
+        airQuality: { decode: decodeAirQuality, encode: encodeAirQuality, tableClass: WK2.AirQuality },
+        currentWeather: { decode: decodeCurrentWeather, encode: encodeCurrentWeather, tableClass: WK2.CurrentWeatherData },
+        forecastDaily: { decode: decodeForecastDaily, encode: encodeForecastDaily, tableClass: WK2.DailyForecastData },
+        forecastHourly: { decode: decodeForecastHourly, encode: encodeForecastHourly, tableClass: WK2.HourlyForecastData },
+        forecastNextHour: { decode: decodeForecastNextHour, encode: encodeForecastNextHour, tableClass: WK2.NextHourForecastData },
+        historicalComparisons: { decode: decodeHistoricalComparisons, encode: encodeHistoricalComparisons, tableClass: WK2.HistoricalComparison },
+        locationInfo: { decode: decodeLocationInfo, encode: encodeLocationInfo, tableClass: WK2.LocationInfo },
+        news: { decode: decodeNews, encode: encodeNews, tableClass: WK2.News },
+        weatherAlerts: { decode: decodeWeatherAlerts, encode: encodeWeatherAlerts, tableClass: WK2.WeatherAlertCollectionData },
+        weatherChanges: { decode: decodeWeatherChanges, encode: encodeWeatherChanges, tableClass: WK2.WeatherChanges },
+    },
+    configurableRootNames: database.WeatherKit.Settings.DataSets,
+    name: "WeatherKit2",
+    rootClass: WK2.Weather,
+});
 
-const ROOT_FIELDS = Object.getOwnPropertyNames(WK2.Weather.prototype)
-    .filter(name => {
-        if (name === "constructor" || name === "__init") return false;
-        const suffix = `${name[0].toUpperCase()}${name.slice(1)}`;
-        return typeof WK2.Weather[`add${suffix}`] === "function";
-    })
-    .map((name, id) => ({ codec: PRODUCT_CODECS.get(name), id, name }));
-const ROOT_FIELDS_BY_ID = new Map(ROOT_FIELDS.map(field => [field.id, field]));
-const ROOT_FIELDS_BY_NAME = new Map(ROOT_FIELDS.map(field => [field.name, field]));
-
-export default class WeatherKit2 {
-    /**
-     * 解码指定的 Weather 根产品。
-     * Decode the requested Weather root products.
-     * @param {import("flatbuffers").ByteBuffer} byteBuffer - Weather FlatBuffer / Weather FlatBuffer.
-     * @param {string[]} dataSets - 要解码的根产品名称 / Root product names to decode.
-     * @returns {Record<string, unknown>} 已解码的根产品 / Decoded root products.
-     */
-    static decode(byteBuffer, dataSets = []) {
-        if (!Array.isArray(dataSets)) {
-            const error = new TypeError("WeatherKit2.decode dataSets must be an array");
-            Console.error("WeatherKit2.decode", error);
-            throw error;
-        }
-
-        const requested = new Set(dataSets);
-        const json = {};
-        let dictionary;
-        try {
-            dictionary = readFlatBufferRootSlots(byteBuffer);
-        } catch (error) {
-            Console.error("WeatherKit2.decode", error);
-            throw error;
-        }
-        const slotReport = logSlotDictionary("decode", dictionary);
-
-        const presentIds = new Set([...dictionary.slots.keys(), ...dictionary.failures.map(failure => failure.id)]);
-        const unknownRequested = [...requested].filter(name => {
-            const field = ROOT_FIELDS_BY_NAME.get(name);
-            return !field || !field.codec;
-        });
-        const missing = [...requested].filter(name => {
-            const field = ROOT_FIELDS_BY_NAME.get(name);
-            if (!field || !field.codec) return false;
-            return !presentIds.has(field.id);
-        });
-        const failures = dictionary.failures
-            .filter(({ id }) => {
-                const field = ROOT_FIELDS_BY_ID.get(id);
-                if (!field || !field.codec) return false;
-                return requested.has(field.name);
-            })
-            .map(({ id, error }) => `${slotLabel(id)}(${error.message})`);
-        let parsed = 0;
-
-        for (const [id, frame] of [...dictionary.slots].sort(([left], [right]) => left - right)) {
-            const field = ROOT_FIELDS_BY_ID.get(id);
-            if (!field || !field.codec || !requested.has(field.name)) continue;
-
-            try {
-                const table = new field.codec.type().__init(frame.tablePosition, new ByteBuffer(frame.bytes));
-                json[field.name] = field.codec.decode(table);
-                parsed++;
-            } catch (error) {
-                const message = error instanceof Error ? error.message : String(error);
-                failures.push(`${slotLabel(id)}(${message})`);
-            }
-        }
-
-        const unknown = slotReport.unknownLabels;
-        const message = `WeatherKit2.decode.parse：已知 ${slotReport.knownCount}/${dictionary.presentSlotCount}，解析 ${parsed}/${dictionary.presentSlotCount}，失败 ${failures.length}/${dictionary.presentSlotCount}，未知 ${unknown.length}/${dictionary.presentSlotCount}；失败=[${failures.join(", ")}]；未知=[${unknown.join(", ")}]；请求未知=[${unknownRequested.join(", ")}]；缺失=[${missing.join(", ")}]`;
-        if (failures.length || unknown.length || unknownRequested.length) Console.warn(message);
-        else Console.debug(message);
-        return json;
-    }
-
-    /**
-     * 编码补丁并按根 slot 覆盖原始 Weather 数据。
-     * Encode a patch and replace its matching Weather root slots.
-     * @param {import("flatbuffers").ByteBuffer | undefined} byteBuffer - 原始 Weather FlatBuffer；省略时创建新根表 / Source Weather FlatBuffer; omit to create a new root table.
-     * @param {Record<string, unknown>} patch - 按根产品组织的实际变更 / Actual changes keyed by root product.
-     * @returns {Uint8Array} 可作为响应体的完整 Weather FlatBuffer / Complete Weather FlatBuffer response body.
-     */
-    static encode(byteBuffer = undefined, patch = {}) {
-        if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
-            const error = new TypeError("WeatherKit2.encode patch must be an object");
-            Console.error("WeatherKit2.encode", error);
-            throw error;
-        }
-
-        const patchKeys = Object.keys(patch);
-        const compiled = new Map();
-        const failures = [];
-        const unknown = [];
-        let known = 0;
-
-        for (const name of patchKeys) {
-            const field = ROOT_FIELDS_BY_NAME.get(name);
-            if (!field || !field.codec) {
-                unknown.push(name);
-                continue;
-            }
-            known++;
-
-            try {
-                const data = patch[name];
-                if (!data || typeof data !== "object" || Array.isArray(data)) throw new TypeError(`${name} must be an object`);
-
-                const builder = new Builder();
-                const tableOffset = field.codec.encode(builder, data);
-                if (!Number.isSafeInteger(tableOffset) || tableOffset <= 0) throw new Error(`${name} codec did not produce a table`);
-                builder.finish(tableOffset);
-
-                const bytes = builder.asUint8Array();
-                const frameBuffer = new ByteBuffer(bytes);
-                const tablePosition = frameBuffer.position() + frameBuffer.readUint32(frameBuffer.position());
-                compiled.set(field.id, { bytes, tablePosition });
-            } catch (error) {
-                const message = error instanceof Error ? error.message : String(error);
-                failures.push(`${slotLabel(field.id)}(${message})`);
-            }
-        }
-
-        const compileMessage = `WeatherKit2.encode.compile：已知 ${known}/${patchKeys.length}，编译 ${compiled.size}/${patchKeys.length}，失败 ${failures.length}/${patchKeys.length}，未知 ${unknown.length}/${patchKeys.length}；失败=[${failures.join(", ")}]；未知=[${unknown.join(", ")}]`;
-        if (failures.length || unknown.length) Console.warn(compileMessage);
-        else Console.debug(compileMessage);
-
-        let sourceDictionary;
-        if (byteBuffer !== undefined) {
-            try {
-                sourceDictionary = readFlatBufferRootSlots(byteBuffer);
-            } catch (error) {
-                Console.error("WeatherKit2.encode", error);
-                throw error;
-            }
-        } else {
-            sourceDictionary = { failures: [], presentSlotCount: 0, slotCount: 0, slots: new Map() };
-        }
-        logSlotDictionary("encode", sourceDictionary);
-
-        if (byteBuffer !== undefined && compiled.size === 0) {
-            return byteBuffer.bytes().subarray(byteBuffer.position(), byteBuffer.capacity());
-        }
-
-        const slots = new Map(sourceDictionary.slots);
-        for (const [id, frame] of compiled) slots.set(id, frame);
-
-        try {
-            const rawBody = writeFlatBufferRootSlots(
-                {
-                    failures: [],
-                    presentSlotCount: slots.size,
-                    slotCount: sourceDictionary.slotCount,
-                    slots,
-                },
-                ROOT_FIELDS.length,
-            );
-            Console.debug(`WeatherKit2.encode.assemble：输出 ${slots.size} 个 slot，替换 ${compiled.size} 个 slot`);
-            return rawBody;
-        } catch (error) {
-            Console.error("WeatherKit2.encode", error);
-            throw error;
-        }
-    }
-}
-
-function logSlotDictionary(operation, dictionary) {
-    const ids = [...dictionary.slots.keys(), ...dictionary.failures.map(failure => failure.id)].sort((left, right) => left - right);
-    const knownCount = ids.filter(id => {
-        const field = ROOT_FIELDS_BY_ID.get(id);
-        if (!field) return false;
-        return Boolean(field.codec);
-    }).length;
-    const unknownLabels = ids
-        .filter(id => {
-            const field = ROOT_FIELDS_BY_ID.get(id);
-            return !field || !field.codec;
-        })
-        .map(slotLabel);
-    const failureLabels = dictionary.failures.map(({ id, error }) => `${slotLabel(id)}(${error.message})`);
-    const message = `WeatherKit2.${operation}.slots：已知 ${knownCount}/${dictionary.presentSlotCount}，读取 ${dictionary.slots.size}/${dictionary.presentSlotCount}，失败 ${failureLabels.length}/${dictionary.presentSlotCount}，未知 ${unknownLabels.length}/${dictionary.presentSlotCount}；失败=[${failureLabels.join(", ")}]；未知=[${unknownLabels.join(", ")}]`;
-    if (failureLabels.length || unknownLabels.length) Console.warn(message);
-    else Console.debug(message);
-    return { knownCount, unknownLabels };
-}
-
-function slotLabel(id) {
-    const field = ROOT_FIELDS_BY_ID.get(id);
-    return field ? `${field.name}#${id}` : `slot#${id}`;
-}
+export default WeatherKit2;
 
 function encodeAirQuality(builder, data) {
     const metadataOffset = encodeMetadata(builder, data.metadata);

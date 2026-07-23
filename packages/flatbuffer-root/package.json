@@ -19,6 +19,9 @@
         "test": "node --test ../../tests/flatBufferRootProcessor.test.mjs",
         "typecheck": "tsc --noEmit --project tsconfig.json"
     },
+    "dependencies": {
+        "@nsnanocat/util": "^2.7.0"
+    },
     "peerDependencies": {
         "flatbuffers": ">=24.12.23 <26"
     },
