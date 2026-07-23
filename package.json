@@ -36,10 +36,8 @@
         "deploy:pages": "npx wrangler pages deploy",
         "deploy:workers": "npx wrangler deploy --minify -c wrangler.workers.jsonc",
         "deploy:vercel": "npx vercel deploy --prod",
-        "serve": "webpack serve",
-        "build": "rspack build",
-        "build:dev": "rspack build -c rspack.dev.config.mjs --mode=development",
-        "build:proto": "rspack build -c rspack.proto.mjs",
+        "build": "rollup -c",
+        "build:dev": "rollup -c rollup.dev.config.mjs",
         "sgmoudle:dev": "sgmoudle dev",
         "build:lite-args": "arguments-builder build",
         "build:full-args": "arguments-builder boxjs -c arguments-builder-full.config.ts",
@@ -56,9 +54,11 @@
         "@biomejs/biome": "2.1.4",
         "@iringo/arguments-builder": "^1.8.5",
         "@iringo/sgmoudle-tools": "^1.2.2",
-        "@rspack/cli": "^2.1.5",
-        "@rspack/core": "^1.7.12",
+        "@rollup/plugin-alias": "^5.1.1",
+        "@rollup/plugin-node-resolve": "^16.0.3",
+        "@rollup/plugin-terser": "^0.4.4",
         "npm-run-all": "^4.1.5",
+        "rollup": "^4.62.2",
         "typescript": "^5.9.3"
     },
     "dependencies": {
@@ -67,7 +67,6 @@
         "fetch-cookie": "^3.2.0",
         "flatbuffers": "^24.12.23",
         "hono": "^4.12.31",
-        "node-fetch": "^3.3.2",
-        "node-polyfill-webpack-plugin": "^4.0.0"
+        "node-fetch": "^3.3.2"
     }
 }
