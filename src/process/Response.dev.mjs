@@ -1,17 +1,17 @@
-import { Console, Lodash as _, Storage } from "@nsnanocat/util";
-import database from "../function/database.mjs";
-import mergeWeatherKitAvailability from "../function/mergeWeatherKitAvailability.mjs";
-import setENV from "../function/setENV.mjs";
+import { Console, Storage } from "@nsnanocat/util";
 import * as flatbuffers from "flatbuffers";
-import WeatherKit2 from "../class/WeatherKit2.mjs";
-import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
-import providerNameToLogo from "../function/providerNameToLogo.mjs";
+import AirQuality from "../class/AirQuality.mjs";
 import ColorfulClouds from "../class/ColorfulClouds.mjs";
+import MatchEnum from "../class/MatchEnum.mjs";
 import QWeather from "../class/QWeather.mjs";
 import WAQI from "../class/WAQI.mjs";
 import Weather from "../class/Weather.mjs";
-import AirQuality from "../class/AirQuality.mjs";
-import MatchEnum from "../class/MatchEnum.mjs";
+import WeatherKit2 from "../class/WeatherKit2.mjs";
+import database from "../function/database.mjs";
+import mergeWeatherKitAvailability from "../function/mergeWeatherKitAvailability.mjs";
+import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
+import providerNameToLogo from "../function/providerNameToLogo.mjs";
+import setENV from "../function/setENV.mjs";
 /***************** Processing *****************/
 export async function Response($request, $response) {
     // 解构URL
@@ -92,7 +92,6 @@ export async function Response($request, $response) {
                 case "application/vnd.apple.flatbuffer": {
                     // 解析FlatBuffer
                     const ByteBuffer = new flatbuffers.ByteBuffer(rawBody);
-                    const Builder = new flatbuffers.Builder();
                     // 主机判断
                     switch (url.hostname) {
                         case "weatherkit.apple.com":
@@ -105,7 +104,7 @@ export async function Response($request, $response) {
                                     await matchEnum.init();
                                 }
                                 const originalForecastNextHour = body.forecastNextHour;
-                                const replacementDataSets = new Set();
+                                const patch = {};
                                 const enviroments = {
                                     colorfulClouds: new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
                                     qWeather: new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host),
@@ -122,7 +121,7 @@ export async function Response($request, $response) {
                                                 }
                                                 const originalAirQuality = body.airQuality;
                                                 body.airQuality = await InjectAirQuality(body.airQuality, Settings, Caches, enviroments);
-                                                if (body.airQuality !== originalAirQuality) replacementDataSets.add(dataSet);
+                                                if (body.airQuality !== originalAirQuality) patch[dataSet] = body.airQuality;
                                                 break;
                                             }
                                             case "currentWeather": {
@@ -134,7 +133,7 @@ export async function Response($request, $response) {
                                                 const originalProviderLogo = originalCurrentWeather?.metadata?.providerLogo;
                                                 body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
                                                 if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
-                                                if (body.currentWeather !== originalCurrentWeather || body.currentWeather?.metadata?.providerLogo !== originalProviderLogo) replacementDataSets.add(dataSet);
+                                                if (body.currentWeather !== originalCurrentWeather || body.currentWeather?.metadata?.providerLogo !== originalProviderLogo) patch[dataSet] = body.currentWeather;
                                                 break;
                                             }
                                             case "forecastDaily": {
@@ -142,7 +141,7 @@ export async function Response($request, $response) {
                                                 const originalProviderLogo = originalMetadata?.providerLogo;
                                                 body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
                                                 if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
-                                                if (body.forecastDaily?.metadata !== originalMetadata || body.forecastDaily?.metadata?.providerLogo !== originalProviderLogo) replacementDataSets.add(dataSet);
+                                                if (body.forecastDaily?.metadata !== originalMetadata || body.forecastDaily?.metadata?.providerLogo !== originalProviderLogo) patch[dataSet] = body.forecastDaily;
                                                 break;
                                             }
                                             case "forecastHourly": {
@@ -150,7 +149,7 @@ export async function Response($request, $response) {
                                                 const originalProviderLogo = originalMetadata?.providerLogo;
                                                 body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
                                                 if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
-                                                if (body.forecastHourly?.metadata !== originalMetadata || body.forecastHourly?.metadata?.providerLogo !== originalProviderLogo) replacementDataSets.add(dataSet);
+                                                if (body.forecastHourly?.metadata !== originalMetadata || body.forecastHourly?.metadata?.providerLogo !== originalProviderLogo) patch[dataSet] = body.forecastHourly;
                                                 break;
                                             }
                                             case "forecastNextHour": {
@@ -162,7 +161,7 @@ export async function Response($request, $response) {
                                                 body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
                                                 if (body.forecastNextHour !== originalForecastNextHour) {
                                                     if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
-                                                    replacementDataSets.add(dataSet);
+                                                    patch[dataSet] = body.forecastNextHour;
                                                 }
                                                 break;
                                             }
@@ -170,7 +169,9 @@ export async function Response($request, $response) {
                                                 if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
                                                     matchEnum.placementType();
                                                 }
+                                                const originalProviderLogo = body.news?.metadata?.providerLogo;
                                                 if (body?.news?.metadata?.providerName && !body?.news?.metadata?.providerLogo) body.news.metadata.providerLogo = providerNameToLogo(body?.news?.metadata?.providerName, "v2");
+                                                if (body.news?.metadata?.providerLogo !== originalProviderLogo) patch[dataSet] = body.news;
                                                 Console.debug(`body.news: ${JSON.stringify(body?.news, null, 2)}`);
                                                 break;
                                             }
@@ -183,20 +184,28 @@ export async function Response($request, $response) {
                                                     matchEnum.importanceType();
                                                     matchEnum.responseType();
                                                 }
+                                                const originalProviderLogo = body.weatherAlerts?.metadata?.providerLogo;
                                                 if (body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
+                                                if (body.weatherAlerts?.metadata?.providerLogo !== originalProviderLogo) patch[dataSet] = body.weatherAlerts;
                                                 Console.debug(`body.weatherAlerts: ${JSON.stringify(body?.weatherAlerts, null, 2)}`);
                                                 break;
                                             }
-                                            case "WeatherChange": {
-                                                if (body?.WeatherChanges?.metadata?.providerName && !body?.WeatherChanges?.metadata?.providerLogo) body.WeatherChanges.metadata.providerLogo = providerNameToLogo(body?.WeatherChanges?.metadata?.providerName, "v2");
+                                            case "weatherChanges": {
+                                                const originalProviderLogo = body.weatherChanges?.metadata?.providerLogo;
+                                                if (body?.weatherChanges?.metadata?.providerName && !body?.weatherChanges?.metadata?.providerLogo) body.weatherChanges.metadata.providerLogo = providerNameToLogo(body?.weatherChanges?.metadata?.providerName, "v2");
+                                                if (body.weatherChanges?.metadata?.providerLogo !== originalProviderLogo) patch[dataSet] = body.weatherChanges;
                                                 break;
                                             }
-                                            case "trendComparison": {
+                                            case "historicalComparisons": {
+                                                const originalProviderLogo = body.historicalComparisons?.metadata?.providerLogo;
                                                 if (body?.historicalComparisons?.metadata?.providerName && !body?.historicalComparisons?.metadata?.providerLogo) body.historicalComparisons.metadata.providerLogo = providerNameToLogo(body?.historicalComparisons?.metadata?.providerName, "v2");
+                                                if (body.historicalComparisons?.metadata?.providerLogo !== originalProviderLogo) patch[dataSet] = body.historicalComparisons;
                                                 break;
                                             }
                                             case "locationInfo": {
+                                                const originalProviderLogo = body.locationInfo?.metadata?.providerLogo;
                                                 if (body?.locationInfo?.metadata?.providerName && !body?.locationInfo?.metadata?.providerLogo) body.locationInfo.metadata.providerLogo = providerNameToLogo(body?.locationInfo?.metadata?.providerName, "v2");
+                                                if (body.locationInfo?.metadata?.providerLogo !== originalProviderLogo) patch[dataSet] = body.locationInfo;
                                                 Console.debug(`body.locationInfo: ${JSON.stringify(body?.locationInfo, null, 2)}`);
                                                 break;
                                             }
@@ -205,11 +214,7 @@ export async function Response($request, $response) {
                                         }
                                     }),
                                 );
-                                if (replacementDataSets.size) {
-                                    const WeatherData = WeatherKit2.encodeRootOverlay(Builder, ByteBuffer, replacementDataSets, body);
-                                    Builder.finish(WeatherData);
-                                    rawBody = Builder.asUint8Array(); // Of type `Uint8Array`.
-                                }
+                                rawBody = WeatherKit2.encode(ByteBuffer, patch);
                                 break;
                             }
                             break;

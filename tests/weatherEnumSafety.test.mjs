@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Builder, ByteBuffer } from "flatbuffers";
+import * as WK2 from "@nsringo/weatherkit";
+import { ByteBuffer } from "flatbuffers";
 import ForecastNextHour from "../src/class/ForecastNextHour.mjs";
 import Weather from "../src/class/Weather.mjs";
 import WeatherKit2 from "../src/class/WeatherKit2.mjs";
-import * as WK2 from "@nsringo/weatherkit";
 
 const BASE_TIME = 1_700_000_000;
 
@@ -36,10 +36,8 @@ test("WeatherKit2 编码时跳过未知 ConditionType，避免被 FlatBuffer 默
         summary: [],
     };
 
-    const builder = new Builder();
-    const root = WeatherKit2.encode(builder, "all", { forecastNextHour: data });
-    builder.finish(root);
-    const decoded = WeatherKit2.decode(new ByteBuffer(builder.asUint8Array()));
+    const rawBody = WeatherKit2.encode(undefined, { forecastNextHour: data });
+    const decoded = WeatherKit2.decode(new ByteBuffer(rawBody), ["forecastNextHour"]);
 
     assert.deepEqual(
         decoded.forecastNextHour.condition.map(condition => condition.beginCondition),

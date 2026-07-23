@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Builder, ByteBuffer } from "flatbuffers";
+import { ByteBuffer } from "flatbuffers";
 
 globalThis.$environment = { "surge-version": "test" };
 globalThis.$persistentStore = { read: () => null, write: () => true };
@@ -54,10 +54,8 @@ test("QWeather serializes Hourly and Daily reportedTime as epoch seconds", async
 });
 
 function roundTrip(dataSet, data) {
-    const builder = new Builder(4096);
-    const offset = WeatherKit2.encode(builder, "all", { [dataSet]: data });
-    builder.finish(offset);
-    return WeatherKit2.decode(new ByteBuffer(builder.asUint8Array()), dataSet);
+    const rawBody = WeatherKit2.encode(undefined, { [dataSet]: data });
+    return WeatherKit2.decode(new ByteBuffer(rawBody), [dataSet])[dataSet];
 }
 
 const location = [parameters.latitude, parameters.longitude];

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Builder, ByteBuffer } from "flatbuffers";
+import { ByteBuffer } from "flatbuffers";
 
 globalThis.$environment = { "surge-version": "test" };
 globalThis.$persistentStore = { read: () => null, write: () => true };
@@ -46,10 +46,8 @@ test("calculated EU AQI keeps its numeric fields and current scale through FlatB
     assert.equal(Number.isFinite(airQuality.categoryIndex), true);
     assert.equal(airQuality.scale, "EU.EAQI");
 
-    const builder = new Builder(1024);
-    const root = WeatherKit2.encode(builder, "all", { airQuality });
-    builder.finish(root);
-    const decoded = WeatherKit2.decode(new ByteBuffer(builder.asUint8Array()), "airQuality");
+    const rawBody = WeatherKit2.encode(undefined, { airQuality });
+    const decoded = WeatherKit2.decode(new ByteBuffer(rawBody), ["airQuality"]).airQuality;
 
     assert.equal(decoded.index, airQuality.index);
     assert.equal(decoded.categoryIndex, airQuality.categoryIndex);
