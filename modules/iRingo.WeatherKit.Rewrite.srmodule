@@ -6,6 +6,8 @@
 #!icon = https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
 #!category =  iRingo
 #!date = 2026-03-12 09:39:04
+#!arguments = endpoint:weatherkit.pages.dev
+#!arguments-desc = endpoint: 服务端点 / Endpoint\nweatherkit.pages.dev: 首选；直连；无需代理 / Recommended; direct; no proxy required\ndev.weatherkit.pages.dev: 开发版 / Development\nweather.nanocat.cloud: Worker 版；需要代理 / Worker; proxy required
 
 [Rule]
 DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
@@ -15,9 +17,9 @@ AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),RE
 
 [URL Rewrite]
 # 🌤 WeatherKit.api.v1.availability.response
-^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ https://weatherkit.nanocat.cloud/api/v1/availability/ header
+^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ https://{{{endpoint}}}/api/v1/availability/ header
 # 🌤 WeatherKit.api.v2.weather.response
-^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ https://weatherkit.nanocat.cloud/api/v2/weather/ header
+^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ https://{{{endpoint}}}/api/v2/weather/ header
 
 [MITM]
 hostname = %APPEND% weatherkit.apple.com
