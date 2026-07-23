@@ -332,6 +332,7 @@ export default class QWeather {
             switch (body?.code) {
                 case "200": {
                     const timeStamp = (Date.now() / 1000) | 0;
+                    const reportedTime = Math.trunc(new Date(body?.updateTime).getTime() / 1000);
                     let minuteStemp = new Date(body?.updateTime).setSeconds(0, 0);
                     minuteStemp = minuteStemp.valueOf() / 1000;
                     forecastNextHour = {
@@ -344,7 +345,7 @@ export default class QWeather {
                             providerLogo: providerNameToLogo("和风天气", this.version),
                             providerName: "和风天气",
                             readTime: timeStamp,
-                            reportedTime: timeStamp,
+                            reportedTime,
                             temporarilyUnavailable: false,
                             sourceType: "MODELED",
                         },

@@ -13,7 +13,8 @@ globalThis.$httpClient = {
             else if (request.url.includes("/minutely")) body = colorfulMinutely;
             else if (request.url.includes("/hourly")) body = colorfulHourly;
             else if (request.url.includes("/daily")) body = colorfulDaily;
-        } else if (request.url.includes("/v7/weather/24h")) body = qWeatherHourly;
+        } else if (request.url.includes("/v7/minutely/5m")) body = qWeatherMinutely;
+        else if (request.url.includes("/v7/weather/24h")) body = qWeatherHourly;
         else if (request.url.includes("/v7/weather/10d")) body = qWeatherDaily;
 
         if (!body) throw new Error(`unexpected request: ${request.url}`);
@@ -42,15 +43,19 @@ test("ColorfulClouds maps the API latitude-longitude response order in every wea
     }
 });
 
-test("QWeather serializes Hourly and Daily reportedTime as epoch seconds", async () => {
+test("QWeather serializes provider updateTime as reportedTime in every forecast product", async () => {
     const provider = new QWeather(parameters, "token");
     const expected = Math.trunc(Date.parse(qWeatherHourly.updateTime) / 1000);
+    const expectedMinutely = Math.trunc(Date.parse(qWeatherMinutely.updateTime) / 1000);
     const hourly = await provider.Hourly(24);
     const daily = await provider.Daily(10);
+    const nextHour = await provider.Minutely();
 
     assert.equal(hourly.metadata.reportedTime, expected);
     assert.equal(daily.metadata.reportedTime, expected);
+    assert.equal(nextHour.metadata.reportedTime, expectedMinutely);
     assert.equal(roundTrip("forecastHourly", hourly).metadata.reportedTime, expected);
+    assert.equal(roundTrip("forecastNextHour", nextHour).metadata.reportedTime, expectedMinutely);
 });
 
 function roundTrip(dataSet, data) {
@@ -172,4 +177,17 @@ const qWeatherDaily = {
     ],
     fxLink: "https://www.qweather.com/",
     updateTime: qWeatherHourly.updateTime,
+};
+
+const qWeatherMinutely = {
+    code: "200",
+    fxLink: "https://www.qweather.com/",
+    minutely: [
+        {
+            fxTime: "2026-07-16T08:05:00+08:00",
+            precip: "0.2",
+        },
+    ],
+    summary: "未来一小时有小雨",
+    updateTime: "2026-07-16T08:00:37+08:00",
 };
