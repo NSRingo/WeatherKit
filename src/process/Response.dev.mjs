@@ -103,7 +103,6 @@ export async function Response($request, $response) {
                                 if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
                                     await matchEnum.init();
                                 }
-                                const patch = {};
                                 const enviroments = {
                                     colorfulClouds: new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
                                     qWeather: new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host),
@@ -118,7 +117,7 @@ export async function Response($request, $response) {
                                                 if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
                                                     matchEnum.airQuality();
                                                 }
-                                                patch[dataSet] = body.airQuality = await InjectAirQuality(body.airQuality, Settings, Caches, enviroments);
+                                                body.airQuality = await InjectAirQuality(body.airQuality, Settings, Caches, enviroments);
                                                 break;
                                             }
                                             case "currentWeather": {
@@ -126,17 +125,17 @@ export async function Response($request, $response) {
                                                     matchEnum.weatherCondition();
                                                     matchEnum.pressureTrend();
                                                 }
-                                                patch[dataSet] = body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
+                                                body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
                                                 if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
                                                 break;
                                             }
                                             case "forecastDaily": {
-                                                patch[dataSet] = body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
+                                                body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
                                                 if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
                                                 break;
                                             }
                                             case "forecastHourly": {
-                                                patch[dataSet] = body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
+                                                body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
                                                 if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
                                                 break;
                                             }
@@ -146,7 +145,7 @@ export async function Response($request, $response) {
                                                     matchEnum.conditionType();
                                                     matchEnum.forecastToken();
                                                 }
-                                                patch[dataSet] = body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
+                                                body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
                                                 if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
                                                 break;
                                             }
@@ -155,7 +154,6 @@ export async function Response($request, $response) {
                                                     matchEnum.placementType();
                                                 }
                                                 if (body?.news?.metadata?.providerName && !body?.news?.metadata?.providerLogo) body.news.metadata.providerLogo = providerNameToLogo(body?.news?.metadata?.providerName, "v2");
-                                                patch[dataSet] = body.news;
                                                 Console.debug(`body.news: ${JSON.stringify(body?.news, null, 2)}`);
                                                 break;
                                             }
@@ -169,23 +167,19 @@ export async function Response($request, $response) {
                                                     matchEnum.responseType();
                                                 }
                                                 if (body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
-                                                patch[dataSet] = body.weatherAlerts;
                                                 Console.debug(`body.weatherAlerts: ${JSON.stringify(body?.weatherAlerts, null, 2)}`);
                                                 break;
                                             }
                                             case "weatherChanges": {
                                                 if (body?.weatherChanges?.metadata?.providerName && !body?.weatherChanges?.metadata?.providerLogo) body.weatherChanges.metadata.providerLogo = providerNameToLogo(body?.weatherChanges?.metadata?.providerName, "v2");
-                                                patch[dataSet] = body.weatherChanges;
                                                 break;
                                             }
                                             case "historicalComparisons": {
                                                 if (body?.historicalComparisons?.metadata?.providerName && !body?.historicalComparisons?.metadata?.providerLogo) body.historicalComparisons.metadata.providerLogo = providerNameToLogo(body?.historicalComparisons?.metadata?.providerName, "v2");
-                                                patch[dataSet] = body.historicalComparisons;
                                                 break;
                                             }
                                             case "locationInfo": {
                                                 if (body?.locationInfo?.metadata?.providerName && !body?.locationInfo?.metadata?.providerLogo) body.locationInfo.metadata.providerLogo = providerNameToLogo(body?.locationInfo?.metadata?.providerName, "v2");
-                                                patch[dataSet] = body.locationInfo;
                                                 Console.debug(`body.locationInfo: ${JSON.stringify(body?.locationInfo, null, 2)}`);
                                                 break;
                                             }
@@ -194,7 +188,7 @@ export async function Response($request, $response) {
                                         }
                                     }),
                                 );
-                                rawBody = WeatherKit2.encode(ByteBuffer, patch);
+                                rawBody = WeatherKit2.encode(ByteBuffer, body);
                                 break;
                             }
                             break;

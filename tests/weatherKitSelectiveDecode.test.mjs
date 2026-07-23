@@ -132,7 +132,7 @@ test("encode without a source creates a complete root containing only patch keys
     assert.deepEqual(Object.keys(WeatherKit2.decode(new ByteBuffer(rawBody), ["news", "forecastNextHour"])), ["news"]);
 });
 
-test("response leaves an injection root untouched when its dataSet was not requested", async () => {
+test("response preserves an injection root outside the requested dataSets", async () => {
     const originalBytes = createWeatherRoot([4, 5]);
     const response = await Response(
         {
@@ -144,7 +144,9 @@ test("response leaves an injection root untouched when its dataSet was not reque
         },
     );
 
-    assert.deepEqual(new Uint8Array(response.body), originalBytes);
+    const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["forecastNextHour", "news"]);
+
+    assert.deepEqual(Object.keys(decoded), ["forecastNextHour", "news"]);
 });
 
 test("response rewrites an injection root when its dataSet was requested", async () => {

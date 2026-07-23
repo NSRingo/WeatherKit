@@ -85,7 +85,6 @@ export async function Response($request, $response) {
                             if (url.pathname.startsWith("/api/v2/weather/")) {
                                 const parameters = parseWeatherKitURL(url);
                                 body = WeatherKit2.decode(ByteBuffer, parameters.dataSets);
-                                const patch = {};
                                 const enviroments = {
                                     colorfulClouds: new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
                                     qWeather: new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host),
@@ -97,26 +96,26 @@ export async function Response($request, $response) {
                                     parameters.dataSets.map(async dataSet => {
                                         switch (dataSet) {
                                             case "airQuality": {
-                                                patch[dataSet] = body.airQuality = await InjectAirQuality(body.airQuality, Settings, Caches, enviroments);
+                                                body.airQuality = await InjectAirQuality(body.airQuality, Settings, Caches, enviroments);
                                                 break;
                                             }
                                             case "currentWeather": {
-                                                patch[dataSet] = body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
+                                                body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
                                                 if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
                                                 break;
                                             }
                                             case "forecastDaily": {
-                                                patch[dataSet] = body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
+                                                body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
                                                 if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
                                                 break;
                                             }
                                             case "forecastHourly": {
-                                                patch[dataSet] = body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
+                                                body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
                                                 if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
                                                 break;
                                             }
                                             case "forecastNextHour": {
-                                                patch[dataSet] = body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
+                                                body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
                                                 if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
                                                 break;
                                             }
@@ -125,7 +124,7 @@ export async function Response($request, $response) {
                                         }
                                     }),
                                 );
-                                rawBody = WeatherKit2.encode(ByteBuffer, patch);
+                                rawBody = WeatherKit2.encode(ByteBuffer, body);
                                 break;
                             }
                             break;
