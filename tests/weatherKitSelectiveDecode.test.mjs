@@ -132,11 +132,11 @@ test("encode without a source creates a complete root containing only patch keys
     assert.deepEqual(Object.keys(WeatherKit2.decode(new ByteBuffer(rawBody), ["news", "forecastNextHour"])), ["news"]);
 });
 
-test("response returns the original bytes when selected products produce no replacement", async () => {
+test("response leaves an injection root untouched when its dataSet was not requested", async () => {
     const originalBytes = createWeatherRoot([4, 5]);
     const response = await Response(
         {
-            url: "https://weatherkit.apple.com/api/v2/weather/en-US/22.5431/114.0579?country=US&dataSets=forecastNextHour,news",
+            url: "https://weatherkit.apple.com/api/v2/weather/en-US/22.5431/114.0579?country=US&dataSets=news",
         },
         {
             bodyBytes: originalBytes,
@@ -147,7 +147,24 @@ test("response returns the original bytes when selected products produce no repl
     assert.deepEqual(new Uint8Array(response.body), originalBytes);
 });
 
-test("development response patches a dynamically decoded non-injection root when it changes", async () => {
+test("response rewrites an injection root when its dataSet was requested", async () => {
+    const originalBytes = createWeatherRoot([4, 5]);
+    const response = await Response(
+        {
+            url: "https://weatherkit.apple.com/api/v2/weather/en-US/22.5431/114.0579?country=US&dataSets=forecastNextHour,news",
+        },
+        {
+            bodyBytes: originalBytes,
+            headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
+        },
+    );
+    const responseBytes = new Uint8Array(response.body);
+
+    assert.notDeepEqual(responseBytes, originalBytes);
+    assert.deepEqual(Object.keys(WeatherKit2.decode(new ByteBuffer(responseBytes), ["forecastNextHour", "news"])), ["forecastNextHour", "news"]);
+});
+
+test("development response patches a dynamically decoded non-injection root when its dataSet was requested", async () => {
     const originalBytes = WeatherKit2.encode(undefined, {
         news: {
             metadata: {
