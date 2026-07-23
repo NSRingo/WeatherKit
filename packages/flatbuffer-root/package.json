@@ -1,0 +1,29 @@
+{
+    "name": "@nsringo/flatbuffer-root",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Configurable root-table processor for FlatBuffers JavaScript models",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./src/index.d.ts",
+            "import": "./src/index.mjs"
+        }
+    },
+    "types": "./src/index.d.ts",
+    "files": [
+        "src",
+        "README.md"
+    ],
+    "scripts": {
+        "test": "node --test ../../tests/flatBufferRootProcessor.test.mjs",
+        "typecheck": "tsc --noEmit --project tsconfig.json"
+    },
+    "peerDependencies": {
+        "flatbuffers": ">=24.12.23 <26"
+    },
+    "devDependencies": {
+        "flatbuffers": "^25.9.23",
+        "typescript": "^5.9.3"
+    }
+}
