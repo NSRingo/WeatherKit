@@ -12,6 +12,9 @@ export default new Hono()
         let $response;
         // ({ $request, $response } = await Request($request, KV));
         $request = await HonoWorkerAdapter.buildRequest(c.req);
+        if (new URL($request.url).hostname !== "weatherkit.apple.com") {
+            return c.body("Forbidden", 403);
+        }
         $response = await fetch($request);
         $response = await Response($request, $response);
         return HonoWorkerAdapter.writeResponse(c, $response);
