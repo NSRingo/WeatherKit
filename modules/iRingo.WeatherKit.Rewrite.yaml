@@ -7,10 +7,10 @@ icon: https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-12
 compat_arguments:
   endpoint: weatherkit.pages.dev
 compat_arguments_desc: |-
-  endpoint: 服务端点 / Endpoint
-  weatherkit.pages.dev: 首选；直连；无需代理 / Recommended; direct; no proxy required
-  dev.weatherkit.pages.dev: 开发版 / Development
-  weather.nanocat.cloud: Worker 版；需要代理 / Worker; proxy required
+  endpoint: [重写] 服务端点
+      ├ weatherkit.pages.dev: 首选；直连；无需代理
+      ├ dev.weatherkit.pages.dev: 开发版
+      └ weather.nanocat.cloud: Worker 版；需要代理
 rules:
 - domain:
     match: weather-analytics-events.apple.com
