@@ -1,0 +1,93 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+const modulesDirectory = new URL("../modules/", import.meta.url);
+const configurableModules = ["iRingo.WeatherKit.Rewrite.sgmodule", "iRingo.WeatherKit.Rewrite.srmodule", "iRingo.WeatherKit.Rewrite.yaml"];
+const fixedModules = ["iRingo.WeatherKit.Rewrite.lpx", "iRingo.WeatherKit.Rewrite.stoverride"];
+const chinesePattern = String.raw`^https?:\/\/www\.qweather\.com\/{1,2}severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$`;
+const englishPattern = String.raw`^https?:\/\/www\.qweather\.com\/en\/severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$`;
+const weatherAlertsPattern = String.raw`^https?:\/\/weatherkit\.apple\.com(\/api\/v1\/weatherAlerts\?lang=[^&#]+&ids=[^&#]*-[0-9]{6}[0-9]*(?:&[^#]*)?)$`;
+const chineseDestination = "https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather";
+const englishDestination = "https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=en-US&party=qweather";
+const alertDetailsComment = "# 🌤 WeatherKit.alertDetails.index.response";
+const weatherAlertsComment = "# 🌤 WeatherKit.api.v1.weatherAlerts.response";
+const unsafeOpenEndedQuantifier = "{6" + ",}";
+
+test("QWeather entry routes redirect only supported source URLs to Apple", () => {
+    const chineseRegex = new RegExp(chinesePattern);
+    const englishRegex = new RegExp(englishPattern);
+    const chineseUrl = "https://www.qweather.com/severe-weather/jianye-101190110.html?from=AppleWeatherService";
+    const legacyChineseUrl = "https://www.qweather.com//severe-weather/jianye-101190110.html?from=AppleWeatherService";
+    const englishUrl = "https://www.qweather.com/en/severe-weather/jianye-101190110.html?from=AppleWeatherService";
+    const chineseExpected = "https://weatherkit.apple.com/alertDetails/index.html?ids=jianye-101190110&lang=zh-CN&party=qweather";
+    const englishExpected = "https://weatherkit.apple.com/alertDetails/index.html?ids=jianye-101190110&lang=en-US&party=qweather";
+
+    assert.equal(chineseUrl.replace(chineseRegex, chineseDestination), chineseExpected);
+    assert.equal(legacyChineseUrl.replace(chineseRegex, chineseDestination), chineseExpected);
+    assert.equal(englishUrl.replace(englishRegex, englishDestination), englishExpected);
+    assert.doesNotMatch("https://qweather.com/en/severe-weather/jianye-101190110.html?from=AppleWeatherService", englishRegex);
+    assert.doesNotMatch("https://www.qweather.com///severe-weather/jianye-101190110.html?from=AppleWeatherService", chineseRegex);
+    assert.doesNotMatch("https://www.qweather.com/en/severe-weather/jianye-101190110.html", englishRegex);
+    assert.doesNotMatch("https://www.qweather.com/severe-weather/jianye-101190110.html?from=AppleWeatherService&lang=zh-CN", chineseRegex);
+    assert.doesNotMatch("https://www.qweather.com/en/severe-weather/jianye-101190110.html?from=AppleWeatherService&lang=en-US", englishRegex);
+});
+
+test("all Rewrite modules redirect the entry and transparently hook WeatherAlert data", async () => {
+    for (const filename of [...configurableModules, ...fixedModules]) {
+        const content = await readFile(new URL(filename, modulesDirectory), "utf8");
+        assert.ok(content.includes(chinesePattern), filename);
+        assert.ok(content.includes(englishPattern), filename);
+        assert.ok(content.includes(weatherAlertsPattern), filename);
+        assert.ok(!content.includes(unsafeOpenEndedQuantifier), filename);
+        assert.ok(content.includes(alertDetailsComment), filename);
+        assert.ok(content.includes(weatherAlertsComment), filename);
+        assert.ok(!content.includes("Apple 官方预警页面的 QWeather 数据"), filename);
+        assert.ok(!content.includes("QWeather data for the official Apple alert page"), filename);
+        assert.ok(content.includes(`${chineseDestination} 302`) || content.includes(`location: ${chineseDestination}`), filename);
+        assert.ok(content.includes(`${englishDestination} 302`) || content.includes(`location: ${englishDestination}`), filename);
+        assert.match(content, /weatherkit\.apple\.com/);
+        assert.match(content, /www\.qweather\.com/);
+    }
+
+    for (const filename of configurableModules) {
+        const content = await readFile(new URL(filename, modulesDirectory), "utf8");
+        assert.match(content, /https:\/\/\{\{\{endpoint\}\}\}\$1/);
+    }
+
+    for (const filename of fixedModules) {
+        const content = await readFile(new URL(filename, modulesDirectory), "utf8");
+        assert.match(content, /https:\/\/weatherkit\.pages\.dev\$1/);
+    }
+});
+
+test("Egern uses a real redirect for the entry and header mode for the API hook", async () => {
+    const content = await readFile(new URL("iRingo.WeatherKit.Rewrite.yaml", modulesDirectory), "utf8");
+    assert.match(content, new RegExp(`${englishPattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\\s\\S]*?status_code: 302`));
+    assert.match(content, /match: \^https\?:\\\/\\\/weatherkit\\\.apple\\\.com\(\\\/api\\\/v1\\\/weatherAlerts[\s\S]*?location: https:\/\/\{\{\{endpoint\}\}\}\$1\nmitm:/);
+});
+
+test("script module templates redirect QWeather and hook Apple weatherAlerts", async () => {
+    const templates = ["surge.handlebars", "loon.handlebars", "quantumultx.handlebars", "stash.handlebars"];
+    for (const filename of templates) {
+        const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
+        assert.ok(content.includes(chinesePattern), filename);
+        assert.ok(content.includes(englishPattern), filename);
+        assert.ok(content.includes(alertDetailsComment), filename);
+        assert.ok(content.includes(chineseDestination), filename);
+        assert.ok(content.includes(englishDestination), filename);
+        assert.match(content, /api\\\/v1\\\/weatherAlerts\\\?/);
+        assert.ok(!content.includes(unsafeOpenEndedQuantifier), filename);
+        assert.match(content, /weatherkit\.apple\.com, www\.qweather\.com|"weatherkit\.apple\.com"[\s\S]*"www\.qweather\.com"/);
+    }
+
+    const surge = await readFile(new URL("../template/surge.handlebars", import.meta.url), "utf8");
+    const loon = await readFile(new URL("../template/loon.handlebars", import.meta.url), "utf8");
+    const quantumultX = await readFile(new URL("../template/quantumultx.handlebars", import.meta.url), "utf8");
+    const stash = await readFile(new URL("../template/stash.handlebars", import.meta.url), "utf8");
+    assert.match(surge, /weatherAlerts\.response = type=http-response,[^\n]+requires-body=1/);
+    assert.match(surge, /weatherAlerts\\\?lang=\[\^&#\]\+&ids=\[\^&#\]\*-\[0-9\]\{6\}\[0-9\]\*, requires-body=1/);
+    assert.match(loon, /weatherAlerts[^\n]+requires-body=1,[^\n]+weatherAlerts\.response/);
+    assert.match(quantumultX, /weatherAlerts[^\n]+url script-response-body/);
+    assert.match(stash, /match: [^\n]+weatherAlerts[\s\S]*?require-body: true/);
+});

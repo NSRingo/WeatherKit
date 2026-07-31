@@ -23,9 +23,15 @@ rules:
 http:
   mitm:
     - "weatherkit.apple.com"
+    - "www.qweather.com"
   script:
     - match: ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/
       name: WeatherKit.api.v1.availability.response
+      type: response
+      require-body: true
+      argument:
+    - match: ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?lang=[^&#]+&ids=[^&#]*-[0-9]{6}[0-9]*
+      name: WeatherKit.api.v1.weatherAlerts.response
       type: response
       require-body: true
       argument:
@@ -35,9 +41,16 @@ http:
       require-body: true
       binary-mode: true
       argument:
+  url-rewrite:
+    # 🌤 WeatherKit.alertDetails.index.response
+    - ^https?:\/\/www\.qweather\.com\/{1,2}severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather 302
+    - ^https?:\/\/www\.qweather\.com\/en\/severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=en-US&party=qweather 302
 
 script-providers:
   WeatherKit.api.v1.availability.response:
+    url: https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
+    interval: 86400
+  WeatherKit.api.v1.weatherAlerts.response:
     url: https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
     interval: 86400
   WeatherKit.api.v2.weather.response:
