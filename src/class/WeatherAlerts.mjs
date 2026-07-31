@@ -183,7 +183,7 @@ export default class WeatherAlerts {
                 description: alert.description,
                 detailsUrl: `#${uid}`,
                 effectiveTime: alert.issuedTime,
-                eventSource: context.eventSource ?? "",
+                eventSource: context.eventSource ?? "CN",
                 expireTime: "9999-12-31T23:59:59Z",
                 issuedTime: alert.issuedTime,
                 messages: [{ language: context.language, text }],
@@ -252,7 +252,6 @@ export default class WeatherAlerts {
             identifier,
             language,
             countryCode: areaId?.startsWith("101") ? "CN" : "",
-            eventSource: "QWeather",
         });
     }
 

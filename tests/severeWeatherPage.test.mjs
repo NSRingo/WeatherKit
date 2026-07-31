@@ -46,7 +46,6 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
         identifier: "jianye-101190110",
         language: "zh-CN",
         countryCode: "CN",
-        eventSource: "QWeather",
     });
 
     assert.equal(extracted.areaName, "建邺");
@@ -63,7 +62,7 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
     assert.equal(alerts[0].description, "建邺区气象台发布雷暴橙色预警");
     assert.equal(alerts[0].effectiveTime, "2026-07-31T03:00:00.000Z");
     assert.equal(alerts[0].expireTime, "9999-12-31T23:59:59Z");
-    assert.equal(alerts[0].eventSource, "QWeather");
+    assert.equal(alerts[0].eventSource, "CN");
     assert.equal(alerts[0].severity, "severe");
     assert.equal(alerts[0].source, "国家预警信息发布中心");
     assert.deepEqual(alerts[0].responses, []);
@@ -73,6 +72,16 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
             text: "预计午后将出现雷暴天气。\n\n可能伴有短时强降水。\n\n注意防范雷电。\n\n远离高大树木。",
         },
     ]);
+    assert.equal(
+        WeatherAlerts.Build(extracted, {
+            attributionUrl,
+            identifier: "jianye-101190110",
+            language: "zh-CN",
+            countryCode: "CN",
+            eventSource: "EUMETNET",
+        })[0].eventSource,
+        "EUMETNET",
+    );
 });
 
 test("QWeather source extraction supports the English attribution label", () => {
@@ -108,7 +117,7 @@ test("WeatherAlert endpoint fetches the QWeather source path and returns an arra
             assert.equal(body.length, 1, pathname);
             assert.equal(body[0].attributionURL, "https://www.qweather.com//severe-weather/jianye-101190110.html", pathname);
             assert.equal(body[0].description, "建邺区气象台发布雷暴橙色预警", pathname);
-            assert.equal(body[0].eventSource, "QWeather", pathname);
+            assert.equal(body[0].eventSource, "CN", pathname);
             assert.equal(body[0].source, "国家预警信息发布中心", pathname);
         }
     } finally {
@@ -166,7 +175,7 @@ test("the response script replaces Apple weatherAlerts JSON with QWeather data",
         assert.equal(response.headers["Content-Length"], undefined);
         assert.equal(response.headers.Location, undefined);
         assert.equal(body[0].attributionURL, "https://www.qweather.com/en/severe-weather/jianye-101190110.html");
-        assert.equal(body[0].eventSource, "QWeather");
+        assert.equal(body[0].eventSource, "CN");
         assert.equal(body[0].source, "国家预警信息发布中心");
         assert.equal(body[0].messages[0].language, "en-US");
     } finally {
