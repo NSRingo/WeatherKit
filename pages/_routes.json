@@ -1,1 +1,8 @@
-{ "version": 1, "include": ["/api/*", "/weatherkit.apple.com/*"], "exclude": [] }
+{
+    "version": 1,
+    "include": [
+        "/api/*",
+        "/weatherkit.apple.com/api/*"
+    ],
+    "exclude": []
+}

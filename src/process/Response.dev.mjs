@@ -6,6 +6,7 @@ import MatchEnum from "../class/MatchEnum.mjs";
 import QWeather from "../class/QWeather.mjs";
 import WAQI from "../class/WAQI.mjs";
 import Weather from "../class/Weather.mjs";
+import WeatherAlerts from "../class/WeatherAlerts.mjs";
 import WeatherKit2 from "../class/WeatherKit2.mjs";
 import database from "../function/database.mjs";
 import mergeWeatherKitAvailability from "../function/mergeWeatherKitAvailability.mjs";
@@ -70,9 +71,40 @@ export async function Response($request, $response) {
             switch (url.hostname) {
                 case "weatherkit.apple.com":
                     // 路径判断
-                    if (url.pathname.startsWith("/api/v1/availability/")) {
-                        Console.debug(`body: ${JSON.stringify(body)}`);
-                        body = mergeWeatherKitAvailability(body, Configs?.Availability?.v2);
+                    switch (url.pathname) {
+                        case "/api/v1/weatherAlerts": {
+                            const identifier = url.searchParams.get("ids");
+                            if (!WeatherAlerts.IsQWeatherIdentifier(identifier)) break;
+                            const originalStatus = $response.statusCode ?? $response.status;
+                            Console.info("☑️ WeatherAlerts.GetQWeather", `ids: ${identifier}`, `originalStatus: ${originalStatus}`);
+                            try {
+                                body = await WeatherAlerts.GetQWeather(url, $request.headers);
+                            } catch (error) {
+                                Console.error("WeatherAlerts.GetQWeather", error?.stack ?? error?.message ?? String(error));
+                                body = [];
+                            }
+                            if (!Array.isArray(body)) {
+                                Console.warn("WeatherAlerts.GetQWeather", `unexpectedBodyType: ${typeof body}`);
+                                body = [];
+                            }
+                            $response.status = 200;
+                            $response.statusCode = 200;
+                            $response.headers = {
+                                ...Object.fromEntries(Object.entries($response.headers ?? {}).filter(([key]) => !["content-encoding", "content-length", "location"].includes(key.toLowerCase()))),
+                                "Access-Control-Allow-Origin": "*",
+                                "Cache-Control": "max-age=0",
+                                "Content-Type": "application/json",
+                            };
+                            $response.bodyBytes = undefined;
+                            Console.info("✅ WeatherAlerts.GetQWeather", `alerts: ${body.length}`, "status: 200");
+                            break;
+                        }
+                        default:
+                            if (url.pathname.startsWith("/api/v1/availability/")) {
+                                Console.debug(`body: ${JSON.stringify(body)}`);
+                                body = mergeWeatherKitAvailability(body, Configs?.Availability?.v2);
+                            }
+                            break;
                     }
                     break;
             }
