@@ -6,7 +6,6 @@ import { Console, Lodash as _, fetch } from "@nsnanocat/util";
  * @typedef {{
  *     description: string,
  *     guidelines: string[],
- *     issuedBy: string,
  *     issuedTime: string,
  *     message: string,
  *     reportedAt: string,
@@ -128,9 +127,7 @@ export default class WeatherAlerts {
             const normalizedIssueText = issueText && !/(?:Z|[+-]\d{2}:?\d{2})$/i.test(issueText) ? `${issueText.replace(" ", "T")}+08:00` : issueText;
             const issueDate = new Date(normalizedIssueText);
             if ((!description && !message) || Number.isNaN(issueDate.getTime())) continue;
-            const issuedBy = WeatherAlerts.#ExtractQWeatherIssuedBy(description, message) || source;
-            const normalizedDescription = WeatherAlerts.#NormalizeQWeatherDescription(description, message, issuedBy);
-            const descriptionText = WeatherAlerts.#BuildQWeatherDescription(normalizedDescription || description || message, guidelines);
+            const title = WeatherAlerts.#NormalizeQWeatherTitle(description || message);
 
             const severitySource = `${start.className} ${description}`.toLowerCase();
             let severity = "unknown";
@@ -150,9 +147,8 @@ export default class WeatherAlerts {
             }
 
             alerts.push({
-                description: descriptionText,
+                description: title,
                 guidelines,
-                issuedBy,
                 issuedTime: issueDate.toISOString(),
                 message,
                 reportedAt: issueDate.toISOString(),
@@ -179,7 +175,7 @@ export default class WeatherAlerts {
         const areaId = context.identifier.match(/-(\d+)$/)?.[1];
         return extracted.alerts.map((alert, precedence) => {
             const uid = WeatherAlerts.#StableUUID(`${context.identifier}:${precedence}`);
-            const text = [alert.message, alert.standard].filter(Boolean).join("\n\n") || alert.description;
+            const text = [alert.message, alert.standard, ...alert.guidelines].filter(Boolean).join("\n\n") || alert.description;
             const responses = WeatherAlerts.#BuildResponses(alert.guidelines);
             return {
                 id: uid,
@@ -201,7 +197,7 @@ export default class WeatherAlerts {
                 responses,
                 reportedAt: alert.reportedAt,
                 severity: alert.severity,
-                source: alert.issuedBy || extracted.source,
+                source: extracted.source,
                 urgency: "unknown",
             };
         });
@@ -340,66 +336,17 @@ export default class WeatherAlerts {
     }
 
     /**
-     * 从 QWeather 标题或正文中提取发布预警的机构名称。
-     * Extract the issuing organization name from QWeather title or body text.
+     * 去掉 QWeather 标题中与预警级别重复的发布机构前缀。
+     * Remove the issuing organization prefix from a QWeather alert title.
      * @param {string} description 预警标题 / Alert title.
-     * @param {string} message 预警正文 / Alert body.
-     * @returns {string} 发布机构 / Issuing organization.
-     */
-    static #ExtractQWeatherIssuedBy(description, message) {
-        for (const value of [description, message]) {
-            const text = String(value ?? "").trim();
-            if (!text) continue;
-            const chinese = text.match(/^(.*?)发布/);
-            if (chinese?.[1]) return chinese[1].trim();
-            const english = text.match(/^(.*?)\s+(?:issues?|issued)\b/i);
-            if (english?.[1]) return english[1].trim();
-        }
-        return "";
-    }
-
-    /**
-     * 去掉 QWeather 预警标题里与发布机构重复的前缀。
-     * Remove the issuing organization prefix duplicated in QWeather alert titles.
-     * @param {string} description 预警标题 / Alert title.
-     * @param {string} message 预警正文 / Alert body.
-     * @param {string} issuedBy 发布机构 / Issuing organization.
      * @returns {string} 规范化标题 / Normalized title.
      */
-    static #NormalizeQWeatherDescription(description, message, issuedBy) {
-        const text = String(description ?? message ?? "").trim();
-        const issuer = String(issuedBy ?? "").trim();
-        if (!text || !issuer) return text;
-        for (const prefix of [
-            `${issuer}发布`,
-            `${issuer}发布：`,
-            `${issuer}发布:`,
-            `${issuer} issues `,
-            `${issuer} issues: `,
-            `${issuer} issued `,
-            `${issuer} issued: `,
-        ]) {
-            if (text.toLowerCase().startsWith(prefix.toLowerCase())) {
-                const normalized = text.slice(prefix.length).trim();
-                if (normalized) return normalized;
-            }
-        }
-        return text;
-    }
-
-    /**
-     * 将 QWeather 预警标题与防御指南合并为 description。
-     * Combine QWeather alert title and defense guidance into the description.
-     * @param {string} description 预警标题 / Alert title.
-     * @param {string[]} guidelines 防御指南 / Defense guidance.
-     * @returns {string} 规范化描述 / Normalized description.
-     */
-    static #BuildQWeatherDescription(description, guidelines) {
+    static #NormalizeQWeatherTitle(description) {
         const title = String(description ?? "").trim();
-        const lines = Array.from(guidelines ?? [], guideline => String(guideline ?? "").trim()).filter(Boolean);
-        if (!title) return lines.join("\n");
-        if (!lines.length) return title;
-        return `${title}\n\n${lines.join("\n")}`;
+        const chinese = title.match(/^.+?发布\s*[:：]?\s*(.+)$/);
+        if (chinese?.[1]) return chinese[1].trim();
+        const english = title.match(/^.+?\s+(?:issues?|issued)\s*[:：]?\s*(.+)$/i);
+        return english?.[1]?.trim() || title;
     }
 
     /**
