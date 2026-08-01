@@ -30,7 +30,7 @@ http:
       type: response
       require-body: true
       argument:
-    - match: ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?lang=[^&#]+&ids=[^&#]*-[0-9]{6}[0-9]*
+    - match: ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&|$)
       name: WeatherKit.api.v1.weatherAlerts.response
       type: response
       require-body: true

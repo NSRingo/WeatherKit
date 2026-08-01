@@ -17,7 +17,7 @@ host, tether.edge.apple, reject
 # 🌤 WeatherKit.api.v1.availability.response
 ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
 # 🌤 WeatherKit.api.v1.weatherAlerts.response
-^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?lang=[^&#]+&ids=[^&#]*-[0-9]{6}[0-9]* url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
+^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&|$) url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
 # 🌤 WeatherKit.api.v2.weather.response
 ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
 # 🌤 WeatherKit.alertDetails.index.response

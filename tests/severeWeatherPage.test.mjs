@@ -135,6 +135,8 @@ test("WeatherAlert endpoint rejects an invalid routing identifier", async () => 
 
 test("only QWeather location tokens are eligible for takeover", () => {
     assert.equal(WeatherAlerts.IsQWeatherIdentifier("jianye-101190110"), true);
+    assert.equal(WeatherAlerts.IsQWeatherIdentifier("jianye-10119011"), false);
+    assert.equal(WeatherAlerts.IsQWeatherIdentifier("jianye-1011901100"), false);
     assert.equal(WeatherAlerts.IsQWeatherIdentifier("35889ee6-fa82-5f9f-8e49-fad78c4f383a"), false);
     assert.equal(WeatherAlerts.IsQWeatherIdentifier("https://evil.example"), false);
 });

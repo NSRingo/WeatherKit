@@ -49,8 +49,8 @@ url_rewrites:
   location: https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=en-US&party=qweather
   status_code: 302
 # 🌤 WeatherKit.api.v1.weatherAlerts.response
-- match: ^https?:\/\/weatherkit\.apple\.com(\/api\/v1\/weatherAlerts\?lang=[^&#]+&ids=[^&#]*-[0-9]{6}[0-9]*(?:&[^#]*)?)$
-  location: https://{{{endpoint}}}$1
+- match: ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&[^#]*)?)$
+  location: https://{{{endpoint}}}/api/v1/weatherAlerts$1
 mitm:
   hostnames:
     includes:

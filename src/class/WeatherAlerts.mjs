@@ -76,7 +76,7 @@ export default class WeatherAlerts {
      * @returns {boolean} 是否为 QWeather 标识 / Whether this is a QWeather identifier.
      */
     static IsQWeatherIdentifier(ids) {
-        return /^[\p{L}\p{N}._-]+-[0-9]{6}[0-9]*$/u.test(ids?.trim() ?? "");
+        return /^[\p{L}\p{N}._-]+-[0-9]{9}$/u.test(ids?.trim() ?? "");
     }
 
     /**

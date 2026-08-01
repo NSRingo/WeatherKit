@@ -7,7 +7,8 @@ const configurableModules = ["iRingo.WeatherKit.Rewrite.sgmodule", "iRingo.Weath
 const fixedModules = ["iRingo.WeatherKit.Rewrite.lpx", "iRingo.WeatherKit.Rewrite.stoverride"];
 const chinesePattern = String.raw`^https?:\/\/www\.qweather\.com\/{1,2}severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$`;
 const englishPattern = String.raw`^https?:\/\/www\.qweather\.com\/en\/severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$`;
-const weatherAlertsPattern = String.raw`^https?:\/\/weatherkit\.apple\.com(\/api\/v1\/weatherAlerts\?lang=[^&#]+&ids=[^&#]*-[0-9]{6}[0-9]*(?:&[^#]*)?)$`;
+const weatherAlertsPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&[^#]*)?)$`;
+const weatherAlertsHandlerPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&|$)`;
 const chineseDestination = "https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather";
 const englishDestination = "https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=en-US&party=qweather";
 const alertDetailsComment = "# 🌤 WeatherKit.alertDetails.index.response";
@@ -52,19 +53,30 @@ test("all Rewrite modules redirect the entry and transparently hook WeatherAlert
 
     for (const filename of configurableModules) {
         const content = await readFile(new URL(filename, modulesDirectory), "utf8");
-        assert.match(content, /https:\/\/\{\{\{endpoint\}\}\}\$1/);
+        assert.match(content, /https:\/\/\{\{\{endpoint\}\}\}\/api\/v1\/weatherAlerts\$1/);
     }
 
     for (const filename of fixedModules) {
         const content = await readFile(new URL(filename, modulesDirectory), "utf8");
-        assert.match(content, /https:\/\/weatherkit\.pages\.dev\$1/);
+        assert.match(content, /https:\/\/weatherkit\.pages\.dev\/api\/v1\/weatherAlerts\$1/);
     }
+});
+
+test("WeatherAlerts hooks accept QWeather ids without constraining preceding parameters", () => {
+    const regex = new RegExp(weatherAlertsPattern);
+    const handlerRegex = new RegExp(weatherAlertsHandlerPattern);
+    assert.match("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-101190110", regex);
+    assert.match("https://weatherkit.apple.com/api/v1/weatherAlerts?timezone=Asia%2FShanghai&ids=jianye-101190110", regex);
+    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-10119011", regex);
+    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-1011901100", regex);
+    assert.match("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-101190110", handlerRegex);
+    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-1011901100", handlerRegex);
 });
 
 test("Egern uses a real redirect for the entry and header mode for the API hook", async () => {
     const content = await readFile(new URL("iRingo.WeatherKit.Rewrite.yaml", modulesDirectory), "utf8");
     assert.match(content, new RegExp(`${englishPattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\\s\\S]*?status_code: 302`));
-    assert.match(content, /match: \^https\?:\\\/\\\/weatherkit\\\.apple\\\.com\(\\\/api\\\/v1\\\/weatherAlerts[\s\S]*?location: https:\/\/\{\{\{endpoint\}\}\}\$1\nmitm:/);
+    assert.match(content, /match: \^https\?:\\\/\\\/weatherkit\\\.apple\\\.com\\\/api\\\/v1\\\/weatherAlerts\(\\\?[\s\S]*?location: https:\/\/\{\{\{endpoint\}\}\}\/api\/v1\/weatherAlerts\$1\nmitm:/);
 });
 
 test("script module templates redirect QWeather and hook Apple weatherAlerts", async () => {
@@ -86,8 +98,14 @@ test("script module templates redirect QWeather and hook Apple weatherAlerts", a
     const quantumultX = await readFile(new URL("../template/quantumultx.handlebars", import.meta.url), "utf8");
     const stash = await readFile(new URL("../template/stash.handlebars", import.meta.url), "utf8");
     assert.match(surge, /weatherAlerts\.response = type=http-response,[^\n]+requires-body=1/);
-    assert.match(surge, /weatherAlerts\\\?lang=\[\^&#\]\+&ids=\[\^&#\]\*-\[0-9\]\{6\}\[0-9\]\*, requires-body=1/);
+    assert.match(surge, /weatherAlerts\\\?\[\^#\]\*&ids=\[\^&#\]\*-\[0-9\]\{9\}\(\?:&\|\$\), requires-body=1/);
     assert.match(loon, /weatherAlerts[^\n]+requires-body=1,[^\n]+weatherAlerts\.response/);
     assert.match(quantumultX, /weatherAlerts[^\n]+url script-response-body/);
     assert.match(stash, /match: [^\n]+weatherAlerts[\s\S]*?require-body: true/);
+});
+
+test("Handler generation keeps Loon local and excludes Egern", async () => {
+    const content = await readFile(new URL("../arguments-builder-full.config.ts", import.meta.url), "utf8");
+    assert.match(content, /path: "\.\/dist\/iRingo\.WeatherKit\.plugin"/);
+    assert.doesNotMatch(content, /transformEgern|iRingo\.WeatherKit\.yaml/);
 });
