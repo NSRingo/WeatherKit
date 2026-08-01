@@ -6,8 +6,10 @@ import { Console, Lodash as _, fetch } from "@nsnanocat/util";
  * @typedef {{
  *     description: string,
  *     guidelines: string[],
+ *     issuedBy: string,
  *     issuedTime: string,
  *     message: string,
+ *     reportedAt: string,
  *     severity: "unknown" | "extreme" | "severe" | "moderate" | "minor",
  *     standard: string,
  * }} ExtractedWeatherAlert
@@ -52,6 +54,7 @@ import { Console, Lodash as _, fetch } from "@nsnanocat/util";
  *     expireTime: string,
  *     id: string,
  *     issuedTime: string,
+ *     reportedAt: string,
  *     messages: Array<{language: string, text: string}>,
  *     name: "WeatherAlert",
  *     precedence: number,
@@ -125,6 +128,7 @@ export default class WeatherAlerts {
             const normalizedIssueText = issueText && !/(?:Z|[+-]\d{2}:?\d{2})$/i.test(issueText) ? `${issueText.replace(" ", "T")}+08:00` : issueText;
             const issueDate = new Date(normalizedIssueText);
             if ((!description && !message) || Number.isNaN(issueDate.getTime())) continue;
+            const issuedBy = WeatherAlerts.#ExtractQWeatherIssuedBy(description, message) || source;
 
             const severitySource = `${start.className} ${description}`.toLowerCase();
             let severity = "unknown";
@@ -146,8 +150,10 @@ export default class WeatherAlerts {
             alerts.push({
                 description: description || message,
                 guidelines,
+                issuedBy,
                 issuedTime: issueDate.toISOString(),
                 message,
+                reportedAt: issueDate.toISOString(),
                 severity,
                 standard,
             });
@@ -191,8 +197,9 @@ export default class WeatherAlerts {
                 name: "WeatherAlert",
                 precedence,
                 responses,
+                reportedAt: alert.reportedAt,
                 severity: alert.severity,
-                source: extracted.source,
+                source: alert.issuedBy || extracted.source,
                 urgency: "unknown",
             };
         });
@@ -328,6 +335,25 @@ export default class WeatherAlerts {
         if (/解除|恢复正常/.test(text) || compact.includes("allclear")) return "allClear";
         if (/无需|不需|无须/.test(text) || compact.includes("none")) return "none";
         return null;
+    }
+
+    /**
+     * 从 QWeather 标题或正文中提取发布预警的机构名称。
+     * Extract the issuing organization name from QWeather title or body text.
+     * @param {string} description 预警标题 / Alert title.
+     * @param {string} message 预警正文 / Alert body.
+     * @returns {string} 发布机构 / Issuing organization.
+     */
+    static #ExtractQWeatherIssuedBy(description, message) {
+        for (const value of [description, message]) {
+            const text = String(value ?? "").trim();
+            if (!text) continue;
+            const chinese = text.match(/^(.*?)发布/);
+            if (chinese?.[1]) return chinese[1].trim();
+            const english = text.match(/^(.*?)\s+(?:issues?|issued)\b/i);
+            if (english?.[1]) return english[1].trim();
+        }
+        return "";
     }
 
     /**

@@ -53,6 +53,8 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
     assert.equal(extracted.source, "国家预警信息发布中心");
     assert.equal(extracted.alerts[0].description, "建邺区气象台发布雷暴橙色预警");
     assert.deepEqual(extracted.alerts[0].guidelines, ["注意防范雷电。", "远离高大树木。"]);
+    assert.equal(extracted.alerts[0].issuedBy, "建邺区气象台");
+    assert.equal(extracted.alerts[0].reportedAt, "2026-07-31T03:00:00.000Z");
     assert.equal("id" in extracted.alerts[0], false);
     assert.equal(alerts.length, 1);
     assert.match(alerts[0].id, /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
@@ -64,8 +66,9 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
     assert.equal(alerts[0].effectiveTime, "2026-07-31T03:00:00.000Z");
     assert.equal(alerts[0].expireTime, "9999-12-31T23:59:59Z");
     assert.equal(alerts[0].eventSource, "CN");
+    assert.equal(alerts[0].reportedAt, "2026-07-31T03:00:00.000Z");
     assert.equal(alerts[0].severity, "severe");
-    assert.equal(alerts[0].source, "国家预警信息发布中心");
+    assert.equal(alerts[0].source, "建邺区气象台");
     assert.deepEqual(alerts[0].responses, ["prepare", "avoid"]);
     assert.deepEqual(alerts[0].messages, [
         {
@@ -120,7 +123,8 @@ test("Pages routes WeatherAlert requests through Hono before fetching QWeather",
             assert.equal(body[0].attributionURL, "https://www.qweather.com//severe-weather/jianye-101190110.html", pathname);
             assert.equal(body[0].description, "建邺区气象台发布雷暴橙色预警", pathname);
             assert.equal(body[0].eventSource, "CN", pathname);
-            assert.equal(body[0].source, "国家预警信息发布中心", pathname);
+            assert.equal(body[0].reportedAt, "2026-07-31T03:00:00.000Z", pathname);
+            assert.equal(body[0].source, "建邺区气象台", pathname);
         }
     } finally {
         globalThis.fetch = originalFetch;
@@ -179,7 +183,8 @@ test("the request scripts return QWeather data before Apple weatherAlerts is req
             assert.equal($response.headers["Content-Type"], "application/json");
             assert.equal(body[0].attributionURL, "https://www.qweather.com/en/severe-weather/jianye-101190110.html");
             assert.equal(body[0].eventSource, "CN");
-            assert.equal(body[0].source, "国家预警信息发布中心");
+            assert.equal(body[0].reportedAt, "2026-07-31T03:00:00.000Z");
+            assert.equal(body[0].source, "建邺区气象台");
             assert.equal(body[0].messages[0].language, "en-US");
         }
     } finally {
