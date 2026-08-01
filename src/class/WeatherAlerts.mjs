@@ -129,6 +129,7 @@ export default class WeatherAlerts {
             const issueDate = new Date(normalizedIssueText);
             if ((!description && !message) || Number.isNaN(issueDate.getTime())) continue;
             const issuedBy = WeatherAlerts.#ExtractQWeatherIssuedBy(description, message) || source;
+            const normalizedDescription = WeatherAlerts.#NormalizeQWeatherDescription(description, message, issuedBy);
 
             const severitySource = `${start.className} ${description}`.toLowerCase();
             let severity = "unknown";
@@ -148,7 +149,7 @@ export default class WeatherAlerts {
             }
 
             alerts.push({
-                description: description || message,
+                description: normalizedDescription || description || message,
                 guidelines,
                 issuedBy,
                 issuedTime: issueDate.toISOString(),
@@ -354,6 +355,35 @@ export default class WeatherAlerts {
             if (english?.[1]) return english[1].trim();
         }
         return "";
+    }
+
+    /**
+     * 去掉 QWeather 预警标题里与发布机构重复的前缀。
+     * Remove the issuing organization prefix duplicated in QWeather alert titles.
+     * @param {string} description 预警标题 / Alert title.
+     * @param {string} message 预警正文 / Alert body.
+     * @param {string} issuedBy 发布机构 / Issuing organization.
+     * @returns {string} 规范化标题 / Normalized title.
+     */
+    static #NormalizeQWeatherDescription(description, message, issuedBy) {
+        const text = String(description ?? message ?? "").trim();
+        const issuer = String(issuedBy ?? "").trim();
+        if (!text || !issuer) return text;
+        for (const prefix of [
+            `${issuer}发布`,
+            `${issuer}发布：`,
+            `${issuer}发布:`,
+            `${issuer} issues `,
+            `${issuer} issues: `,
+            `${issuer} issued `,
+            `${issuer} issued: `,
+        ]) {
+            if (text.toLowerCase().startsWith(prefix.toLowerCase())) {
+                const normalized = text.slice(prefix.length).trim();
+                if (normalized) return normalized;
+            }
+        }
+        return text;
     }
 
     /**
