@@ -66,11 +66,11 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
     assert.equal(alerts[0].eventSource, "CN");
     assert.equal(alerts[0].severity, "severe");
     assert.equal(alerts[0].source, "国家预警信息发布中心");
-    assert.deepEqual(alerts[0].responses, []);
+    assert.deepEqual(alerts[0].responses, ["注意防范雷电。", "远离高大树木。"]);
     assert.deepEqual(alerts[0].messages, [
         {
             language: "zh-CN",
-            text: "预计午后将出现雷暴天气。\n\n可能伴有短时强降水。\n\n注意防范雷电。\n\n远离高大树木。",
+            text: "预计午后将出现雷暴天气。\n\n可能伴有短时强降水。",
         },
     ]);
     assert.equal(

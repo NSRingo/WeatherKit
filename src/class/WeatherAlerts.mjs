@@ -171,7 +171,7 @@ export default class WeatherAlerts {
         const areaId = context.identifier.match(/-(\d+)$/)?.[1];
         return extracted.alerts.map((alert, precedence) => {
             const uid = WeatherAlerts.#StableUUID(`${context.identifier}:${precedence}`);
-            const text = [alert.message, alert.standard, ...alert.guidelines].filter(Boolean).join("\n\n") || alert.description;
+            const text = [alert.message, alert.standard].filter(Boolean).join("\n\n") || alert.description;
             return {
                 id: uid,
                 ...(areaId ? { areaId } : {}),
@@ -189,7 +189,7 @@ export default class WeatherAlerts {
                 messages: [{ language: context.language, text }],
                 name: "WeatherAlert",
                 precedence,
-                responses: [],
+                responses: alert.guidelines,
                 severity: alert.severity,
                 source: extracted.source,
                 urgency: "unknown",
