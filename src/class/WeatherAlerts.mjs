@@ -172,6 +172,7 @@ export default class WeatherAlerts {
         return extracted.alerts.map((alert, precedence) => {
             const uid = WeatherAlerts.#StableUUID(`${context.identifier}:${precedence}`);
             const text = [alert.message, alert.standard].filter(Boolean).join("\n\n") || alert.description;
+            const responses = WeatherAlerts.#BuildResponses(alert.guidelines);
             return {
                 id: uid,
                 ...(areaId ? { areaId } : {}),
@@ -189,7 +190,7 @@ export default class WeatherAlerts {
                 messages: [{ language: context.language, text }],
                 name: "WeatherAlert",
                 precedence,
-                responses: alert.guidelines,
+                responses,
                 severity: alert.severity,
                 source: extracted.source,
                 urgency: "unknown",
@@ -289,6 +290,44 @@ export default class WeatherAlerts {
     static #FirstMatch(source, pattern, fallback = "") {
         const match = source.match(pattern);
         return match ? WeatherAlerts.#DecodeHTML(match[1]) : fallback;
+    }
+
+    /**
+     * 将 QWeather 的防御指南压缩为 Apple 前端能识别的动作 token。
+     * Convert QWeather defense guidance into Apple-recognized action tokens.
+     * @param {string[]} guidelines 防御指南 / Defense guidance.
+     * @returns {string[]} 动作 token / Action tokens.
+     */
+    static #BuildResponses(guidelines) {
+        const responses = [];
+        for (const guideline of guidelines ?? []) {
+            const response = WeatherAlerts.#ResponseFromGuideline(guideline);
+            if (response && !responses.includes(response)) responses.push(response);
+        }
+        return responses.length ? responses : (guidelines?.length ? ["monitor"] : []);
+    }
+
+    /**
+     * 根据单条防御指南推断 Apple 的动作 token。
+     * Infer an Apple action token from one defense-guidance line.
+     * @param {string} guideline 防御指南 / Defense guidance.
+     * @returns {string | null} 动作 token / Action token.
+     */
+    static #ResponseFromGuideline(guideline) {
+        const text = String(guideline ?? "").trim().toLowerCase();
+        if (!text) return null;
+        const compact = text.replace(/\s+/g, "");
+
+        if (/撤离|疏散|转移|离开/.test(text) || compact.includes("evacuat")) return "evacuate";
+        if (/就地|躲避|避难|避险|避风|室内|躲到|进入室内|待在室内/.test(text) || compact.includes("takeshelter") || compact.includes("seekshelter")) return "shelter";
+        if (/执行|实施|预案|计划/.test(text) || compact.includes("execute") || compact.includes("carryout") || compact.includes("implement")) return "execute";
+        if (/准备|防范|防护|备好|做好.*准备/.test(text) || compact.includes("prepare") || compact.includes("preparations")) return "prepare";
+        if (/远离|避免|不要|切勿|勿|别/.test(text) || compact.includes("avoid") || compact.includes("stayaway") || compact.includes("keepaway") || compact.includes("donot") || compact.includes("dont")) return "avoid";
+        if (/密切关注|持续关注|关注|留意|监测|观察|跟踪/.test(text) || compact.includes("monitor") || compact.includes("watch") || compact.includes("followup")) return "monitor";
+        if (/评估|检查/.test(text) || compact.includes("assess") || compact.includes("inspect")) return "assess";
+        if (/解除|恢复正常/.test(text) || compact.includes("allclear")) return "allClear";
+        if (/无需|不需|无须/.test(text) || compact.includes("none")) return "none";
+        return null;
     }
 
     /**

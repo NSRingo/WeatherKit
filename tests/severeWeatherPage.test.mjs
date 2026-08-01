@@ -66,7 +66,7 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
     assert.equal(alerts[0].eventSource, "CN");
     assert.equal(alerts[0].severity, "severe");
     assert.equal(alerts[0].source, "国家预警信息发布中心");
-    assert.deepEqual(alerts[0].responses, ["注意防范雷电。", "远离高大树木。"]);
+    assert.deepEqual(alerts[0].responses, ["prepare", "avoid"]);
     assert.deepEqual(alerts[0].messages, [
         {
             language: "zh-CN",

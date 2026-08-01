@@ -14,7 +14,7 @@
   * 修复和风天气分钟预报的 `reportedTime`，改为使用接口返回的 `updateTime`，不再误写为本地读取时间。 @VirgilClyne
   * 修复云端路由对 `dev.weatherkit.*` 与 `*.pages.dev` 域名的识别，并限制 Cloudflare Pages Functions 只处理 WeatherKit API 路径。 @VirgilClyne
   * 为 QWeather 预警响应补充事件来源回退值，确保缺少来源字段时仍返回 Apple 兼容数据。 @VirgilClyne
-  * 修复 QWeather 预警“防御指南”显示在描述正文的问题，改为映射到 Apple 预警详情的“建议的行动”。 @VirgilClyne
+  * 修复 QWeather 预警“防御指南”映射错误：改为转换为 Apple 预警详情可识别的 `responses` 动作 token，避免把原文塞进不可直接渲染的字段。 @VirgilClyne
 
 ### 🔣 Dependencies
   * 切换 `@nsnanocat/util` 到公共 npm registry 来源。 @hhh2210
