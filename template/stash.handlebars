@@ -31,9 +31,8 @@ http:
       require-body: true
       argument:
     - match: ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&|$)
-      name: WeatherKit.api.v1.weatherAlerts.response
-      type: response
-      require-body: true
+      name: WeatherKit.api.v1.weatherAlerts.request
+      type: request
       argument:
     - match: ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/
       name: WeatherKit.api.v2.weather.response
@@ -50,8 +49,8 @@ script-providers:
   WeatherKit.api.v1.availability.response:
     url: https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
     interval: 86400
-  WeatherKit.api.v1.weatherAlerts.response:
-    url: https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
+  WeatherKit.api.v1.weatherAlerts.request:
+    url: https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/request.bundle.js
     interval: 86400
   WeatherKit.api.v2.weather.response:
     url: https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js

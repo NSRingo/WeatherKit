@@ -12,7 +12,7 @@ const weatherAlertsHandlerPattern = String.raw`^https?:\/\/weatherkit\.apple\.co
 const chineseDestination = "https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather";
 const englishDestination = "https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=en-US&party=qweather";
 const alertDetailsComment = "# 🌤 WeatherKit.alertDetails.index.response";
-const weatherAlertsComment = "# 🌤 WeatherKit.api.v1.weatherAlerts.response";
+const weatherAlertsRewriteComment = "# 🌤 WeatherKit.api.v1.weatherAlerts.response";
 const unsafeOpenEndedQuantifier = "{6" + ",}";
 
 test("QWeather entry routes redirect only supported source URLs to Apple", () => {
@@ -42,7 +42,7 @@ test("all Rewrite modules redirect the entry and transparently hook WeatherAlert
         assert.ok(content.includes(weatherAlertsPattern), filename);
         assert.ok(!content.includes(unsafeOpenEndedQuantifier), filename);
         assert.ok(content.includes(alertDetailsComment), filename);
-        assert.ok(content.includes(weatherAlertsComment), filename);
+        assert.ok(content.includes(weatherAlertsRewriteComment), filename);
         assert.ok(!content.includes("Apple 官方预警页面的 QWeather 数据"), filename);
         assert.ok(!content.includes("QWeather data for the official Apple alert page"), filename);
         assert.ok(content.includes(`${chineseDestination} 302`) || content.includes(`location: ${chineseDestination}`), filename);
@@ -97,11 +97,12 @@ test("script module templates redirect QWeather and hook Apple weatherAlerts", a
     const loon = await readFile(new URL("../template/loon.handlebars", import.meta.url), "utf8");
     const quantumultX = await readFile(new URL("../template/quantumultx.handlebars", import.meta.url), "utf8");
     const stash = await readFile(new URL("../template/stash.handlebars", import.meta.url), "utf8");
-    assert.match(surge, /weatherAlerts\.response = type=http-response,[^\n]+requires-body=1/);
-    assert.match(surge, /weatherAlerts\\\?\[\^#\]\*&ids=\[\^&#\]\*-\[0-9\]\{9\}\(\?:&\|\$\), requires-body=1/);
-    assert.match(loon, /weatherAlerts[^\n]+requires-body=1,[^\n]+weatherAlerts\.response/);
-    assert.match(quantumultX, /weatherAlerts[^\n]+url script-response-body/);
-    assert.match(stash, /match: [^\n]+weatherAlerts[\s\S]*?require-body: true/);
+    assert.match(surge, /weatherAlerts\.request = type=http-request,[^\n]+request\.bundle\.js/);
+    assert.doesNotMatch(surge, /weatherAlerts\.request[^\n]+requires-body/);
+    assert.match(loon, /http-request [^\n]+weatherAlerts[^\n]+request\.bundle\.js[^\n]+weatherAlerts\.request/);
+    assert.match(quantumultX, /weatherAlerts[^\n]+url script-request-header[^\n]+request\.bundle\.js/);
+    assert.match(stash, /match: [^\n]+weatherAlerts[\s\S]*?name: WeatherKit\.api\.v1\.weatherAlerts\.request[\s\S]*?type: request/);
+    assert.doesNotMatch(stash, /name: WeatherKit\.api\.v1\.weatherAlerts\.request\n      type: request\n      require-body/);
 });
 
 test("Handler generation keeps Loon local and excludes Egern", async () => {
