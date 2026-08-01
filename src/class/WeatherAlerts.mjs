@@ -130,6 +130,7 @@ export default class WeatherAlerts {
             if ((!description && !message) || Number.isNaN(issueDate.getTime())) continue;
             const issuedBy = WeatherAlerts.#ExtractQWeatherIssuedBy(description, message) || source;
             const normalizedDescription = WeatherAlerts.#NormalizeQWeatherDescription(description, message, issuedBy);
+            const descriptionText = WeatherAlerts.#BuildQWeatherDescription(normalizedDescription || description || message, guidelines);
 
             const severitySource = `${start.className} ${description}`.toLowerCase();
             let severity = "unknown";
@@ -149,7 +150,7 @@ export default class WeatherAlerts {
             }
 
             alerts.push({
-                description: normalizedDescription || description || message,
+                description: descriptionText,
                 guidelines,
                 issuedBy,
                 issuedTime: issueDate.toISOString(),
@@ -384,6 +385,21 @@ export default class WeatherAlerts {
             }
         }
         return text;
+    }
+
+    /**
+     * 将 QWeather 预警标题与防御指南合并为 description。
+     * Combine QWeather alert title and defense guidance into the description.
+     * @param {string} description 预警标题 / Alert title.
+     * @param {string[]} guidelines 防御指南 / Defense guidance.
+     * @returns {string} 规范化描述 / Normalized description.
+     */
+    static #BuildQWeatherDescription(description, guidelines) {
+        const title = String(description ?? "").trim();
+        const lines = Array.from(guidelines ?? [], guideline => String(guideline ?? "").trim()).filter(Boolean);
+        if (!title) return lines.join("\n");
+        if (!lines.length) return title;
+        return `${title}\n\n${lines.join("\n")}`;
     }
 
     /**
