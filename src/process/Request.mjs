@@ -1,4 +1,5 @@
 import { Lodash as _, Console, Storage } from "@nsnanocat/util";
+import QWeather from "../class/QWeather.mjs";
 import WeatherAlerts from "../class/WeatherAlerts.mjs";
 import WeatherKit2 from "../class/WeatherKit2.mjs";
 import database from "../function/database.mjs";
@@ -92,20 +93,25 @@ export async function Request($request) {
                         case url.pathname === "/api/v1/weatherAlerts": {
                             const identifier = url.searchParams.get("ids");
                             const language = url.searchParams.get("lang")?.trim() || "zh-CN";
+                            const country = url.searchParams.get("country")?.toUpperCase() || "CN";
                             const isQWeatherPage = WeatherAlerts.IsQWeatherPageIdentifier(identifier);
                             const coordinates = WeatherAlerts.ParseQWeatherCoordinateIdentifier(identifier);
                             if (!isQWeatherPage && !coordinates) break;
-                            const handlerName = coordinates ? "WeatherAlerts.GetQWeatherFromAPI" : "WeatherAlerts.GetQWeatherFromPage";
+                            const handlerName = coordinates ? "QWeather.WeatherAlert" : "WeatherAlerts.GetQWeatherFromPage";
                             Console.info(`☑️ ${handlerName}`, `ids: ${identifier}`);
                             let body;
                             try {
-                                body = coordinates
-                                    ? await WeatherAlerts.GetQWeatherFromAPI(coordinates, language, $request.headers, {
-                                          host: Settings?.API?.QWeather?.Host,
-                                          token: Settings?.API?.QWeather?.Token,
-                                          country: url.searchParams.get("country")?.toUpperCase(),
-                                      })
-                                    : await WeatherAlerts.GetQWeatherFromPage(identifier, language, $request.headers);
+                                if (coordinates) {
+                                    const qWeather = new QWeather({ ...coordinates, country, language }, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host);
+                                    body = WeatherAlerts.Build(await qWeather.WeatherAlert(), {
+                                        attributionUrl: "https://www.12379.cn/",
+                                        identifier: `${coordinates.latitude},${coordinates.longitude}`,
+                                        language,
+                                        countryCode: country,
+                                    });
+                                } else {
+                                    body = await WeatherAlerts.GetQWeatherFromPage(identifier, language, $request.headers);
+                                }
                             } catch (error) {
                                 Console.error(handlerName, error?.stack ?? error?.message ?? String(error));
                                 body = [];

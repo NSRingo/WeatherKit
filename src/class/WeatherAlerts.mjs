@@ -327,94 +327,6 @@ export default class WeatherAlerts {
     }
 
     /**
-     * 根据 Apple alertDetails 坐标 ids 调用 QWeather Alert API。
-     * Fetch QWeather Alert API by Apple alertDetails coordinate ids.
-     * @param {{latitude: string, longitude: string}} coordinates QWeather Alert API 坐标 / QWeather Alert API coordinates.
-     * @param {string} language Apple alertDetails 语言 / Apple alertDetails language.
-     * @param {Record<string, string | string[] | undefined>} requestHeaders 原请求头 / Original request headers.
-     * @param {{host?: string, token?: string, country?: string, countryCode?: string}} options QWeather 设置 / QWeather settings.
-     * @returns {Promise<WeatherAlert[]>} WeatherAlert 数组 / WeatherAlert array.
-     */
-    static async GetQWeatherFromAPI(coordinates, language = "zh-CN", requestHeaders = {}, options = {}) {
-        const latitude = coordinates?.latitude;
-        const longitude = coordinates?.longitude;
-        if (!WeatherAlerts.#ParseCoordinateIdentifier(`${latitude},${longitude}`)) return [];
-        const identifier = `${latitude},${longitude}`;
-
-        const apiUrl = new URL(`https://${options.host || "devapi.qweather.com"}/weatheralert/v1/current/${latitude}/${longitude}`);
-        apiUrl.searchParams.set("lang", WeatherAlerts.#QWeatherLanguageCode(language));
-        const normalizedHeaders = Object.fromEntries(Object.entries(requestHeaders).map(([key, value]) => [key.toLowerCase(), value]));
-        const headers = {
-            Accept: "application/json",
-            "X-QW-Api-Key": options.token || "bdd98ec1d87747f3a2e8b1741a5af796",
-        };
-        if (normalizedHeaders["user-agent"]) headers["User-Agent"] = normalizedHeaders["user-agent"];
-
-        Console.info("☑️ WeatherAlerts.FetchQWeatherAPI", `url: ${apiUrl}`, `language: ${language}`);
-        const response = await fetch({
-            url: apiUrl.toString(),
-            headers,
-            "auto-cookie": false,
-        });
-        const body = JSON.parse(response?.body ?? "{}");
-        if (!response.ok) {
-            Console.warn("WeatherAlerts.FetchQWeatherAPI", `upstreamStatus: ${response.statusCode ?? response.status}`);
-            return [];
-        }
-        if (!body?.metadata || !Array.isArray(body?.alerts)) {
-            Console.warn("WeatherAlerts.FetchQWeatherAPI", `unexpectedBody: ${JSON.stringify(body?.error ?? body?.code ?? body)}`);
-            return [];
-        }
-
-        const extracted = WeatherAlerts.#ExtractQWeatherAPI(body);
-        Console.info("✅ WeatherAlerts.FetchQWeatherAPI", `alerts: ${extracted.alerts.length}`, `source: ${extracted.source}`);
-        return WeatherAlerts.Build(extracted, {
-            attributionUrl: "https://www.12379.cn/",
-            identifier,
-            language,
-            countryCode: options.countryCode ?? options.country ?? "CN",
-        });
-    }
-
-    /**
-     * 将 QWeather Alert API 返回转换成与 HTML 提取相同的中间结构。
-     * Convert QWeather Alert API output to the same intermediate shape used by HTML extraction.
-     * @param {any} body QWeather Alert API 返回 / QWeather Alert API body.
-     * @returns {ExtractedWeatherAlerts} 提取后的预警集合 / Extracted alert collection.
-     */
-    static #ExtractQWeatherAPI(body) {
-        const alerts = Array.isArray(body?.alerts) ? body.alerts : [];
-        const attributions = Array.isArray(body?.metadata?.attributions) ? body.metadata.attributions : [];
-        const source = attributions.find(item => item && !/延迟|过时|disclaimer|delayed|outdated/i.test(item)) || "国家预警信息发布中心";
-        return {
-            alerts: alerts
-                .map(alert => {
-                    const issuedTime = WeatherAlerts.#DateISOString(alert?.issuedTime || alert?.effectiveTime);
-                    if (!issuedTime) return undefined;
-                    const effectiveTime = WeatherAlerts.#DateISOString(alert?.effectiveTime) || issuedTime;
-                    const expireTime = WeatherAlerts.#DateISOString(alert?.expiresTime || alert?.expireTime);
-                    const guidelines = WeatherAlerts.#SplitGuidelines(alert?.instruction ?? alert?.instructions);
-                    const description = WeatherAlerts.#NormalizeQWeatherTitle(alert?.headline || alert?.eventType?.name || alert?.description);
-                    return {
-                        description,
-                        effectiveTime,
-                        ...(expireTime ? { expireTime } : {}),
-                        guidelines,
-                        identifier: alert?.id,
-                        issuedTime,
-                        message: alert?.description || alert?.headline || description,
-                        reportedAt: issuedTime,
-                        severity: WeatherAlerts.#NormalizeSeverity(alert?.severity),
-                        standard: alert?.criteria ?? "",
-                    };
-                })
-                .filter(Boolean),
-            areaName: alerts.find(alert => alert?.areaName)?.areaName ?? "",
-            source,
-        };
-    }
-
-    /**
      * 解码 HTML 文本。
      * Decode HTML text.
      * @param {string} value HTML 文本 / HTML text.
@@ -450,38 +362,12 @@ export default class WeatherAlerts {
         return match ? WeatherAlerts.#DecodeHTML(match[1]) : fallback;
     }
 
-    static #DateISOString(value) {
-        if (!value) return "";
-        const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? "" : date.toISOString();
-    }
-
     static #NormalizeLanguage(language, country) {
         const normalized = String(language ?? "").trim();
         if (!normalized) return "zh-CN";
         if (normalized.toLowerCase().startsWith("zh")) return country ? `zh-${country}` : "zh-CN";
         if (country && !normalized.toLowerCase().endsWith(`-${country.toLowerCase()}`)) return `${normalized}-${country}`;
         return normalized;
-    }
-
-    static #QWeatherLanguageCode(language) {
-        const normalized = String(language ?? "").trim().toLowerCase();
-        if (normalized.startsWith("zh")) return "zh";
-        if (normalized.startsWith("en")) return "en";
-        return normalized.split("-")[0] || "zh";
-    }
-
-    static #NormalizeSeverity(severity) {
-        const normalized = String(severity ?? "").trim().toLowerCase();
-        switch (normalized) {
-            case "extreme":
-            case "severe":
-            case "moderate":
-            case "minor":
-                return normalized;
-            default:
-                return "unknown";
-        }
     }
 
     static #ParseCoordinateIdentifier(ids) {
@@ -497,13 +383,6 @@ export default class WeatherAlerts {
             latitude: match.groups.latitude,
             longitude: match.groups.longitude,
         };
-    }
-
-    static #SplitGuidelines(instruction) {
-        return String(instruction ?? "")
-            .split(/\r?\n/)
-            .map(line => line.replace(/^\s*\d+[.、]\s*/, "").trim())
-            .filter(Boolean);
     }
 
     /**
