@@ -24,10 +24,10 @@ http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ requir
 http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&|$) script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/request.bundle.js, tag=🌤 WeatherKit.api.v1.weatherAlerts.request, argument={{{scriptParams}}}
 http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ requires-body=1, binary-body-mode=1, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js, tag=🌤 WeatherKit.api.v2.weather.response, argument={{{scriptParams}}}
 
-[URL Rewrite]
+[Rewrite]
 # 🌤 WeatherKit.alertDetails.index.response
-^https?:\/\/www\.qweather\.com\/\/?severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather 302
-^https?:\/\/www\.qweather\.com\/en\/severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=en-US&party=qweather 302
+^https?:\/\/www\.qweather\.com\/\/?severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ 302 https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather
+^https?:\/\/www\.qweather\.com\/en\/severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ 302 https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=en-US&party=qweather
 
 [MITM]
 hostname = weatherkit.apple.com, www.qweather.com
