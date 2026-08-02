@@ -4,17 +4,28 @@ import { Console, Lodash as _, fetch } from "@nsnanocat/util";
  * 从来源页面提取的预警记录。
  * Alert record extracted from a source page.
  * @typedef {{
+ *     areaId?: string,
+ *     areaName?: string,
+ *     certainty?: string,
  *     description: string,
  *     effectiveTime?: string,
+ *     eventEndTime?: string,
+ *     eventOnsetTime?: string,
  *     expireTime?: string,
  *     guidelines: string[],
  *     identifier?: string,
+ *     importance?: string,
  *     issuedTime: string,
  *     message: string,
+ *     phenomenon?: string,
  *     responses?: string[],
  *     reportedAt: string,
+ *     significance?: string,
+ *     source?: string,
  *     severity: "unknown" | "extreme" | "severe" | "moderate" | "minor",
  *     standard: string,
+ *     token?: string,
+ *     urgency?: string,
  * }} ExtractedWeatherAlert
  */
 
@@ -52,17 +63,23 @@ import { Console, Lodash as _, fetch } from "@nsnanocat/util";
  *     description: string,
  *     detailsUrl: string,
  *     effectiveTime: string,
+ *     eventEndTime?: string,
+ *     eventOnsetTime?: string,
  *     eventSource: string,
  *     expireTime: string,
  *     id: string,
+ *     importance?: string,
  *     issuedTime: string,
  *     reportedAt: string,
  *     messages: Array<{language: string, text: string}>,
  *     name: "WeatherAlert",
  *     precedence: number,
+ *     phenomenon?: string,
  *     responses: string[],
+ *     significance?: string,
  *     severity: string,
  *     source: string,
+ *     token?: string,
  *     urgency: string,
  * }} WeatherAlert
  */
@@ -107,7 +124,11 @@ export default class WeatherAlerts {
     /**
      * 生成 Apple 官方预警详情页 URL。
      * Build an Apple alertDetails page URL.
-     * @param {{latitude: string | number, longitude: string | number, language?: string, timezone?: string, party?: string}} parameters URL 参数 / URL parameters.
+     * @param {{latitude: string | number, longitude: string | number, language?: string, timezone?: string, party?: string}} parameters URL 参数 / URL parameters:
+     * - latitude/longitude: 写入 alertDetails 的 ids=latitude,longitude。
+     * - language: 写入 lang，用于页面文案和消息语言筛选。
+     * - timezone: 写入 timezone，用于页面时间格式化。
+     * - party: 写入 party；apple 表示官方一方上下文并隐藏第三方脚注。
      * @returns {string | undefined} Apple 预警详情页 URL / Apple alertDetails URL.
      */
     static BuildAppleAlertDetailsURL(parameters) {
@@ -122,9 +143,9 @@ export default class WeatherAlerts {
     /**
      * 将 v2 weatherAlerts flatbuffer 中的来源页 URL 改成 Apple alertDetails 页 URL。
      * Rewrite v2 weatherAlerts flatbuffer URLs to the Apple alertDetails page URL.
-     * @param {any} weatherAlerts v2 weatherAlerts 数据 / v2 weatherAlerts data.
-     * @param {any} parameters WeatherKit URL 参数 / WeatherKit URL parameters.
-     * @param {URL} requestUrl WeatherKit 请求 URL / WeatherKit request URL.
+     * @param {any} weatherAlerts v2 weatherAlerts 数据；会原地改写 collection/details 和每条 alert 的 attributionUrl/detailsUrl。
+     * @param {any} parameters parseWeatherKitURL 解析出的经纬度、语言和国家参数。
+     * @param {URL} requestUrl 原始 WeatherKit 请求 URL；timezone 从这里透传给 alertDetails。
      * @returns {any} 改写后的 weatherAlerts 数据 / Rewritten weatherAlerts data.
      */
     static RewriteFlatBufferDetailsURL(weatherAlerts, parameters, requestUrl) {
@@ -161,7 +182,7 @@ export default class WeatherAlerts {
             city = titleText.replace(/\s*(?:severe weather warning|灾害预警|天气预警).*$/i, "").trim();
         }
         const administration = WeatherAlerts.#FirstMatch(sourceHtml, /<span[^>]*class=["'][^"']*c-submenu__location-adm[^"']*["'][^>]*>([\s\S]*?)<\/span>/i);
-        const source = WeatherAlerts.#FirstMatch(sourceHtml, /<a[^>]*class=["'][^"']*data-source__txt[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)
+        const dataSource = WeatherAlerts.#FirstMatch(sourceHtml, /<a[^>]*class=["'][^"']*data-source__txt[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)
             .replace(/^(?:预警数据来源|Warning data source)\s*[:：]\s*/i, "")
             .trim();
         const starts = Array.from(sourceHtml.matchAll(/<div[^>]*class=["']([^"']*\bc-city-warning-events\b[^"']*)["'][^>]*>/gi), match => ({
@@ -194,6 +215,7 @@ export default class WeatherAlerts {
             const issueDate = new Date(normalizedIssueText);
             if ((!description && !message) || Number.isNaN(issueDate.getTime())) continue;
             const title = WeatherAlerts.#NormalizeQWeatherTitle(description || message);
+            const source = WeatherAlerts.#ExtractQWeatherIssuer(description || message) || dataSource || "QWeather";
 
             const severitySource = `${start.className} ${description}`.toLowerCase();
             let severity = "unknown";
@@ -219,6 +241,7 @@ export default class WeatherAlerts {
                 message,
                 reportedAt: issueDate.toISOString(),
                 severity,
+                source,
                 standard,
             });
         }
@@ -226,44 +249,59 @@ export default class WeatherAlerts {
         return {
             alerts,
             areaName: city || administration,
-            source: source || "QWeather",
+            source: alerts.find(alert => alert?.source)?.source || dataSource || "QWeather",
         };
     }
 
     /**
      * 将提取后的来源记录构造成 WeatherKit REST WeatherAlert 数组。
-     * Build a WeatherKit REST WeatherAlert array from extracted source records.
-     * @param {ExtractedWeatherAlerts} extracted 提取后的预警集合 / Extracted alert collection.
-     * @param {WeatherAlertContext} context WeatherAlert 构造上下文 / WeatherAlert construction context.
+     * Build the /api/v1/weatherAlerts JSON array consumed by Apple alertDetails.
+     * @param {ExtractedWeatherAlerts} extracted 标准化后的来源数据；alert.source 映射官方页面“签发者”，areaName 映射“受影响区域”。
+     * @param {WeatherAlertContext} context 构造上下文；identifier 用于稳定 UUID/areaId，attributionUrl 用于“查看警报来源”链接。
      * @returns {WeatherAlert[]} WeatherAlert 数组 / WeatherAlert array.
      */
     static Build(extracted, context) {
-        const areaId = context.identifier.match(/-(\d+)$/)?.[1];
+        const contextAreaId = context.identifier.match(/-(\d+)$/)?.[1];
         return extracted.alerts.map((alert, precedence) => {
             const uid = WeatherAlerts.#StableUUID(`${context.identifier}:${alert.identifier ?? precedence}`);
             const text = [alert.message, alert.standard, ...alert.guidelines].filter(Boolean).join("\n\n") || alert.description;
             const responses = WeatherAlerts.#BuildResponses(alert.guidelines, alert.responses);
+            const areaId = alert.areaId || contextAreaId;
+            const areaName = alert.areaName || extracted.areaName;
+            const effectiveTime = alert.effectiveTime ?? alert.issuedTime;
+            const expireTime = alert.expireTime ?? "9999-12-31T23:59:59Z";
+            const eventOnsetTime = alert.eventOnsetTime ?? effectiveTime;
+            const eventEndTime = alert.eventEndTime ?? (alert.expireTime ? expireTime : undefined);
+            const source = alert.source || extracted.source || "QWeather";
+            const importance = alert.importance || WeatherAlerts.#ImportanceFromSeverity(alert.severity);
+            const phenomenon = alert.phenomenon;
             return {
                 id: uid,
                 ...(areaId ? { areaId } : {}),
-                ...(extracted.areaName ? { areaName: extracted.areaName } : {}),
+                ...(areaName ? { areaName } : {}),
                 attributionURL: context.attributionUrl.toString(),
-                certainty: "unknown",
+                certainty: alert.certainty || "unknown",
                 countryCode: context.countryCode ?? "",
                 description: alert.description,
                 detailsUrl: `#${uid}`,
-                effectiveTime: alert.effectiveTime ?? alert.issuedTime,
+                effectiveTime,
+                ...(eventEndTime ? { eventEndTime } : {}),
+                ...(eventOnsetTime ? { eventOnsetTime } : {}),
                 eventSource: context.eventSource ?? "CN",
-                expireTime: alert.expireTime ?? "9999-12-31T23:59:59Z",
+                expireTime,
                 issuedTime: alert.issuedTime,
+                ...(importance ? { importance } : {}),
                 messages: [{ language: context.language, text }],
                 name: "WeatherAlert",
+                ...(phenomenon ? { phenomenon } : {}),
                 precedence,
                 responses,
+                ...(alert.significance ? { significance: alert.significance } : {}),
                 reportedAt: alert.reportedAt,
                 severity: alert.severity,
-                source: extracted.source,
-                urgency: "unknown",
+                source,
+                ...(alert.token ? { token: alert.token } : {}),
+                urgency: alert.urgency || "unknown",
             };
         });
     }
@@ -385,6 +423,25 @@ export default class WeatherAlerts {
     }
 
     /**
+     * 根据 Apple 官方样例中的 importance 分层，从 QWeather 严重度推导重要性。
+     * Derive WeatherKit importance from QWeather severity when upstream does not provide it.
+     * @param {string} severity 预警严重度 / Alert severity.
+     * @returns {"high" | "normal" | "low"} Apple WeatherAlert importance.
+     */
+    static #ImportanceFromSeverity(severity) {
+        switch (String(severity ?? "").trim().toLowerCase()) {
+            case "extreme":
+            case "severe":
+                return "high";
+            case "minor":
+                return "low";
+            case "moderate":
+            default:
+                return "normal";
+        }
+    }
+
+    /**
      * 将 QWeather 的防御指南压缩为 Apple 前端能识别的动作 token。
      * Convert QWeather defense guidance into Apple-recognized action tokens.
      * @param {string[]} guidelines 防御指南 / Defense guidance.
@@ -452,6 +509,20 @@ export default class WeatherAlerts {
         if (chinese?.[1]) return chinese[1].trim();
         const english = title.match(/^.+?\s+(?:issues?|issued)\s*[:：]?\s*(.+)$/i);
         return english?.[1]?.trim() || title;
+    }
+
+    /**
+     * 从 QWeather 标题中提取 Apple alertDetails “签发者/source” 使用的机构名。
+     * Extract the issuing agency used by Apple alertDetails as WeatherAlert.source.
+     * @param {string} description QWeather 标题 / QWeather alert title.
+     * @returns {string} 签发机构名 / Issuing agency.
+     */
+    static #ExtractQWeatherIssuer(description) {
+        const title = String(description ?? "").trim();
+        const chinese = title.match(/^(.+?)发布\s*[:：]?\s*(.+)$/);
+        if (chinese?.[1]) return chinese[1].trim();
+        const english = title.match(/^(.+?)\s+(?:issues?|issued)\s*[:：]?\s*(.+)$/i);
+        return english?.[1]?.trim() || "";
     }
 
     /**
