@@ -165,6 +165,78 @@ export default class WeatherAlerts {
     }
 
     /**
+     * 将 QWeather Alert API 的字段补全到现有 flatbuffer weatherAlerts 中。
+     * Supplement existing flatbuffer weatherAlerts with QWeather alert fields.
+     * 只补空值 / unknown，不改 url，也不新增 alert。
+     * @param {any} weatherAlerts flatbuffer weatherAlerts 数据。
+     * @param {{alerts?: Array<object>}} qWeatherWeatherAlerts QWeather 标准化预警数据。
+     * @returns {any} 补全后的 weatherAlerts 数据 / Supplemented weatherAlerts data.
+     */
+    static MergeFlatBufferWeatherAlerts(weatherAlerts, qWeatherWeatherAlerts) {
+        if (!weatherAlerts?.alerts?.length) return weatherAlerts;
+        const sourceAlerts = Array.isArray(qWeatherWeatherAlerts?.alerts) ? qWeatherWeatherAlerts.alerts : [];
+        if (!sourceAlerts.length) return weatherAlerts;
+
+        const toUnixSeconds = value => {
+            if (value == null || value === "") return undefined;
+            if (typeof value === "number") return value;
+            const time = new Date(value).getTime();
+            return Number.isNaN(time) ? undefined : Math.trunc(time / 1000);
+        };
+
+        const fillText = (target, key, source) => {
+            if (String(target?.[key] ?? "").trim()) return;
+            const value = String(source ?? "").trim();
+            if (value) target[key] = value;
+        };
+
+        const fillEnum = (target, key, source, fallbackValues = ["unknown", "Other"]) => {
+            const current = String(target?.[key] ?? "").trim();
+            if (current && !fallbackValues.includes(current)) return;
+            const value = String(source ?? "").trim();
+            if (value) target[key] = value;
+        };
+
+        const fillTime = (target, key, source) => {
+            if (target?.[key]) return;
+            const value = toUnixSeconds(source);
+            if (value !== undefined) target[key] = value;
+        };
+
+        const fillArray = (target, key, source) => {
+            if (Array.isArray(target?.[key]) && target[key].length) return;
+            if (Array.isArray(source) && source.length) target[key] = [...source];
+        };
+
+        const count = Math.min(weatherAlerts.alerts.length, sourceAlerts.length);
+        for (let index = 0; index < count; index++) {
+            const target = weatherAlerts.alerts[index];
+            const source = sourceAlerts[index];
+            if (!target || !source) continue;
+
+            fillText(target, "areaId", source.areaId);
+            fillText(target, "areaName", source.areaName);
+            fillTime(target, "effectiveTime", source.effectiveTime);
+            fillTime(target, "eventOnsetTime", source.eventOnsetTime);
+            fillTime(target, "eventEndTime", source.eventEndTime);
+            fillTime(target, "expireTime", source.expireTime);
+            fillTime(target, "issuedTime", source.issuedTime);
+            fillText(target, "description", source.description);
+            fillText(target, "source", source.source);
+            fillEnum(target, "phenomenon", source.phenomenon);
+            fillText(target, "token", source.token);
+            fillArray(target, "responses", source.responses);
+            fillEnum(target, "severity", source.severity, ["unknown"]);
+            fillEnum(target, "certainty", source.certainty);
+            fillEnum(target, "importance", source.importance);
+            fillEnum(target, "significance", source.significance);
+            fillEnum(target, "urgency", source.urgency);
+        }
+
+        return weatherAlerts;
+    }
+
+    /**
      * 从 QWeather HTML 提取与 WeatherKit 输出结构无关的预警记录。
      * Extract alert records from QWeather HTML without constructing WeatherKit output.
      * @param {string} html QWeather 页面 HTML / QWeather page HTML.

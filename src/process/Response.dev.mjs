@@ -171,6 +171,7 @@ export async function Response($request, $response) {
                                                     matchEnum.importanceType();
                                                     matchEnum.responseType();
                                                 }
+                                                body.weatherAlerts = await InjectWeatherAlerts(body.weatherAlerts, Settings, enviroments);
                                                 body.weatherAlerts = WeatherAlerts.RewriteFlatBufferDetailsURL(body.weatherAlerts, parameters, url);
                                                 if (body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
                                                 Console.debug(`body.weatherAlerts: ${JSON.stringify(body?.weatherAlerts, null, 2)}`);
@@ -372,6 +373,45 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
     }
     Console.info("✅ InjectForecastNextHour");
     return forecastNextHour;
+}
+
+/**
+ * 补全预警数据
+ * @param {any} weatherAlerts - 预警集合数据对象
+ * @param {import('./types').Settings} Settings - 设置对象
+ * @param {any} enviroments - 环境变量
+ * @returns {Promise<any>} 补全后的预警集合数据
+ */
+async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
+    Console.info("☑️ InjectWeatherAlerts");
+
+    if (!Settings?.Weather?.Replace?.includes(enviroments.country)) {
+        Console.warn("InjectWeatherAlerts", `Unreplaced country: ${enviroments.country}`);
+        Console.info("✅ InjectWeatherAlerts");
+        return weatherAlerts;
+    }
+    if (String(weatherAlerts?.metadata?.providerName ?? "").trim() !== "国家预警信息发布中心") {
+        Console.info("✅ InjectWeatherAlerts");
+        return weatherAlerts;
+    }
+
+    let newWeatherAlerts;
+    switch (Settings?.Weather?.Provider) {
+        case "WeatherKit":
+        default:
+            break;
+        case "QWeather": {
+            newWeatherAlerts = await enviroments.qWeather.WeatherAlert();
+            break;
+        }
+    }
+
+    if (newWeatherAlerts?.alerts?.length) {
+        weatherAlerts = WeatherAlerts.MergeFlatBufferWeatherAlerts(weatherAlerts, newWeatherAlerts);
+    }
+
+    Console.info("✅ InjectWeatherAlerts");
+    return weatherAlerts;
 }
 
 /**
