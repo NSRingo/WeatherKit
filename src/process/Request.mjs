@@ -91,20 +91,21 @@ export async function Request($request) {
                     switch (true) {
                         case url.pathname === "/api/v1/weatherAlerts": {
                             const identifier = url.searchParams.get("ids");
+                            const language = url.searchParams.get("lang")?.trim() || "zh-CN";
                             const isQWeatherPage = WeatherAlerts.IsQWeatherPageIdentifier(identifier);
-                            const isQWeatherCoordinate = WeatherAlerts.IsQWeatherCoordinateIdentifier(identifier);
-                            if (!isQWeatherPage && !isQWeatherCoordinate) break;
-                            const handlerName = isQWeatherCoordinate ? "WeatherAlerts.GetQWeatherFromAPI" : "WeatherAlerts.GetQWeatherFromPage";
+                            const coordinates = WeatherAlerts.ParseQWeatherCoordinateIdentifier(identifier);
+                            if (!isQWeatherPage && !coordinates) break;
+                            const handlerName = coordinates ? "WeatherAlerts.GetQWeatherFromAPI" : "WeatherAlerts.GetQWeatherFromPage";
                             Console.info(`☑️ ${handlerName}`, `ids: ${identifier}`);
                             let body;
                             try {
-                                body = isQWeatherCoordinate
-                                    ? await WeatherAlerts.GetQWeatherFromAPI(url, $request.headers, {
+                                body = coordinates
+                                    ? await WeatherAlerts.GetQWeatherFromAPI(coordinates, language, $request.headers, {
                                           host: Settings?.API?.QWeather?.Host,
                                           token: Settings?.API?.QWeather?.Token,
                                           country: url.searchParams.get("country")?.toUpperCase(),
                                       })
-                                    : await WeatherAlerts.GetQWeatherFromPage(url, $request.headers);
+                                    : await WeatherAlerts.GetQWeatherFromPage(identifier, language, $request.headers);
                             } catch (error) {
                                 Console.error(handlerName, error?.stack ?? error?.message ?? String(error));
                                 body = [];

@@ -95,6 +95,16 @@ export default class WeatherAlerts {
     }
 
     /**
+     * 解析 QWeather Alert API 坐标标识。
+     * Parse a QWeather Alert API coordinate identifier.
+     * @param {string | null | undefined} ids Apple alertDetails 标识 / Apple alertDetails identifier.
+     * @returns {{latitude: string, longitude: string} | null} 坐标对象 / Coordinates.
+     */
+    static ParseQWeatherCoordinateIdentifier(ids) {
+        return WeatherAlerts.#ParseCoordinateIdentifier(ids);
+    }
+
+    /**
      * 生成 Apple 官方预警详情页 URL。
      * Build an Apple alertDetails page URL.
      * @param {{latitude: string | number, longitude: string | number, language?: string, timezone?: string, party?: string}} parameters URL 参数 / URL parameters.
@@ -262,14 +272,13 @@ export default class WeatherAlerts {
     /**
      * 根据 Apple weatherAlerts 请求抓取并转换 QWeather 页面。
      * Fetch and convert the QWeather page for an Apple weatherAlerts request.
-     * @param {URL | string} requestUrl Apple weatherAlerts 请求 URL / Apple weatherAlerts request URL.
+     * @param {string} identifier QWeather 页面标识 / QWeather page identifier.
+     * @param {string} language Apple alertDetails 语言 / Apple alertDetails language.
      * @param {Record<string, string | string[] | undefined>} requestHeaders 原请求头 / Original request headers.
      * @returns {Promise<WeatherAlert[]>} WeatherAlert 数组 / WeatherAlert array.
      */
-    static async GetQWeatherFromPage(requestUrl, requestHeaders = {}) {
-        const url = requestUrl instanceof URL ? requestUrl : new URL(requestUrl);
-        const identifier = url.searchParams.get("ids")?.trim();
-        const language = url.searchParams.get("lang")?.trim() || "zh-CN";
+    static async GetQWeatherFromPage(identifier, language = "zh-CN", requestHeaders = {}) {
+        identifier = identifier?.trim();
         if (!WeatherAlerts.IsQWeatherPageIdentifier(identifier)) return [];
 
         const sourceUrl = new URL("https://www.qweather.com");
@@ -320,19 +329,19 @@ export default class WeatherAlerts {
     /**
      * 根据 Apple alertDetails 坐标 ids 调用 QWeather Alert API。
      * Fetch QWeather Alert API by Apple alertDetails coordinate ids.
-     * @param {URL | string} requestUrl Apple weatherAlerts 请求 URL / Apple weatherAlerts request URL.
+     * @param {{latitude: string, longitude: string}} coordinates QWeather Alert API 坐标 / QWeather Alert API coordinates.
+     * @param {string} language Apple alertDetails 语言 / Apple alertDetails language.
      * @param {Record<string, string | string[] | undefined>} requestHeaders 原请求头 / Original request headers.
      * @param {{host?: string, token?: string, country?: string, countryCode?: string}} options QWeather 设置 / QWeather settings.
      * @returns {Promise<WeatherAlert[]>} WeatherAlert 数组 / WeatherAlert array.
      */
-    static async GetQWeatherFromAPI(requestUrl, requestHeaders = {}, options = {}) {
-        const url = requestUrl instanceof URL ? requestUrl : new URL(requestUrl);
-        const identifier = url.searchParams.get("ids")?.trim();
-        const language = url.searchParams.get("lang")?.trim() || "zh-CN";
-        const coordinates = WeatherAlerts.#ParseCoordinateIdentifier(identifier);
-        if (!coordinates) return [];
+    static async GetQWeatherFromAPI(coordinates, language = "zh-CN", requestHeaders = {}, options = {}) {
+        const latitude = coordinates?.latitude;
+        const longitude = coordinates?.longitude;
+        if (!WeatherAlerts.#ParseCoordinateIdentifier(`${latitude},${longitude}`)) return [];
+        const identifier = `${latitude},${longitude}`;
 
-        const apiUrl = new URL(`https://${options.host || "devapi.qweather.com"}/weatheralert/v1/current/${coordinates.latitude}/${coordinates.longitude}`);
+        const apiUrl = new URL(`https://${options.host || "devapi.qweather.com"}/weatheralert/v1/current/${latitude}/${longitude}`);
         apiUrl.searchParams.set("lang", WeatherAlerts.#QWeatherLanguageCode(language));
         const normalizedHeaders = Object.fromEntries(Object.entries(requestHeaders).map(([key, value]) => [key.toLowerCase(), value]));
         const headers = {

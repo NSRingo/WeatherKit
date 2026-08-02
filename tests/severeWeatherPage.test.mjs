@@ -222,6 +222,7 @@ test("only QWeather location tokens are eligible for takeover", () => {
     assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("jianye-1011901100"), false);
     assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("32.115,118.814"), false);
     assert.equal(WeatherAlerts.IsQWeatherCoordinateIdentifier("32.115,118.814"), true);
+    assert.deepEqual(WeatherAlerts.ParseQWeatherCoordinateIdentifier("32.115,118.814"), { latitude: "32.115", longitude: "118.814" });
     assert.equal(WeatherAlerts.IsQWeatherCoordinateIdentifier("118.814,32.115"), false);
     assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("35889ee6-fa82-5f9f-8e49-fad78c4f383a"), false);
     assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("https://evil.example"), false);
