@@ -42,7 +42,7 @@ https://weatherkit.apple.com/alertDetails/index.html?ids={ids}&lang={language}&t
 | --- | --- | --- | --- |
 | `description` | 卡片标题 | 作为每张预警卡片标题。 | QWeather 标题去掉 `xxx发布` 前缀后的预警名称，例如 `高温橙色预警`。 |
 | `severity` | 严重程度区块 | 显示本地化严重程度文案。 | QWeather `severity` 规范化为 `extreme` / `severe` / `moderate` / `minor` / `unknown`。 |
-| `eventOnsetTime` | 事件开始时间区块 | 有值才显示，按 `timezone` 格式化。 | QWeather `onsetTime`，没有则回退 `effectiveTime`。HTML 分支回退发布时间。 |
+| `eventOnsetTime` | “天气事件发生”区块 | 有值才显示，按 `timezone` 格式化。 | QWeather `onsetTime`，没有则回退 `effectiveTime`。HTML 分支回退发布时间。 |
 | `messages[].text` | 描述区块 | 会处理换行和 URL 自动链接；多语言消息按 `lang` 筛选。 | `description`、`criteria`、防御指南按空行拼接；防御指南继续保留在描述中。 |
 | `messages[].language` | 描述区块方向和筛选 | 用于语言筛选和文字方向。 | 来自页面 `lang` 参数。 |
 | `responses[]` | 建议的行动 | 固定枚举 token 会被转换为本地化行动文案。 | 优先用 QWeather `responseTypes`；没有则从防御指南推断。 |
@@ -102,6 +102,7 @@ evacuate, shelter, execute, prepare, avoid, monitor, assess, allClear, none
 | HTML 页面提取 | `src/class/WeatherAlerts.mjs` 的 `ExtractQWeather()` | 保留旧 QWeather 页面解析；从页面标题提取签发机构，从防御指南提取 `guidelines`。 |
 | API 坐标提取 | `src/class/QWeather.mjs` 的 `WeatherAlert()` | 请求 QWeather `weatheralert/v1/current/{latitude}/{longitude}`，标准化为 `WeatherAlerts.Build()` 可消费结构。 |
 | Apple JSON 构造 | `src/class/WeatherAlerts.mjs` 的 `Build()` | 输出官方 `/api/v1/weatherAlerts` 数组形态。 |
+| v2 FlatBuffer 预警补全 | `src/class/WeatherAlerts.mjs` 的 `MergeFlatBufferWeatherAlerts()` | 仅当 `metadata.providerName` 为 `国家预警信息发布中心` 时，按同序用 QWeather Alert API 补全现有 alert 的 `effectiveTime` / `eventOnsetTime` / `eventEndTime` / `expireTime` / `issuedTime`、区域与响应枚举等缺失字段，不改 URL，也不新增 alert。 |
 | v2 FlatBuffer 链接改写 | `src/class/WeatherAlerts.mjs` 的 `RewriteFlatBufferDetailsURL()` | 仅当 `metadata.providerName` 为 `国家预警信息发布中心` 时，把集合级 `weatherAlerts.detailsUrl` 改为坐标版官方页面；不改 `metadata.attributionUrl`，也不改单条 alert 的 `detailsUrl` / `attributionUrl`。 |
 
 ## 参考
