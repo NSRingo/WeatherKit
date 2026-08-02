@@ -6,6 +6,8 @@
 #!icon = {{@package 'icon'}}
 #!category = {{@package 'organizationName'}}
 #!date = {{now "yyyy-MM-dd HH:mm:ss"}}
+#!arguments = endpoint:weatherkit.pages.dev
+#!arguments-desc = endpoint: [重写] 服务端点\n    ├ weatherkit.pages.dev: 首选；直连；无需代理\n    ├ dev.weatherkit.pages.dev: 开发版\n    └ weather.nanocat.cloud: Worker 版；需要代理
 
 [Rule]
 DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
@@ -15,14 +17,14 @@ AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),RE
 
 [URL Rewrite]
 # 🌤 WeatherKit.api.v1.availability.response
-^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ https://weatherkit.pages.dev/api/v1/availability/ header
+^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ https://\{{{endpoint}}}/api/v1/availability/ header
 # 🌤 WeatherKit.api.v2.weather.response
-^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ https://weatherkit.pages.dev/api/v2/weather/ header
+^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ https://\{{{endpoint}}}/api/v2/weather/ header
 # 🌤 WeatherKit.alertDetails.index.response
 ^https?:\/\/www\.qweather\.com\/\/?severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather 302
 ^https?:\/\/www\.qweather\.com\/en\/severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=en-US&party=qweather 302
 # 🌤 WeatherKit.api.v1.weatherAlerts.response
-^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&[^#]*)?)$ https://weatherkit.pages.dev/api/v1/weatherAlerts$1 header
+^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&[^#]*)?)$ https://\{{{endpoint}}}/api/v1/weatherAlerts$1 header
 
 [MITM]
 hostname = %APPEND% weatherkit.apple.com, www.qweather.com
