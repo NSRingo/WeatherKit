@@ -5,6 +5,7 @@ import test from "node:test";
 const modulesDirectory = new URL("../modules/", import.meta.url);
 const configurableModules = ["iRingo.WeatherKit.Rewrite.sgmodule", "iRingo.WeatherKit.Rewrite.srmodule", "iRingo.WeatherKit.Rewrite.yaml"];
 const fixedModules = ["iRingo.WeatherKit.Rewrite.lpx", "iRingo.WeatherKit.Rewrite.stoverride"];
+const rewriteTemplates = ["loon.rewrite.handlebars", "surge.rewrite.handlebars", "shadowrocket.rewrite.handlebars", "stash.rewrite.handlebars"];
 const chinesePattern = String.raw`^https?:\/\/www\.qweather\.com\/\/?severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$`;
 const englishPattern = String.raw`^https?:\/\/www\.qweather\.com\/en\/severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$`;
 const weatherAlertsPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&[^#]*)?)$`;
@@ -45,8 +46,8 @@ test("all Rewrite modules redirect the entry and transparently hook WeatherAlert
         assert.ok(content.includes(weatherAlertsRewriteComment), filename);
         assert.ok(!content.includes("Apple 官方预警页面的 QWeather 数据"), filename);
         assert.ok(!content.includes("QWeather data for the official Apple alert page"), filename);
-        assert.ok(content.includes(`${chineseDestination} 302`) || content.includes(`location: ${chineseDestination}`), filename);
-        assert.ok(content.includes(`${englishDestination} 302`) || content.includes(`location: ${englishDestination}`), filename);
+        assert.ok(content.includes(`${chineseDestination} 302`) || content.includes(`302 ${chineseDestination}`) || content.includes(`location: ${chineseDestination}`), filename);
+        assert.ok(content.includes(`${englishDestination} 302`) || content.includes(`302 ${englishDestination}`) || content.includes(`location: ${englishDestination}`), filename);
         assert.match(content, /weatherkit\.apple\.com/);
         assert.match(content, /www\.qweather\.com/);
     }
@@ -103,6 +104,41 @@ test("script module templates redirect QWeather and hook Apple weatherAlerts", a
     assert.match(quantumultX, /weatherAlerts[^\n]+url script-request-header[^\n]+request\.bundle\.js/);
     assert.match(stash, /match: [^\n]+weatherAlerts[\s\S]*?name: WeatherKit\.api\.v1\.weatherAlerts\.request[\s\S]*?type: request/);
     assert.doesNotMatch(stash, /name: WeatherKit\.api\.v1\.weatherAlerts\.request\n      type: request\n      require-body/);
+});
+
+test("Rewrite templates stay aligned with fixed Rewrite modules", async () => {
+    for (const filename of rewriteTemplates) {
+        const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
+        assert.ok(content.includes("(Rewrite)"), filename);
+        assert.ok(content.includes(chinesePattern), filename);
+        assert.ok(content.includes(englishPattern), filename);
+        assert.ok(content.includes(weatherAlertsPattern), filename);
+        assert.ok(content.includes("https://weatherkit.pages.dev/api/v1/weatherAlerts$1"), filename);
+        assert.match(content, /weatherkit\.apple\.com[\s\S]*www\.qweather\.com/);
+        assert.doesNotMatch(content, /weatherkit\.nanocat\.cloud/);
+    }
+
+    const loon = await readFile(new URL("../template/loon.rewrite.handlebars", import.meta.url), "utf8");
+    assert.match(loon, /^\[Rewrite\]$/m);
+    assert.doesNotMatch(loon, /^\[URL Rewrite\]$/m);
+});
+
+test("Loon Rewrite modules use the legacy Rewrite section", async () => {
+    const loon = await readFile(new URL("../template/loon.handlebars", import.meta.url), "utf8");
+    const rewrite = await readFile(new URL("iRingo.WeatherKit.Rewrite.lpx", modulesDirectory), "utf8");
+    for (const content of [loon, rewrite]) {
+        assert.match(content, /^\[Rewrite\]$/m);
+        assert.doesNotMatch(content, /^\[URL Rewrite\]$/m);
+        assert.ok(content.includes(`${chinesePattern} 302 ${chineseDestination}`));
+        assert.doesNotMatch(content, new RegExp(`${chinesePattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} ${chineseDestination.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} 302`));
+    }
+});
+
+test("Rewrite builder outputs use Rewrite names", async () => {
+    const content = await readFile(new URL("../arguments-builder.rewrite.config.ts", import.meta.url), "utf8");
+    assert.match(content, /iRingo\.WeatherKit\.Rewrite\.(?:sgmodule|plugin|srmodule|stoverride|yaml)/);
+    assert.doesNotMatch(content, /Workers/);
+    assert.doesNotMatch(content, /\.workers\.handlebars/);
 });
 
 test("Handler generation keeps Loon local and excludes Egern", async () => {
