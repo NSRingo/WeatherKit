@@ -37,11 +37,14 @@ const qWeatherAlertAPI = {
     alerts: [
         {
             id: "202608021748225061499885",
+            areaId: "320100",
+            areaName: "南京市",
             senderName: "南京市气象台",
             issuedTime: "2026-08-02T09:48Z",
             effectiveTime: "2026-08-02T09:48Z",
+            onsetTime: "2026-08-02T09:48Z",
             expiresTime: "2026-08-03T09:48Z",
-            eventType: { name: "高温" },
+            eventType: { name: "高温", code: "1009" },
             severity: "severe",
             headline: "南京市气象台发布高温橙色预警",
             description: "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。",
@@ -72,7 +75,7 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
     });
 
     assert.equal(extracted.areaName, "建邺");
-    assert.equal(extracted.source, "国家预警信息发布中心");
+    assert.equal(extracted.source, "建邺区气象台");
     assert.equal(extracted.alerts[0].description, "雷暴橙色预警");
     assert.deepEqual(extracted.alerts[0].guidelines, ["注意防范雷电。", "远离高大树木。"]);
     assert.equal("issuedBy" in extracted.alerts[0], false);
@@ -86,11 +89,13 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
     assert.equal(alerts[0].countryCode, "CN");
     assert.equal(alerts[0].description, "雷暴橙色预警");
     assert.equal(alerts[0].effectiveTime, "2026-07-31T03:00:00.000Z");
+    assert.equal(alerts[0].eventOnsetTime, "2026-07-31T03:00:00.000Z");
     assert.equal(alerts[0].expireTime, "9999-12-31T23:59:59Z");
     assert.equal(alerts[0].eventSource, "CN");
+    assert.equal(alerts[0].importance, "high");
     assert.equal(alerts[0].reportedAt, "2026-07-31T03:00:00.000Z");
     assert.equal(alerts[0].severity, "severe");
-    assert.equal(alerts[0].source, "国家预警信息发布中心");
+    assert.equal(alerts[0].source, "建邺区气象台");
     assert.deepEqual(alerts[0].responses, ["prepare", "avoid"]);
     assert.deepEqual(alerts[0].messages, [
         {
@@ -126,13 +131,20 @@ test("QWeather Alert API is standardized by QWeather class", async () => {
         assert.equal(sourceRequest.url.toString(), "https://devapi.qweather.com/weatheralert/v1/current/32.115/118.814?lang=zh");
         assert.equal(sourceRequest.headers.get("X-QW-Api-Key"), "test-token");
         assert.equal(sourceRequest.headers.get("Accept"), "application/json");
-        assert.equal(extracted.source, "国家预警信息发布中心");
-        assert.equal(extracted.areaName, "");
+        assert.equal(extracted.source, "南京市气象台");
+        assert.equal(extracted.areaName, "南京市");
         assert.equal(extracted.alerts.length, 1);
+        assert.equal(extracted.alerts[0].areaId, "320100");
+        assert.equal(extracted.alerts[0].areaName, "南京市");
         assert.equal(extracted.alerts[0].description, "高温橙色预警");
         assert.deepEqual(extracted.alerts[0].responses, ["monitor"]);
         assert.equal(extracted.alerts[0].effectiveTime, "2026-08-02T09:48:00.000Z");
+        assert.equal(extracted.alerts[0].eventOnsetTime, "2026-08-02T09:48:00.000Z");
+        assert.equal(extracted.alerts[0].eventEndTime, "2026-08-03T09:48:00.000Z");
         assert.equal(extracted.alerts[0].expireTime, "2026-08-03T09:48:00.000Z");
+        assert.equal(extracted.alerts[0].phenomenon, "高温");
+        assert.equal(extracted.alerts[0].source, "南京市气象台");
+        assert.equal(extracted.alerts[0].token, "1009");
         assert.equal(extracted.alerts[0].reportedAt, "2026-08-02T09:48:00.000Z");
         assert.deepEqual(extracted.alerts[0].guidelines, [
             "有关部门和单位按照职责落实防暑降温保障措施；",
@@ -145,8 +157,10 @@ test("QWeather Alert API is standardized by QWeather class", async () => {
     }
 });
 
-test("QWeather source extraction supports the English attribution label", () => {
-    const englishHtml = sourceHtml.replace("预警数据来源：国家预警信息发布中心", "Warning data source: National Early Warning Center");
+test("QWeather source extraction falls back to the English attribution label", () => {
+    const englishHtml = sourceHtml
+        .replace("建邺区气象台发布雷暴橙色预警", "Thunderstorm orange warning")
+        .replace("预警数据来源：国家预警信息发布中心", "Warning data source: National Early Warning Center");
     assert.equal(WeatherAlerts.ExtractQWeather(englishHtml).source, "National Early Warning Center");
 });
 
@@ -181,7 +195,7 @@ test("Pages routes WeatherAlert requests through Hono before fetching QWeather",
             assert.equal(body[0].description, "雷暴橙色预警", pathname);
             assert.equal(body[0].eventSource, "CN", pathname);
             assert.equal(body[0].reportedAt, "2026-07-31T03:00:00.000Z", pathname);
-            assert.equal(body[0].source, "国家预警信息发布中心", pathname);
+            assert.equal(body[0].source, "建邺区气象台", pathname);
         }
     } finally {
         globalThis.fetch = originalFetch;
@@ -215,13 +229,20 @@ test("Pages routes coordinate WeatherAlert identifiers through QWeather Alert AP
             assert.equal(headers.get("X-QW-Api-Key"), "bdd98ec1d87747f3a2e8b1741a5af796", pathname);
             assert.equal(body.length, 1, pathname);
             assert.equal(body[0].attributionURL, "https://www.12379.cn/", pathname);
+            assert.equal(body[0].areaId, "320100", pathname);
+            assert.equal(body[0].areaName, "南京市", pathname);
             assert.equal(body[0].countryCode, "CN", pathname);
             assert.equal(body[0].description, "高温橙色预警", pathname);
             assert.equal(body[0].effectiveTime, "2026-08-02T09:48:00.000Z", pathname);
+            assert.equal(body[0].eventOnsetTime, "2026-08-02T09:48:00.000Z", pathname);
+            assert.equal(body[0].eventEndTime, "2026-08-03T09:48:00.000Z", pathname);
             assert.equal(body[0].expireTime, "2026-08-03T09:48:00.000Z", pathname);
             assert.equal(body[0].issuedTime, "2026-08-02T09:48:00.000Z", pathname);
+            assert.equal(body[0].importance, "high", pathname);
+            assert.equal(body[0].phenomenon, "高温", pathname);
             assert.equal(body[0].reportedAt, "2026-08-02T09:48:00.000Z", pathname);
-            assert.equal(body[0].source, "国家预警信息发布中心", pathname);
+            assert.equal(body[0].source, "南京市气象台", pathname);
+            assert.equal(body[0].token, "1009", pathname);
             assert.deepEqual(body[0].responses, ["monitor"]);
             assert.equal("area" in body[0], false, pathname);
             assert.equal(
@@ -292,7 +313,7 @@ test("the request scripts return QWeather data before Apple weatherAlerts is req
             assert.equal(body[0].attributionURL, "https://www.qweather.com/en/severe-weather/jianye-101190110.html");
             assert.equal(body[0].eventSource, "CN");
             assert.equal(body[0].reportedAt, "2026-07-31T03:00:00.000Z");
-            assert.equal(body[0].source, "国家预警信息发布中心");
+            assert.equal(body[0].source, "建邺区气象台");
             assert.equal(body[0].messages[0].language, "en-US");
         }
     } finally {
@@ -346,7 +367,7 @@ test("the request scripts route coordinate identifiers through QWeather Alert AP
             assert.equal($response.statusCode, 200);
             assert.equal($response.headers["Content-Type"], "application/json");
             assert.equal(body[0].description, "高温橙色预警");
-            assert.equal(body[0].source, "国家预警信息发布中心");
+            assert.equal(body[0].source, "南京市气象台");
         }
     } finally {
         globalThis.fetch = originalFetch;
