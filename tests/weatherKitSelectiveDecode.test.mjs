@@ -16,6 +16,30 @@ const [{ default: WeatherKit2 }, { FlatBufferRootProcessor }, { News, Weather },
 ]);
 
 const supportedRootDataSets = Object.getOwnPropertyNames(Weather.prototype).filter(dataSet => !["constructor", "__init"].includes(dataSet));
+const qWeatherAlertAPI = {
+    metadata: {
+        attributions: ["国家预警信息发布中心", "当前预警数据可能存在延迟或信息过时，以官方数据发布为准。"],
+    },
+    alerts: [
+        {
+            id: "202608021748225061499885",
+            areaId: "320100",
+            areaName: "南京市",
+            senderName: "南京市气象台",
+            issuedTime: "2026-08-02T09:48Z",
+            effectiveTime: "2026-08-02T09:48Z",
+            onsetTime: "2026-08-02T09:48Z",
+            expiresTime: "2026-08-03T09:48Z",
+            eventType: { name: "高温", code: "1009" },
+            severity: "severe",
+            headline: "南京市气象台发布高温橙色预警",
+            description: "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。",
+            criteria: "日最高气温升至37℃以上",
+            responseTypes: ["monitor"],
+            instruction: "1.政府及相关部门按照职责落实防暑降温保障措施。\n2.尽量避免在高温时段进行户外活动，高温条件下作业的人员应缩短连续工作时间。\n3.对老、弱、病、幼人群提供防暑降温指导，并采取必要的防护措施。\n4.做好高温火灾隐患排查，注意用火用电安全。",
+        },
+    ],
+};
 
 test("WeatherKit2 is a configured reusable root processor", () => {
     assert.ok(WeatherKit2 instanceof FlatBufferRootProcessor);
@@ -170,24 +194,47 @@ test("response rewrites only National Warning Center weatherAlerts collection de
     const originalBytes = createWeatherAlertRoot();
     const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["weatherAlerts"]);
     const expectedDetailsUrl = "https://weatherkit.apple.com/alertDetails/index.html?ids=32.115,118.814&lang=zh-CN&timezone=Asia%2FShanghai&party=apple";
+    const expectedOnsetTime = Math.trunc(new Date(qWeatherAlertAPI.alerts[0].onsetTime).getTime() / 1000);
+    const expectedEndTime = Math.trunc(new Date(qWeatherAlertAPI.alerts[0].expiresTime).getTime() / 1000);
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async input => {
+        const requestUrl = typeof input === "string" ? input : input?.url ?? input;
+        if (String(requestUrl).includes("/weatheralert/v1/current/")) {
+            return new globalThis.Response(JSON.stringify(qWeatherAlertAPI), { headers: { "Content-Type": "application/json" } });
+        }
+        throw new Error(`unexpected fetch: ${requestUrl}`);
+    };
 
-    for (const handler of [Response, ResponseDev]) {
-        const response = await handler(
-            {
-                headers: {},
-                url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/32.115/118.814?timezone=Asia%2FShanghai&country=CN&dataSets=weatherAlerts",
-            },
-            {
-                bodyBytes: originalBytes,
-                headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
-            },
-        );
-        const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["weatherAlerts"]);
+    try {
+        for (const handler of [Response, ResponseDev]) {
+            const response = await handler(
+                {
+                    headers: {},
+                    url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/32.115/118.814?timezone=Asia%2FShanghai&country=CN&dataSets=weatherAlerts",
+                },
+                {
+                    bodyBytes: originalBytes,
+                    headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
+                },
+            );
+            const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["weatherAlerts"]);
 
-        assert.equal(decoded.weatherAlerts.detailsUrl, expectedDetailsUrl);
-        assert.equal(decoded.weatherAlerts.metadata.attributionUrl, originalDecoded.weatherAlerts.metadata.attributionUrl);
-        assert.equal(decoded.weatherAlerts.alerts[0].detailsUrl, originalDecoded.weatherAlerts.alerts[0].detailsUrl);
-        assert.equal(decoded.weatherAlerts.alerts[0].attributionUrl, originalDecoded.weatherAlerts.alerts[0].attributionUrl);
+            assert.equal(decoded.weatherAlerts.detailsUrl, expectedDetailsUrl);
+            assert.equal(decoded.weatherAlerts.metadata.attributionUrl, originalDecoded.weatherAlerts.metadata.attributionUrl);
+            assert.equal(decoded.weatherAlerts.metadata.readTime, originalDecoded.weatherAlerts.metadata.readTime);
+            assert.equal(decoded.weatherAlerts.metadata.reportedTime, originalDecoded.weatherAlerts.metadata.reportedTime);
+            assert.equal(decoded.weatherAlerts.alerts[0].detailsUrl, originalDecoded.weatherAlerts.alerts[0].detailsUrl);
+            assert.equal(decoded.weatherAlerts.alerts[0].attributionUrl, originalDecoded.weatherAlerts.alerts[0].attributionUrl);
+            assert.equal(decoded.weatherAlerts.alerts[0].areaId, qWeatherAlertAPI.alerts[0].areaId);
+            assert.equal(decoded.weatherAlerts.alerts[0].areaName, qWeatherAlertAPI.alerts[0].areaName);
+            assert.equal(decoded.weatherAlerts.alerts[0].eventOnsetTime, expectedOnsetTime);
+            assert.equal(decoded.weatherAlerts.alerts[0].eventEndTime, expectedEndTime);
+            assert.deepEqual(decoded.weatherAlerts.alerts[0].responses, qWeatherAlertAPI.alerts[0].responseTypes);
+            assert.equal(decoded.weatherAlerts.alerts[0].source, originalDecoded.weatherAlerts.alerts[0].source);
+            assert.equal(decoded.weatherAlerts.alerts[0].issuedTime, originalDecoded.weatherAlerts.alerts[0].issuedTime);
+        }
+    } finally {
+        globalThis.fetch = originalFetch;
     }
 });
 
