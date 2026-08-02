@@ -3,7 +3,7 @@
   * 新增 FlatBuffer root overlay 编码能力，仅重写实际变更的数据集，并保留 Apple 未知或新增的根产品表，提升对新 `WeatherKit` schema 的兼容性。 @hhh2210
   * 新增可配置的 `WeatherKit` 重写服务端点，模块统一由 `Workers` 更名为 `Rewrite`，支持在 `weatherkit.pages.dev`、`dev.weatherkit.pages.dev` 与 `weather.nanocat.cloud` 之间选择。 @VirgilClyne
   * 新增通用 FlatBuffer 根表处理器，并将 `WeatherKit` 改为按请求数据集逐 slot 解码和回写；未选数据集、未配置字段及新 schema slot 均保持原始二进制内容。 @VirgilClyne
-  * 新增 QWeather 灾害预警页面重写与 `weatherAlerts` 接口适配，在请求脚本阶段预处理并直接构造 Apple WeatherKit 兼容响应。 @VirgilClyne
+  * 新增 QWeather 灾害预警坐标适配与 `weatherAlerts` 接口处理，在请求脚本阶段通过坐标 `ids` 直连 QWeather Alert API，并直接构造 Apple WeatherKit 兼容响应。 @VirgilClyne
 
 ### 🛠️ Bug Fixes
   * 修复 `forecastNextHour` 在 iOS 27 下因元数据过期过快而失效的问题，并完善多段降水状态推导与描述匹配，避免复合天气短语被后续关键词错误覆盖。 @hhh2210

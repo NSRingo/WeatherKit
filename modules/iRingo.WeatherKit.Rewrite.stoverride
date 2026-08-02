@@ -29,4 +29,4 @@ http:
     # 🌤 WeatherKit.api.v2.weather.response
     - ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ https://weatherkit.pages.dev/api/v2/weather/ transparent
     # 🌤 WeatherKit.api.v1.weatherAlerts.response
-    - ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=(?:[^&#]*-[0-9]{9}|-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+),-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+))(?:&[^#]*)?)$ https://weatherkit.pages.dev/api/v1/weatherAlerts$1 transparent
+    - ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+),-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:&[^#]*)?)$ https://weatherkit.pages.dev/api/v1/weatherAlerts$1 transparent

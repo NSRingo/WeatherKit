@@ -6,8 +6,8 @@ const modulesDirectory = new URL("../modules/", import.meta.url);
 const configurableModules = ["iRingo.WeatherKit.Rewrite.sgmodule", "iRingo.WeatherKit.Rewrite.srmodule", "iRingo.WeatherKit.Rewrite.yaml"];
 const fixedModules = ["iRingo.WeatherKit.Rewrite.lpx", "iRingo.WeatherKit.Rewrite.stoverride"];
 const rewriteTemplates = ["loon.rewrite.handlebars", "surge.rewrite.handlebars", "shadowrocket.rewrite.handlebars", "stash.rewrite.handlebars"];
-const weatherAlertsPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=(?:[^&#]*-[0-9]{9}|-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+),-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+))(?:&[^#]*)?)$`;
-const weatherAlertsHandlerPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=(?:[^&#]*-[0-9]{9}|-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+),-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+))(?:&|$)`;
+const weatherAlertsPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+),-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:&[^#]*)?)$`;
+const weatherAlertsHandlerPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+),-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:&|$)`;
 const weatherAlertsRewriteComment = "# 🌤 WeatherKit.api.v1.weatherAlerts.response";
 const unsafeOpenEndedQuantifier = "{6" + ",}";
 
@@ -36,17 +36,15 @@ test("all Rewrite modules hook WeatherAlert data without QWeather page redirects
     }
 });
 
-test("WeatherAlerts hooks accept QWeather ids without constraining preceding parameters", () => {
+test("WeatherAlerts hooks accept coordinate ids without constraining preceding parameters", () => {
     const regex = new RegExp(weatherAlertsPattern);
     const handlerRegex = new RegExp(weatherAlertsHandlerPattern);
-    assert.match("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-101190110", regex);
     assert.match("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=32.115,118.814", regex);
-    assert.match("https://weatherkit.apple.com/api/v1/weatherAlerts?timezone=Asia%2FShanghai&ids=jianye-101190110", regex);
     assert.match("https://weatherkit.apple.com/api/v1/weatherAlerts?timezone=Asia%2FShanghai&ids=32.115,118.814", regex);
-    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-10119011", regex);
-    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-1011901100", regex);
-    assert.match("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-101190110", handlerRegex);
     assert.match("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=32.115,118.814", handlerRegex);
+    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-101190110", regex);
+    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-1011901100", regex);
+    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?timezone=Asia%2FShanghai&ids=jianye-101190110", regex);
     assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-1011901100", handlerRegex);
 });
 
