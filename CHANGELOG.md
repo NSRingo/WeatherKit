@@ -14,6 +14,7 @@
   * 修复和风天气分钟预报的 `reportedTime`，改为使用接口返回的 `updateTime`，不再误写为本地读取时间。 @VirgilClyne
   * 修复云端路由对 `dev.weatherkit.*` 与 `*.pages.dev` 域名的识别，并限制 Cloudflare Pages Functions 只处理 WeatherKit API 路径。 @VirgilClyne
   * 为 QWeather 预警响应补充事件来源回退值，确保缺少来源字段时仍返回 Apple 兼容数据。 @VirgilClyne
+  * 完善 QWeather 预警到 Apple `alertDetails` 的字段映射：写入签发机构、区域、事件时间与枚举字段，并保持 `responses` 仅承载官方建议行动枚举。 @VirgilClyne
 
 ### 🔣 Dependencies
   * 切换 `@nsnanocat/util` 到公共 npm registry 来源。 @hhh2210
@@ -30,3 +31,4 @@
   * 调整 `Vercel` 部署入口为 `src/Hono.js`，并完善 Cloudflare Pages 的构建输出与路由配置。 @001ProMax @VirgilClyne
   * 新增覆盖空气质量 scale、NextHour 条件推导、降水总量、provider metadata、request availability、FlatBuffer overlay 与 selective decode 的回归测试。 @hhh2210
   * 新增 FlatBuffer 根表处理器契约、逐 slot 编解码、选择性数据集回写及 QWeather 预警的回归测试。 @VirgilClyne
+  * 新增 WeatherAlert API 字段映射文档，记录官方页面参数、显式渲染字段与本项目转换入口。 @VirgilClyne
