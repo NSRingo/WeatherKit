@@ -46,6 +46,7 @@ const qWeatherAlertAPI = {
             headline: "南京市气象台发布高温橙色预警",
             description: "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。",
             criteria: "日最高气温升至37℃以上",
+            responseTypes: ["monitor"],
             instruction: "1. 有关部门和单位按照职责落实防暑降温保障措施；\n2. 尽量避免在高温时段进行户外活动；\n3. 对老、弱、病、幼人群提供防暑降温指导；\n4. 高温条件下作业人员应当缩短连续工作时间。",
         },
     ],
@@ -129,6 +130,7 @@ test("QWeather Alert API is standardized by QWeather class", async () => {
         assert.equal(extracted.areaName, "");
         assert.equal(extracted.alerts.length, 1);
         assert.equal(extracted.alerts[0].description, "高温橙色预警");
+        assert.deepEqual(extracted.alerts[0].responses, ["monitor"]);
         assert.equal(extracted.alerts[0].effectiveTime, "2026-08-02T09:48:00.000Z");
         assert.equal(extracted.alerts[0].expireTime, "2026-08-03T09:48:00.000Z");
         assert.equal(extracted.alerts[0].reportedAt, "2026-08-02T09:48:00.000Z");
@@ -217,8 +219,11 @@ test("Pages routes coordinate WeatherAlert identifiers through QWeather Alert AP
             assert.equal(body[0].description, "高温橙色预警", pathname);
             assert.equal(body[0].effectiveTime, "2026-08-02T09:48:00.000Z", pathname);
             assert.equal(body[0].expireTime, "2026-08-03T09:48:00.000Z", pathname);
+            assert.equal(body[0].issuedTime, "2026-08-02T09:48:00.000Z", pathname);
+            assert.equal(body[0].reportedAt, "2026-08-02T09:48:00.000Z", pathname);
             assert.equal(body[0].source, "国家预警信息发布中心", pathname);
-            assert.deepEqual(body[0].responses, ["avoid"]);
+            assert.deepEqual(body[0].responses, ["monitor"]);
+            assert.equal("area" in body[0], false, pathname);
             assert.equal(
                 body[0].messages[0].text,
                 "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。\n\n日最高气温升至37℃以上\n\n有关部门和单位按照职责落实防暑降温保障措施；\n\n尽量避免在高温时段进行户外活动；\n\n对老、弱、病、幼人群提供防暑降温指导；\n\n高温条件下作业人员应当缩短连续工作时间。",

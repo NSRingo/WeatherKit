@@ -714,6 +714,7 @@ export default class QWeather {
             identifier: alert?.id,
             issuedTime,
             message: alert?.description || alert?.headline || description,
+            responses: Array.isArray(alert?.responseTypes) ? alert.responseTypes.map(response => String(response ?? "").trim()).filter(Boolean) : [],
             reportedAt: issuedTime,
             severity: this.#NormalizeWeatherAlertSeverity(alert?.severity),
             standard: alert?.criteria ?? "",

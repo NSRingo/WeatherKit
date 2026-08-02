@@ -11,6 +11,7 @@ import { Console, Lodash as _, fetch } from "@nsnanocat/util";
  *     identifier?: string,
  *     issuedTime: string,
  *     message: string,
+ *     responses?: string[],
  *     reportedAt: string,
  *     severity: "unknown" | "extreme" | "severe" | "moderate" | "minor",
  *     standard: string,
@@ -43,7 +44,6 @@ import { Console, Lodash as _, fetch } from "@nsnanocat/util";
  * WeatherKit REST WeatherAlert。
  * WeatherKit REST WeatherAlert.
  * @typedef {{
- *     area: Record<string, unknown>,
  *     areaId?: string,
  *     areaName?: string,
  *     attributionURL: string,
@@ -242,12 +242,11 @@ export default class WeatherAlerts {
         return extracted.alerts.map((alert, precedence) => {
             const uid = WeatherAlerts.#StableUUID(`${context.identifier}:${alert.identifier ?? precedence}`);
             const text = [alert.message, alert.standard, ...alert.guidelines].filter(Boolean).join("\n\n") || alert.description;
-            const responses = WeatherAlerts.#BuildResponses(alert.guidelines);
+            const responses = WeatherAlerts.#BuildResponses(alert.guidelines, alert.responses);
             return {
                 id: uid,
                 ...(areaId ? { areaId } : {}),
                 ...(extracted.areaName ? { areaName: extracted.areaName } : {}),
-                area: {},
                 attributionURL: context.attributionUrl.toString(),
                 certainty: "unknown",
                 countryCode: context.countryCode ?? "",
@@ -391,13 +390,31 @@ export default class WeatherAlerts {
      * @param {string[]} guidelines 防御指南 / Defense guidance.
      * @returns {string[]} 动作 token / Action tokens.
      */
-    static #BuildResponses(guidelines) {
-        const responses = [];
+    static #BuildResponses(guidelines, preferredResponses = []) {
+        const responses = WeatherAlerts.#NormalizeResponses(preferredResponses);
+        if (responses.length) return responses;
+
+        const inferredResponses = [];
         for (const guideline of guidelines ?? []) {
             const response = WeatherAlerts.#ResponseFromGuideline(guideline);
-            if (response && !responses.includes(response)) responses.push(response);
+            if (response && !inferredResponses.includes(response)) inferredResponses.push(response);
         }
-        return responses.length ? responses : (guidelines?.length ? ["monitor"] : []);
+        return inferredResponses.length ? inferredResponses : (guidelines?.length ? ["monitor"] : []);
+    }
+
+    /**
+     * 标准化动作 token 列表。
+     * Normalize action token list.
+     * @param {string[]} responses 动作 token / Action tokens.
+     * @returns {string[]} 规范化后的动作 token / Normalized action tokens.
+     */
+    static #NormalizeResponses(responses) {
+        const normalized = [];
+        for (const response of responses ?? []) {
+            const token = String(response ?? "").trim();
+            if (token && !normalized.includes(token)) normalized.push(token);
+        }
+        return normalized;
     }
 
     /**
