@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import test from "node:test";
 import { onRequest } from "../functions/[[route]].js";
+import QWeather from "../src/class/QWeather.mjs";
 import WeatherAlerts from "../src/class/WeatherAlerts.mjs";
 import { Request as processRequest } from "../src/process/Request.mjs";
 import { Request as processRequestDev } from "../src/process/Request.dev.mjs";
@@ -106,6 +107,40 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
         })[0].eventSource,
         "EUMETNET",
     );
+});
+
+test("QWeather Alert API is standardized by QWeather class", async () => {
+    const originalFetch = globalThis.fetch;
+    let sourceRequest;
+    globalThis.fetch = async (input, init) => {
+        const requestUrl = typeof input === "string" ? input : input?.url ?? input;
+        sourceRequest = { url: new URL(requestUrl), headers: new Headers(init?.headers ?? input?.headers ?? {}) };
+        return new Response(JSON.stringify(qWeatherAlertAPI), { headers: { "Content-Type": "application/json" } });
+    };
+
+    try {
+        const qWeather = new QWeather({ country: "CN", language: "zh-CN", latitude: "32.115", longitude: "118.814" }, "test-token");
+        const extracted = await qWeather.WeatherAlert();
+
+        assert.equal(sourceRequest.url.toString(), "https://devapi.qweather.com/weatheralert/v1/current/32.115/118.814?lang=zh");
+        assert.equal(sourceRequest.headers.get("X-QW-Api-Key"), "test-token");
+        assert.equal(sourceRequest.headers.get("Accept"), "application/json");
+        assert.equal(extracted.source, "国家预警信息发布中心");
+        assert.equal(extracted.areaName, "");
+        assert.equal(extracted.alerts.length, 1);
+        assert.equal(extracted.alerts[0].description, "高温橙色预警");
+        assert.equal(extracted.alerts[0].effectiveTime, "2026-08-02T09:48:00.000Z");
+        assert.equal(extracted.alerts[0].expireTime, "2026-08-03T09:48:00.000Z");
+        assert.equal(extracted.alerts[0].reportedAt, "2026-08-02T09:48:00.000Z");
+        assert.deepEqual(extracted.alerts[0].guidelines, [
+            "有关部门和单位按照职责落实防暑降温保障措施；",
+            "尽量避免在高温时段进行户外活动；",
+            "对老、弱、病、幼人群提供防暑降温指导；",
+            "高温条件下作业人员应当缩短连续工作时间。",
+        ]);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
 });
 
 test("QWeather source extraction supports the English attribution label", () => {
