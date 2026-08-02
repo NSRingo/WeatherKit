@@ -41,18 +41,10 @@ url_rewrites:
 - match: ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/
   location: https://{{{endpoint}}}/api/v2/weather/
   status_code: 307
-# 🌤 WeatherKit.alertDetails.index.response
-- match: ^https?:\/\/www\.qweather\.com\/\/?severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$
-  location: https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather
-  status_code: 302
-- match: ^https?:\/\/www\.qweather\.com\/en\/severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$
-  location: https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=en-US&party=qweather
-  status_code: 302
 # 🌤 WeatherKit.api.v1.weatherAlerts.response
-- match: ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&[^#]*)?)$
+- match: ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=(?:[^&#]*-[0-9]{9}|-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+),-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+))(?:&[^#]*)?)$
   location: https://{{{endpoint}}}/api/v1/weatherAlerts$1
 mitm:
   hostnames:
     includes:
     - weatherkit.apple.com
-    - www.qweather.com
