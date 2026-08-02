@@ -42,7 +42,7 @@ url_rewrites:
   location: https://{{{endpoint}}}/api/v2/weather/
   status_code: 307
 # 🌤 WeatherKit.alertDetails.index.response
-- match: ^https?:\/\/www\.qweather\.com\/{1,2}severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$
+- match: ^https?:\/\/www\.qweather\.com\/\/?severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$
   location: https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather
   status_code: 302
 - match: ^https?:\/\/www\.qweather\.com\/en\/severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$

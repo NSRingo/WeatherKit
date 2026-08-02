@@ -21,7 +21,7 @@ host, tether.edge.apple, reject
 # 🌤 WeatherKit.api.v2.weather.response
 ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
 # 🌤 WeatherKit.alertDetails.index.response
-^https?:\/\/www\.qweather\.com\/{1,2}severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ url 302 https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather
+^https?:\/\/www\.qweather\.com\/\/?severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ url 302 https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather
 ^https?:\/\/www\.qweather\.com\/en\/severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ url 302 https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=en-US&party=qweather
 
 #[mitm]

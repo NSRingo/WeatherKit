@@ -30,7 +30,7 @@ http:
     # 🌤 WeatherKit.api.v2.weather.response
     - ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ https://weatherkit.pages.dev/api/v2/weather/ transparent
     # 🌤 WeatherKit.alertDetails.index.response
-    - ^https?:\/\/www\.qweather\.com\/{1,2}severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather 302
+    - ^https?:\/\/www\.qweather\.com\/\/?severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather 302
     - ^https?:\/\/www\.qweather\.com\/en\/severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=en-US&party=qweather 302
     # 🌤 WeatherKit.api.v1.weatherAlerts.response
     - ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&[^#]*)?)$ https://weatherkit.pages.dev/api/v1/weatherAlerts$1 transparent
