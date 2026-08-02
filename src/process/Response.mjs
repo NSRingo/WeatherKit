@@ -91,7 +91,7 @@ export async function Response($request, $response) {
                                 body = WeatherKit2.decode(ByteBuffer, parameters.dataSets);
                                 const enviroments = {
                                     colorfulClouds: new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
-                                    qWeather: new QWeather(parameters, Settings?.API?.QWeather?.Token, Settings?.API?.QWeather?.Host),
+                                    qWeather: new QWeather(parameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host),
                                     waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
                                     country: parameters.country,
                                 };
