@@ -102,7 +102,7 @@ evacuate, shelter, execute, prepare, avoid, monitor, assess, allClear, none
 | HTML 页面提取 | `src/class/WeatherAlerts.mjs` 的 `ExtractQWeather()` | 保留旧 QWeather 页面解析；从页面标题提取签发机构，从防御指南提取 `guidelines`。 |
 | API 坐标提取 | `src/class/QWeather.mjs` 的 `WeatherAlert()` | 请求 QWeather `weatheralert/v1/current/{latitude}/{longitude}`，标准化为 `WeatherAlerts.Build()` 可消费结构。 |
 | Apple JSON 构造 | `src/class/WeatherAlerts.mjs` 的 `Build()` | 输出官方 `/api/v1/weatherAlerts` 数组形态。 |
-| v2 FlatBuffer 链接改写 | `src/class/WeatherAlerts.mjs` 的 `RewriteFlatBufferDetailsURL()` | 只改写现有 v2 `weatherAlerts` 的 `detailsUrl` / `attributionUrl` 到坐标版官方页面。 |
+| v2 FlatBuffer 链接改写 | `src/class/WeatherAlerts.mjs` 的 `RewriteFlatBufferDetailsURL()` | 仅当 `metadata.providerName` 为 `国家预警信息发布中心` 时，把集合级 `weatherAlerts.detailsUrl` 改为坐标版官方页面；不改 `metadata.attributionUrl`，也不改单条 alert 的 `detailsUrl` / `attributionUrl`。 |
 
 ## 参考
 

@@ -15,6 +15,7 @@
   * 修复云端路由对 `dev.weatherkit.*` 与 `*.pages.dev` 域名的识别，并限制 Cloudflare Pages Functions 只处理 WeatherKit API 路径。 @VirgilClyne
   * 为 QWeather 预警响应补充事件来源回退值，确保缺少来源字段时仍返回 Apple 兼容数据。 @VirgilClyne
   * 完善 QWeather 预警到 Apple `alertDetails` 的字段映射：写入签发机构、区域、事件时间与枚举字段，并保持 `responses` 仅承载官方建议行动枚举。 @VirgilClyne
+  * 收窄 v2 `weatherAlerts` FlatBuffer 链接改写：仅当来源为国家预警信息发布中心时改写集合级 `detailsUrl`，保留 `metadata` 与单条预警的原始来源 URL。 @VirgilClyne
 
 ### 🔣 Dependencies
   * 切换 `@nsnanocat/util` 到公共 npm registry 来源。 @hhh2210

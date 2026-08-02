@@ -166,8 +166,9 @@ test("response rewrites an injection root when its dataSet was requested", async
     assert.deepEqual(Object.keys(WeatherKit2.decode(new ByteBuffer(responseBytes), ["forecastNextHour", "news"])), ["forecastNextHour", "news"]);
 });
 
-test("response rewrites weatherAlerts flatbuffer URLs to Apple alertDetails coordinates", async () => {
+test("response rewrites only National Warning Center weatherAlerts collection details URL", async () => {
     const originalBytes = createWeatherAlertRoot();
+    const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["weatherAlerts"]);
     const expectedDetailsUrl = "https://weatherkit.apple.com/alertDetails/index.html?ids=32.115,118.814&lang=zh-CN&timezone=Asia%2FShanghai&party=apple";
 
     for (const handler of [Response, ResponseDev]) {
@@ -184,9 +185,33 @@ test("response rewrites weatherAlerts flatbuffer URLs to Apple alertDetails coor
         const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["weatherAlerts"]);
 
         assert.equal(decoded.weatherAlerts.detailsUrl, expectedDetailsUrl);
-        assert.equal(decoded.weatherAlerts.metadata.attributionUrl, expectedDetailsUrl);
-        assert.equal(decoded.weatherAlerts.alerts[0].detailsUrl, expectedDetailsUrl);
-        assert.equal(decoded.weatherAlerts.alerts[0].attributionUrl, expectedDetailsUrl);
+        assert.equal(decoded.weatherAlerts.metadata.attributionUrl, originalDecoded.weatherAlerts.metadata.attributionUrl);
+        assert.equal(decoded.weatherAlerts.alerts[0].detailsUrl, originalDecoded.weatherAlerts.alerts[0].detailsUrl);
+        assert.equal(decoded.weatherAlerts.alerts[0].attributionUrl, originalDecoded.weatherAlerts.alerts[0].attributionUrl);
+    }
+});
+
+test("response does not rewrite weatherAlerts details URL for other providers", async () => {
+    const originalBytes = createWeatherAlertRoot("The Weather Channel");
+    const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["weatherAlerts"]);
+
+    for (const handler of [Response, ResponseDev]) {
+        const response = await handler(
+            {
+                headers: {},
+                url: "https://weatherkit.apple.com/api/v2/weather/en-US/32.115/118.814?timezone=Asia%2FShanghai&country=US&dataSets=weatherAlerts",
+            },
+            {
+                bodyBytes: originalBytes,
+                headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
+            },
+        );
+        const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["weatherAlerts"]);
+
+        assert.equal(decoded.weatherAlerts.detailsUrl, originalDecoded.weatherAlerts.detailsUrl);
+        assert.equal(decoded.weatherAlerts.metadata.attributionUrl, originalDecoded.weatherAlerts.metadata.attributionUrl);
+        assert.equal(decoded.weatherAlerts.alerts[0].detailsUrl, originalDecoded.weatherAlerts.alerts[0].detailsUrl);
+        assert.equal(decoded.weatherAlerts.alerts[0].attributionUrl, originalDecoded.weatherAlerts.alerts[0].attributionUrl);
     }
 });
 
@@ -229,7 +254,7 @@ function createWeatherRoot(presentSlots) {
     return builder.asUint8Array().slice();
 }
 
-function createWeatherAlertRoot() {
+function createWeatherAlertRoot(providerName = "国家预警信息发布中心") {
     const qWeatherUrl = "https://www.qweather.com/severe-weather/qixia-101190112.html?from=AppleWeatherService";
     return WeatherKit2.encode(undefined, {
         weatherAlerts: {
@@ -239,7 +264,7 @@ function createWeatherAlertRoot() {
                 language: "zh-CN",
                 latitude: 32.115,
                 longitude: 118.814,
-                providerName: "国家预警信息发布中心",
+                providerName,
                 readTime: 1_785_623_406,
                 reportedTime: 1_785_573_420,
                 temporarilyUnavailable: false,

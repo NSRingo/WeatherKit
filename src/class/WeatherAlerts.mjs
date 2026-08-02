@@ -141,15 +141,16 @@ export default class WeatherAlerts {
     }
 
     /**
-     * 将 v2 weatherAlerts flatbuffer 中的来源页 URL 改成 Apple alertDetails 页 URL。
-     * Rewrite v2 weatherAlerts flatbuffer URLs to the Apple alertDetails page URL.
-     * @param {any} weatherAlerts v2 weatherAlerts 数据；会原地改写 collection/details 和每条 alert 的 attributionUrl/detailsUrl。
+     * 将国家预警信息发布中心 v2 weatherAlerts flatbuffer 的集合详情 URL 改成 Apple alertDetails 页 URL。
+     * Rewrite the collection details URL for National Warning Center v2 weatherAlerts flatbuffer data.
+     * @param {any} weatherAlerts v2 weatherAlerts 数据；只改写 collection detailsUrl，不改 metadata 或 alert URL。
      * @param {any} parameters parseWeatherKitURL 解析出的经纬度、语言和国家参数。
      * @param {URL} requestUrl 原始 WeatherKit 请求 URL；timezone 从这里透传给 alertDetails。
      * @returns {any} 改写后的 weatherAlerts 数据 / Rewritten weatherAlerts data.
      */
     static RewriteFlatBufferDetailsURL(weatherAlerts, parameters, requestUrl) {
         if (!weatherAlerts) return weatherAlerts;
+        if (String(weatherAlerts?.metadata?.providerName ?? "").trim() !== "国家预警信息发布中心") return weatherAlerts;
         const detailsUrl = WeatherAlerts.BuildAppleAlertDetailsURL({
             latitude: parameters?.latitude,
             longitude: parameters?.longitude,
@@ -160,11 +161,6 @@ export default class WeatherAlerts {
         if (!detailsUrl) return weatherAlerts;
 
         weatherAlerts.detailsUrl = detailsUrl;
-        if (weatherAlerts.metadata) weatherAlerts.metadata.attributionUrl = detailsUrl;
-        for (const alert of weatherAlerts.alerts ?? []) {
-            alert.detailsUrl = detailsUrl;
-            alert.attributionUrl = detailsUrl;
-        }
         return weatherAlerts;
     }
 
