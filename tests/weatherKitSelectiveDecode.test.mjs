@@ -166,6 +166,30 @@ test("response rewrites an injection root when its dataSet was requested", async
     assert.deepEqual(Object.keys(WeatherKit2.decode(new ByteBuffer(responseBytes), ["forecastNextHour", "news"])), ["forecastNextHour", "news"]);
 });
 
+test("response rewrites weatherAlerts flatbuffer URLs to Apple alertDetails coordinates", async () => {
+    const originalBytes = createWeatherAlertRoot();
+    const expectedDetailsUrl = "https://weatherkit.apple.com/alertDetails/index.html?ids=32.115,118.814&lang=zh-CN&timezone=Asia%2FShanghai&party=apple";
+
+    for (const handler of [Response, ResponseDev]) {
+        const response = await handler(
+            {
+                headers: {},
+                url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/32.115/118.814?timezone=Asia%2FShanghai&country=CN&dataSets=weatherAlerts",
+            },
+            {
+                bodyBytes: originalBytes,
+                headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
+            },
+        );
+        const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["weatherAlerts"]);
+
+        assert.equal(decoded.weatherAlerts.detailsUrl, expectedDetailsUrl);
+        assert.equal(decoded.weatherAlerts.metadata.attributionUrl, expectedDetailsUrl);
+        assert.equal(decoded.weatherAlerts.alerts[0].detailsUrl, expectedDetailsUrl);
+        assert.equal(decoded.weatherAlerts.alerts[0].attributionUrl, expectedDetailsUrl);
+    }
+});
+
 test("development response patches a dynamically decoded non-injection root when its dataSet was requested", async () => {
     const originalBytes = WeatherKit2.encode(undefined, {
         news: {
@@ -203,6 +227,57 @@ function createWeatherRoot(presentSlots) {
     const root = builder.endObject();
     builder.finish(root);
     return builder.asUint8Array().slice();
+}
+
+function createWeatherAlertRoot() {
+    const qWeatherUrl = "https://www.qweather.com/severe-weather/qixia-101190112.html?from=AppleWeatherService";
+    return WeatherKit2.encode(undefined, {
+        weatherAlerts: {
+            metadata: {
+                attributionUrl: qWeatherUrl,
+                expireTime: 1_785_623_706,
+                language: "zh-CN",
+                latitude: 32.115,
+                longitude: 118.814,
+                providerName: "国家预警信息发布中心",
+                readTime: 1_785_623_406,
+                reportedTime: 1_785_573_420,
+                temporarilyUnavailable: false,
+                sourceType: "STATION",
+            },
+            alerts: [
+                {
+                    areaId: "",
+                    areaName: "",
+                    attributionUrl: qWeatherUrl,
+                    certainty: "unknown",
+                    countryCode: "CN",
+                    description: "高温",
+                    detailsUrl: qWeatherUrl,
+                    effectiveTime: 1_785_573_420,
+                    eventEndTime: 0,
+                    eventOnsetTime: 0,
+                    eventSource: "CN",
+                    expireTime: 1_785_659_820,
+                    id: "3c9fabb5-4d8e-3d1a-9579-bc3c5b050c1f",
+                    importance: "high",
+                    issuedTime: 1_785_573_420,
+                    phenomenon: "Other",
+                    responses: [],
+                    severity: "severe",
+                    significance: "unknown",
+                    source: "国家预警信息发布中心",
+                    token: "11B09",
+                    urgency: "unknown",
+                    unknown23: 0,
+                    unknown24: 0,
+                    unknown25: 0,
+                    unknown26: 0,
+                },
+            ],
+            detailsUrl: qWeatherUrl,
+        },
+    });
 }
 
 function createEmptyTable(builder) {

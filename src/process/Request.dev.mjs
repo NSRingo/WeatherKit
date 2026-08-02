@@ -91,20 +91,29 @@ export async function Request($request) {
                     switch (true) {
                         case url.pathname === "/api/v1/weatherAlerts": {
                             const identifier = url.searchParams.get("ids");
-                            if (!WeatherAlerts.IsQWeatherIdentifier(identifier)) break;
-                            Console.info("☑️ WeatherAlerts.GetQWeather", `ids: ${identifier}`);
+                            const isQWeatherPage = WeatherAlerts.IsQWeatherPageIdentifier(identifier);
+                            const isQWeatherCoordinate = WeatherAlerts.IsQWeatherCoordinateIdentifier(identifier);
+                            if (!isQWeatherPage && !isQWeatherCoordinate) break;
+                            const handlerName = isQWeatherCoordinate ? "WeatherAlerts.GetQWeatherFromAPI" : "WeatherAlerts.GetQWeatherFromPage";
+                            Console.info(`☑️ ${handlerName}`, `ids: ${identifier}`);
                             let body;
                             try {
-                                body = await WeatherAlerts.GetQWeather(url, $request.headers);
+                                body = isQWeatherCoordinate
+                                    ? await WeatherAlerts.GetQWeatherFromAPI(url, $request.headers, {
+                                          host: Settings?.API?.QWeather?.Host,
+                                          token: Settings?.API?.QWeather?.Token,
+                                          country: url.searchParams.get("country")?.toUpperCase(),
+                                      })
+                                    : await WeatherAlerts.GetQWeatherFromPage(url, $request.headers);
                             } catch (error) {
-                                Console.error("WeatherAlerts.GetQWeather", error?.stack ?? error?.message ?? String(error));
+                                Console.error(handlerName, error?.stack ?? error?.message ?? String(error));
                                 body = [];
                             }
                             if (!Array.isArray(body)) {
-                                Console.warn("WeatherAlerts.GetQWeather", `unexpectedBodyType: ${typeof body}`);
+                                Console.warn(handlerName, `unexpectedBodyType: ${typeof body}`);
                                 body = [];
                             }
-                            Console.info("✅ WeatherAlerts.GetQWeather", `alerts: ${body.length}`, "status: 200");
+                            Console.info(`✅ ${handlerName}`, `alerts: ${body.length}`, "status: 200");
                             $response = {
                                 status: 200,
                                 statusCode: 200,

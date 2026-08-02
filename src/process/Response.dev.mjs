@@ -6,6 +6,7 @@ import MatchEnum from "../class/MatchEnum.mjs";
 import QWeather from "../class/QWeather.mjs";
 import WAQI from "../class/WAQI.mjs";
 import Weather from "../class/Weather.mjs";
+import WeatherAlerts from "../class/WeatherAlerts.mjs";
 import WeatherKit2 from "../class/WeatherKit2.mjs";
 import database from "../function/database.mjs";
 import mergeWeatherKitAvailability from "../function/mergeWeatherKitAvailability.mjs";
@@ -170,6 +171,7 @@ export async function Response($request, $response) {
                                                     matchEnum.importanceType();
                                                     matchEnum.responseType();
                                                 }
+                                                body.weatherAlerts = WeatherAlerts.RewriteFlatBufferDetailsURL(body.weatherAlerts, parameters, url);
                                                 if (body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
                                                 Console.debug(`body.weatherAlerts: ${JSON.stringify(body?.weatherAlerts, null, 2)}`);
                                                 break;

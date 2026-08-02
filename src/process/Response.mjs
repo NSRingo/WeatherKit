@@ -5,6 +5,7 @@ import ColorfulClouds from "../class/ColorfulClouds.mjs";
 import QWeather from "../class/QWeather.mjs";
 import WAQI from "../class/WAQI.mjs";
 import Weather from "../class/Weather.mjs";
+import WeatherAlerts from "../class/WeatherAlerts.mjs";
 import WeatherKit2 from "../class/WeatherKit2.mjs";
 import database from "../function/database.mjs";
 import mergeWeatherKitAvailability from "../function/mergeWeatherKitAvailability.mjs";
@@ -121,6 +122,11 @@ export async function Response($request, $response) {
                                             case "forecastNextHour": {
                                                 body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
                                                 if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
+                                                break;
+                                            }
+                                            case "weatherAlerts": {
+                                                body.weatherAlerts = WeatherAlerts.RewriteFlatBufferDetailsURL(body.weatherAlerts, parameters, url);
+                                                if (body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
                                                 break;
                                             }
                                             default:

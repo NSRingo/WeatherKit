@@ -29,6 +29,26 @@ const sourceHtml = `<!doctype html>
         </div>
     </body>
 </html>`;
+const qWeatherAlertAPI = {
+    metadata: {
+        attributions: ["国家预警信息发布中心", "当前预警数据可能存在延迟或信息过时，以官方数据发布为准。"],
+    },
+    alerts: [
+        {
+            id: "202608021748225061499885",
+            senderName: "南京市气象台",
+            issuedTime: "2026-08-02T09:48Z",
+            effectiveTime: "2026-08-02T09:48Z",
+            expiresTime: "2026-08-03T09:48Z",
+            eventType: { name: "高温" },
+            severity: "severe",
+            headline: "南京市气象台发布高温橙色预警",
+            description: "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。",
+            criteria: "日最高气温升至37℃以上",
+            instruction: "1. 有关部门和单位按照职责落实防暑降温保障措施；\n2. 尽量避免在高温时段进行户外活动；\n3. 对老、弱、病、幼人群提供防暑降温指导；\n4. 高温条件下作业人员应当缩短连续工作时间。",
+        },
+    ],
+};
 
 test("Pages Functions only receive WeatherKit API routes", async () => {
     const routes = JSON.parse(await readFile(new URL("_routes.json", pagesDirectory), "utf8"));
@@ -131,6 +151,50 @@ test("Pages routes WeatherAlert requests through Hono before fetching QWeather",
     }
 });
 
+test("Pages routes coordinate WeatherAlert identifiers through QWeather Alert API", async () => {
+    const originalFetch = globalThis.fetch;
+    let sourceRequest;
+    globalThis.fetch = async (input, init) => {
+        sourceRequest = { url: new URL(input), init };
+        return new Response(JSON.stringify(qWeatherAlertAPI), { headers: { "Content-Type": "application/json" } });
+    };
+
+    try {
+        for (const pathname of ["/api/v1/weatherAlerts", "/weatherkit.apple.com/api/v1/weatherAlerts"]) {
+            const response = await onRequest({
+                request: new Request(`https://weatherkit.pages.dev${pathname}?lang=zh-CN&ids=32.115,118.814`, {
+                    headers: {
+                        "Accept-Language": "zh-CN",
+                        "User-Agent": "WeatherKitTest/1.0",
+                    },
+                }),
+                env: {},
+            });
+            const body = await response.json();
+            const headers = new Headers(sourceRequest.init?.headers ?? {});
+
+            assert.equal(response.status, 200, pathname);
+            assert.equal(sourceRequest.url.toString(), "https://devapi.qweather.com/weatheralert/v1/current/32.115/118.814?lang=zh", pathname);
+            assert.equal(headers.get("X-QW-Api-Key"), "bdd98ec1d87747f3a2e8b1741a5af796", pathname);
+            assert.equal(body.length, 1, pathname);
+            assert.equal(body[0].attributionURL, "https://www.12379.cn/", pathname);
+            assert.equal(body[0].countryCode, "CN", pathname);
+            assert.equal(body[0].description, "高温橙色预警", pathname);
+            assert.equal(body[0].effectiveTime, "2026-08-02T09:48:00.000Z", pathname);
+            assert.equal(body[0].expireTime, "2026-08-03T09:48:00.000Z", pathname);
+            assert.equal(body[0].source, "国家预警信息发布中心", pathname);
+            assert.deepEqual(body[0].responses, ["avoid"]);
+            assert.equal(
+                body[0].messages[0].text,
+                "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。\n\n日最高气温升至37℃以上\n\n有关部门和单位按照职责落实防暑降温保障措施；\n\n尽量避免在高温时段进行户外活动；\n\n对老、弱、病、幼人群提供防暑降温指导；\n\n高温条件下作业人员应当缩短连续工作时间。",
+                pathname,
+            );
+        }
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test("Pages routes native WeatherAlert identifiers through Hono", async () => {
     const originalFetch = globalThis.fetch;
     let upstreamUrl;
@@ -153,11 +217,14 @@ test("Pages routes native WeatherAlert identifiers through Hono", async () => {
 });
 
 test("only QWeather location tokens are eligible for takeover", () => {
-    assert.equal(WeatherAlerts.IsQWeatherIdentifier("jianye-101190110"), true);
-    assert.equal(WeatherAlerts.IsQWeatherIdentifier("jianye-10119011"), false);
-    assert.equal(WeatherAlerts.IsQWeatherIdentifier("jianye-1011901100"), false);
-    assert.equal(WeatherAlerts.IsQWeatherIdentifier("35889ee6-fa82-5f9f-8e49-fad78c4f383a"), false);
-    assert.equal(WeatherAlerts.IsQWeatherIdentifier("https://evil.example"), false);
+    assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("jianye-101190110"), true);
+    assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("jianye-10119011"), false);
+    assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("jianye-1011901100"), false);
+    assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("32.115,118.814"), false);
+    assert.equal(WeatherAlerts.IsQWeatherCoordinateIdentifier("32.115,118.814"), true);
+    assert.equal(WeatherAlerts.IsQWeatherCoordinateIdentifier("118.814,32.115"), false);
+    assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("35889ee6-fa82-5f9f-8e49-fad78c4f383a"), false);
+    assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("https://evil.example"), false);
 });
 
 test("the request scripts return QWeather data before Apple weatherAlerts is requested", async () => {
@@ -210,6 +277,35 @@ test("the request scripts return an empty Apple-compatible array when the QWeath
             assert.equal($response.statusCode, 200);
             assert.equal($response.headers["Content-Type"], "application/json");
             assert.deepEqual(JSON.parse($response.body), []);
+        }
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test("the request scripts route coordinate identifiers through QWeather Alert API", async () => {
+    const originalFetch = globalThis.fetch;
+    let sourceUrl;
+    globalThis.fetch = async input => {
+        sourceUrl = new URL(input);
+        return new Response(JSON.stringify(qWeatherAlertAPI), { headers: { "Content-Type": "application/json" } });
+    };
+
+    try {
+        for (const handler of [processRequest, processRequestDev]) {
+            const { $response } = await handler({
+                method: "GET",
+                url: "https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=32.115,118.814",
+                headers: { "Accept-Language": "zh-CN" },
+            });
+            const body = JSON.parse($response.body);
+
+            assert.equal(sourceUrl.toString(), "https://devapi.qweather.com/weatheralert/v1/current/32.115/118.814?lang=zh");
+            assert.equal($response.status, 200);
+            assert.equal($response.statusCode, 200);
+            assert.equal($response.headers["Content-Type"], "application/json");
+            assert.equal(body[0].description, "高温橙色预警");
+            assert.equal(body[0].source, "国家预警信息发布中心");
         }
     } finally {
         globalThis.fetch = originalFetch;
