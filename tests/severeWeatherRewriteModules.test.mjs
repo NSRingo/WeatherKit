@@ -7,7 +7,7 @@ const configurableModules = ["iRingo.WeatherKit.Rewrite.sgmodule", "iRingo.Weath
 const fixedModules = ["iRingo.WeatherKit.Rewrite.lpx", "iRingo.WeatherKit.Rewrite.stoverride"];
 const rewriteTemplates = ["loon.rewrite.handlebars", "surge.rewrite.handlebars", "shadowrocket.rewrite.handlebars", "stash.rewrite.handlebars"];
 const coordinatePattern = String.raw`-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+),-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)`;
-const weatherAlertsPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=${coordinatePattern}(?:&[^#]*)?)$`;
+const weatherAlertsPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?([^#]*&ids=${coordinatePattern}(?:&[^#]*)?)$`;
 const weatherAlertsHandlerPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=${coordinatePattern}(?:&|$)`;
 const weatherAlertsRewriteComment = "# 🌤 WeatherKit.api.v1.weatherAlerts.response";
 const unsafeOpenEndedQuantifier = "{6" + ",}";
@@ -28,12 +28,12 @@ test("all Rewrite modules hook WeatherAlert data without QWeather page redirects
 
     for (const filename of configurableModules) {
         const content = await readFile(new URL(filename, modulesDirectory), "utf8");
-        assert.match(content, /https:\/\/\{\{\{endpoint\}\}\}\/api\/v1\/weatherAlerts\$1/);
+        assert.match(content, /https:\/\/\{\{\{endpoint\}\}\}\/api\/v1\/weatherAlerts\?\$1/);
     }
 
     for (const filename of fixedModules) {
         const content = await readFile(new URL(filename, modulesDirectory), "utf8");
-        assert.match(content, /https:\/\/weatherkit\.pages\.dev\/api\/v1\/weatherAlerts\$1/);
+        assert.match(content, /https:\/\/weatherkit\.pages\.dev\/api\/v1\/weatherAlerts\?\$1/);
     }
 });
 
@@ -54,7 +54,7 @@ test("WeatherAlerts hooks accept coordinate ids after an existing query paramete
 
 test("Egern keeps the API hook without QWeather page redirects", async () => {
     const content = await readFile(new URL("iRingo.WeatherKit.Rewrite.yaml", modulesDirectory), "utf8");
-    assert.match(content, /match: \^https\?:\\\/\\\/weatherkit\\\.apple\\\.com\\\/api\\\/v1\\\/weatherAlerts\(\\\?[\s\S]*?location: https:\/\/\{\{\{endpoint\}\}\}\/api\/v1\/weatherAlerts\$1\nmitm:/);
+    assert.match(content, /match: \^https\?:\\\/\\\/weatherkit\\\.apple\\\.com\\\/api\\\/v1\\\/weatherAlerts\\\?\([\s\S]*?location: https:\/\/\{\{\{endpoint\}\}\}\/api\/v1\/weatherAlerts\?\$1\nmitm:/);
 });
 
 test("script module templates hook Apple weatherAlerts without QWeather page redirects", async () => {
@@ -77,7 +77,8 @@ test("script module templates hook Apple weatherAlerts without QWeather page red
     assert.match(surge, /weatherAlerts\.request = type=http-request,[^\n]+request\.bundle\.js/);
     assert.doesNotMatch(surge, /weatherAlerts\.request[^\n]+requires-body/);
     assert.match(loon, /http-request [^\n]+weatherAlerts[^\n]+request\.bundle\.js[^\n]+weatherAlerts\.request/);
-    assert.match(quantumultX, /weatherAlerts[^\n]+url script-request-header[^\n]+request\.bundle\.js/);
+    assert.match(quantumultX, /weatherAlerts[^\n]+url script-echo-response[^\n]+request\.bundle\.js/);
+    assert.doesNotMatch(quantumultX, /weatherAlerts[^\n]+script-request-header/);
     assert.match(stash, /match: [^\n]+weatherAlerts[\s\S]*?name: WeatherKit\.api\.v1\.weatherAlerts\.request[\s\S]*?type: request/);
     assert.doesNotMatch(stash, /name: WeatherKit\.api\.v1\.weatherAlerts\.request\n      type: request\n      require-body/);
 });
@@ -99,12 +100,12 @@ test("Rewrite templates stay aligned with fixed Rewrite modules", async () => {
 		const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
 		assert.ok(content.includes("#!arguments = endpoint:weatherkit.pages.dev"), filename);
 		assert.ok(content.includes("#!arguments-desc = endpoint: [重写] 服务端点\\n"), filename);
-		assert.ok(content.includes("https://\\{{{endpoint}}}/api/v1/weatherAlerts$1"), filename);
+		assert.ok(content.includes("https://\\{{{endpoint}}}/api/v1/weatherAlerts?$1"), filename);
 	}
 
 	for (const filename of fixedTemplates) {
 		const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
-		assert.ok(content.includes("https://weatherkit.pages.dev/api/v1/weatherAlerts$1"), filename);
+		assert.ok(content.includes("https://weatherkit.pages.dev/api/v1/weatherAlerts?$1"), filename);
 		assert.doesNotMatch(content, /\{\{\{endpoint\}\}\}/, filename);
 	}
 
