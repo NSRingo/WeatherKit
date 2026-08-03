@@ -100,7 +100,15 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
     assert.deepEqual(alerts[0].messages, [
         {
             language: "zh-CN",
-            text: "预计午后将出现雷暴天气。\n\n可能伴有短时强降水。\n\n注意防范雷电。\n\n远离高大树木。",
+            text: "预计午后将出现雷暴天气。",
+        },
+        {
+            language: "zh-CN",
+            text: "可能伴有短时强降水。",
+        },
+        {
+            language: "zh-CN",
+            text: "注意防范雷电。\n远离高大树木。",
         },
     ]);
     assert.equal(
@@ -146,6 +154,8 @@ test("QWeather Alert API is standardized by QWeather class", async () => {
         assert.equal(extracted.alerts[0].source, "南京市气象台");
         assert.equal(extracted.alerts[0].token, "1009");
         assert.equal(extracted.alerts[0].reportedAt, "2026-08-02T09:48:00.000Z");
+        assert.equal(extracted.alerts[0].message, "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。");
+        assert.equal(extracted.alerts[0].standard, "");
         assert.deepEqual(extracted.alerts[0].guidelines, [
             "有关部门和单位按照职责落实防暑降温保障措施；",
             "尽量避免在高温时段进行户外活动；",
@@ -245,11 +255,16 @@ test("Pages routes coordinate WeatherAlert identifiers through QWeather Alert AP
             assert.equal(body[0].token, "1009", pathname);
             assert.deepEqual(body[0].responses, ["monitor"]);
             assert.equal("area" in body[0], false, pathname);
-            assert.equal(
-                body[0].messages[0].text,
-                "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。\n\n日最高气温升至37℃以上\n\n有关部门和单位按照职责落实防暑降温保障措施；\n\n尽量避免在高温时段进行户外活动；\n\n对老、弱、病、幼人群提供防暑降温指导；\n\n高温条件下作业人员应当缩短连续工作时间。",
-                pathname,
-            );
+            assert.deepEqual(body[0].messages, [
+                {
+                    language: "zh-CN",
+                    text: "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。",
+                },
+                {
+                    language: "zh-CN",
+                    text: "有关部门和单位按照职责落实防暑降温保障措施；\n尽量避免在高温时段进行户外活动；\n对老、弱、病、幼人群提供防暑降温指导；\n高温条件下作业人员应当缩短连续工作时间。",
+                },
+            ], pathname);
         }
     } finally {
         globalThis.fetch = originalFetch;

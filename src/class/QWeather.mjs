@@ -721,6 +721,7 @@ export default class QWeather {
         const eventEndTime = this.#DateISOString(alert?.eventEndTime || alert?.endTime || alert?.expiresTime || alert?.expireTime);
         const guidelines = this.#SplitWeatherAlertGuidelines(alert?.instruction ?? alert?.instructions);
         const description = this.#NormalizeWeatherAlertTitle(alert?.headline || alert?.eventType?.name || alert?.description);
+        const message = String(alert?.description ?? "").trim() || String(alert?.headline ?? description ?? "").trim();
         const source = String(alert?.senderName ?? "").trim() || this.#ExtractWeatherAlertIssuer(alert?.headline || alert?.description);
         const severity = this.#NormalizeWeatherAlertSeverity(alert?.severity);
         const areaId = String(alert?.areaId ?? alert?.areaCode ?? "").trim();
@@ -744,14 +745,14 @@ export default class QWeather {
             identifier: alert?.id,
             ...(importance ? { importance } : {}),
             issuedTime,
-            message: alert?.description || alert?.headline || description,
+            message,
             ...(phenomenon ? { phenomenon } : {}),
             responses: Array.isArray(alert?.responseTypes) ? alert.responseTypes.map(response => String(response ?? "").trim()).filter(Boolean) : [],
             reportedAt: issuedTime,
             ...(significance ? { significance } : {}),
             ...(source ? { source } : {}),
             severity,
-            standard: alert?.criteria ?? "",
+            standard: "",
             ...(token ? { token } : {}),
             urgency,
         };

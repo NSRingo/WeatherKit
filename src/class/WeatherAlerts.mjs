@@ -468,7 +468,11 @@ export default class WeatherAlerts {
         const contextAreaId = context.identifier.match(/-(\d+)$/)?.[1];
         return extracted.alerts.map((alert, precedence) => {
             const uid = WeatherAlerts.#StableUUID(`${context.identifier}:${alert.identifier ?? precedence}`);
-            const text = [alert.message, alert.standard, ...alert.guidelines].filter(Boolean).join("\n\n") || alert.description;
+            const messages = [];
+            for (const text of [alert.message, alert.standard, alert.guidelines?.filter(Boolean).join("\n")]) {
+                if (text) messages.push({ language: context.language, text });
+            }
+            if (!messages.length && alert.description) messages.push({ language: context.language, text: alert.description });
             const responses = WeatherAlerts.#BuildResponses(alert.guidelines, alert.responses);
             const areaId = alert.areaId || contextAreaId;
             const areaName = alert.areaName || extracted.areaName;
@@ -495,7 +499,7 @@ export default class WeatherAlerts {
                 expireTime,
                 issuedTime: alert.issuedTime,
                 ...(importance ? { importance } : {}),
-                messages: [{ language: context.language, text }],
+                messages,
                 name: "WeatherAlert",
                 ...(phenomenon ? { phenomenon } : {}),
                 precedence,
