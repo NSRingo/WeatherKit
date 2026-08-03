@@ -1,9 +1,10 @@
 ### 🆕 New Features
-  * 新增 `Cloudflare Pages` 部署支持，提供 `functions/[[route]].js`、`pages/_routes.json` 以及独立的 Pages / Workers 开发与部署脚本；同时调整 `Vercel` 入口为 `edge/vercel.js`，统一 `Hono` 云端入口。 @001ProMax
+  * 新增 `Cloudflare Pages` 部署支持，提供 `functions/[[route]].js`、`pages/_routes.json` 以及独立的 Pages / Workers 开发与部署脚本；同时统一 `Hono` 云端入口。 @001ProMax
   * 新增 FlatBuffer root overlay 编码能力，仅重写实际变更的数据集，并保留 Apple 未知或新增的根产品表，提升对新 `WeatherKit` schema 的兼容性。 @hhh2210
   * 新增可配置的 `WeatherKit` 重写服务端点，模块统一由 `Workers` 更名为 `Rewrite`，支持在 `weatherkit.pages.dev`、`dev.weatherkit.pages.dev` 与 `weather.nanocat.cloud` 之间选择。 @VirgilClyne
   * 新增通用 FlatBuffer 根表处理器，并将 `WeatherKit` 改为按请求数据集逐 slot 解码和回写；未选数据集、未配置字段及新 schema slot 均保持原始二进制内容。 @VirgilClyne
   * 新增 QWeather 灾害预警坐标适配与 `weatherAlerts` 接口处理：模块/模板仅拦截坐标 `ids` 的 Apple `/api/v1/weatherAlerts` 请求，脚本保留旧 QWeather 页面标识兼容，并由 QWeather Alert API 构造 Apple WeatherKit 兼容响应。 @VirgilClyne
+  * 新增彩云天气 CAP 预警接口适配，可按当前语言参数拉取并转换为 `WeatherAlerts` 合并流程可消费的预警来源。 @VirgilClyne
 
 ### 🛠️ Bug Fixes
   * 修复 `forecastNextHour` 在 iOS 27 下因元数据过期过快而失效的问题，并完善多段降水状态推导与描述匹配，避免复合天气短语被后续关键词错误覆盖。 @hhh2210
@@ -15,6 +16,8 @@
   * 修复云端路由对 `dev.weatherkit.*` 与 `*.pages.dev` 域名的识别，并限制 Cloudflare Pages Functions 只处理 WeatherKit API 路径。 @VirgilClyne
   * 完善 QWeather 预警到 Apple `alertDetails` / v1 JSON 的最终字段映射：`messages` 按来源段拆分，HTML 分支保留正文、标准说明与防御指南，API 分支仅使用 `description` 与 `instruction`，`responses` 仅写官方建议行动枚举，并补充事件来源回退、区域、签发/生效/开始/结束/过期时间和来源字段。 @VirgilClyne
   * 完善 v2 `weatherAlerts` FlatBuffer 预警补全：支持简体、繁体及英文 `National Early Warning Center` 来源名称，只补全已有预警、不新增 alert、不改单条预警 URL；集合级 `detailsUrl` 使用 `metadata` 坐标与当前 Provider 作为 `party`，`metadata.attributionUrl` 指向 QWeather attribution，并按 WK2 大写枚举写回预警等级与建议行动。 @VirgilClyne
+  * 修复 `weatherAlerts` 模块匹配规则：坐标 `ids` 仅接受字面逗号分隔，`ids` 前需已有查询参数；Surge 脚本模块的 `pattern` 使用引号包裹，Rewrite 模块保持原生规则格式。 @VirgilClyne
+  * 修复彩云天气各天气接口的语言参数映射，支持简体中文、繁体中文、日文和英文地区变体。 @VirgilClyne
 
 ### 🔣 Dependencies
   * 切换 `@nsnanocat/util` 到公共 npm registry 来源。 @hhh2210
