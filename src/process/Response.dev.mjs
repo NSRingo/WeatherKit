@@ -384,52 +384,43 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  */
 async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
     Console.info("☑️ InjectWeatherAlerts");
-    Console.debug(
-        "InjectWeatherAlerts.gate",
-        JSON.stringify({
-            country: enviroments.country,
-            replace: Settings?.Weather?.Replace,
-            provider: Settings?.Weather?.Provider,
-            providerName: weatherAlerts?.metadata?.providerName,
-            targetCount: weatherAlerts?.alerts?.length ?? 0,
-        }),
-    );
-
-    if (!Settings?.Weather?.Replace?.includes(enviroments.country)) {
-        Console.warn("InjectWeatherAlerts", `Unreplaced country: ${enviroments.country}`);
-        Console.info("✅ InjectWeatherAlerts");
-        return weatherAlerts;
+    if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
+        Console.debug(
+            "InjectWeatherAlerts",
+            `country: ${enviroments.country}`,
+            `provider: ${Settings?.WeatherAlerts?.Provider ?? "QWeather"}`,
+            `providerName: ${weatherAlerts?.metadata?.providerName}`,
+            `appleAlertCount: ${weatherAlerts?.alerts?.length ?? 0}`,
+        );
     }
+
     if (String(weatherAlerts?.metadata?.providerName ?? "").trim() !== "国家预警信息发布中心") {
-        Console.debug("InjectWeatherAlerts.skip", JSON.stringify({ reason: "providerName is not 国家预警信息发布中心", providerName: weatherAlerts?.metadata?.providerName }));
+        if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: providerName is not 国家预警信息发布中心", `providerName: ${weatherAlerts?.metadata?.providerName}`);
         Console.info("✅ InjectWeatherAlerts");
         return weatherAlerts;
     }
 
     let newWeatherAlerts;
-    switch (Settings?.Weather?.Provider) {
-        case "WeatherKit":
+    switch (Settings?.WeatherAlerts?.Provider) {
+        case "QWeather":
         default:
-            break;
-        case "QWeather": {
             newWeatherAlerts = await enviroments.qWeather.WeatherAlert();
             break;
-        }
     }
 
-    Console.debug(
-        "InjectWeatherAlerts.source",
-        JSON.stringify({
-            provider: Settings?.Weather?.Provider,
-            sourceCount: newWeatherAlerts?.alerts?.length ?? 0,
-            sourceAreaName: newWeatherAlerts?.areaName,
-            source: newWeatherAlerts?.source,
-        }),
-    );
+    if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
+        Console.debug(
+            "InjectWeatherAlerts",
+            `provider: ${Settings?.WeatherAlerts?.Provider ?? "QWeather"}`,
+            `qWeatherAlertCount: ${newWeatherAlerts?.alerts?.length ?? 0}`,
+            `qWeatherAreaName: ${newWeatherAlerts?.areaName}`,
+            `qWeatherIssuedBy: ${newWeatherAlerts?.source}`,
+        );
+    }
     if (newWeatherAlerts?.alerts?.length) {
-        weatherAlerts = WeatherAlerts.MergeFlatBufferWeatherAlerts(weatherAlerts, newWeatherAlerts);
+        WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts.alerts);
     } else {
-        Console.debug("InjectWeatherAlerts.skip", JSON.stringify({ reason: "empty source alerts" }));
+        if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: empty QWeather alerts");
     }
 
     Console.info("✅ InjectWeatherAlerts");
