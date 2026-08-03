@@ -205,11 +205,11 @@ export default class WeatherAlerts {
         WeatherAlerts.#FillEnum(appleAlert, "phenomenon", qWeatherAlert.phenomenon);
         WeatherAlerts.#FillText(appleAlert, "token", qWeatherAlert.token);
         WeatherAlerts.#FillResponses(appleAlert, qWeatherAlert);
-        WeatherAlerts.#FillEnum(appleAlert, "severity", qWeatherAlert.severity, ["unknown"]);
-        WeatherAlerts.#FillEnum(appleAlert, "certainty", qWeatherAlert.certainty);
-        WeatherAlerts.#FillEnum(appleAlert, "importance", qWeatherAlert.importance || WeatherAlerts.#ImportanceFromSeverity(qWeatherAlert.severity));
-        WeatherAlerts.#FillEnum(appleAlert, "significance", qWeatherAlert.significance);
-        WeatherAlerts.#FillEnum(appleAlert, "urgency", qWeatherAlert.urgency);
+        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "severity", qWeatherAlert.severity, ["UNKNOWN"]);
+        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "certainty", qWeatherAlert.certainty);
+        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "importance", qWeatherAlert.importance || WeatherAlerts.#ImportanceFromSeverity(qWeatherAlert.severity));
+        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "significance", qWeatherAlert.significance);
+        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "urgency", qWeatherAlert.urgency);
         if (before) WeatherAlerts.#LogMergeAlertPatch(before, appleAlert, appleAlertIndex, qWeatherAlertIndex);
     }
 
@@ -243,6 +243,11 @@ export default class WeatherAlerts {
         if (value) appleAlert[key] = value;
     }
 
+    static #FillFlatBufferEnum(appleAlert, key, qWeatherValue, fallbackValues = ["UNKNOWN"]) {
+        const value = WeatherAlerts.#FlatBufferWeatherAlertEnum(key, qWeatherValue);
+        if (value) WeatherAlerts.#FillEnum(appleAlert, key, value, fallbackValues);
+    }
+
     static #FillTime(appleAlert, key, qWeatherValue) {
         if (appleAlert?.[key]) return;
         const value = WeatherAlerts.#ToUnixSeconds(qWeatherValue);
@@ -251,8 +256,17 @@ export default class WeatherAlerts {
 
     static #FillResponses(appleAlert, qWeatherAlert) {
         if (Array.isArray(appleAlert?.responses) && appleAlert.responses.length) return;
-        const responses = WeatherAlerts.#BuildResponses(qWeatherAlert.guidelines, qWeatherAlert.responses);
+        const responses = WeatherAlerts.#BuildFlatBufferResponses(qWeatherAlert.guidelines, qWeatherAlert.responses);
         if (responses.length) appleAlert.responses = responses;
+    }
+
+    static #BuildFlatBufferResponses(guidelines, preferredResponses = []) {
+        const responses = [];
+        for (const response of WeatherAlerts.#BuildResponses(guidelines, preferredResponses)) {
+            const value = WeatherAlerts.#FlatBufferWeatherAlertEnum("responses", response);
+            if (value && !responses.includes(value)) responses.push(value);
+        }
+        return responses;
     }
 
     static #FindQWeatherAlert(appleAlert, qWeatherAlerts, usedQWeatherAlertIndexes, appleAlertIndex) {
@@ -727,6 +741,139 @@ export default class WeatherAlerts {
         if (/解除|恢复正常/.test(text) || compact.includes("allclear")) return "allClear";
         if (/无需|不需|无须/.test(text) || compact.includes("none")) return "none";
         return null;
+    }
+
+    static #FlatBufferWeatherAlertEnum(key, value) {
+        const normalized = String(value ?? "").trim();
+        if (!normalized) return "";
+        switch (key) {
+            case "certainty":
+                return WeatherAlerts.#FlatBufferWeatherAlertCertainty(normalized);
+            case "importance":
+                return WeatherAlerts.#FlatBufferWeatherAlertImportance(normalized);
+            case "responses":
+                return WeatherAlerts.#FlatBufferWeatherAlertResponse(normalized);
+            case "severity":
+                return WeatherAlerts.#FlatBufferWeatherAlertSeverity(normalized);
+            case "significance":
+                return WeatherAlerts.#FlatBufferWeatherAlertSignificance(normalized);
+            case "urgency":
+                return WeatherAlerts.#FlatBufferWeatherAlertUrgency(normalized);
+            default:
+                return "";
+        }
+    }
+
+    static #NormalizeFlatBufferWeatherAlertEnum(value) {
+        return String(value ?? "").trim().replace(/[_\s-]+/g, "").toLowerCase();
+    }
+
+    static #FlatBufferWeatherAlertCertainty(value) {
+        switch (WeatherAlerts.#NormalizeFlatBufferWeatherAlertEnum(value)) {
+            case "observed":
+                return "OBSERVED";
+            case "likely":
+                return "LIKELY";
+            case "possible":
+                return "POSSIBLE";
+            case "unlikely":
+                return "UNLIKELY";
+            case "unknown":
+                return "UNKNOWN";
+            default:
+                return "";
+        }
+    }
+
+    static #FlatBufferWeatherAlertImportance(value) {
+        switch (WeatherAlerts.#NormalizeFlatBufferWeatherAlertEnum(value)) {
+            case "high":
+                return "HIGH";
+            case "normal":
+                return "NORMAL";
+            case "low":
+                return "LOW";
+            default:
+                return "";
+        }
+    }
+
+    static #FlatBufferWeatherAlertResponse(value) {
+        switch (WeatherAlerts.#NormalizeFlatBufferWeatherAlertEnum(value)) {
+            case "evacuate":
+                return "EVACUATE";
+            case "shelter":
+                return "SHELTER";
+            case "execute":
+                return "EXECUTE";
+            case "prepare":
+                return "PREPARE";
+            case "avoid":
+                return "AVOID";
+            case "monitor":
+                return "MONITOR";
+            case "assess":
+                return "ASSESS";
+            case "allclear":
+                return "ALL_CLEAR";
+            case "none":
+                return "NONE";
+            default:
+                return "";
+        }
+    }
+
+    static #FlatBufferWeatherAlertSeverity(value) {
+        switch (WeatherAlerts.#NormalizeFlatBufferWeatherAlertEnum(value)) {
+            case "unknown":
+                return "UNKNOWN";
+            case "extreme":
+                return "EXTREME";
+            case "severe":
+                return "SEVERE";
+            case "moderate":
+                return "MODERATE";
+            case "minor":
+                return "MINOR";
+            default:
+                return "";
+        }
+    }
+
+    static #FlatBufferWeatherAlertSignificance(value) {
+        switch (WeatherAlerts.#NormalizeFlatBufferWeatherAlertEnum(value)) {
+            case "advisory":
+                return "ADVISORY";
+            case "watch":
+                return "WATCH";
+            case "warning":
+                return "WARNING";
+            case "statement":
+                return "STATEMENT";
+            case "emergency":
+                return "EMERGENCY";
+            case "unknown":
+                return "UNKNOWN";
+            default:
+                return "";
+        }
+    }
+
+    static #FlatBufferWeatherAlertUrgency(value) {
+        switch (WeatherAlerts.#NormalizeFlatBufferWeatherAlertEnum(value)) {
+            case "immediate":
+                return "IMMEDIATE";
+            case "expected":
+                return "EXPECTED";
+            case "future":
+                return "FUTURE";
+            case "past":
+                return "PAST";
+            case "unknown":
+                return "UNKNOWN";
+            default:
+                return "";
+        }
     }
 
     /**

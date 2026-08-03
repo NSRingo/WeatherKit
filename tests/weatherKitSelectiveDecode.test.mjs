@@ -246,7 +246,12 @@ test("response rewrites only National Warning Center weatherAlerts collection de
             assert.equal(decoded.weatherAlerts.alerts[0].description, "高温橙色预警");
             assert.equal(decoded.weatherAlerts.alerts[0].eventOnsetTime, expectedOnsetTime);
             assert.equal(decoded.weatherAlerts.alerts[0].eventEndTime, expectedEndTime);
-            assert.deepEqual(decoded.weatherAlerts.alerts[0].responses, ["avoid", "prepare"]);
+            assert.deepEqual(decoded.weatherAlerts.alerts[0].responses, ["AVOID", "PREPARE"]);
+            assert.equal(decoded.weatherAlerts.alerts[0].certainty, "UNKNOWN");
+            assert.equal(decoded.weatherAlerts.alerts[0].importance, "HIGH");
+            assert.equal(decoded.weatherAlerts.alerts[0].severity, "SEVERE");
+            assert.equal(decoded.weatherAlerts.alerts[0].significance, "UNKNOWN");
+            assert.equal(decoded.weatherAlerts.alerts[0].urgency, "UNKNOWN");
             assert.equal(decoded.weatherAlerts.alerts[0].source, originalDecoded.weatherAlerts.alerts[0].source);
             assert.equal(decoded.weatherAlerts.alerts[0].issuedTime, originalDecoded.weatherAlerts.alerts[0].issuedTime);
         }
@@ -339,7 +344,7 @@ function createWeatherAlertRoot(providerName = "国家预警信息发布中心")
                     areaId: "",
                     areaName: "",
                     attributionUrl: qWeatherUrl,
-                    certainty: "unknown",
+                    certainty: "UNKNOWN",
                     countryCode: "CN",
                     description: "高温",
                     detailsUrl: qWeatherUrl,
@@ -349,15 +354,15 @@ function createWeatherAlertRoot(providerName = "国家预警信息发布中心")
                     eventSource: "CN",
                     expireTime: 1_785_659_820,
                     id: "3c9fabb5-4d8e-3d1a-9579-bc3c5b050c1f",
-                    importance: "high",
+                    importance: "HIGH",
                     issuedTime: 1_785_573_420,
                     phenomenon: "Other",
                     responses: [],
-                    severity: "severe",
-                    significance: "unknown",
+                    severity: "SEVERE",
+                    significance: "UNKNOWN",
                     source: "国家预警信息发布中心",
                     token: "11B09",
-                    urgency: "unknown",
+                    urgency: "UNKNOWN",
                     unknown23: 0,
                     unknown24: 0,
                     unknown25: 0,

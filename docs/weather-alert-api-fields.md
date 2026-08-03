@@ -61,6 +61,8 @@ evacuate, shelter, execute, prepare, avoid, monitor, assess, allClear, none
 
 如果 `responses` 同时包含多个动作且包含 `none`，官方页面会移除 `none`，避免“无需行动”和其他行动同时出现。
 
+注意枚举大小写边界：`/api/v1/weatherAlerts` 的 `alertDetails` JSON 使用上面的官方小写 token；v2 FlatBuffer 解码/编码使用 `WK2` 枚举 key，例如 `SEVERE` / `UNKNOWN` / `HIGH` / `AVOID`。`mergeAlerts(to, from)` 写回 v2 `weatherAlerts.alerts[]` 时会把 QWeather 标准化结果转换为 FlatBuffer 大写枚举，不把 REST 小写 token 直接写入 flatbuffer。
+
 ## 官方页面间接使用或不显示的字段
 
 这些字段属于官方 JSON 结构，但 `alertDetails` 页面不会直接画成一行：
@@ -102,7 +104,7 @@ evacuate, shelter, execute, prepare, avoid, monitor, assess, allClear, none
 | HTML 页面提取 | `src/class/WeatherAlerts.mjs` 的 `ExtractQWeather()` | 保留旧 QWeather 页面解析；从页面标题提取签发机构，从防御指南提取 `guidelines`。 |
 | API 坐标提取 | `src/class/QWeather.mjs` 的 `WeatherAlert()` | 请求 QWeather `weatheralert/v1/current/{latitude}/{longitude}`，标准化为 `WeatherAlerts.Build()` 可消费结构。 |
 | Apple JSON 构造 | `src/class/WeatherAlerts.mjs` 的 `Build()` | 输出官方 `/api/v1/weatherAlerts` 数组形态。 |
-| v2 FlatBuffer 预警补全 | `src/process/Response*.mjs` 的 `InjectWeatherAlerts()` + `src/class/WeatherAlerts.mjs` 的 `mergeAlerts(to, from)` | `InjectWeatherAlerts()` 仅当 `metadata.providerName` 为 `国家预警信息发布中心` 时拉取 QWeather Alert API；`mergeAlerts(to, from)` 按区域、事件类型、标题、严重度匹配 `alerts[]` 并补全 `effectiveTime` / `eventOnsetTime` / `eventEndTime` / `expireTime` / `issuedTime`、区域与响应枚举等缺失字段，不改 URL，也不新增 alert。 |
+| v2 FlatBuffer 预警补全 | `src/process/Response*.mjs` 的 `InjectWeatherAlerts()` + `src/class/WeatherAlerts.mjs` 的 `mergeAlerts(to, from)` | `InjectWeatherAlerts()` 仅当 `metadata.providerName` 为 `国家预警信息发布中心` 时拉取 QWeather Alert API；`mergeAlerts(to, from)` 按区域、事件类型、标题、严重度匹配 `alerts[]` 并补全 `effectiveTime` / `eventOnsetTime` / `eventEndTime` / `expireTime` / `issuedTime`、区域与响应枚举等缺失字段，写入 FlatBuffer 枚举时使用 `WK2` 大写 key，不改 URL，也不新增 alert。 |
 | v2 FlatBuffer 链接改写 | `src/class/WeatherAlerts.mjs` 的 `RewriteFlatBufferDetailsURL()` | 仅当 `metadata.providerName` 为 `国家预警信息发布中心` 时，把集合级 `weatherAlerts.detailsUrl` 改为坐标版官方页面；不改 `metadata.attributionUrl`，也不改单条 alert 的 `detailsUrl` / `attributionUrl`。 |
 
 ## 参考
