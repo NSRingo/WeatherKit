@@ -22,6 +22,22 @@ const qWeatherAlertAPI = {
     },
     alerts: [
         {
+            id: "202608021200000000000001",
+            areaId: "320000",
+            areaName: "江苏省",
+            senderName: "江苏省气象台",
+            issuedTime: "2026-08-02T04:00Z",
+            effectiveTime: "2026-08-02T04:00Z",
+            onsetTime: "2026-08-02T04:00Z",
+            eventType: { name: "雷电", code: "1014" },
+            severity: "moderate",
+            headline: "江苏省气象台发布雷电黄色预警",
+            description: "江苏省气象台发布雷电黄色预警。",
+            criteria: "可能发生雷电活动",
+            responseTypes: [],
+            instruction: "密切关注天气变化。",
+        },
+        {
             id: "202608021748225061499885",
             areaId: "320100",
             areaName: "南京市",
@@ -29,17 +45,17 @@ const qWeatherAlertAPI = {
             issuedTime: "2026-08-02T09:48Z",
             effectiveTime: "2026-08-02T09:48Z",
             onsetTime: "2026-08-02T09:48Z",
-            expiresTime: "2026-08-03T09:48Z",
             eventType: { name: "高温", code: "1009" },
             severity: "severe",
             headline: "南京市气象台发布高温橙色预警",
             description: "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。",
             criteria: "日最高气温升至37℃以上",
-            responseTypes: ["monitor"],
+            responseTypes: [],
             instruction: "1.政府及相关部门按照职责落实防暑降温保障措施。\n2.尽量避免在高温时段进行户外活动，高温条件下作业的人员应缩短连续工作时间。\n3.对老、弱、病、幼人群提供防暑降温指导，并采取必要的防护措施。\n4.做好高温火灾隐患排查，注意用火用电安全。",
         },
     ],
 };
+const qWeatherHighTemperatureAlert = qWeatherAlertAPI.alerts[1];
 
 test("WeatherKit2 is a configured reusable root processor", () => {
     assert.ok(WeatherKit2 instanceof FlatBufferRootProcessor);
@@ -194,8 +210,8 @@ test("response rewrites only National Warning Center weatherAlerts collection de
     const originalBytes = createWeatherAlertRoot();
     const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["weatherAlerts"]);
     const expectedDetailsUrl = "https://weatherkit.apple.com/alertDetails/index.html?ids=32.115,118.814&lang=zh-CN&timezone=Asia%2FShanghai&party=apple";
-    const expectedOnsetTime = Math.trunc(new Date(qWeatherAlertAPI.alerts[0].onsetTime).getTime() / 1000);
-    const expectedEndTime = Math.trunc(new Date(qWeatherAlertAPI.alerts[0].expiresTime).getTime() / 1000);
+    const expectedOnsetTime = Math.trunc(new Date(qWeatherHighTemperatureAlert.onsetTime).getTime() / 1000);
+    const expectedEndTime = originalDecoded.weatherAlerts.alerts[0].expireTime;
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async input => {
         const requestUrl = typeof input === "string" ? input : input?.url ?? input;
@@ -225,11 +241,12 @@ test("response rewrites only National Warning Center weatherAlerts collection de
             assert.equal(decoded.weatherAlerts.metadata.reportedTime, originalDecoded.weatherAlerts.metadata.reportedTime);
             assert.equal(decoded.weatherAlerts.alerts[0].detailsUrl, originalDecoded.weatherAlerts.alerts[0].detailsUrl);
             assert.equal(decoded.weatherAlerts.alerts[0].attributionUrl, originalDecoded.weatherAlerts.alerts[0].attributionUrl);
-            assert.equal(decoded.weatherAlerts.alerts[0].areaId, qWeatherAlertAPI.alerts[0].areaId);
-            assert.equal(decoded.weatherAlerts.alerts[0].areaName, qWeatherAlertAPI.alerts[0].areaName);
+            assert.equal(decoded.weatherAlerts.alerts[0].areaId, qWeatherHighTemperatureAlert.areaId);
+            assert.equal(decoded.weatherAlerts.alerts[0].areaName, qWeatherHighTemperatureAlert.areaName);
+            assert.equal(decoded.weatherAlerts.alerts[0].description, "高温橙色预警");
             assert.equal(decoded.weatherAlerts.alerts[0].eventOnsetTime, expectedOnsetTime);
             assert.equal(decoded.weatherAlerts.alerts[0].eventEndTime, expectedEndTime);
-            assert.deepEqual(decoded.weatherAlerts.alerts[0].responses, qWeatherAlertAPI.alerts[0].responseTypes);
+            assert.deepEqual(decoded.weatherAlerts.alerts[0].responses, ["avoid", "prepare"]);
             assert.equal(decoded.weatherAlerts.alerts[0].source, originalDecoded.weatherAlerts.alerts[0].source);
             assert.equal(decoded.weatherAlerts.alerts[0].issuedTime, originalDecoded.weatherAlerts.alerts[0].issuedTime);
         }
