@@ -190,9 +190,19 @@ export default class WeatherAlerts {
             if (value) target[key] = value;
         };
 
+        const fillDescription = (target, source) => {
+            const current = String(target?.description ?? "").trim();
+            const value = String(source?.description ?? "").trim();
+            if (!value) return;
+            const currentKey = WeatherAlerts.#NormalizeAlertMatchText(current);
+            const phenomenonKey = WeatherAlerts.#NormalizeAlertMatchText(source?.phenomenon);
+            if (!currentKey || currentKey === phenomenonKey || currentKey === "other" || currentKey === "unknown") target.description = value;
+        };
+
         const fillEnum = (target, key, source, fallbackValues = ["unknown", "Other"]) => {
             const current = String(target?.[key] ?? "").trim();
-            if (current && !fallbackValues.includes(current)) return;
+            const currentFallback = fallbackValues.some(value => current.toLowerCase() === String(value).toLowerCase());
+            if (current && !currentFallback) return;
             const value = String(source ?? "").trim();
             if (value) target[key] = value;
         };
@@ -208,32 +218,85 @@ export default class WeatherAlerts {
             if (Array.isArray(source) && source.length) target[key] = [...source];
         };
 
-        const count = Math.min(weatherAlerts.alerts.length, sourceAlerts.length);
-        for (let index = 0; index < count; index++) {
+        const usedSourceIndexes = new Set();
+        for (let index = 0; index < weatherAlerts.alerts.length; index++) {
             const target = weatherAlerts.alerts[index];
-            const source = sourceAlerts[index];
+            const sourceIndex = WeatherAlerts.#FindFlatBufferWeatherAlertSource(target, sourceAlerts, usedSourceIndexes, index);
+            const source = sourceIndex >= 0 ? sourceAlerts[sourceIndex] : undefined;
             if (!target || !source) continue;
+            usedSourceIndexes.add(sourceIndex);
 
             fillText(target, "areaId", source.areaId);
             fillText(target, "areaName", source.areaName);
-            fillTime(target, "effectiveTime", source.effectiveTime);
-            fillTime(target, "eventOnsetTime", source.eventOnsetTime);
-            fillTime(target, "eventEndTime", source.eventEndTime);
-            fillTime(target, "expireTime", source.expireTime);
-            fillTime(target, "issuedTime", source.issuedTime);
-            fillText(target, "description", source.description);
+            fillTime(target, "effectiveTime", source.effectiveTime ?? source.issuedTime);
+            fillTime(target, "eventOnsetTime", source.eventOnsetTime ?? source.effectiveTime ?? source.issuedTime ?? target.effectiveTime ?? target.issuedTime);
+            fillTime(target, "eventEndTime", source.eventEndTime ?? source.expireTime ?? target.expireTime);
+            fillTime(target, "expireTime", source.expireTime ?? source.eventEndTime);
+            fillTime(target, "issuedTime", source.issuedTime ?? source.effectiveTime);
+            fillDescription(target, source);
             fillText(target, "source", source.source);
             fillEnum(target, "phenomenon", source.phenomenon);
             fillText(target, "token", source.token);
-            fillArray(target, "responses", source.responses);
+            fillArray(target, "responses", WeatherAlerts.#BuildResponses(source.guidelines, source.responses));
             fillEnum(target, "severity", source.severity, ["unknown"]);
             fillEnum(target, "certainty", source.certainty);
-            fillEnum(target, "importance", source.importance);
+            fillEnum(target, "importance", source.importance || WeatherAlerts.#ImportanceFromSeverity(source.severity));
             fillEnum(target, "significance", source.significance);
             fillEnum(target, "urgency", source.urgency);
         }
 
         return weatherAlerts;
+    }
+
+    static #FindFlatBufferWeatherAlertSource(target, sourceAlerts, usedSourceIndexes, fallbackIndex) {
+        let bestIndex = -1;
+        let bestScore = 0;
+        for (let index = 0; index < sourceAlerts.length; index++) {
+            if (usedSourceIndexes.has(index)) continue;
+            const score = WeatherAlerts.#ScoreFlatBufferWeatherAlertSource(target, sourceAlerts[index]);
+            if (score > bestScore) {
+                bestScore = score;
+                bestIndex = index;
+            }
+        }
+        if (bestScore >= 30) return bestIndex;
+        if (fallbackIndex < sourceAlerts.length && !usedSourceIndexes.has(fallbackIndex)) return fallbackIndex;
+        return -1;
+    }
+
+    static #ScoreFlatBufferWeatherAlertSource(target, source) {
+        let score = 0;
+        const targetAreaId = WeatherAlerts.#NormalizeAlertMatchText(target?.areaId);
+        const sourceAreaId = WeatherAlerts.#NormalizeAlertMatchText(source?.areaId);
+        const targetAreaName = WeatherAlerts.#NormalizeAlertMatchText(target?.areaName);
+        const sourceAreaName = WeatherAlerts.#NormalizeAlertMatchText(source?.areaName);
+        const targetToken = WeatherAlerts.#NormalizeAlertMatchText(target?.token);
+        const sourceToken = WeatherAlerts.#NormalizeAlertMatchText(source?.token);
+        const targetDescription = WeatherAlerts.#NormalizeAlertMatchText(target?.description);
+        const sourceDescription = WeatherAlerts.#NormalizeAlertMatchText(source?.description);
+        const sourceMessage = WeatherAlerts.#NormalizeAlertMatchText(source?.message);
+        const targetPhenomenon = WeatherAlerts.#NormalizeAlertMatchText(target?.phenomenon);
+        const sourcePhenomenon = WeatherAlerts.#NormalizeAlertMatchText(source?.phenomenon);
+        const targetSeverity = WeatherAlerts.#NormalizeAlertMatchText(target?.severity);
+        const sourceSeverity = WeatherAlerts.#NormalizeAlertMatchText(source?.severity);
+
+        if (targetAreaId && sourceAreaId && targetAreaId === sourceAreaId) score += 60;
+        if (targetAreaName && sourceAreaName && targetAreaName === sourceAreaName) score += 40;
+        if (targetToken && sourceToken && targetToken === sourceToken) score += 50;
+        if (targetDescription && sourcePhenomenon && targetDescription === sourcePhenomenon) score += 50;
+        if (targetDescription && sourceDescription && sourceDescription.includes(targetDescription)) score += 40;
+        if (targetDescription && sourceMessage && sourceMessage.includes(targetDescription)) score += 30;
+        if (targetPhenomenon && sourcePhenomenon && (targetPhenomenon === sourcePhenomenon || sourcePhenomenon.includes(targetPhenomenon))) score += 30;
+        if (targetSeverity && sourceSeverity && targetSeverity === sourceSeverity && targetSeverity !== "unknown") score += 10;
+        return score;
+    }
+
+    static #NormalizeAlertMatchText(value) {
+        return String(value ?? "")
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, "")
+            .replace(/预警信号|预警|警报|报告/g, "");
     }
 
     /**
