@@ -220,7 +220,7 @@ test("response rewrites only National Warning Center weatherAlerts collection de
     };
 
     try {
-        for (const providerName of ["国家预警信息发布中心", "國家預警信息發布中心"]) {
+        for (const providerName of ["国家预警信息发布中心", "國家預警信息發布中心", "National Early Warning Center"]) {
             const originalBytes = createWeatherAlertRoot(providerName);
             const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["weatherAlerts"]);
             const expectedEndTime = originalDecoded.weatherAlerts.alerts[0].expireTime;

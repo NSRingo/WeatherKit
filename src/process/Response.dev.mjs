@@ -389,7 +389,8 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments, paramet
 
     switch (weatherAlerts?.metadata?.providerName) {
         case "国家预警信息发布中心":
-        case "國家預警信息發布中心": {
+        case "國家預警信息發布中心":
+        case "National Early Warning Center": {
             let newWeatherAlerts;
             switch (provider) {
                 case "QWeather":
