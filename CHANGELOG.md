@@ -32,3 +32,4 @@
   * 新增覆盖空气质量 scale、NextHour 条件推导、降水总量、provider metadata、request availability、FlatBuffer overlay 与 selective decode 的回归测试。 @hhh2210
   * 新增 FlatBuffer 根表处理器契约、逐 slot 编解码、选择性数据集回写及 QWeather 预警的回归测试。 @VirgilClyne
   * 新增 WeatherAlert API 字段映射文档，记录官方页面参数、显式渲染字段与本项目转换入口。 @VirgilClyne
+  * 将 Loon 发布产物扩展名统一为 `.lpx`，与固定 Rewrite 模块命名保持一致。 @VirgilClyne
