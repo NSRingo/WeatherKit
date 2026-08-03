@@ -13,7 +13,7 @@
   * 修复 `forecastNextHour` FlatBuffer 编码时未知天气枚举被静默编码为 `CLEAR` 的问题。 @hhh2210
   * 修复和风天气分钟预报的 `reportedTime`，改为使用接口返回的 `updateTime`，不再误写为本地读取时间。 @VirgilClyne
   * 修复云端路由对 `dev.weatherkit.*` 与 `*.pages.dev` 域名的识别，并限制 Cloudflare Pages Functions 只处理 WeatherKit API 路径。 @VirgilClyne
-  * 完善 QWeather 预警到 Apple `alertDetails` / v1 JSON 的最终字段映射：保留正文与防御指南换行，`responses` 仅写官方建议行动枚举，并补充事件来源回退、区域、签发/生效/开始/结束/过期时间和来源字段。 @VirgilClyne
+  * 完善 QWeather 预警到 Apple `alertDetails` / v1 JSON 的最终字段映射：`messages` 按来源段拆分，HTML 分支保留正文、标准说明与防御指南，API 分支仅使用 `description` 与 `instruction`，`responses` 仅写官方建议行动枚举，并补充事件来源回退、区域、签发/生效/开始/结束/过期时间和来源字段。 @VirgilClyne
   * 完善 v2 `weatherAlerts` FlatBuffer 预警补全：支持简体、繁体及英文 `National Early Warning Center` 来源名称，只补全已有预警、不新增 alert、不改单条预警 URL；集合级 `detailsUrl` 使用 `metadata` 坐标与当前 Provider 作为 `party`，`metadata.attributionUrl` 指向 QWeather attribution，并按 WK2 大写枚举写回预警等级与建议行动。 @VirgilClyne
 
 ### 🔣 Dependencies
