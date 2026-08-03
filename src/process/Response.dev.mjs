@@ -414,7 +414,7 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments, paramet
             WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts?.alerts);
             weatherAlerts.metadata.attributionUrl = "https://developer.qweather.com/attribution.html";
 
-            weatherAlerts.detailsUrl = `https://weatherkit.apple.com/alertDetails/index.html?ids=${parameters.latitude},${parameters.longitude}&lang=${encodeURIComponent(weatherAlerts?.metadata?.language || parameters?.language || "zh-CN")}&timezone=${encodeURIComponent(url?.searchParams?.get("timezone") || "UTC")}&party=${encodeURIComponent(provider)}`;
+            weatherAlerts.detailsUrl = `https://weatherkit.apple.com/alertDetails/index.html?ids=${weatherAlerts.metadata.latitude},${weatherAlerts.metadata.longitude}&lang=${encodeURIComponent(weatherAlerts?.metadata?.language || parameters?.language || "zh-CN")}&timezone=${encodeURIComponent(url?.searchParams?.get("timezone") || "UTC")}&party=${encodeURIComponent(provider)}`;
 
             Console.info("✅ InjectWeatherAlerts");
             return weatherAlerts;

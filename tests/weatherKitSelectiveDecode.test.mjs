@@ -228,7 +228,7 @@ test("response rewrites only National Warning Center weatherAlerts collection de
                 const response = await handler(
                     {
                         headers: {},
-                        url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/32.115/118.814?timezone=Asia%2FShanghai&country=CN&dataSets=weatherAlerts",
+                        url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/31.23/121.47?timezone=Asia%2FShanghai&country=CN&dataSets=weatherAlerts",
                     },
                     {
                         bodyBytes: originalBytes,
