@@ -14,7 +14,7 @@ https://weatherkit.apple.com/alertDetails/index.html?ids={ids}&lang={language}&t
 
 | 参数 | 官方页面用途 | 本项目用法 |
 | --- | --- | --- |
-| `ids` | 传给 `/api/v1/weatherAlerts?lang=...&ids=...` 获取预警 JSON。官方形态通常是逗号分隔 WeatherAlert UUID。 | 模块改写后，坐标形态为 `{latitude},{longitude}`，由本项目接口转为 QWeather Alert API 请求。旧 QWeather 页面标识仍由脚本兼容。 |
+| `ids` | 传给 `/api/v1/weatherAlerts?lang=...&ids=...` 获取预警 JSON。官方形态通常是逗号分隔 WeatherAlert UUID。 | 模块改写后，坐标形态为 `{latitude},{longitude}`，由本项目接口转为 QWeather Alert API 请求；模块/模板只挂 `?ids={latitude},{longitude}`。旧 QWeather 页面标识仍由脚本兼容。 |
 | `lang` | 选择页面本地化文案，并筛选 `messages[].language`。 | 传给 QWeather 的语言参数，并写回 `messages[].language`。 |
 | `timezone` | 只用于页面时间格式化。 | 从原始 WeatherKit 请求透传到 `alertDetails` 页面 URL。 |
 | `party` | `party=apple` 表示 Apple 第一方上下文，会隐藏部分第三方脚注。 | 生成坐标版 `alertDetails` URL 时固定写 `apple`。 |
