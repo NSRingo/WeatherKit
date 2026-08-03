@@ -6,7 +6,7 @@ const modulesDirectory = new URL("../modules/", import.meta.url);
 const configurableModules = ["iRingo.WeatherKit.Rewrite.sgmodule", "iRingo.WeatherKit.Rewrite.srmodule", "iRingo.WeatherKit.Rewrite.yaml"];
 const fixedModules = ["iRingo.WeatherKit.Rewrite.lpx", "iRingo.WeatherKit.Rewrite.stoverride"];
 const rewriteTemplates = ["loon.rewrite.handlebars", "surge.rewrite.handlebars", "shadowrocket.rewrite.handlebars", "stash.rewrite.handlebars"];
-const coordinatePattern = String.raw`-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+),-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)`;
+const coordinatePattern = String.raw`-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?`;
 const weatherAlertsPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?([^#]*&ids=${coordinatePattern}(?:&[^#]*)?)$`;
 const weatherAlertsHandlerPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=${coordinatePattern}(?:&|$)`;
 const weatherAlertsRewriteComment = "# 🌤 WeatherKit.api.v1.weatherAlerts.response";
@@ -44,7 +44,13 @@ test("WeatherAlerts hooks accept coordinate ids after an existing query paramete
     assert.match("https://weatherkit.apple.com/api/v1/weatherAlerts?timezone=Asia%2FShanghai&ids=32.115,118.814&country=CN", regex);
     assert.match("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=32.115,118.814", handlerRegex);
     assert.match("https://weatherkit.apple.com/api/v1/weatherAlerts?timezone=Asia%2FShanghai&ids=32.115,118.814&country=CN", handlerRegex);
+    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=32.115%2C118.814", regex);
+    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=32.115%2c118.814", regex);
+    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=32.115%2C118.814", handlerRegex);
+    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=32.115%2c118.814", handlerRegex);
     assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?ids=32.115,118.814", regex);
+    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?ids=32.115%2C118.814", regex);
+    assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=.115,118.814", regex);
     assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-101190110", regex);
     assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=35889ee6-fa82-5f9f-8e49-fad78c4f383a", regex);
     assert.doesNotMatch("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=jianye-101190110", handlerRegex);
@@ -75,6 +81,8 @@ test("script module templates hook Apple weatherAlerts without QWeather page red
     const quantumultX = await readFile(new URL("../template/quantumultx.handlebars", import.meta.url), "utf8");
     const stash = await readFile(new URL("../template/stash.handlebars", import.meta.url), "utf8");
     assert.match(surge, /weatherAlerts\.request = type=http-request,[^\n]+request\.bundle\.js/);
+    assert.ok(surge.includes(`pattern="${weatherAlertsHandlerPattern}"`));
+    assert.doesNotMatch(surge, /weatherAlerts\.request[^\n]+pattern=\^https/);
     assert.doesNotMatch(surge, /weatherAlerts\.request[^\n]+requires-body/);
     assert.match(loon, /http-request [^\n]+weatherAlerts[^\n]+request\.bundle\.js[^\n]+weatherAlerts\.request/);
     assert.match(quantumultX, /weatherAlerts[^\n]+url script-echo-response[^\n]+request\.bundle\.js/);
@@ -98,8 +106,8 @@ test("Rewrite templates stay aligned with fixed Rewrite modules", async () => {
 
 	for (const filename of configurableTemplates) {
 		const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
-		assert.ok(content.includes("#!arguments = endpoint:weatherkit.pages.dev"), filename);
-		assert.ok(content.includes("#!arguments-desc = endpoint: [重写] 服务端点\\n"), filename);
+        assert.ok(content.includes("#!arguments = endpoint:weatherkit.pages.dev"), filename);
+        assert.ok(content.includes("#!arguments-desc = endpoint: [重写] 服务端点\\n"), filename);
 		assert.ok(content.includes("https://\\{{{endpoint}}}/api/v1/weatherAlerts?$1"), filename);
 	}
 
