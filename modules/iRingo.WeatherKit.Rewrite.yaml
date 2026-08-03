@@ -42,7 +42,7 @@ url_rewrites:
   location: https://{{{endpoint}}}/api/v2/weather/
   status_code: 307
 # 🌤 WeatherKit.api.v1.weatherAlerts.response
-- match: ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?ids=-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+),-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+))$
+- match: ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts(\?[^#]*&ids=-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+),-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:&[^#]*)?)$
   location: https://{{{endpoint}}}/api/v1/weatherAlerts$1
 mitm:
   hostnames:
