@@ -327,9 +327,14 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments, paramet
         case "National Early Warning Center": {
             let newWeatherAlerts;
             switch (provider) {
+                case "ColorfulClouds":
+                    newWeatherAlerts = await enviroments.colorfulClouds.WeatherAlert();
+                    weatherAlerts.metadata.attributionUrl = "https://www.caiyunapp.com/h5";
+                    break;
                 case "QWeather":
                 default:
                     newWeatherAlerts = await enviroments.qWeather.WeatherAlert();
+                    weatherAlerts.metadata.attributionUrl = "https://developer.qweather.com/attribution.html";
                     break;
             }
 
@@ -340,13 +345,12 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments, paramet
                     `provider: ${provider}`,
                     `providerName: ${weatherAlerts?.metadata?.providerName}`,
                     `appleAlertCount: ${weatherAlerts?.alerts?.length ?? 0}`,
-                    `qWeatherAlertCount: ${newWeatherAlerts?.alerts?.length ?? 0}`,
-                    `qWeatherAreaName: ${newWeatherAlerts?.areaName}`,
-                    `qWeatherIssuedBy: ${newWeatherAlerts?.source}`,
+                    `sourceAlertCount: ${newWeatherAlerts?.alerts?.length ?? 0}`,
+                    `sourceAreaName: ${newWeatherAlerts?.areaName}`,
+                    `sourceIssuedBy: ${newWeatherAlerts?.source}`,
                 );
             }
             WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts?.alerts);
-            weatherAlerts.metadata.attributionUrl = "https://developer.qweather.com/attribution.html";
 
             weatherAlerts.detailsUrl = `https://weatherkit.apple.com/alertDetails/index.html?ids=${weatherAlerts.metadata.latitude},${weatherAlerts.metadata.longitude}&lang=${encodeURIComponent(weatherAlerts?.metadata?.language || parameters?.language || "zh-CN")}&timezone=${encodeURIComponent(url?.searchParams?.get("timezone") || "UTC")}&party=${encodeURIComponent(provider)}`;
 

@@ -11,6 +11,7 @@ export default class ColorfulClouds {
         Console.log(`🟧 ${this.Name} v${this.Version}`);
         this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
         this.headers = { Referer: "https://caiyunapp.com/" };
+        this.token = token;
         this.version = parameters.version;
         this.language = parameters.language;
         this.latitude = parameters.latitude;
@@ -232,6 +233,45 @@ export default class ColorfulClouds {
             Console.info("✅ Minutely");
         }
         return forecastNextHour;
+    }
+
+    /**
+     * 拉取彩云 CAP 预警，并标准化为 WeatherAlerts.mergeAlerts 可消费的来源结构。
+     * Fetch Caiyun CAP alerts and normalize them for WeatherAlerts.mergeAlerts.
+     * @returns {Promise<{alerts: Array<object>, areaName: string, source: string}>} 预警来源集合 / Normalized alert source collection.
+     */
+    async WeatherAlert() {
+        Console.info("☑️ WeatherAlert");
+        const failedWeatherAlerts = {
+            alerts: [],
+            areaName: "",
+            source: "彩云天气",
+        };
+        const url = new URL("https://singer.caiyunhub.com/v3/cap_alert/location");
+        url.searchParams.set("token", this.token);
+        url.searchParams.set("longitude", this.longitude);
+        url.searchParams.set("latitude", this.latitude);
+        url.searchParams.set("language", this.language || "zh-CN");
+        const request = {
+            url: url.toString(),
+            headers: this.headers,
+        };
+        let weatherAlerts = failedWeatherAlerts;
+        try {
+            const response = await fetch(request);
+            const body = JSON.parse(response?.body ?? "{}");
+            if (response?.ok === false) {
+                Console.warn("WeatherAlert", `upstreamStatus: ${response.statusCode ?? response.status}`);
+                return failedWeatherAlerts;
+            }
+            if (!Array.isArray(body?.alerts)) throw Error(JSON.stringify(body?.error ?? body?.reason ?? body?.code ?? body));
+            weatherAlerts = this.#CreateWeatherAlerts(body);
+        } catch (error) {
+            Console.error(`WeatherAlert: ${error}`);
+        } finally {
+            Console.info("✅ WeatherAlert");
+        }
+        return weatherAlerts;
     }
 
     async #Hourly(hourlysteps = 273, begin = undefined) {
@@ -688,5 +728,121 @@ export default class ColorfulClouds {
                 windSpeed: hourly.result.hourly.wind[i].speed,
             })),
         };
+    }
+
+    #CreateWeatherAlerts(body) {
+        Console.info("☑️ CreateWeatherAlerts");
+        const convertedAlerts = (Array.isArray(body?.alerts) ? body.alerts : []).map(alert => this.#CreateWeatherAlert(alert)).filter(Boolean);
+        const weatherAlerts = {
+            alerts: convertedAlerts,
+            areaName: convertedAlerts.find(alert => alert?.areaName)?.areaName ?? "",
+            source: convertedAlerts.find(alert => alert?.source)?.source || "彩云天气",
+        };
+        Console.info("✅ CreateWeatherAlerts");
+        return weatherAlerts;
+    }
+
+    #CreateWeatherAlert(alert) {
+        const issuedTime = this.#DateISOString(alert?.sent_time);
+        if (!issuedTime) return undefined;
+        const effectiveTime = this.#DateISOString(alert?.effective_time) || issuedTime;
+        const expireTime = this.#DateISOString(alert?.expires_time);
+        const eventOnsetTime = this.#DateISOString(alert?.onset_time) || effectiveTime;
+        const area = Array.isArray(alert?.areas) ? alert.areas.find(item => item) : undefined;
+        const geocode = Array.isArray(area?.geocodes) ? area.geocodes.find(item => item?.value) : undefined;
+        const description = String(alert?.event_name ?? alert?.headline ?? "").trim();
+        const message = String(alert?.description ?? alert?.headline ?? description).trim();
+        const source = String(alert?.sender_name ?? "").trim() || this.#WeatherAlertSource(alert?.source);
+        return {
+            ...(geocode?.value ? { areaId: String(geocode.value).trim() } : {}),
+            ...(area?.area_desc ? { areaName: String(area.area_desc).trim() } : {}),
+            certainty: this.#WeatherAlertCertainty(alert?.certainty),
+            description,
+            effectiveTime,
+            eventOnsetTime,
+            ...(expireTime ? { eventEndTime: expireTime, expireTime } : {}),
+            guidelines: this.#SplitWeatherAlertGuidelines(alert?.instruction),
+            identifier: alert?.id,
+            issuedTime,
+            message,
+            ...(description ? { phenomenon: description } : {}),
+            reportedAt: issuedTime,
+            severity: this.#WeatherAlertSeverity(alert?.severity),
+            ...(source ? { source } : {}),
+            standard: "",
+            urgency: this.#WeatherAlertUrgency(alert?.urgency),
+        };
+    }
+
+    #DateISOString(value) {
+        const seconds = Number(value);
+        if (!Number.isFinite(seconds) || seconds <= 0) return "";
+        return new Date(seconds * 1000).toISOString();
+    }
+
+    #WeatherAlertSource(value) {
+        switch (Number(value)) {
+            case 1:
+                return "US National Weather Service";
+            case 2:
+                return "Environment and Climate Change Canada";
+            default:
+                return "";
+        }
+    }
+
+    #WeatherAlertSeverity(value) {
+        switch (Number(value)) {
+            case 1:
+                return "extreme";
+            case 2:
+                return "severe";
+            case 3:
+                return "moderate";
+            case 4:
+                return "minor";
+            case 5:
+            default:
+                return "unknown";
+        }
+    }
+
+    #WeatherAlertCertainty(value) {
+        switch (Number(value)) {
+            case 1:
+                return "observed";
+            case 2:
+                return "likely";
+            case 3:
+                return "possible";
+            case 4:
+                return "unlikely";
+            case 5:
+            default:
+                return "unknown";
+        }
+    }
+
+    #WeatherAlertUrgency(value) {
+        switch (Number(value)) {
+            case 1:
+                return "immediate";
+            case 2:
+                return "expected";
+            case 3:
+                return "future";
+            case 4:
+                return "past";
+            case 5:
+            default:
+                return "unknown";
+        }
+    }
+
+    #SplitWeatherAlertGuidelines(instruction) {
+        return String(instruction ?? "")
+            .split(/\r?\n/)
+            .map(line => line.replace(/^\s*\d+[.、]\s*/, "").trim())
+            .filter(Boolean);
     }
 }

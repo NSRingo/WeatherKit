@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import test from "node:test";
 import { onRequest } from "../functions/[[route]].js";
+import ColorfulClouds from "../src/class/ColorfulClouds.mjs";
 import QWeather from "../src/class/QWeather.mjs";
 import WeatherAlerts from "../src/class/WeatherAlerts.mjs";
 import { Request as processRequest } from "../src/process/Request.mjs";
@@ -51,6 +52,39 @@ const qWeatherAlertAPI = {
             criteria: "日最高气温升至37℃以上",
             responseTypes: ["monitor"],
             instruction: "1. 有关部门和单位按照职责落实防暑降温保障措施；\n2. 尽量避免在高温时段进行户外活动；\n3. 对老、弱、病、幼人群提供防暑降温指导；\n4. 高温条件下作业人员应当缩短连续工作时间。",
+        },
+    ],
+};
+const colorfulCloudsAlertAPI = {
+    alerts: [
+        {
+            id: "urn:oid:2.49.0.1.840.0.test",
+            region_code: "US",
+            source: 1,
+            msg_type: 1,
+            event_name: "Flash Flood Warning",
+            categories: [2],
+            urgency: 1,
+            severity: 2,
+            certainty: 2,
+            sent_time: 1735689600,
+            effective_time: 1735689660,
+            onset_time: 1735689720,
+            expires_time: 1735776000,
+            references: [],
+            areas: [
+                {
+                    area_desc: "Los Angeles",
+                    geocodes: [{ value_name: "UGC", value: "CAC037", namespace: "NWS_UGC" }],
+                    polygons: [],
+                    circles: [],
+                },
+            ],
+            language_code: "en-US",
+            sender_name: "NWS Los Angeles/Oxnard CA",
+            headline: "Flash Flood Warning issued for Los Angeles",
+            description: "Flash flooding caused by excessive rainfall is expected.",
+            instruction: "1. Move to higher ground immediately.\n2. Avoid flooded roads.",
         },
     ],
 };
@@ -171,6 +205,46 @@ test("QWeather Alert API is standardized by QWeather class", async () => {
             "对老、弱、病、幼人群提供防暑降温指导；",
             "高温条件下作业人员应当缩短连续工作时间。",
         ]);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test("ColorfulClouds CAP Alert API is standardized by ColorfulClouds class", async () => {
+    const originalFetch = globalThis.fetch;
+    let sourceRequest;
+    globalThis.fetch = async (input, init) => {
+        const requestUrl = typeof input === "string" ? input : input?.url ?? input;
+        sourceRequest = { url: new URL(requestUrl), headers: new Headers(init?.headers ?? input?.headers ?? {}) };
+        return new Response(JSON.stringify(colorfulCloudsAlertAPI), { headers: { "Content-Type": "application/json" } });
+    };
+
+    try {
+        const colorfulClouds = new ColorfulClouds({ country: "US", language: "en-US", latitude: "34.05", longitude: "-118.25" }, "test-token");
+        const extracted = await colorfulClouds.WeatherAlert();
+
+        assert.equal(sourceRequest.url.toString(), "https://singer.caiyunhub.com/v3/cap_alert/location?token=test-token&longitude=-118.25&latitude=34.05&language=en-US");
+        assert.equal(sourceRequest.headers.get("Referer"), "https://caiyunapp.com/");
+        assert.equal(extracted.source, "NWS Los Angeles/Oxnard CA");
+        assert.equal(extracted.areaName, "Los Angeles");
+        assert.equal(extracted.alerts.length, 1);
+        assert.equal(extracted.alerts[0].areaId, "CAC037");
+        assert.equal(extracted.alerts[0].areaName, "Los Angeles");
+        assert.equal(extracted.alerts[0].certainty, "likely");
+        assert.equal(extracted.alerts[0].description, "Flash Flood Warning");
+        assert.equal(extracted.alerts[0].effectiveTime, "2025-01-01T00:01:00.000Z");
+        assert.equal(extracted.alerts[0].eventOnsetTime, "2025-01-01T00:02:00.000Z");
+        assert.equal(extracted.alerts[0].eventEndTime, "2025-01-02T00:00:00.000Z");
+        assert.equal(extracted.alerts[0].expireTime, "2025-01-02T00:00:00.000Z");
+        assert.equal(extracted.alerts[0].issuedTime, "2025-01-01T00:00:00.000Z");
+        assert.equal(extracted.alerts[0].message, "Flash flooding caused by excessive rainfall is expected.");
+        assert.equal(extracted.alerts[0].phenomenon, "Flash Flood Warning");
+        assert.equal(extracted.alerts[0].reportedAt, "2025-01-01T00:00:00.000Z");
+        assert.equal(extracted.alerts[0].severity, "severe");
+        assert.equal(extracted.alerts[0].source, "NWS Los Angeles/Oxnard CA");
+        assert.equal(extracted.alerts[0].standard, "");
+        assert.equal(extracted.alerts[0].urgency, "immediate");
+        assert.deepEqual(extracted.alerts[0].guidelines, ["Move to higher ground immediately.", "Avoid flooded roads."]);
     } finally {
         globalThis.fetch = originalFetch;
     }
