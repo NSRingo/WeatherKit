@@ -220,11 +220,23 @@ test("ColorfulClouds CAP Alert API is standardized by ColorfulClouds class", asy
     };
 
     try {
-        const colorfulClouds = new ColorfulClouds({ country: "US", language: "en-US", latitude: "34.05", longitude: "-118.25" }, "test-token");
-        const extracted = await colorfulClouds.WeatherAlert();
+        let extracted;
+        for (const [language, colorfulCloudsLanguage] of [
+            ["zh-CN", "zh_CN"],
+            ["zh-TW", "zh_TW"],
+            ["zh-Hant", "zh_TW"],
+            ["en-US", "en_US"],
+            ["en-GB", "en_GB"],
+            ["ja", "ja"],
+            ["de", "zh_CN"],
+        ]) {
+            const colorfulClouds = new ColorfulClouds({ country: "US", language, latitude: "34.05", longitude: "-118.25" }, "test-token");
+            extracted = await colorfulClouds.WeatherAlert();
 
-        assert.equal(sourceRequest.url.toString(), "https://singer.caiyunhub.com/v3/cap_alert/location?token=test-token&longitude=-118.25&latitude=34.05&language=en-US");
-        assert.equal(sourceRequest.headers.get("Referer"), "https://caiyunapp.com/");
+            assert.equal(sourceRequest.url.toString(), `https://singer.caiyunhub.com/v3/cap_alert/location?token=test-token&longitude=-118.25&latitude=34.05&language=${colorfulCloudsLanguage}`);
+            assert.equal(sourceRequest.headers.get("Referer"), "https://caiyunapp.com/");
+        }
+
         assert.equal(extracted.source, "NWS Los Angeles/Oxnard CA");
         assert.equal(extracted.areaName, "Los Angeles");
         assert.equal(extracted.alerts.length, 1);

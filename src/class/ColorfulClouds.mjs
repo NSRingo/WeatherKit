@@ -13,7 +13,38 @@ export default class ColorfulClouds {
         this.headers = { Referer: "https://caiyunapp.com/" };
         this.token = token;
         this.version = parameters.version;
-        this.language = parameters.language;
+        switch (String(parameters.language ?? "").trim().toLowerCase()) {
+            case "zh-cn":
+            case "zh-hans":
+            case "zh-hans-cn":
+            case "zh-sg":
+                this.language = "zh_CN";
+                break;
+            case "zh-hant":
+            case "zh-hant-hk":
+            case "zh-hant-mo":
+            case "zh-hant-tw":
+            case "zh-hk":
+            case "zh-mo":
+            case "zh-tw":
+                this.language = "zh_TW";
+                break;
+            case "ja":
+            case "ja-jp":
+                this.language = "ja";
+                break;
+            case "en-gb":
+                this.language = "en_GB";
+                break;
+            case "en-au":
+            case "en-ca":
+            case "en-us":
+                this.language = "en_US";
+                break;
+            case "":
+            default:
+                this.language = "zh_CN";
+        }
         this.latitude = parameters.latitude;
         this.longitude = parameters.longitude;
         this.country = parameters.country;
@@ -147,7 +178,7 @@ export default class ColorfulClouds {
         }
 
         const request = {
-            url: `${this.endpoint}/realtime`,
+            url: `${this.endpoint}/realtime?lang=${this.language}`,
             headers: this.headers,
         };
         try {
@@ -188,7 +219,7 @@ export default class ColorfulClouds {
         }
 
         const request = {
-            url: `${this.endpoint}/minutely?unit=metric:v2`,
+            url: `${this.endpoint}/minutely?unit=metric:v2&lang=${this.language}`,
             headers: this.headers,
         };
         let forecastNextHour;
@@ -278,7 +309,7 @@ export default class ColorfulClouds {
         url.searchParams.set("token", this.token);
         url.searchParams.set("longitude", this.longitude);
         url.searchParams.set("latitude", this.latitude);
-        url.searchParams.set("language", this.language || "zh-CN");
+        url.searchParams.set("language", this.language);
         const request = {
             url: url.toString(),
             headers: this.headers,
@@ -304,7 +335,7 @@ export default class ColorfulClouds {
     async #Hourly(hourlysteps = 273, begin = undefined) {
         Console.info("☑️ Hourly", `hourlysteps: ${hourlysteps}`, `begin: ${begin}`);
         const request = {
-            url: `${this.endpoint}/hourly?hourlysteps=${hourlysteps}`,
+            url: `${this.endpoint}/hourly?hourlysteps=${hourlysteps}&lang=${this.language}`,
             headers: this.headers,
         };
         if (begin) request.url += `&begin=${begin}`;
@@ -339,7 +370,7 @@ export default class ColorfulClouds {
     async Daily(dailysteps = 10, begin = undefined) {
         Console.info("☑️ Daily");
         const request = {
-            url: `${this.endpoint}/daily?dailysteps=${dailysteps}`,
+            url: `${this.endpoint}/daily?dailysteps=${dailysteps}&lang=${this.language}`,
             headers: this.headers,
         };
         if (begin) request.url += `&begin=${begin}`;

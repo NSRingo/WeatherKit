@@ -5,10 +5,12 @@ import { ByteBuffer } from "flatbuffers";
 globalThis.$environment = { "surge-version": "test" };
 globalThis.$persistentStore = { read: () => null, write: () => true };
 globalThis.$argument = { LogLevel: "OFF", Storage: "database" };
+const colorfulCloudsRequestUrls = [];
 globalThis.$httpClient = {
     get(request, callback) {
         let body;
         if (request.url.includes("api.caiyunapp.com")) {
+            colorfulCloudsRequestUrls.push(request.url);
             if (request.url.includes("/realtime")) body = colorfulRealtime;
             else if (request.url.includes("/minutely")) body = colorfulMinutely;
             else if (request.url.includes("/hourly")) body = colorfulHourly;
@@ -34,12 +36,17 @@ const parameters = {
 };
 
 test("ColorfulClouds maps the API latitude-longitude response order in every weather product", async () => {
+    colorfulCloudsRequestUrls.length = 0;
     const provider = new ColorfulClouds(parameters, "token");
     const products = [await provider.CurrentWeather(), await provider.ForecastHourly(1), await provider.Daily(1), await provider.Minutely()];
 
     for (const product of products) {
         assert.equal(product.metadata.latitude, parameters.latitude);
         assert.equal(product.metadata.longitude, parameters.longitude);
+    }
+    assert.ok(colorfulCloudsRequestUrls.length > 0);
+    for (const requestUrl of colorfulCloudsRequestUrls) {
+        assert.equal(new URL(requestUrl).searchParams.get("lang"), "zh_CN");
     }
 });
 
