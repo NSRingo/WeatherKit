@@ -7,7 +7,7 @@
 官方页面入口：
 
 ```text
-https://weatherkit.apple.com/alertDetails/index.html?ids={ids}&lang={language}&timezone={timezone}&party={party}
+https://weatherkit.apple.com/alertDetails/index.html?ids={ids}&lang={language}&party={party}
 ```
 
 页面 bundle 会读取以下查询参数：
@@ -16,7 +16,6 @@ https://weatherkit.apple.com/alertDetails/index.html?ids={ids}&lang={language}&t
 | --- | --- | --- |
 | `ids` | 传给 `/api/v1/weatherAlerts?lang=...&ids=...` 获取预警 JSON。官方形态通常是逗号分隔 WeatherAlert UUID。 | 模块/模板触发正则使用 `?[^#]*&ids={latitude},{longitude}` 形态：`ids` 前必须已有查询参数，`ids=` 后只匹配坐标；旧 QWeather 页面标识仍由脚本逻辑兼容备用，但不由模块/模板触发。 |
 | `lang` | 选择页面本地化文案，并筛选 `messages[].language`。 | 传给 QWeather 的语言参数，并写回 `messages[].language`。 |
-| `timezone` | 只用于页面时间格式化。 | 从原始 WeatherKit 请求透传到 `alertDetails` 页面 URL。 |
 | `party` | 页面上下文标识，会影响脚注/归因渲染。 | 生成坐标版 `alertDetails` URL 时写当前 `Settings.WeatherAlerts.Provider`，默认 `QWeather`。 |
 
 官方页面实际请求数据时只拼接：

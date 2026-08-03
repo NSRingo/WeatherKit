@@ -385,14 +385,13 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  */
 async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments, parameters, url) {
     Console.info("☑️ InjectWeatherAlerts");
-    const provider = Settings?.WeatherAlerts?.Provider ?? "QWeather";
 
     switch (weatherAlerts?.metadata?.providerName) {
         case "国家预警信息发布中心":
         case "國家預警信息發布中心":
         case "National Early Warning Center": {
             let newWeatherAlerts;
-            switch (provider) {
+            switch (Settings?.WeatherAlerts?.Provider) {
                 case "ColorfulClouds":
                     newWeatherAlerts = await enviroments.colorfulClouds.WeatherAlert();
                     weatherAlerts.metadata.attributionUrl = "https://www.caiyunapp.com/h5";
@@ -408,7 +407,6 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments, paramet
                 Console.debug(
                     "InjectWeatherAlerts",
                     `country: ${enviroments.country}`,
-                    `provider: ${provider}`,
                     `providerName: ${weatherAlerts?.metadata?.providerName}`,
                     `appleAlertCount: ${weatherAlerts?.alerts?.length ?? 0}`,
                     `sourceAlertCount: ${newWeatherAlerts?.alerts?.length ?? 0}`,
@@ -418,7 +416,7 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments, paramet
             }
             WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts?.alerts);
 
-            weatherAlerts.detailsUrl = `https://weatherkit.apple.com/alertDetails/index.html?ids=${weatherAlerts.metadata.latitude},${weatherAlerts.metadata.longitude}&lang=${encodeURIComponent(weatherAlerts?.metadata?.language || parameters?.language || "zh-CN")}&timezone=${encodeURIComponent(url?.searchParams?.get("timezone") || "UTC")}&party=${encodeURIComponent(provider)}`;
+            weatherAlerts.detailsUrl = `https://weatherkit.apple.com/alertDetails/index.html?ids=${weatherAlerts.metadata.latitude},${weatherAlerts.metadata.longitude}&lang=${encodeURIComponent(weatherAlerts.metadata.language)}&party=${encodeURIComponent(Settings?.WeatherAlerts?.Provider ?? "QWeather")}`;
 
             Console.info("✅ InjectWeatherAlerts");
             return weatherAlerts;

@@ -207,7 +207,7 @@ test("response rewrites an injection root when its dataSet was requested", async
 });
 
 test("response rewrites only National Warning Center weatherAlerts collection details URL", async () => {
-    const expectedDetailsUrl = "https://weatherkit.apple.com/alertDetails/index.html?ids=32.115,118.814&lang=zh-CN&timezone=Asia%2FShanghai&party=QWeather";
+    const expectedDetailsUrl = "https://weatherkit.apple.com/alertDetails/index.html?ids=32.115,118.814&lang=zh-CN&party=QWeather";
     const expectedAttributionUrl = "https://developer.qweather.com/attribution.html";
     const expectedOnsetTime = Math.trunc(new Date(qWeatherHighTemperatureAlert.onsetTime).getTime() / 1000);
     const originalFetch = globalThis.fetch;
