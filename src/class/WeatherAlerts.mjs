@@ -122,25 +122,6 @@ export default class WeatherAlerts {
     }
 
     /**
-     * 生成 Apple 官方预警详情页 URL。
-     * Build an Apple alertDetails page URL.
-     * @param {{latitude: string | number, longitude: string | number, language?: string, timezone?: string, party?: string}} parameters URL 参数 / URL parameters:
-     * - latitude/longitude: 写入 alertDetails 的 ids=latitude,longitude。
-     * - language: 写入 lang，用于页面文案和消息语言筛选。
-     * - timezone: 写入 timezone，用于页面时间格式化。
-     * - party: 写入 party；apple 表示官方一方上下文并隐藏第三方脚注。
-     * @returns {string | undefined} Apple 预警详情页 URL / Apple alertDetails URL.
-     */
-    static BuildAppleAlertDetailsURL(parameters) {
-        const coordinates = WeatherAlerts.#ParseCoordinateIdentifier(`${parameters?.latitude},${parameters?.longitude}`);
-        if (!coordinates) return undefined;
-        const language = encodeURIComponent(parameters?.language || "zh-CN");
-        const timezone = encodeURIComponent(parameters?.timezone || "UTC");
-        const party = encodeURIComponent(parameters?.party || "apple");
-        return `https://weatherkit.apple.com/alertDetails/index.html?ids=${coordinates.latitude},${coordinates.longitude}&lang=${language}&timezone=${timezone}&party=${party}`;
-    }
-
-    /**
      * 将新的 QWeather 预警数组合并到原始 Apple 预警数组。
      * 只补空值 / unknown，不改 url，也不新增 alert。
      * @param {array} to - 原始 Apple 预警数组
@@ -148,6 +129,7 @@ export default class WeatherAlerts {
      * @returns {array} 原始 Apple 预警数组
      */
     static mergeAlerts(to = [], from = []) {
+        if (!Array.isArray(to) || !Array.isArray(from)) return to;
         if (!to.length || !from.length) return to;
         WeatherAlerts.#LogMergeAlertsStart(to, from);
         const usedQWeatherAlertIndexes = new Set();

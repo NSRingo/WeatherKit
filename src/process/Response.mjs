@@ -319,21 +319,13 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  */
 async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments, parameters, url) {
     Console.info("☑️ InjectWeatherAlerts");
-    if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
-        Console.debug(
-            "InjectWeatherAlerts",
-            `country: ${enviroments.country}`,
-            `provider: ${Settings?.WeatherAlerts?.Provider ?? "QWeather"}`,
-            `providerName: ${weatherAlerts?.metadata?.providerName}`,
-            `appleAlertCount: ${weatherAlerts?.alerts?.length ?? 0}`,
-        );
-    }
+    const provider = Settings?.WeatherAlerts?.Provider ?? "QWeather";
 
     switch (weatherAlerts?.metadata?.providerName) {
         case "国家预警信息发布中心":
         case "國家預警信息發布中心": {
             let newWeatherAlerts;
-            switch (Settings?.WeatherAlerts?.Provider) {
+            switch (provider) {
                 case "QWeather":
                 default:
                     newWeatherAlerts = await enviroments.qWeather.WeatherAlert();
@@ -343,26 +335,19 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments, paramet
             if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
                 Console.debug(
                     "InjectWeatherAlerts",
-                    `provider: ${Settings?.WeatherAlerts?.Provider ?? "QWeather"}`,
+                    `country: ${enviroments.country}`,
+                    `provider: ${provider}`,
+                    `providerName: ${weatherAlerts?.metadata?.providerName}`,
+                    `appleAlertCount: ${weatherAlerts?.alerts?.length ?? 0}`,
                     `qWeatherAlertCount: ${newWeatherAlerts?.alerts?.length ?? 0}`,
                     `qWeatherAreaName: ${newWeatherAlerts?.areaName}`,
                     `qWeatherIssuedBy: ${newWeatherAlerts?.source}`,
                 );
             }
-            if (newWeatherAlerts?.alerts?.length) {
-                WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts.alerts);
-            } else {
-                if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: empty QWeather alerts");
-            }
+            WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts?.alerts);
+            weatherAlerts.metadata.attributionUrl = "https://developer.qweather.com/attribution.html";
 
-            const detailsUrl = WeatherAlerts.BuildAppleAlertDetailsURL({
-                latitude: parameters?.latitude,
-                longitude: parameters?.longitude,
-                language: weatherAlerts?.metadata?.language || parameters?.language,
-                timezone: url?.searchParams?.get("timezone") || "UTC",
-                party: "apple",
-            });
-            if (detailsUrl) weatherAlerts.detailsUrl = detailsUrl;
+            weatherAlerts.detailsUrl = `https://weatherkit.apple.com/alertDetails/index.html?ids=${parameters.latitude},${parameters.longitude}&lang=${encodeURIComponent(weatherAlerts?.metadata?.language || parameters?.language || "zh-CN")}&timezone=${encodeURIComponent(url?.searchParams?.get("timezone") || "UTC")}&party=${encodeURIComponent(provider)}`;
 
             Console.info("✅ InjectWeatherAlerts");
             return weatherAlerts;
