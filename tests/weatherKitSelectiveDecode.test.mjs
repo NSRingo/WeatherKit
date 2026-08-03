@@ -207,11 +207,8 @@ test("response rewrites an injection root when its dataSet was requested", async
 });
 
 test("response rewrites only National Warning Center weatherAlerts collection details URL", async () => {
-    const originalBytes = createWeatherAlertRoot();
-    const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["weatherAlerts"]);
     const expectedDetailsUrl = "https://weatherkit.apple.com/alertDetails/index.html?ids=32.115,118.814&lang=zh-CN&timezone=Asia%2FShanghai&party=apple";
     const expectedOnsetTime = Math.trunc(new Date(qWeatherHighTemperatureAlert.onsetTime).getTime() / 1000);
-    const expectedEndTime = originalDecoded.weatherAlerts.alerts[0].expireTime;
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async input => {
         const requestUrl = typeof input === "string" ? input : input?.url ?? input;
@@ -222,38 +219,43 @@ test("response rewrites only National Warning Center weatherAlerts collection de
     };
 
     try {
-        for (const handler of [Response, ResponseDev]) {
-            const response = await handler(
-                {
-                    headers: {},
-                    url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/32.115/118.814?timezone=Asia%2FShanghai&country=CN&dataSets=weatherAlerts",
-                },
-                {
-                    bodyBytes: originalBytes,
-                    headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
-                },
-            );
-            const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["weatherAlerts"]);
+        for (const providerName of ["国家预警信息发布中心", "國家預警信息發布中心"]) {
+            const originalBytes = createWeatherAlertRoot(providerName);
+            const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["weatherAlerts"]);
+            const expectedEndTime = originalDecoded.weatherAlerts.alerts[0].expireTime;
+            for (const handler of [Response, ResponseDev]) {
+                const response = await handler(
+                    {
+                        headers: {},
+                        url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/32.115/118.814?timezone=Asia%2FShanghai&country=CN&dataSets=weatherAlerts",
+                    },
+                    {
+                        bodyBytes: originalBytes,
+                        headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
+                    },
+                );
+                const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["weatherAlerts"]);
 
-            assert.equal(decoded.weatherAlerts.detailsUrl, expectedDetailsUrl);
-            assert.equal(decoded.weatherAlerts.metadata.attributionUrl, originalDecoded.weatherAlerts.metadata.attributionUrl);
-            assert.equal(decoded.weatherAlerts.metadata.readTime, originalDecoded.weatherAlerts.metadata.readTime);
-            assert.equal(decoded.weatherAlerts.metadata.reportedTime, originalDecoded.weatherAlerts.metadata.reportedTime);
-            assert.equal(decoded.weatherAlerts.alerts[0].detailsUrl, originalDecoded.weatherAlerts.alerts[0].detailsUrl);
-            assert.equal(decoded.weatherAlerts.alerts[0].attributionUrl, originalDecoded.weatherAlerts.alerts[0].attributionUrl);
-            assert.equal(decoded.weatherAlerts.alerts[0].areaId, qWeatherHighTemperatureAlert.areaId);
-            assert.equal(decoded.weatherAlerts.alerts[0].areaName, qWeatherHighTemperatureAlert.areaName);
-            assert.equal(decoded.weatherAlerts.alerts[0].description, "高温橙色预警");
-            assert.equal(decoded.weatherAlerts.alerts[0].eventOnsetTime, expectedOnsetTime);
-            assert.equal(decoded.weatherAlerts.alerts[0].eventEndTime, expectedEndTime);
-            assert.deepEqual(decoded.weatherAlerts.alerts[0].responses, ["AVOID", "PREPARE"]);
-            assert.equal(decoded.weatherAlerts.alerts[0].certainty, "UNKNOWN");
-            assert.equal(decoded.weatherAlerts.alerts[0].importance, "HIGH");
-            assert.equal(decoded.weatherAlerts.alerts[0].severity, "SEVERE");
-            assert.equal(decoded.weatherAlerts.alerts[0].significance, "UNKNOWN");
-            assert.equal(decoded.weatherAlerts.alerts[0].urgency, "UNKNOWN");
-            assert.equal(decoded.weatherAlerts.alerts[0].source, originalDecoded.weatherAlerts.alerts[0].source);
-            assert.equal(decoded.weatherAlerts.alerts[0].issuedTime, originalDecoded.weatherAlerts.alerts[0].issuedTime);
+                assert.equal(decoded.weatherAlerts.detailsUrl, expectedDetailsUrl, providerName);
+                assert.equal(decoded.weatherAlerts.metadata.attributionUrl, originalDecoded.weatherAlerts.metadata.attributionUrl, providerName);
+                assert.equal(decoded.weatherAlerts.metadata.readTime, originalDecoded.weatherAlerts.metadata.readTime, providerName);
+                assert.equal(decoded.weatherAlerts.metadata.reportedTime, originalDecoded.weatherAlerts.metadata.reportedTime, providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].detailsUrl, originalDecoded.weatherAlerts.alerts[0].detailsUrl, providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].attributionUrl, originalDecoded.weatherAlerts.alerts[0].attributionUrl, providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].areaId, qWeatherHighTemperatureAlert.areaId, providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].areaName, qWeatherHighTemperatureAlert.areaName, providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].description, "高温橙色预警", providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].eventOnsetTime, expectedOnsetTime, providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].eventEndTime, expectedEndTime, providerName);
+                assert.deepEqual(decoded.weatherAlerts.alerts[0].responses, ["AVOID", "PREPARE"], providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].certainty, "UNKNOWN", providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].importance, "HIGH", providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].severity, "SEVERE", providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].significance, "UNKNOWN", providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].urgency, "UNKNOWN", providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].source, originalDecoded.weatherAlerts.alerts[0].source, providerName);
+                assert.equal(decoded.weatherAlerts.alerts[0].issuedTime, originalDecoded.weatherAlerts.alerts[0].issuedTime, providerName);
+            }
         }
     } finally {
         globalThis.fetch = originalFetch;

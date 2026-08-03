@@ -141,30 +141,6 @@ export default class WeatherAlerts {
     }
 
     /**
-     * 将国家预警信息发布中心 v2 weatherAlerts flatbuffer 的集合详情 URL 改成 Apple alertDetails 页 URL。
-     * Rewrite the collection details URL for National Warning Center v2 weatherAlerts flatbuffer data.
-     * @param {any} weatherAlerts v2 weatherAlerts 数据；只改写 collection detailsUrl，不改 metadata 或 alert URL。
-     * @param {any} parameters parseWeatherKitURL 解析出的经纬度、语言和国家参数。
-     * @param {URL} requestUrl 原始 WeatherKit 请求 URL；timezone 从这里透传给 alertDetails。
-     * @returns {any} 改写后的 weatherAlerts 数据 / Rewritten weatherAlerts data.
-     */
-    static RewriteFlatBufferDetailsURL(weatherAlerts, parameters, requestUrl) {
-        if (!weatherAlerts) return weatherAlerts;
-        if (String(weatherAlerts?.metadata?.providerName ?? "").trim() !== "国家预警信息发布中心") return weatherAlerts;
-        const detailsUrl = WeatherAlerts.BuildAppleAlertDetailsURL({
-            latitude: parameters?.latitude,
-            longitude: parameters?.longitude,
-            language: weatherAlerts?.metadata?.language || WeatherAlerts.#NormalizeLanguage(parameters?.language, parameters?.country),
-            timezone: requestUrl?.searchParams?.get("timezone") || "UTC",
-            party: "apple",
-        });
-        if (!detailsUrl) return weatherAlerts;
-
-        weatherAlerts.detailsUrl = detailsUrl;
-        return weatherAlerts;
-    }
-
-    /**
      * 将新的 QWeather 预警数组合并到原始 Apple 预警数组。
      * 只补空值 / unknown，不改 url，也不新增 alert。
      * @param {array} to - 原始 Apple 预警数组
@@ -643,14 +619,6 @@ export default class WeatherAlerts {
     static #FirstMatch(source, pattern, fallback = "") {
         const match = source.match(pattern);
         return match ? WeatherAlerts.#DecodeHTML(match[1]) : fallback;
-    }
-
-    static #NormalizeLanguage(language, country) {
-        const normalized = String(language ?? "").trim();
-        if (!normalized) return "zh-CN";
-        if (normalized.toLowerCase().startsWith("zh")) return country ? `zh-${country}` : "zh-CN";
-        if (country && !normalized.toLowerCase().endsWith(`-${country.toLowerCase()}`)) return `${normalized}-${country}`;
-        return normalized;
     }
 
     static #ParseCoordinateIdentifier(ids) {

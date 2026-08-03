@@ -171,8 +171,7 @@ export async function Response($request, $response) {
                                                     matchEnum.importanceType();
                                                     matchEnum.responseType();
                                                 }
-                                                body.weatherAlerts = await InjectWeatherAlerts(body.weatherAlerts, Settings, enviroments);
-                                                body.weatherAlerts = WeatherAlerts.RewriteFlatBufferDetailsURL(body.weatherAlerts, parameters, url);
+                                                body.weatherAlerts = await InjectWeatherAlerts(body.weatherAlerts, Settings, enviroments, parameters, url);
                                                 if (body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
                                                 Console.debug(`body.weatherAlerts: ${JSON.stringify(body?.weatherAlerts, null, 2)}`);
                                                 break;
@@ -380,9 +379,11 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  * @param {any} weatherAlerts - 预警集合数据对象
  * @param {import('./types').Settings} Settings - 设置对象
  * @param {any} enviroments - 环境变量
+ * @param {any} parameters - 解析后的 WeatherKit 请求参数
+ * @param {URL} url - 原始 WeatherKit 请求 URL
  * @returns {Promise<any>} 补全后的预警集合数据
  */
-async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
+async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments, parameters, url) {
     Console.info("☑️ InjectWeatherAlerts");
     if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
         Console.debug(
@@ -394,37 +395,49 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
         );
     }
 
-    if (String(weatherAlerts?.metadata?.providerName ?? "").trim() !== "国家预警信息发布中心") {
-        if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: providerName is not 国家预警信息发布中心", `providerName: ${weatherAlerts?.metadata?.providerName}`);
-        Console.info("✅ InjectWeatherAlerts");
-        return weatherAlerts;
-    }
+    switch (weatherAlerts?.metadata?.providerName) {
+        case "国家预警信息发布中心":
+        case "國家預警信息發布中心": {
+            let newWeatherAlerts;
+            switch (Settings?.WeatherAlerts?.Provider) {
+                case "QWeather":
+                default:
+                    newWeatherAlerts = await enviroments.qWeather.WeatherAlert();
+                    break;
+            }
 
-    let newWeatherAlerts;
-    switch (Settings?.WeatherAlerts?.Provider) {
-        case "QWeather":
+            if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
+                Console.debug(
+                    "InjectWeatherAlerts",
+                    `provider: ${Settings?.WeatherAlerts?.Provider ?? "QWeather"}`,
+                    `qWeatherAlertCount: ${newWeatherAlerts?.alerts?.length ?? 0}`,
+                    `qWeatherAreaName: ${newWeatherAlerts?.areaName}`,
+                    `qWeatherIssuedBy: ${newWeatherAlerts?.source}`,
+                );
+            }
+            if (newWeatherAlerts?.alerts?.length) {
+                WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts.alerts);
+            } else {
+                if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: empty QWeather alerts");
+            }
+
+            const detailsUrl = WeatherAlerts.BuildAppleAlertDetailsURL({
+                latitude: parameters?.latitude,
+                longitude: parameters?.longitude,
+                language: weatherAlerts?.metadata?.language || parameters?.language,
+                timezone: url?.searchParams?.get("timezone") || "UTC",
+                party: "apple",
+            });
+            if (detailsUrl) weatherAlerts.detailsUrl = detailsUrl;
+
+            Console.info("✅ InjectWeatherAlerts");
+            return weatherAlerts;
+        }
         default:
-            newWeatherAlerts = await enviroments.qWeather.WeatherAlert();
-            break;
+            if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: providerName is not National Warning Center", `providerName: ${weatherAlerts?.metadata?.providerName}`);
+            Console.info("✅ InjectWeatherAlerts");
+            return weatherAlerts;
     }
-
-    if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
-        Console.debug(
-            "InjectWeatherAlerts",
-            `provider: ${Settings?.WeatherAlerts?.Provider ?? "QWeather"}`,
-            `qWeatherAlertCount: ${newWeatherAlerts?.alerts?.length ?? 0}`,
-            `qWeatherAreaName: ${newWeatherAlerts?.areaName}`,
-            `qWeatherIssuedBy: ${newWeatherAlerts?.source}`,
-        );
-    }
-    if (newWeatherAlerts?.alerts?.length) {
-        WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts.alerts);
-    } else {
-        if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: empty QWeather alerts");
-    }
-
-    Console.info("✅ InjectWeatherAlerts");
-    return weatherAlerts;
 }
 
 /**
