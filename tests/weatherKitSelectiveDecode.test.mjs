@@ -207,7 +207,8 @@ test("response rewrites an injection root when its dataSet was requested", async
 });
 
 test("response rewrites only National Warning Center weatherAlerts collection details URL", async () => {
-    const expectedDetailsUrl = "https://weatherkit.apple.com/alertDetails/index.html?ids=32.115,118.814&lang=zh-CN&timezone=Asia%2FShanghai&party=apple";
+    const expectedDetailsUrl = "https://weatherkit.apple.com/alertDetails/index.html?ids=32.115,118.814&lang=zh-CN&timezone=Asia%2FShanghai&party=QWeather";
+    const expectedAttributionUrl = "https://developer.qweather.com/attribution.html";
     const expectedOnsetTime = Math.trunc(new Date(qWeatherHighTemperatureAlert.onsetTime).getTime() / 1000);
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async input => {
@@ -237,7 +238,7 @@ test("response rewrites only National Warning Center weatherAlerts collection de
                 const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["weatherAlerts"]);
 
                 assert.equal(decoded.weatherAlerts.detailsUrl, expectedDetailsUrl, providerName);
-                assert.equal(decoded.weatherAlerts.metadata.attributionUrl, originalDecoded.weatherAlerts.metadata.attributionUrl, providerName);
+                assert.equal(decoded.weatherAlerts.metadata.attributionUrl, expectedAttributionUrl, providerName);
                 assert.equal(decoded.weatherAlerts.metadata.readTime, originalDecoded.weatherAlerts.metadata.readTime, providerName);
                 assert.equal(decoded.weatherAlerts.metadata.reportedTime, originalDecoded.weatherAlerts.metadata.reportedTime, providerName);
                 assert.equal(decoded.weatherAlerts.alerts[0].detailsUrl, originalDecoded.weatherAlerts.alerts[0].detailsUrl, providerName);
