@@ -35,6 +35,33 @@ export default class ColorfulClouds {
             pm10: "PM10",
             other: "NOT_AVAILABLE",
         },
+        WeatherAlert: {
+            Sources: {
+                1: "US National Weather Service",
+                2: "Environment and Climate Change Canada",
+            },
+            Severities: {
+                1: "extreme",
+                2: "severe",
+                3: "moderate",
+                4: "minor",
+                5: "unknown",
+            },
+            Certainties: {
+                1: "observed",
+                2: "likely",
+                3: "possible",
+                4: "unlikely",
+                5: "unknown",
+            },
+            Urgencies: {
+                1: "immediate",
+                2: "expected",
+                3: "future",
+                4: "past",
+                5: "unknown",
+            },
+        },
         Availability: {
             Minutely: [
                 "CN",
@@ -743,6 +770,7 @@ export default class ColorfulClouds {
     }
 
     #CreateWeatherAlert(alert) {
+        const weatherAlertConfig = this.#Config.WeatherAlert;
         const issuedTime = this.#DateISOString(alert?.sent_time);
         if (!issuedTime) return undefined;
         const effectiveTime = this.#DateISOString(alert?.effective_time) || issuedTime;
@@ -752,11 +780,11 @@ export default class ColorfulClouds {
         const geocode = Array.isArray(area?.geocodes) ? area.geocodes.find(item => item?.value) : undefined;
         const description = String(alert?.event_name ?? alert?.headline ?? "").trim();
         const message = String(alert?.description ?? alert?.headline ?? description).trim();
-        const source = String(alert?.sender_name ?? "").trim() || this.#WeatherAlertSource(alert?.source);
+        const source = String(alert?.sender_name ?? "").trim() || weatherAlertConfig.Sources[Number(alert?.source)] || "";
         return {
             ...(geocode?.value ? { areaId: String(geocode.value).trim() } : {}),
             ...(area?.area_desc ? { areaName: String(area.area_desc).trim() } : {}),
-            certainty: this.#WeatherAlertCertainty(alert?.certainty),
+            certainty: weatherAlertConfig.Certainties[Number(alert?.certainty)] || "unknown",
             description,
             effectiveTime,
             eventOnsetTime,
@@ -767,10 +795,10 @@ export default class ColorfulClouds {
             message,
             ...(description ? { phenomenon: description } : {}),
             reportedAt: issuedTime,
-            severity: this.#WeatherAlertSeverity(alert?.severity),
+            severity: weatherAlertConfig.Severities[Number(alert?.severity)] || "unknown",
             ...(source ? { source } : {}),
             standard: "",
-            urgency: this.#WeatherAlertUrgency(alert?.urgency),
+            urgency: weatherAlertConfig.Urgencies[Number(alert?.urgency)] || "unknown",
         };
     }
 
@@ -778,65 +806,6 @@ export default class ColorfulClouds {
         const seconds = Number(value);
         if (!Number.isFinite(seconds) || seconds <= 0) return "";
         return new Date(seconds * 1000).toISOString();
-    }
-
-    #WeatherAlertSource(value) {
-        switch (Number(value)) {
-            case 1:
-                return "US National Weather Service";
-            case 2:
-                return "Environment and Climate Change Canada";
-            default:
-                return "";
-        }
-    }
-
-    #WeatherAlertSeverity(value) {
-        switch (Number(value)) {
-            case 1:
-                return "extreme";
-            case 2:
-                return "severe";
-            case 3:
-                return "moderate";
-            case 4:
-                return "minor";
-            case 5:
-            default:
-                return "unknown";
-        }
-    }
-
-    #WeatherAlertCertainty(value) {
-        switch (Number(value)) {
-            case 1:
-                return "observed";
-            case 2:
-                return "likely";
-            case 3:
-                return "possible";
-            case 4:
-                return "unlikely";
-            case 5:
-            default:
-                return "unknown";
-        }
-    }
-
-    #WeatherAlertUrgency(value) {
-        switch (Number(value)) {
-            case 1:
-                return "immediate";
-            case 2:
-                return "expected";
-            case 3:
-                return "future";
-            case 4:
-                return "past";
-            case 5:
-            default:
-                return "unknown";
-        }
     }
 
     #SplitWeatherAlertGuidelines(instruction) {
