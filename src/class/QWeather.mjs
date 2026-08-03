@@ -12,7 +12,33 @@ export default class QWeather {
         this.endpoint = `https://${host}`;
         this.headers = { "X-QW-Api-Key": token };
         this.version = parameters.version;
-        this.language = parameters.language;
+        const language = String(parameters.language ?? "").trim().toLowerCase();
+        switch (language) {
+            case "":
+                this.language = "zh";
+                break;
+            case "zh-cn":
+            case "zh-sg":
+            case "zh-hans-cn":
+                this.language = "zh-hans";
+                break;
+            case "zh-hant-hk":
+            case "zh-hant-mo":
+            case "zh-hant-tw":
+            case "zh-hk":
+            case "zh-mo":
+            case "zh-tw":
+                this.language = "zh-hant";
+                break;
+            case "en-au":
+            case "en-ca":
+            case "en-gb":
+            case "en-us":
+                this.language = "en";
+                break;
+            default:
+                this.language = language;
+        }
         this.latitude = parameters.latitude;
         this.longitude = parameters.longitude;
         this.country = parameters.country;
@@ -179,7 +205,7 @@ export default class QWeather {
             source: "国家预警信息发布中心",
         };
         const request = {
-            url: `${this.endpoint}/weatheralert/v1/current/${this.latitude}/${this.longitude}?lang=${this.#WeatherAlertLanguageCode()}`,
+            url: `${this.endpoint}/weatheralert/v1/current/${this.latitude}/${this.longitude}?lang=${this.language}`,
             headers: {
                 ...this.headers,
                 Accept: "application/json",
@@ -1039,13 +1065,6 @@ export default class QWeather {
         if (!value) return "";
         const date = new Date(value);
         return Number.isNaN(date.getTime()) ? "" : date.toISOString();
-    }
-
-    #WeatherAlertLanguageCode() {
-        const normalized = String(this.language ?? "").trim().toLowerCase();
-        if (normalized.startsWith("zh")) return "zh";
-        if (normalized.startsWith("en")) return "en";
-        return normalized.split("-")[0] || "zh";
     }
 
     #NormalizeWeatherAlertSeverity(severity) {

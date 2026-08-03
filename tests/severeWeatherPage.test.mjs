@@ -133,12 +133,21 @@ test("QWeather Alert API is standardized by QWeather class", async () => {
     };
 
     try {
-        const qWeather = new QWeather({ country: "CN", language: "zh-CN", latitude: "32.115", longitude: "118.814" }, "test-token");
-        const extracted = await qWeather.WeatherAlert();
+        let extracted;
+        for (const [language, qWeatherLanguage] of [
+            ["zh-CN", "zh-hans"],
+            ["zh-TW", "zh-hant"],
+            ["zh-hant", "zh-hant"],
+            ["en-US", "en"],
+            ["de", "de"],
+        ]) {
+            const qWeather = new QWeather({ country: "CN", language, latitude: "32.115", longitude: "118.814" }, "test-token");
+            extracted = await qWeather.WeatherAlert();
 
-        assert.equal(sourceRequest.url.toString(), "https://devapi.qweather.com/weatheralert/v1/current/32.115/118.814?lang=zh");
-        assert.equal(sourceRequest.headers.get("X-QW-Api-Key"), "test-token");
-        assert.equal(sourceRequest.headers.get("Accept"), "application/json");
+            assert.equal(sourceRequest.url.toString(), `https://devapi.qweather.com/weatheralert/v1/current/32.115/118.814?lang=${qWeatherLanguage}`);
+            assert.equal(sourceRequest.headers.get("X-QW-Api-Key"), "test-token");
+            assert.equal(sourceRequest.headers.get("Accept"), "application/json");
+        }
         assert.equal(extracted.source, "南京市气象台");
         assert.equal(extracted.areaName, "南京市");
         assert.equal(extracted.alerts.length, 1);
@@ -235,7 +244,7 @@ test("Pages routes coordinate WeatherAlert identifiers through QWeather Alert AP
             const headers = new Headers(sourceRequest.init?.headers ?? {});
 
             assert.equal(response.status, 200, pathname);
-            assert.equal(sourceRequest.url.toString(), "https://devapi.qweather.com/weatheralert/v1/current/32.115/118.814?lang=zh", pathname);
+            assert.equal(sourceRequest.url.toString(), "https://devapi.qweather.com/weatheralert/v1/current/32.115/118.814?lang=zh-hans", pathname);
             assert.equal(headers.get("X-QW-Api-Key"), "bdd98ec1d87747f3a2e8b1741a5af796", pathname);
             assert.equal(body.length, 1, pathname);
             assert.equal(body[0].attributionURL, "https://www.12379.cn/", pathname);
@@ -377,7 +386,7 @@ test("the request scripts route coordinate identifiers through QWeather Alert AP
             });
             const body = JSON.parse($response.body);
 
-            assert.equal(sourceUrl.toString(), "https://devapi.qweather.com/weatheralert/v1/current/32.115/118.814?lang=zh");
+            assert.equal(sourceUrl.toString(), "https://devapi.qweather.com/weatheralert/v1/current/32.115/118.814?lang=zh-hans");
             assert.equal($response.status, 200);
             assert.equal($response.statusCode, 200);
             assert.equal($response.headers["Content-Type"], "application/json");
