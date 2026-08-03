@@ -24,7 +24,7 @@ export default defineConfig({
 			},
 		},
 		loon: {
-			path: "./dist/iRingo.WeatherKit.Rewrite.plugin",
+			path: "./dist/iRingo.WeatherKit.Rewrite.lpx",
 			template: "./template/loon.rewrite.handlebars",
 		},
 		customItems: [

@@ -23,7 +23,7 @@ export const output = {
         path: "./dist/iRingo.WeatherKit.sgmodule",
     },
     loon: {
-        path: "./dist/iRingo.WeatherKit.plugin",
+        path: "./dist/iRingo.WeatherKit.lpx",
     },
     customItems: [
         {

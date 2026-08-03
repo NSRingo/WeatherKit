@@ -127,7 +127,7 @@ test("Loon Rewrite modules use the legacy Rewrite section", async () => {
 
 test("Rewrite builder outputs use Rewrite names", async () => {
 	const content = await readFile(new URL("../arguments-builder.rewrite.config.ts", import.meta.url), "utf8");
-	assert.match(content, /iRingo\.WeatherKit\.Rewrite\.(?:sgmodule|plugin|srmodule|stoverride|yaml)/);
+	assert.match(content, /iRingo\.WeatherKit\.Rewrite\.(?:sgmodule|lpx|srmodule|stoverride|yaml)/);
 	assert.match(content, /key: "endpoint"[\s\S]*defaultValue: "weatherkit\.pages\.dev"/);
 	assert.match(content, /weather\.nanocat\.cloud", label: "Worker 版；需要代理"/);
 	assert.doesNotMatch(content, /Workers/);
@@ -136,6 +136,6 @@ test("Rewrite builder outputs use Rewrite names", async () => {
 
 test("Handler generation keeps Loon local and excludes Egern", async () => {
     const content = await readFile(new URL("../arguments-builder-full.config.ts", import.meta.url), "utf8");
-    assert.match(content, /path: "\.\/dist\/iRingo\.WeatherKit\.plugin"/);
+    assert.match(content, /path: "\.\/dist\/iRingo\.WeatherKit\.lpx"/);
     assert.doesNotMatch(content, /transformEgern|iRingo\.WeatherKit\.yaml/);
 });
