@@ -384,6 +384,16 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  */
 async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
     Console.info("☑️ InjectWeatherAlerts");
+    Console.debug(
+        "InjectWeatherAlerts.gate",
+        JSON.stringify({
+            country: enviroments.country,
+            replace: Settings?.Weather?.Replace,
+            provider: Settings?.Weather?.Provider,
+            providerName: weatherAlerts?.metadata?.providerName,
+            targetCount: weatherAlerts?.alerts?.length ?? 0,
+        }),
+    );
 
     if (!Settings?.Weather?.Replace?.includes(enviroments.country)) {
         Console.warn("InjectWeatherAlerts", `Unreplaced country: ${enviroments.country}`);
@@ -391,6 +401,7 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
         return weatherAlerts;
     }
     if (String(weatherAlerts?.metadata?.providerName ?? "").trim() !== "国家预警信息发布中心") {
+        Console.debug("InjectWeatherAlerts.skip", JSON.stringify({ reason: "providerName is not 国家预警信息发布中心", providerName: weatherAlerts?.metadata?.providerName }));
         Console.info("✅ InjectWeatherAlerts");
         return weatherAlerts;
     }
@@ -406,8 +417,19 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
         }
     }
 
+    Console.debug(
+        "InjectWeatherAlerts.source",
+        JSON.stringify({
+            provider: Settings?.Weather?.Provider,
+            sourceCount: newWeatherAlerts?.alerts?.length ?? 0,
+            sourceAreaName: newWeatherAlerts?.areaName,
+            source: newWeatherAlerts?.source,
+        }),
+    );
     if (newWeatherAlerts?.alerts?.length) {
         weatherAlerts = WeatherAlerts.MergeFlatBufferWeatherAlerts(weatherAlerts, newWeatherAlerts);
+    } else {
+        Console.debug("InjectWeatherAlerts.skip", JSON.stringify({ reason: "empty source alerts" }));
     }
 
     Console.info("✅ InjectWeatherAlerts");

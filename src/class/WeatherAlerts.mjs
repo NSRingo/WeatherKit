@@ -176,6 +176,16 @@ export default class WeatherAlerts {
         if (!weatherAlerts?.alerts?.length) return weatherAlerts;
         const sourceAlerts = Array.isArray(qWeatherWeatherAlerts?.alerts) ? qWeatherWeatherAlerts.alerts : [];
         if (!sourceAlerts.length) return weatherAlerts;
+        Console.debug(
+            "WeatherAlerts.MergeFlatBufferWeatherAlerts.start",
+            JSON.stringify({
+                providerName: weatherAlerts?.metadata?.providerName,
+                targetCount: weatherAlerts.alerts.length,
+                sourceCount: sourceAlerts.length,
+                targetAlerts: weatherAlerts.alerts.map((alert, index) => WeatherAlerts.#WeatherAlertDebugSnapshot(alert, index)),
+                sourceAlerts: sourceAlerts.map((alert, index) => WeatherAlerts.#WeatherAlertDebugSnapshot(alert, index)),
+            }),
+        );
 
         const toUnixSeconds = value => {
             if (value == null || value === "") return undefined;
@@ -221,10 +231,28 @@ export default class WeatherAlerts {
         const usedSourceIndexes = new Set();
         for (let index = 0; index < weatherAlerts.alerts.length; index++) {
             const target = weatherAlerts.alerts[index];
-            const sourceIndex = WeatherAlerts.#FindFlatBufferWeatherAlertSource(target, sourceAlerts, usedSourceIndexes, index);
+            const match = WeatherAlerts.#FindFlatBufferWeatherAlertSource(target, sourceAlerts, usedSourceIndexes, index);
+            const sourceIndex = match.index;
             const source = sourceIndex >= 0 ? sourceAlerts[sourceIndex] : undefined;
-            if (!target || !source) continue;
+            Console.debug(
+                "WeatherAlerts.MergeFlatBufferWeatherAlerts.match",
+                JSON.stringify({
+                    targetIndex: index,
+                    fallbackIndex: index,
+                    selectedSourceIndex: sourceIndex,
+                    selectedScore: match.score,
+                    usedFallback: match.usedFallback,
+                    candidates: match.candidates,
+                    target: WeatherAlerts.#WeatherAlertDebugSnapshot(target, index),
+                    source: source ? WeatherAlerts.#WeatherAlertDebugSnapshot(source, sourceIndex) : undefined,
+                }),
+            );
+            if (!target || !source) {
+                Console.debug("WeatherAlerts.MergeFlatBufferWeatherAlerts.skip", JSON.stringify({ targetIndex: index, reason: "no matched source alert" }));
+                continue;
+            }
             usedSourceIndexes.add(sourceIndex);
+            const before = WeatherAlerts.#WeatherAlertDebugSnapshot(target, index);
 
             fillText(target, "areaId", source.areaId);
             fillText(target, "areaName", source.areaName);
@@ -243,6 +271,16 @@ export default class WeatherAlerts {
             fillEnum(target, "importance", source.importance || WeatherAlerts.#ImportanceFromSeverity(source.severity));
             fillEnum(target, "significance", source.significance);
             fillEnum(target, "urgency", source.urgency);
+            const after = WeatherAlerts.#WeatherAlertDebugSnapshot(target, index);
+            Console.debug(
+                "WeatherAlerts.MergeFlatBufferWeatherAlerts.patch",
+                JSON.stringify({
+                    targetIndex: index,
+                    sourceIndex,
+                    changed: WeatherAlerts.#WeatherAlertDebugChanges(before, after),
+                    after,
+                }),
+            );
         }
 
         return weatherAlerts;
@@ -251,17 +289,26 @@ export default class WeatherAlerts {
     static #FindFlatBufferWeatherAlertSource(target, sourceAlerts, usedSourceIndexes, fallbackIndex) {
         let bestIndex = -1;
         let bestScore = 0;
+        const candidates = [];
         for (let index = 0; index < sourceAlerts.length; index++) {
             if (usedSourceIndexes.has(index)) continue;
             const score = WeatherAlerts.#ScoreFlatBufferWeatherAlertSource(target, sourceAlerts[index]);
+            candidates.push({
+                index,
+                score,
+                alert: WeatherAlerts.#WeatherAlertDebugSnapshot(sourceAlerts[index], index),
+            });
             if (score > bestScore) {
                 bestScore = score;
                 bestIndex = index;
             }
         }
-        if (bestScore >= 30) return bestIndex;
-        if (fallbackIndex < sourceAlerts.length && !usedSourceIndexes.has(fallbackIndex)) return fallbackIndex;
-        return -1;
+        candidates.sort((a, b) => b.score - a.score);
+        if (bestScore >= 30) return { index: bestIndex, score: bestScore, usedFallback: false, candidates };
+        if (fallbackIndex < sourceAlerts.length && !usedSourceIndexes.has(fallbackIndex)) {
+            return { index: fallbackIndex, score: bestScore, usedFallback: true, candidates };
+        }
+        return { index: -1, score: bestScore, usedFallback: false, candidates };
     }
 
     static #ScoreFlatBufferWeatherAlertSource(target, source) {
@@ -297,6 +344,40 @@ export default class WeatherAlerts {
             .toLowerCase()
             .replace(/\s+/g, "")
             .replace(/预警信号|预警|警报|报告/g, "");
+    }
+
+    static #WeatherAlertDebugSnapshot(alert, index) {
+        return {
+            index,
+            id: alert?.id ?? alert?.identifier,
+            areaId: alert?.areaId,
+            areaName: alert?.areaName,
+            description: alert?.description,
+            message: alert?.message,
+            token: alert?.token,
+            phenomenon: alert?.phenomenon,
+            severity: alert?.severity,
+            significance: alert?.significance,
+            urgency: alert?.urgency,
+            certainty: alert?.certainty,
+            importance: alert?.importance,
+            source: alert?.source,
+            effectiveTime: alert?.effectiveTime,
+            eventOnsetTime: alert?.eventOnsetTime,
+            eventEndTime: alert?.eventEndTime,
+            expireTime: alert?.expireTime,
+            issuedTime: alert?.issuedTime,
+            responses: alert?.responses,
+            guidelines: alert?.guidelines,
+        };
+    }
+
+    static #WeatherAlertDebugChanges(before, after) {
+        const changed = {};
+        for (const key of Object.keys(after)) {
+            if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) changed[key] = { before: before[key], after: after[key] };
+        }
+        return changed;
     }
 
     /**
