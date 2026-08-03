@@ -3,7 +3,7 @@
   * 新增 FlatBuffer root overlay 编码能力，仅重写实际变更的数据集，并保留 Apple 未知或新增的根产品表，提升对新 `WeatherKit` schema 的兼容性。 @hhh2210
   * 新增可配置的 `WeatherKit` 重写服务端点，模块统一由 `Workers` 更名为 `Rewrite`，支持在 `weatherkit.pages.dev`、`dev.weatherkit.pages.dev` 与 `weather.nanocat.cloud` 之间选择。 @VirgilClyne
   * 新增通用 FlatBuffer 根表处理器，并将 `WeatherKit` 改为按请求数据集逐 slot 解码和回写；未选数据集、未配置字段及新 schema slot 均保持原始二进制内容。 @VirgilClyne
-  * 新增 QWeather 灾害预警坐标适配与 `weatherAlerts` 接口处理，在请求脚本阶段通过坐标 `ids` 直连 QWeather Alert API，并直接构造 Apple WeatherKit 兼容响应。 @VirgilClyne
+  * 新增 QWeather 灾害预警坐标适配与 `weatherAlerts` 接口处理：模块/模板仅拦截坐标 `ids` 的 Apple `/api/v1/weatherAlerts` 请求，脚本保留旧 QWeather 页面标识兼容，并由 QWeather Alert API 构造 Apple WeatherKit 兼容响应。 @VirgilClyne
 
 ### 🛠️ Bug Fixes
   * 修复 `forecastNextHour` 在 iOS 27 下因元数据过期过快而失效的问题，并完善多段降水状态推导与描述匹配，避免复合天气短语被后续关键词错误覆盖。 @hhh2210
@@ -13,11 +13,8 @@
   * 修复 `forecastNextHour` FlatBuffer 编码时未知天气枚举被静默编码为 `CLEAR` 的问题。 @hhh2210
   * 修复和风天气分钟预报的 `reportedTime`，改为使用接口返回的 `updateTime`，不再误写为本地读取时间。 @VirgilClyne
   * 修复云端路由对 `dev.weatherkit.*` 与 `*.pages.dev` 域名的识别，并限制 Cloudflare Pages Functions 只处理 WeatherKit API 路径。 @VirgilClyne
-  * 为 QWeather 预警响应补充事件来源回退值，确保缺少来源字段时仍返回 Apple 兼容数据。 @VirgilClyne
-  * 完善 QWeather 预警到 Apple `alertDetails` 的字段映射：写入签发机构、区域、事件时间与枚举字段，并保持 `responses` 仅承载官方建议行动枚举。 @VirgilClyne
-  * 收窄 v2 `weatherAlerts` FlatBuffer 链接改写：仅当来源为国家预警信息发布中心时改写集合级 `detailsUrl`，保留 `metadata` 与单条预警的原始来源 URL。 @VirgilClyne
-  * 补全 v2 `weatherAlerts` FlatBuffer 中来自国家预警信息发布中心的已有预警字段，按 QWeather Alert API 写入区域、事件时间、响应枚举与预警等级等缺失信息。 @VirgilClyne
-  * 修复 v2 `weatherAlerts` FlatBuffer 预警补全匹配与结束时间回写：按区域、事件类型与标题匹配 QWeather 预警，并在 QWeather 未给出结束时间时用原始 `expireTime` 写入 `eventEndTime`。 @VirgilClyne
+  * 完善 QWeather 预警到 Apple `alertDetails` / v1 JSON 的最终字段映射：保留正文与防御指南换行，`responses` 仅写官方建议行动枚举，并补充事件来源回退、区域、签发/生效/开始/结束/过期时间和来源字段。 @VirgilClyne
+  * 完善 v2 `weatherAlerts` FlatBuffer 预警补全：支持简体、繁体及英文 `National Early Warning Center` 来源名称，只补全已有预警、不新增 alert、不改单条预警 URL；集合级 `detailsUrl` 使用 `metadata` 坐标与当前 Provider 作为 `party`，`metadata.attributionUrl` 指向 QWeather attribution，并按 WK2 大写枚举写回预警等级与建议行动。 @VirgilClyne
 
 ### 🔣 Dependencies
   * 切换 `@nsnanocat/util` 到公共 npm registry 来源。 @hhh2210
