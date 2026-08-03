@@ -102,7 +102,7 @@ evacuate, shelter, execute, prepare, avoid, monitor, assess, allClear, none
 | HTML 页面提取 | `src/class/WeatherAlerts.mjs` 的 `ExtractQWeather()` | 保留旧 QWeather 页面解析；从页面标题提取签发机构，从防御指南提取 `guidelines`。 |
 | API 坐标提取 | `src/class/QWeather.mjs` 的 `WeatherAlert()` | 请求 QWeather `weatheralert/v1/current/{latitude}/{longitude}`，标准化为 `WeatherAlerts.Build()` 可消费结构。 |
 | Apple JSON 构造 | `src/class/WeatherAlerts.mjs` 的 `Build()` | 输出官方 `/api/v1/weatherAlerts` 数组形态。 |
-| v2 FlatBuffer 预警补全 | `src/class/WeatherAlerts.mjs` 的 `MergeFlatBufferWeatherAlerts()` | 仅当 `metadata.providerName` 为 `国家预警信息发布中心` 时，优先按区域、事件类型、标题、严重度匹配 QWeather Alert API 的预警；补全现有 alert 的 `effectiveTime` / `eventOnsetTime` / `eventEndTime` / `expireTime` / `issuedTime`、区域与响应枚举等缺失字段，不改 URL，也不新增 alert。 |
+| v2 FlatBuffer 预警补全 | `src/process/Response*.mjs` 的 `InjectWeatherAlerts()` + `src/class/WeatherAlerts.mjs` 的 `mergeAlerts(to, from)` | `InjectWeatherAlerts()` 仅当 `metadata.providerName` 为 `国家预警信息发布中心` 时拉取 QWeather Alert API；`mergeAlerts(to, from)` 按区域、事件类型、标题、严重度匹配 `alerts[]` 并补全 `effectiveTime` / `eventOnsetTime` / `eventEndTime` / `expireTime` / `issuedTime`、区域与响应枚举等缺失字段，不改 URL，也不新增 alert。 |
 | v2 FlatBuffer 链接改写 | `src/class/WeatherAlerts.mjs` 的 `RewriteFlatBufferDetailsURL()` | 仅当 `metadata.providerName` 为 `国家预警信息发布中心` 时，把集合级 `weatherAlerts.detailsUrl` 改为坐标版官方页面；不改 `metadata.attributionUrl`，也不改单条 alert 的 `detailsUrl` / `attributionUrl`。 |
 
 ## 参考
