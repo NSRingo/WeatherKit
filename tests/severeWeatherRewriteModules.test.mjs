@@ -11,11 +11,13 @@ const weatherAlertsPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\
 const weatherAlertsHandlerPattern = String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=${coordinatePattern}(?:&|$)`;
 const weatherAlertsRewriteComment = "# 🌤 WeatherKit.api.v1.weatherAlerts.response";
 const unsafeOpenEndedQuantifier = "{6" + ",}";
+const completedAlertFeatureDescription = "5.修改天气预警数据";
 
 test("all Rewrite modules hook WeatherAlert data without QWeather page redirects", async () => {
     for (const filename of [...configurableModules, ...fixedModules]) {
         const content = await readFile(new URL(filename, modulesDirectory), "utf8");
         assert.ok(content.includes(weatherAlertsPattern), filename);
+        assert.ok(content.includes(completedAlertFeatureDescription), filename);
         assert.ok(!content.includes(unsafeOpenEndedQuantifier), filename);
         assert.ok(content.includes(weatherAlertsRewriteComment), filename);
         assert.ok(!content.includes("Apple 官方预警页面的 QWeather 数据"), filename);
