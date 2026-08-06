@@ -749,15 +749,15 @@ export default class QWeather {
         const description = this.#NormalizeWeatherAlertTitle(alert?.headline || alert?.eventType?.name || alert?.description);
         const message = String(alert?.description ?? "").trim() || String(alert?.headline ?? description ?? "").trim();
         const source = String(alert?.senderName ?? "").trim() || this.#ExtractWeatherAlertIssuer(alert?.headline || alert?.description);
-        const severity = this.#NormalizeWeatherAlertSeverity(alert?.severity);
+        const severity = alert?.severity ?? "unknown";
         const areaId = String(alert?.areaId ?? alert?.areaCode ?? "").trim();
         const areaName = String(alert?.areaName ?? "").trim();
         const phenomenon = String(alert?.eventType?.name ?? "").trim();
         const token = String(alert?.token ?? alert?.eventType?.code ?? alert?.icon ?? "").trim();
-        const certainty = this.#NormalizeWeatherAlertCertainty(alert?.certainty);
-        const importance = this.#NormalizeWeatherAlertImportance(alert?.importance);
-        const significance = this.#NormalizeWeatherAlertSignificance(alert?.significance);
-        const urgency = this.#NormalizeWeatherAlertUrgency(alert?.urgency);
+        const certainty = alert?.certainty ?? "unknown";
+        const importance = alert?.importance ?? "";
+        const significance = alert?.significance ?? "";
+        const urgency = alert?.urgency ?? "unknown";
         return {
             ...(areaId ? { areaId } : {}),
             ...(areaName ? { areaName } : {}),
@@ -1065,74 +1065,6 @@ export default class QWeather {
         if (!value) return "";
         const date = new Date(value);
         return Number.isNaN(date.getTime()) ? "" : date.toISOString();
-    }
-
-    #NormalizeWeatherAlertSeverity(severity) {
-        const normalized = String(severity ?? "").trim().toLowerCase();
-        switch (normalized) {
-            case "extreme":
-            case "severe":
-            case "moderate":
-            case "minor":
-                return normalized;
-            default:
-                return "unknown";
-        }
-    }
-
-    #NormalizeWeatherAlertCertainty(certainty) {
-        const normalized = String(certainty ?? "").trim().toLowerCase();
-        switch (normalized) {
-            case "observed":
-            case "likely":
-            case "possible":
-            case "unlikely":
-            case "unknown":
-                return normalized;
-            default:
-                return "unknown";
-        }
-    }
-
-    #NormalizeWeatherAlertImportance(importance) {
-        const normalized = String(importance ?? "").trim().toLowerCase();
-        switch (normalized) {
-            case "high":
-            case "normal":
-            case "low":
-                return normalized;
-            default:
-                return "";
-        }
-    }
-
-    #NormalizeWeatherAlertSignificance(significance) {
-        const normalized = String(significance ?? "").trim().toLowerCase();
-        switch (normalized) {
-            case "advisory":
-            case "watch":
-            case "warning":
-            case "statement":
-            case "emergency":
-            case "unknown":
-                return normalized;
-            default:
-                return "";
-        }
-    }
-
-    #NormalizeWeatherAlertUrgency(urgency) {
-        const normalized = String(urgency ?? "").trim().toLowerCase();
-        switch (normalized) {
-            case "immediate":
-            case "expected":
-            case "future":
-            case "past":
-            case "unknown":
-                return normalized;
-            default:
-                return "unknown";
-        }
     }
 
     #NormalizeWeatherAlertTitle(description) {
