@@ -746,9 +746,9 @@ export default class QWeather {
         const eventOnsetTime = this.#DateISOString(alert?.eventOnsetTime || alert?.onsetTime || alert?.effectiveTime) || effectiveTime;
         const eventEndTime = this.#DateISOString(alert?.eventEndTime || alert?.endTime || alert?.expiresTime || alert?.expireTime);
         const guidelines = this.#SplitWeatherAlertGuidelines(alert?.instruction ?? alert?.instructions);
-        const description = this.#NormalizeWeatherAlertTitle(alert?.headline || alert?.eventType?.name || alert?.description);
+        const description = String(alert?.headline ?? alert?.eventType?.name ?? alert?.description ?? "").trim();
         const message = String(alert?.description ?? "").trim() || String(alert?.headline ?? description ?? "").trim();
-        const source = String(alert?.senderName ?? "").trim() || this.#ExtractWeatherAlertIssuer(alert?.headline || alert?.description);
+        const source = String(alert?.senderName ?? "").trim();
         const severity = alert?.severity ?? "unknown";
         const areaId = String(alert?.areaId ?? alert?.areaCode ?? "").trim();
         const areaName = String(alert?.areaName ?? "").trim();
@@ -1065,22 +1065,6 @@ export default class QWeather {
         if (!value) return "";
         const date = new Date(value);
         return Number.isNaN(date.getTime()) ? "" : date.toISOString();
-    }
-
-    #NormalizeWeatherAlertTitle(description) {
-        const title = String(description ?? "").trim();
-        const chinese = title.match(/^.+?发布\s*[:：]?\s*(.+)$/);
-        if (chinese?.[1]) return chinese[1].trim();
-        const english = title.match(/^.+?\s+(?:issues?|issued)\s*[:：]?\s*(.+)$/i);
-        return english?.[1]?.trim() || title;
-    }
-
-    #ExtractWeatherAlertIssuer(description) {
-        const title = String(description ?? "").trim();
-        const chinese = title.match(/^(.+?)发布\s*[:：]?\s*(.+)$/);
-        if (chinese?.[1]) return chinese[1].trim();
-        const english = title.match(/^(.+?)\s+(?:issues?|issued)\s*[:：]?\s*(.+)$/i);
-        return english?.[1]?.trim() || "";
     }
 
     #SplitWeatherAlertGuidelines(instruction) {

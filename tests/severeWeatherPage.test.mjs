@@ -19,7 +19,7 @@ const sourceHtml = `<!doctype html>
         <h1 class="c-submenu__location">建邺</h1>
         <span class="c-submenu__location-adm">江苏 南京</span>
         <div class="c-city-warning-events warning--orange">
-            <h3>建邺区气象台发布雷暴橙色预警</h3>
+            <h3>建邺区气象台发布雷暴橙色预警信号。</h3>
             <p>发布日期：2026-07-31T11:00:00+08:00</p>
             <p class="warning-events__txt">预计午后将出现雷暴天气。</p>
             <div class="warning-explain"><h4>Description</h4><p>可能伴有短时强降水。</p></div>
@@ -47,7 +47,7 @@ const qWeatherAlertAPI = {
             expiresTime: "2026-08-03T09:48Z",
             eventType: { name: "高温", code: "1009" },
             severity: "severe",
-            headline: "南京市气象台发布高温橙色预警",
+            headline: "南京市气象台发布高温橙色预警信号。",
             description: "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。",
             criteria: "日最高气温升至37℃以上",
             responseTypes: ["monitor"],
@@ -62,7 +62,7 @@ const colorfulCloudsAlertAPI = {
             region_code: "US",
             source: 1,
             msg_type: 1,
-            event_name: "Flash Flood Warning",
+            event_name: "Flash Flood Warning.",
             categories: [2],
             urgency: 1,
             severity: 2,
@@ -187,7 +187,7 @@ test("QWeather Alert API is standardized by QWeather class", async () => {
         assert.equal(extracted.alerts.length, 1);
         assert.equal(extracted.alerts[0].areaId, "320100");
         assert.equal(extracted.alerts[0].areaName, "南京市");
-        assert.equal(extracted.alerts[0].description, "高温橙色预警");
+        assert.equal(extracted.alerts[0].description, "南京市气象台发布高温橙色预警信号。");
         assert.deepEqual(extracted.alerts[0].responses, ["monitor"]);
         assert.equal(extracted.alerts[0].effectiveTime, "2026-08-02T09:48:00.000Z");
         assert.equal(extracted.alerts[0].eventOnsetTime, "2026-08-02T09:48:00.000Z");
@@ -243,14 +243,14 @@ test("ColorfulClouds CAP Alert API is standardized by ColorfulClouds class", asy
         assert.equal(extracted.alerts[0].areaId, "CAC037");
         assert.equal(extracted.alerts[0].areaName, "Los Angeles");
         assert.equal(extracted.alerts[0].certainty, "likely");
-        assert.equal(extracted.alerts[0].description, "Flash Flood Warning");
+        assert.equal(extracted.alerts[0].description, "Flash Flood Warning.");
         assert.equal(extracted.alerts[0].effectiveTime, "2025-01-01T00:01:00.000Z");
         assert.equal(extracted.alerts[0].eventOnsetTime, "2025-01-01T00:02:00.000Z");
         assert.equal(extracted.alerts[0].eventEndTime, "2025-01-02T00:00:00.000Z");
         assert.equal(extracted.alerts[0].expireTime, "2025-01-02T00:00:00.000Z");
         assert.equal(extracted.alerts[0].issuedTime, "2025-01-01T00:00:00.000Z");
         assert.equal(extracted.alerts[0].message, "Flash flooding caused by excessive rainfall is expected.");
-        assert.equal(extracted.alerts[0].phenomenon, "Flash Flood Warning");
+        assert.equal(extracted.alerts[0].phenomenon, "Flash Flood Warning.");
         assert.equal(extracted.alerts[0].reportedAt, "2025-01-01T00:00:00.000Z");
         assert.equal(extracted.alerts[0].severity, "severe");
         assert.equal(extracted.alerts[0].source, "NWS Los Angeles/Oxnard CA");
@@ -264,7 +264,7 @@ test("ColorfulClouds CAP Alert API is standardized by ColorfulClouds class", asy
 
 test("QWeather source extraction falls back to the English attribution label", () => {
     const englishHtml = sourceHtml
-        .replace("建邺区气象台发布雷暴橙色预警", "Thunderstorm orange warning")
+        .replace("建邺区气象台发布雷暴橙色预警信号。", "Thunderstorm orange warning.")
         .replace("预警数据来源：国家预警信息发布中心", "Warning data source: National Early Warning Center");
     assert.equal(WeatherAlerts.ExtractQWeather(englishHtml).source, "National Early Warning Center");
 });

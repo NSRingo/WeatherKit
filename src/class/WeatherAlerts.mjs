@@ -186,7 +186,7 @@ export default class WeatherAlerts {
 
     static #FillDescription(appleAlert, qWeatherAlert) {
         const current = String(appleAlert?.description ?? "").trim();
-        const value = String(qWeatherAlert?.description ?? "").trim();
+        const value = WeatherAlerts.#NormalizeQWeatherTitle(qWeatherAlert?.description);
         if (!value) return;
         const currentKey = WeatherAlerts.#NormalizeAlertMatchText(current);
         const phenomenonKey = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.phenomenon);
@@ -483,6 +483,7 @@ export default class WeatherAlerts {
             const source = alert.source || extracted.source || "QWeather";
             const importance = alert.importance || WeatherAlerts.#ImportanceFromSeverity(alert.severity);
             const phenomenon = alert.phenomenon;
+            const description = WeatherAlerts.#NormalizeQWeatherTitle(alert.description);
             return {
                 id: uid,
                 ...(areaId ? { areaId } : {}),
@@ -490,7 +491,7 @@ export default class WeatherAlerts {
                 attributionURL: context.attributionUrl.toString(),
                 certainty: alert.certainty || "unknown",
                 countryCode: context.countryCode ?? "",
-                description: alert.description,
+                description,
                 detailsUrl: `#${uid}`,
                 effectiveTime,
                 ...(eventEndTime ? { eventEndTime } : {}),
@@ -839,9 +840,17 @@ export default class WeatherAlerts {
     static #NormalizeQWeatherTitle(description) {
         const title = String(description ?? "").trim();
         const chinese = title.match(/^.+?发布\s*[:：]?\s*(.+)$/);
-        if (chinese?.[1]) return chinese[1].trim();
+        if (chinese?.[1]) return WeatherAlerts.#TrimWeatherAlertTitle(chinese[1]);
         const english = title.match(/^.+?\s+(?:issues?|issued)\s*[:：]?\s*(.+)$/i);
-        return english?.[1]?.trim() || title;
+        return WeatherAlerts.#TrimWeatherAlertTitle(english?.[1] || title);
+    }
+
+    static #TrimWeatherAlertTitle(title) {
+        return String(title ?? "")
+            .trim()
+            .replace(/\s*[。．.]+\s*$/gu, "")
+            .replace(/预警信号$/u, "预警")
+            .replace(/預警信號$/u, "預警");
     }
 
     /**
