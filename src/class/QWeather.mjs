@@ -7,38 +7,17 @@ import Weather from "./Weather.mjs";
 export default class QWeather {
     constructor(parameters, token, host = "devapi.qweather.com") {
         this.Name = "QWeather";
-        this.Version = "5.1.0";
+        this.Version = "5.2.1";
         Console.log(`🟧 ${this.Name} v${this.Version}`);
         this.endpoint = `https://${host}`;
         this.headers = { "X-QW-Api-Key": token };
         this.version = parameters.version;
-        const language = String(parameters.language ?? "").trim().toLowerCase();
-        switch (language) {
-            case "":
-                this.language = "zh";
-                break;
-            case "zh-cn":
-            case "zh-sg":
-            case "zh-hans-cn":
-                this.language = "zh-hans";
-                break;
-            case "zh-hant-hk":
-            case "zh-hant-mo":
-            case "zh-hant-tw":
-            case "zh-hk":
-            case "zh-mo":
-            case "zh-tw":
-                this.language = "zh-hant";
-                break;
-            case "en-au":
-            case "en-ca":
-            case "en-gb":
-            case "en-us":
-                this.language = "en";
-                break;
-            default:
-                this.language = language;
-        }
+        this.language =
+            this.#Config.Language[
+                String(parameters.language ?? "")
+                    .trim()
+                    .toLowerCase()
+            ] ?? (String(parameters.language ?? "").trim() ? parameters.language : this.#Config.Language[""]);
         this.latitude = parameters.latitude;
         this.longitude = parameters.longitude;
         this.country = parameters.country;
@@ -49,6 +28,27 @@ export default class QWeather {
     };
 
     #Config = {
+        Language: {
+            "": "zh",
+            en: "en",
+            "en-au": "en",
+            "en-ca": "en",
+            "en-gb": "en",
+            "en-us": "en",
+            ja: "ja",
+            "ja-jp": "ja",
+            zh: "zh",
+            "zh-cn": "zh-hans",
+            "zh-sg": "zh-hans",
+            "zh-hans": "zh-hans",
+            "zh-hans-cn": "zh-hans",
+            "zh-hant-hk": "zh-hant",
+            "zh-hant-mo": "zh-hant",
+            "zh-hant-tw": "zh-hant",
+            "zh-hk": "zh-hant",
+            "zh-mo": "zh-hant",
+            "zh-tw": "zh-hant",
+        },
         Pollutants: {
             co: "CO",
             no: "NO",
