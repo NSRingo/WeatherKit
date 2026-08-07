@@ -9,15 +9,7 @@ export default new Hono()
     .get("/", c => c.text("OK"))
     .all("/:rest{.*}", async c => {
         let $request = await HonoWorkerAdapter.buildRequest(c.req);
-        if ($request.headers.$argument) {
-            globalThis.$argument = $request.headers.$argument;
-            delete $request.headers.$argument;
-        } else {
-            const url = new URL($request.url);
-            globalThis.$argument = url.search.slice(1);
-            [...url.searchParams.keys()].filter(k => /^[A-Z]/.test(k)).forEach(k => url.searchParams.delete(k));
-            $request.url = url.toString();
-        }
+        $request = HonoWorkerAdapter.buildArgument($request);
         let $response;
         ({ $request, $response } = await Request($request));
         switch (typeof $response) {

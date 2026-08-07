@@ -165,4 +165,23 @@ export default class HonoWorkerAdapter {
         c.status($response.status ?? $response.statusCode ?? 200);
         return c.body($response.body ?? $response.bodyBytes ?? null);
     }
+
+    /**
+     * 从 WorkerRequest 提取参数。
+     * Extract arguments from WorkerRequest.
+     * @param {WorkerRequest} $request 标准化请求对象 / Normalized request object.
+     * @returns {WorkerRequest} 标准化请求对象 / Normalized request object.
+     */
+    static buildArgument($request = {}) {
+        if ($request.headers.$argument) {
+            globalThis.$argument = $request.headers.$argument;
+            delete $request.headers.$argument;
+        } else {
+            const url = new URL($request.url);
+            globalThis.$argument = url.search.slice(1);
+            [...url.searchParams.keys()].filter(k => /^[A-Z]/.test(k)).forEach(k => url.searchParams.delete(k));
+            $request.url = url.toString();
+        }
+        return $request;
+    }
 }
