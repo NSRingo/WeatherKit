@@ -136,3 +136,5 @@ dist
 .env*.local
 
 .idea
+
+boxjs.settings.json
