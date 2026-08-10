@@ -186,7 +186,7 @@ export default class WeatherAlerts {
 
     static #FillDescription(appleAlert, qWeatherAlert) {
         const current = String(appleAlert?.description ?? "").trim();
-        const value = WeatherAlerts.#NormalizeQWeatherTitle(qWeatherAlert?.description);
+        const value = WeatherAlerts.#NormalizeQWeatherTitle(qWeatherAlert?.description, qWeatherAlert?.phenomenon);
         if (!value) return;
         const currentKey = WeatherAlerts.#NormalizeAlertMatchText(current);
         const phenomenonKey = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.phenomenon);
@@ -483,7 +483,7 @@ export default class WeatherAlerts {
             const source = alert.source || extracted.source || "QWeather";
             const importance = alert.importance || WeatherAlerts.#ImportanceFromSeverity(alert.severity);
             const phenomenon = alert.phenomenon;
-            const description = WeatherAlerts.#NormalizeQWeatherTitle(alert.description);
+            const description = WeatherAlerts.#NormalizeQWeatherTitle(alert.description, phenomenon);
             return {
                 id: uid,
                 ...(areaId ? { areaId } : {}),
@@ -837,12 +837,28 @@ export default class WeatherAlerts {
      * @param {string} description 预警标题 / Alert title.
      * @returns {string} 规范化标题 / Normalized title.
      */
-    static #NormalizeQWeatherTitle(description) {
+    static #NormalizeQWeatherTitle(description, phenomenon = "") {
         const title = String(description ?? "").trim();
         const chinese = title.match(/^.+?发布\s*[:：]?\s*(.+)$/);
         if (chinese?.[1]) return WeatherAlerts.#TrimWeatherAlertTitle(chinese[1]);
-        const english = title.match(/^.+?\s+(?:issues?|issued)\s*[:：]?\s*(.+)$/i);
-        return WeatherAlerts.#TrimWeatherAlertTitle(english?.[1] || title);
+
+        const structuredTitle = WeatherAlerts.#TrimWeatherAlertTitle(phenomenon);
+        const issued = title.match(/^(.+?)\s+issued\b\s*[:：]?\s*(.+)$/i);
+        if (issued?.[1] && issued?.[2]) {
+            const titleBeforeIssued = WeatherAlerts.#TrimWeatherAlertTitle(issued[1]);
+            const textAfterIssued = issued[2].trim();
+            const structuredMatchesPrefix = Boolean(structuredTitle) && WeatherAlerts.#NormalizeAlertMatchText(structuredTitle) === WeatherAlerts.#NormalizeAlertMatchText(titleBeforeIssued);
+            if (structuredMatchesPrefix || WeatherAlerts.#LooksLikeAlertIssueTime(textAfterIssued)) return structuredTitle || titleBeforeIssued;
+            return WeatherAlerts.#TrimWeatherAlertTitle(textAfterIssued);
+        }
+
+        const issues = title.match(/^.+?\s+issues?\b\s*[:：]?\s*(.+)$/i);
+        return WeatherAlerts.#TrimWeatherAlertTitle(issues?.[1] || structuredTitle || title);
+    }
+
+    static #LooksLikeAlertIssueTime(value) {
+        const text = String(value ?? "").trim();
+        return /^(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|January|February|March|April|May|June|July|August|September|October|November|December)\b/i.test(text) || /^\d{1,2}(?:[/:.-]\d{1,2})/.test(text) || /\b(?:at|until)\s+\d{1,2}(?::\d{2})?\s*(?:AM|PM)?\b/i.test(text);
     }
 
     static #TrimWeatherAlertTitle(title) {
@@ -863,7 +879,9 @@ export default class WeatherAlerts {
         const title = String(description ?? "").trim();
         const chinese = title.match(/^(.+?)发布\s*[:：]?\s*(.+)$/);
         if (chinese?.[1]) return chinese[1].trim();
-        const english = title.match(/^(.+?)\s+(?:issues?|issued)\s*[:：]?\s*(.+)$/i);
+        const capIssuer = title.match(/\s+issued\b[\s\S]*\s+by\s+(.+)$/i);
+        if (capIssuer?.[1]) return WeatherAlerts.#TrimWeatherAlertTitle(capIssuer[1]);
+        const english = title.match(/^(.+?)\s+(?:issued|issues?)\b\s*[:：]?\s*(.+)$/i);
         return english?.[1]?.trim() || "";
     }
 

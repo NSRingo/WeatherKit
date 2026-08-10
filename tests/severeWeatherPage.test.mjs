@@ -210,6 +210,44 @@ test("QWeather Alert API is standardized by QWeather class", async () => {
     }
 });
 
+test("QWeather title normalization supports translated and CAP headline grammars", () => {
+    const issuedTime = "2026-08-10T00:00:00.000Z";
+    const headlines = [
+        ["浦东新区气象台发布暴雨橙色预警信号。", "暴雨", "暴雨橙色预警"],
+        ["Nanjing Meteorological Observatory issues a blue typhoon warning", "Typhoon", "a blue typhoon warning"],
+        ["Pudong New Area Meteorological Observatory issued an orange rainstorm warning", "Rainstorm", "an orange rainstorm warning"],
+        ["Severe Thunderstorm Warning issued August 10 at 2:26AM EDT until August 10 at 3:30AM EDT by NWS Grand Rapids MI", "Severe Thunderstorm Warning", "Severe Thunderstorm Warning"],
+        ["Flood Watch issued August 9 at 8:34PM EDT until August 10 at 11:00AM EDT by NWS Grand Rapids MI", "Flood Watch", "Flood Watch"],
+    ];
+
+    const alerts = WeatherAlerts.Build(
+        {
+            alerts: headlines.map(([description, phenomenon], index) => ({
+                description,
+                guidelines: [],
+                issuedTime,
+                message: description,
+                phenomenon,
+                reportedAt: issuedTime,
+                severity: index === 0 ? "severe" : "minor",
+                standard: "",
+            })),
+            areaName: "",
+            source: "QWeather",
+        },
+        {
+            attributionUrl: "https://www.qweather.com/",
+            identifier: "title-grammar-fixtures",
+            language: "en-US",
+        },
+    );
+
+    assert.deepEqual(
+        alerts.map(alert => alert.description),
+        headlines.map(([, , expected]) => expected),
+    );
+});
+
 test("ColorfulClouds CAP Alert API is standardized by ColorfulClouds class", async () => {
     const originalFetch = globalThis.fetch;
     let sourceRequest;
@@ -267,6 +305,18 @@ test("QWeather source extraction falls back to the English attribution label", (
         .replace("建邺区气象台发布雷暴橙色预警信号。", "Thunderstorm orange warning.")
         .replace("预警数据来源：国家预警信息发布中心", "Warning data source: National Early Warning Center");
     assert.equal(WeatherAlerts.ExtractQWeather(englishHtml).source, "National Early Warning Center");
+});
+
+test("QWeather HTML extraction distinguishes CAP issuers from translated agency prefixes", () => {
+    const capHtml = sourceHtml.replace("建邺区气象台发布雷暴橙色预警信号。", "Coastal Flood Advisory issued August 9 at 9:43PM PDT until August 13 at 2:00AM PDT by NWS San Francisco CA");
+    const translatedHtml = sourceHtml.replace("建邺区气象台发布雷暴橙色预警信号。", "Nanjing Meteorological Observatory issues a blue typhoon warning");
+
+    const capAlert = WeatherAlerts.ExtractQWeather(capHtml);
+    const translatedAlert = WeatherAlerts.ExtractQWeather(translatedHtml);
+    assert.equal(capAlert.alerts[0].description, "Coastal Flood Advisory");
+    assert.equal(capAlert.alerts[0].source, "NWS San Francisco CA");
+    assert.equal(translatedAlert.alerts[0].description, "a blue typhoon warning");
+    assert.equal(translatedAlert.alerts[0].source, "Nanjing Meteorological Observatory");
 });
 
 test("Pages routes WeatherAlert requests through Hono before fetching QWeather", async () => {
