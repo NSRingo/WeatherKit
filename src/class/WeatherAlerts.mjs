@@ -849,11 +849,17 @@ export default class WeatherAlerts {
             const textAfterIssued = issued[2].trim();
             const structuredMatchesPrefix = Boolean(structuredTitle) && WeatherAlerts.#NormalizeAlertMatchText(structuredTitle) === WeatherAlerts.#NormalizeAlertMatchText(titleBeforeIssued);
             if (structuredMatchesPrefix || WeatherAlerts.#LooksLikeAlertIssueTime(textAfterIssued)) return structuredTitle || titleBeforeIssued;
-            return WeatherAlerts.#TrimWeatherAlertTitle(textAfterIssued);
+            return WeatherAlerts.#NormalizeTranslatedEnglishAlertTitle(textAfterIssued);
         }
 
         const issues = title.match(/^.+?\s+issues?\b\s*[:：]?\s*(.+)$/i);
-        return WeatherAlerts.#TrimWeatherAlertTitle(issues?.[1] || structuredTitle || title);
+        return issues?.[1] ? WeatherAlerts.#NormalizeTranslatedEnglishAlertTitle(issues[1]) : WeatherAlerts.#TrimWeatherAlertTitle(structuredTitle || title);
+    }
+
+    static #NormalizeTranslatedEnglishAlertTitle(title) {
+        return WeatherAlerts.#TrimWeatherAlertTitle(title)
+            .replace(/^(?:a|an|the)\s+/i, "")
+            .replace(/\b\p{L}/gu, character => character.toUpperCase());
     }
 
     static #LooksLikeAlertIssueTime(value) {

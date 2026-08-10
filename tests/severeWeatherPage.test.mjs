@@ -214,8 +214,8 @@ test("QWeather title normalization supports translated and CAP headline grammars
     const issuedTime = "2026-08-10T00:00:00.000Z";
     const headlines = [
         ["浦东新区气象台发布暴雨橙色预警信号。", "暴雨", "暴雨橙色预警"],
-        ["Nanjing Meteorological Observatory issues a blue typhoon warning", "Typhoon", "a blue typhoon warning"],
-        ["Pudong New Area Meteorological Observatory issued an orange rainstorm warning", "Rainstorm", "an orange rainstorm warning"],
+        ["Nanjing Meteorological Observatory issues a blue typhoon warning", "Typhoon", "Blue Typhoon Warning"],
+        ["Pudong New Area Meteorological Observatory issued an orange rainstorm warning", "Rainstorm", "Orange Rainstorm Warning"],
         ["Severe Thunderstorm Warning issued August 10 at 2:26AM EDT until August 10 at 3:30AM EDT by NWS Grand Rapids MI", "Severe Thunderstorm Warning", "Severe Thunderstorm Warning"],
         ["Flood Watch issued August 9 at 8:34PM EDT until August 10 at 11:00AM EDT by NWS Grand Rapids MI", "Flood Watch", "Flood Watch"],
     ];
@@ -315,7 +315,7 @@ test("QWeather HTML extraction distinguishes CAP issuers from translated agency 
     const translatedAlert = WeatherAlerts.ExtractQWeather(translatedHtml);
     assert.equal(capAlert.alerts[0].description, "Coastal Flood Advisory");
     assert.equal(capAlert.alerts[0].source, "NWS San Francisco CA");
-    assert.equal(translatedAlert.alerts[0].description, "a blue typhoon warning");
+    assert.equal(translatedAlert.alerts[0].description, "Blue Typhoon Warning");
     assert.equal(translatedAlert.alerts[0].source, "Nanjing Meteorological Observatory");
 });
 
