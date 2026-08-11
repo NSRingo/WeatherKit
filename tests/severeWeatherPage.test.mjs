@@ -216,11 +216,15 @@ test("QWeather event codes map to CAP phenomena", async () => {
     const originalFetch = globalThis.fetch;
     const fixtures = [
         ["1009", "Met"],
-        ["1037", "Geo"],
+        ["1013", "Geo"],
+        ["1044", "Safety"],
         ["1025", "Fire"],
+        ["1024", "Health"],
         ["1029", "Env"],
-        ["1068", "Health"],
-        ["9999", "高温"],
+        ["1046", "Transport"],
+        ["1203", "Infra"],
+        ["9999", "Other"],
+        ["9998", "高温"],
     ];
 
     try {

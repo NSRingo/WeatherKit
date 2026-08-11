@@ -79,7 +79,7 @@ evacuate, shelter, execute, prepare, avoid, monitor, assess, allClear, none
 | `certainty` | 官方 JSON 保留字段，页面当前不显示。 | QWeather `certainty` 规范化；没有则 `unknown`。 |
 | `importance` | 官方 JSON 保留字段，页面当前不显示。 | QWeather 有值就透传；否则从 `severity` 推导：`extreme/severe -> high`、`minor -> low`、其他 `normal`。 |
 | `significance` | 官方 JSON 保留字段，页面当前不显示。 | 仅透传可识别枚举：`advisory` / `watch` / `warning` / `statement` / `emergency` / `unknown`。 |
-| `phenomenon` | 官方 JSON 保留字段，页面当前不显示。 | 彩云将 CAP `categories[]` 映射为 `Geo` / `Met` 等类别；QWeather 将 `eventType.code` 映射为同一套类别，未知值回退本地化 `eventName`。HTML 分支不伪造。 |
+| `phenomenon` | 官方 JSON 保留字段，页面当前不显示。 | 彩云将 CAP `categories[]` 映射为 12 个标准类别；QWeather 通过项目维护的事件代码分类表映射为同一套类别，未知值回退本地化 `eventName`。HTML 分支不伪造。 |
 | `token` | 官方 JSON 保留字段，页面当前不显示。 | QWeather `token`，没有则用 `eventType.code` 或 `icon`。 |
 | `name` | 官方 JSON 类型名。 | 固定 `WeatherAlert`。 |
 | `precedence` | 官方 JSON 排序/优先级字段。 | 使用数组下标。 |
