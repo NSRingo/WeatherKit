@@ -242,6 +242,40 @@ test("QWeather event codes map to CAP phenomena", async () => {
     }
 });
 
+test("all documented QWeather event codes map to CAP categories", async () => {
+    const originalFetch = globalThis.fetch;
+    const documentedCodeRanges = [
+        [1001, 1069], [1071, 1082], [1084, 1089], [1201, 1219], [1221, 1221], [1241, 1251], [1271, 1274], [1601, 1610], [1701, 1710], [1801, 1805],
+        [2001, 2007], [2029, 2033], [2050, 2054], [2070, 2085], [2100, 2109], [2111, 2111], [2120, 2135], [2150, 2150], [2152, 2168], [2190, 2193],
+        [2200, 2205], [2207, 2221], [2300, 2309], [2311, 2328], [2330, 2333], [2341, 2341], [2343, 2343], [2345, 2346], [2348, 2400], [2409, 2409],
+        [2411, 2426], [2501, 2502], [2521, 2532], [2550, 2554], [2581, 2581], [2601, 2620], [2641, 2641], [2713, 2713], [2722, 2723], [2743, 2743],
+        [2749, 2749], [2751, 2753], [2755, 2756], [2791, 2797], [2801, 2804], [2839, 2853], [2873, 2874], [3101, 3107], [3131, 3148], [9999, 9999],
+    ];
+    const documentedCodes = documentedCodeRanges.flatMap(([start, end]) => Array.from({ length: end - start + 1 }, (_, index) => String(start + index)));
+    const categories = new Set(["Geo", "Met", "Safety", "Security", "Rescue", "Fire", "Health", "Env", "Transport", "Infra", "CBRNE", "Other"]);
+
+    globalThis.fetch = async () => {
+        const body = structuredClone(qWeatherAlertAPI);
+        body.alerts = documentedCodes.map((code, index) => ({
+            ...body.alerts[0],
+            id: `documented-event-${index}`,
+            eventType: { code, name: `Event ${code}` },
+        }));
+        return new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" } });
+    };
+
+    try {
+        const alerts = await new QWeather({ country: "CN", language: "en-US", latitude: "32.115", longitude: "118.814" }, "test-token").WeatherAlert();
+        assert.equal(alerts.alerts.length, documentedCodes.length);
+        for (const [index, alert] of alerts.alerts.entries()) {
+            assert.ok(categories.has(alert.phenomenon), `${documentedCodes[index]}: ${alert.phenomenon}`);
+            assert.notEqual(alert.phenomenon, `Event ${documentedCodes[index]}`, documentedCodes[index]);
+        }
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test("QWeather title normalization supports translated and CAP headline grammars", () => {
     const issuedTime = "2026-08-10T00:00:00.000Z";
     const headlines = [
@@ -353,8 +387,18 @@ test("ColorfulClouds CAP Alert API is standardized by ColorfulClouds class", asy
 test("ColorfulClouds CAP categories map to phenomena", async () => {
     const originalFetch = globalThis.fetch;
     const fixtures = [
+        [[1], "Geo"],
         [[2], "Met"],
+        [[3], "Safety"],
+        [[4], "Security"],
+        [[5], "Rescue"],
         [[6], "Fire"],
+        [[7], "Health"],
+        [[8], "Env"],
+        [[9], "Transport"],
+        [[10], "Infra"],
+        [[11], "CBRNE"],
+        [[12], "Other"],
         [[999], "Flash Flood Warning."],
     ];
 
