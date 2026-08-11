@@ -331,6 +331,16 @@ test("localized event names select the matching provider alert", () => {
     assert.equal(appleAlerts[0].token, "advisory");
 });
 
+test("localized event names allow complete provider headlines to replace generic titles", () => {
+    const appleAlerts = [{ description: "暴雨", phenomenon: "Other" }];
+    const providerAlerts = [{ description: "南京市气象台发布暴雨蓝色预警信号。", eventName: "暴雨", guidelines: [], phenomenon: "Met", severity: "minor" }];
+
+    WeatherAlerts.mergeAlerts(appleAlerts, providerAlerts);
+
+    assert.equal(appleAlerts[0].description, "暴雨蓝色预警");
+    assert.equal(appleAlerts[0].phenomenon, "Met");
+});
+
 test("ColorfulClouds CAP Alert API is standardized by ColorfulClouds class", async () => {
     const originalFetch = globalThis.fetch;
     let sourceRequest;

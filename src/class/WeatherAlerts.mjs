@@ -190,8 +190,8 @@ export default class WeatherAlerts {
         const value = WeatherAlerts.#NormalizeWeatherAlertTitle(qWeatherAlert?.description, qWeatherAlert?.eventName);
         if (!value) return;
         const currentKey = WeatherAlerts.#NormalizeAlertMatchText(current);
-        const phenomenonKey = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.phenomenon);
-        if (!currentKey || currentKey === phenomenonKey || currentKey === "other" || currentKey === "unknown") appleAlert.description = value;
+        const eventNameKey = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.eventName);
+        if (!currentKey || currentKey === eventNameKey || currentKey === "other" || currentKey === "unknown") appleAlert.description = value;
     }
 
     static #FillEnum(appleAlert, key, qWeatherValue, fallbackValues = ["unknown", "Other"]) {
