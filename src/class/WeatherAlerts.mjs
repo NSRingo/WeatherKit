@@ -187,7 +187,7 @@ export default class WeatherAlerts {
 
     static #FillDescription(appleAlert, qWeatherAlert) {
         const current = String(appleAlert?.description ?? "").trim();
-        const value = WeatherAlerts.#NormalizeQWeatherTitle(qWeatherAlert?.description, qWeatherAlert?.eventName);
+        const value = WeatherAlerts.#NormalizeWeatherAlertTitle(qWeatherAlert?.description, qWeatherAlert?.eventName);
         if (!value) return;
         const currentKey = WeatherAlerts.#NormalizeAlertMatchText(current);
         const phenomenonKey = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.phenomenon);
@@ -422,8 +422,9 @@ export default class WeatherAlerts {
             const normalizedIssueText = issueText && !/(?:Z|[+-]\d{2}:?\d{2})$/i.test(issueText) ? `${issueText.replace(" ", "T")}+08:00` : issueText;
             const issueDate = new Date(normalizedIssueText);
             if ((!description && !message) || Number.isNaN(issueDate.getTime())) continue;
-            const title = WeatherAlerts.#NormalizeQWeatherTitle(description || message);
-            const source = WeatherAlerts.#ExtractQWeatherIssuer(description || message) || dataSource || "QWeather";
+            const headline = description || message;
+            const parsedHeadline = WeatherAlerts.#ParseQWeatherHeadline(headline);
+            const source = parsedHeadline.source || dataSource || "QWeather";
 
             const severitySource = `${start.className} ${description}`.toLowerCase();
             let severity = "unknown";
@@ -443,7 +444,8 @@ export default class WeatherAlerts {
             }
 
             alerts.push({
-                description: title,
+                description: headline,
+                ...(parsedHeadline.eventName ? { eventName: parsedHeadline.eventName } : {}),
                 guidelines,
                 issuedTime: issueDate.toISOString(),
                 message,
@@ -487,7 +489,7 @@ export default class WeatherAlerts {
             const source = alert.source || extracted.source || "QWeather";
             const importance = alert.importance || WeatherAlerts.#ImportanceFromSeverity(alert.severity);
             const phenomenon = alert.phenomenon;
-            const description = WeatherAlerts.#NormalizeQWeatherTitle(alert.description, alert.eventName);
+            const description = WeatherAlerts.#NormalizeWeatherAlertTitle(alert.description, alert.eventName);
             return {
                 id: uid,
                 ...(areaId ? { areaId } : {}),
@@ -836,40 +838,35 @@ export default class WeatherAlerts {
     }
 
     /**
-     * 去掉 QWeather 标题中与预警级别重复的发布机构前缀。
-     * Remove the issuing organization prefix from a QWeather alert title.
+     * 将来源标题规范化为 WeatherAlert 最终标题。
+     * Normalize a provider headline into the final WeatherAlert title.
      * @param {string} description 预警标题 / Alert title.
      * @param {string} eventName 本地化事件名称 / Localized event name.
      * @returns {string} 规范化标题 / Normalized title.
      */
-    static #NormalizeQWeatherTitle(description, eventName = "") {
+    static #NormalizeWeatherAlertTitle(description, eventName = "") {
         const title = String(description ?? "").trim();
         const fallback = WeatherAlerts.#TrimWeatherAlertTitle(eventName);
+        if (!title) return fallback;
+
         const chinese = title.match(/^.+?发布\s*[:：]?\s*(.+)$/);
         if (chinese?.[1]) return WeatherAlerts.#TrimWeatherAlertTitle(chinese[1]);
 
         const issued = title.match(/^(.+?)\s+issued\b\s*[:：]?\s*(.+)$/i);
         if (issued?.[1] && issued?.[2]) {
             const titleBeforeIssued = WeatherAlerts.#TrimWeatherAlertTitle(issued[1]);
-            const textAfterIssued = issued[2].trim();
             const fallbackMatchesPrefix = Boolean(fallback) && WeatherAlerts.#NormalizeAlertMatchText(fallback) === WeatherAlerts.#NormalizeAlertMatchText(titleBeforeIssued);
-            if (fallbackMatchesPrefix || WeatherAlerts.#LooksLikeAlertIssueTime(textAfterIssued)) return fallback || titleBeforeIssued;
-            return WeatherAlerts.#NormalizeTranslatedEnglishAlertTitle(textAfterIssued) || fallback;
+            return fallbackMatchesPrefix ? fallback : WeatherAlerts.#FormatTranslatedEnglishAlertTitle(issued[2]) || fallback;
         }
 
         const issues = title.match(/^.+?\s+issues?\b\s*[:：]?\s*(.+)$/i);
-        return issues?.[1] ? WeatherAlerts.#NormalizeTranslatedEnglishAlertTitle(issues[1]) || fallback : WeatherAlerts.#TrimWeatherAlertTitle(title) || fallback;
+        return issues?.[1] ? WeatherAlerts.#FormatTranslatedEnglishAlertTitle(issues[1]) || fallback : WeatherAlerts.#TrimWeatherAlertTitle(title) || fallback;
     }
 
-    static #NormalizeTranslatedEnglishAlertTitle(title) {
+    static #FormatTranslatedEnglishAlertTitle(title) {
         return WeatherAlerts.#TrimWeatherAlertTitle(title)
             .replace(/^(?:a|an|the)\s+/i, "")
             .replace(/\b\p{L}/gu, character => character.toUpperCase());
-    }
-
-    static #LooksLikeAlertIssueTime(value) {
-        const text = String(value ?? "").trim();
-        return /^(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|January|February|March|April|May|June|July|August|September|October|November|December)\b/i.test(text) || /^\d{1,2}(?:[/:.-]\d{1,2})/.test(text) || /\b(?:at|until)\s+\d{1,2}(?::\d{2})?\s*(?:AM|PM)?\b/i.test(text);
     }
 
     static #TrimWeatherAlertTitle(title) {
@@ -881,19 +878,31 @@ export default class WeatherAlerts {
     }
 
     /**
-     * 从 QWeather 标题中提取 Apple alertDetails “签发者/source” 使用的机构名。
-     * Extract the issuing agency used by Apple alertDetails as WeatherAlert.source.
-     * @param {string} description QWeather 标题 / QWeather alert title.
-     * @returns {string} 签发机构名 / Issuing agency.
+     * 从 QWeather HTML 标题中解析事件名称和签发机构。
+     * Parse the event name and issuer from a QWeather HTML headline.
+     * @param {string} description QWeather 标题 / QWeather alert headline.
+     * @returns {{eventName: string, source: string}} 标题结构 / Parsed headline fields.
      */
-    static #ExtractQWeatherIssuer(description) {
+    static #ParseQWeatherHeadline(description) {
         const title = String(description ?? "").trim();
         const chinese = title.match(/^(.+?)发布\s*[:：]?\s*(.+)$/);
-        if (chinese?.[1]) return chinese[1].trim();
-        const capIssuer = title.match(/\s+issued\b[\s\S]*\s+by\s+(.+)$/i);
-        if (capIssuer?.[1]) return WeatherAlerts.#TrimWeatherAlertTitle(capIssuer[1]);
-        const english = title.match(/^(.+?)\s+(?:issued|issues?)\b\s*[:：]?\s*(.+)$/i);
-        return english?.[1]?.trim() || "";
+        if (chinese?.[1] && chinese?.[2]) return { eventName: chinese[2].trim(), source: chinese[1].trim() };
+
+        const cap = title.match(/^(.+?)\s+issued\b[\s\S]*\s+by\s+(.+)$/i);
+        if (cap?.[1] && cap?.[2]) return { eventName: cap[1].trim(), source: WeatherAlerts.#TrimWeatherAlertTitle(cap[2]) };
+
+        const issued = title.match(/^(.+?)\s+issued\b\s*[:：]?\s*(.+)$/i);
+        if (issued?.[1] && issued?.[2]) {
+            const context = issued[2].trim();
+            const capContext = /^(?:for\b|\d{1,2}[/:.-]|\p{L}+\s+(?:\d{1,2}\b|at\b|until\b))/iu.test(context);
+            return capContext
+                ? { eventName: issued[1].trim(), source: "" }
+                : { eventName: WeatherAlerts.#FormatTranslatedEnglishAlertTitle(context), source: issued[1].trim() };
+        }
+
+        const issues = title.match(/^(.+?)\s+issues?\b\s*[:：]?\s*(.+)$/i);
+        if (issues?.[1] && issues?.[2]) return { eventName: WeatherAlerts.#FormatTranslatedEnglishAlertTitle(issues[2]), source: issues[1].trim() };
+        return { eventName: title, source: "" };
     }
 
     /**

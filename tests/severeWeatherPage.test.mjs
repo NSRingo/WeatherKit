@@ -110,7 +110,8 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
 
     assert.equal(extracted.areaName, "建邺");
     assert.equal(extracted.source, "建邺区气象台");
-    assert.equal(extracted.alerts[0].description, "雷暴橙色预警");
+    assert.equal(extracted.alerts[0].description, "建邺区气象台发布雷暴橙色预警信号。");
+    assert.equal(extracted.alerts[0].eventName, "雷暴橙色预警信号。");
     assert.deepEqual(extracted.alerts[0].guidelines, ["注意防范雷电。", "远离高大树木。"]);
     assert.equal("issuedBy" in extracted.alerts[0], false);
     assert.equal(extracted.alerts[0].reportedAt, "2026-07-31T03:00:00.000Z");
@@ -381,10 +382,21 @@ test("QWeather HTML extraction distinguishes CAP issuers from translated agency 
 
     const capAlert = WeatherAlerts.ExtractQWeather(capHtml);
     const translatedAlert = WeatherAlerts.ExtractQWeather(translatedHtml);
-    assert.equal(capAlert.alerts[0].description, "Coastal Flood Advisory");
+    const context = {
+        attributionUrl: new URL("https://www.qweather.com/severe-weather/test.html"),
+        countryCode: "US",
+        identifier: "headline-parser-fixtures",
+        language: "en-US",
+    };
+
+    assert.equal(capAlert.alerts[0].description, "Coastal Flood Advisory issued August 9 at 9:43PM PDT until August 13 at 2:00AM PDT by NWS San Francisco CA");
+    assert.equal(capAlert.alerts[0].eventName, "Coastal Flood Advisory");
     assert.equal(capAlert.alerts[0].source, "NWS San Francisco CA");
-    assert.equal(translatedAlert.alerts[0].description, "Blue Typhoon Warning");
+    assert.equal(translatedAlert.alerts[0].description, "Nanjing Meteorological Observatory issues a blue typhoon warning");
+    assert.equal(translatedAlert.alerts[0].eventName, "Blue Typhoon Warning");
     assert.equal(translatedAlert.alerts[0].source, "Nanjing Meteorological Observatory");
+    assert.equal(WeatherAlerts.Build(capAlert, context)[0].description, "Coastal Flood Advisory");
+    assert.equal(WeatherAlerts.Build(translatedAlert, context)[0].description, "Blue Typhoon Warning");
 });
 
 test("Pages routes WeatherAlert requests through Hono before fetching QWeather", async () => {
