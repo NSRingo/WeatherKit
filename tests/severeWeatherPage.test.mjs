@@ -378,10 +378,14 @@ test("QWeather source extraction falls back to the English attribution label", (
 
 test("QWeather HTML extraction distinguishes CAP issuers from translated agency prefixes", () => {
     const capHtml = sourceHtml.replace("建邺区气象台发布雷暴橙色预警信号。", "Coastal Flood Advisory issued August 9 at 9:43PM PDT until August 13 at 2:00AM PDT by NWS San Francisco CA");
+    const capForHtml = sourceHtml.replace("建邺区气象台发布雷暴橙色预警信号。", "Flash Flood Warning issued for Los Angeles");
     const translatedHtml = sourceHtml.replace("建邺区气象台发布雷暴橙色预警信号。", "Nanjing Meteorological Observatory issues a blue typhoon warning");
+    const translatedIssuedHtml = sourceHtml.replace("建邺区气象台发布雷暴橙色预警信号。", "Pudong New Area Meteorological Observatory issued an orange rainstorm warning");
 
     const capAlert = WeatherAlerts.ExtractQWeather(capHtml);
+    const capForAlert = WeatherAlerts.ExtractQWeather(capForHtml);
     const translatedAlert = WeatherAlerts.ExtractQWeather(translatedHtml);
+    const translatedIssuedAlert = WeatherAlerts.ExtractQWeather(translatedIssuedHtml);
     const context = {
         attributionUrl: new URL("https://www.qweather.com/severe-weather/test.html"),
         countryCode: "US",
@@ -392,11 +396,16 @@ test("QWeather HTML extraction distinguishes CAP issuers from translated agency 
     assert.equal(capAlert.alerts[0].description, "Coastal Flood Advisory issued August 9 at 9:43PM PDT until August 13 at 2:00AM PDT by NWS San Francisco CA");
     assert.equal(capAlert.alerts[0].eventName, "Coastal Flood Advisory");
     assert.equal(capAlert.alerts[0].source, "NWS San Francisco CA");
+    assert.equal(capForAlert.alerts[0].eventName, "Flash Flood Warning");
     assert.equal(translatedAlert.alerts[0].description, "Nanjing Meteorological Observatory issues a blue typhoon warning");
     assert.equal(translatedAlert.alerts[0].eventName, "Blue Typhoon Warning");
     assert.equal(translatedAlert.alerts[0].source, "Nanjing Meteorological Observatory");
+    assert.equal(translatedIssuedAlert.alerts[0].eventName, "Orange Rainstorm Warning");
+    assert.equal(translatedIssuedAlert.alerts[0].source, "Pudong New Area Meteorological Observatory");
     assert.equal(WeatherAlerts.Build(capAlert, context)[0].description, "Coastal Flood Advisory");
+    assert.equal(WeatherAlerts.Build(capForAlert, context)[0].description, "Flash Flood Warning");
     assert.equal(WeatherAlerts.Build(translatedAlert, context)[0].description, "Blue Typhoon Warning");
+    assert.equal(WeatherAlerts.Build(translatedIssuedAlert, context)[0].description, "Orange Rainstorm Warning");
 });
 
 test("Pages routes WeatherAlert requests through Hono before fetching QWeather", async () => {
