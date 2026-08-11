@@ -17,6 +17,7 @@ import { Console, Lodash as _, fetch } from "@nsnanocat/util";
  *     importance?: string,
  *     issuedTime: string,
  *     message: string,
+ *     eventName?: string,
  *     phenomenon?: string,
  *     responses?: string[],
  *     reportedAt: string,
@@ -186,7 +187,7 @@ export default class WeatherAlerts {
 
     static #FillDescription(appleAlert, qWeatherAlert) {
         const current = String(appleAlert?.description ?? "").trim();
-        const value = WeatherAlerts.#NormalizeQWeatherTitle(qWeatherAlert?.description, qWeatherAlert?.phenomenon);
+        const value = WeatherAlerts.#NormalizeQWeatherTitle(qWeatherAlert?.description, qWeatherAlert?.eventName);
         if (!value) return;
         const currentKey = WeatherAlerts.#NormalizeAlertMatchText(current);
         const phenomenonKey = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.phenomenon);
@@ -313,6 +314,7 @@ export default class WeatherAlerts {
         const qWeatherToken = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.token);
         const appleDescription = WeatherAlerts.#NormalizeAlertMatchText(appleAlert?.description);
         const qWeatherDescription = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.description);
+        const qWeatherEventName = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.eventName);
         const qWeatherMessage = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.message);
         const applePhenomenon = WeatherAlerts.#NormalizeAlertMatchText(appleAlert?.phenomenon);
         const qWeatherPhenomenon = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.phenomenon);
@@ -322,6 +324,7 @@ export default class WeatherAlerts {
         if (appleAreaId && qWeatherAreaId && appleAreaId === qWeatherAreaId) score += 60;
         if (appleAreaName && qWeatherAreaName && appleAreaName === qWeatherAreaName) score += 40;
         if (appleToken && qWeatherToken && appleToken === qWeatherToken) score += 50;
+        if (appleDescription && qWeatherEventName && appleDescription === qWeatherEventName) score += 50;
         if (appleDescription && qWeatherPhenomenon && appleDescription === qWeatherPhenomenon) score += 50;
         if (appleDescription && qWeatherDescription && qWeatherDescription.includes(appleDescription)) score += 40;
         if (appleDescription && qWeatherMessage && qWeatherMessage.includes(appleDescription)) score += 30;
@@ -345,6 +348,7 @@ export default class WeatherAlerts {
             areaId: alert?.areaId,
             areaName: alert?.areaName,
             description: alert?.description,
+            eventName: alert?.eventName,
             message: alert?.message,
             token: alert?.token,
             phenomenon: alert?.phenomenon,
@@ -483,7 +487,7 @@ export default class WeatherAlerts {
             const source = alert.source || extracted.source || "QWeather";
             const importance = alert.importance || WeatherAlerts.#ImportanceFromSeverity(alert.severity);
             const phenomenon = alert.phenomenon;
-            const description = WeatherAlerts.#NormalizeQWeatherTitle(alert.description, phenomenon);
+            const description = WeatherAlerts.#NormalizeQWeatherTitle(alert.description, alert.eventName);
             return {
                 id: uid,
                 ...(areaId ? { areaId } : {}),
@@ -835,25 +839,26 @@ export default class WeatherAlerts {
      * 去掉 QWeather 标题中与预警级别重复的发布机构前缀。
      * Remove the issuing organization prefix from a QWeather alert title.
      * @param {string} description 预警标题 / Alert title.
+     * @param {string} eventName 本地化事件名称 / Localized event name.
      * @returns {string} 规范化标题 / Normalized title.
      */
-    static #NormalizeQWeatherTitle(description, phenomenon = "") {
+    static #NormalizeQWeatherTitle(description, eventName = "") {
         const title = String(description ?? "").trim();
+        const fallback = WeatherAlerts.#TrimWeatherAlertTitle(eventName);
         const chinese = title.match(/^.+?发布\s*[:：]?\s*(.+)$/);
         if (chinese?.[1]) return WeatherAlerts.#TrimWeatherAlertTitle(chinese[1]);
 
-        const structuredTitle = WeatherAlerts.#TrimWeatherAlertTitle(phenomenon);
         const issued = title.match(/^(.+?)\s+issued\b\s*[:：]?\s*(.+)$/i);
         if (issued?.[1] && issued?.[2]) {
             const titleBeforeIssued = WeatherAlerts.#TrimWeatherAlertTitle(issued[1]);
             const textAfterIssued = issued[2].trim();
-            const structuredMatchesPrefix = Boolean(structuredTitle) && WeatherAlerts.#NormalizeAlertMatchText(structuredTitle) === WeatherAlerts.#NormalizeAlertMatchText(titleBeforeIssued);
-            if (structuredMatchesPrefix || WeatherAlerts.#LooksLikeAlertIssueTime(textAfterIssued)) return structuredTitle || titleBeforeIssued;
-            return WeatherAlerts.#NormalizeTranslatedEnglishAlertTitle(textAfterIssued);
+            const fallbackMatchesPrefix = Boolean(fallback) && WeatherAlerts.#NormalizeAlertMatchText(fallback) === WeatherAlerts.#NormalizeAlertMatchText(titleBeforeIssued);
+            if (fallbackMatchesPrefix || WeatherAlerts.#LooksLikeAlertIssueTime(textAfterIssued)) return fallback || titleBeforeIssued;
+            return WeatherAlerts.#NormalizeTranslatedEnglishAlertTitle(textAfterIssued) || fallback;
         }
 
         const issues = title.match(/^.+?\s+issues?\b\s*[:：]?\s*(.+)$/i);
-        return issues?.[1] ? WeatherAlerts.#NormalizeTranslatedEnglishAlertTitle(issues[1]) : WeatherAlerts.#TrimWeatherAlertTitle(structuredTitle || title);
+        return issues?.[1] ? WeatherAlerts.#NormalizeTranslatedEnglishAlertTitle(issues[1]) || fallback : WeatherAlerts.#TrimWeatherAlertTitle(title) || fallback;
     }
 
     static #NormalizeTranslatedEnglishAlertTitle(title) {

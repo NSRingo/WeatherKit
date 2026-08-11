@@ -70,6 +70,15 @@ export default class QWeather {
             ppb: "PARTS_PER_BILLION",
             ppm: "PARTS_PER_MILLION",
         },
+        WeatherAlert: {
+            EventCategories: [
+                { category: "Geo", codes: [[1037, 1037], [1241, 1251]] },
+                { category: "Fire", codes: [[1025, 1026], [1077, 1077], [1084, 1084], [1605, 1605], [2192, 2192], [2207, 2207], [2302, 2302], [2349, 2349]] },
+                { category: "Env", codes: [[1029, 1029], [1067, 1067], [1074, 1074], [1271, 1273], [2202, 2202], [2413, 2413]] },
+                { category: "Health", codes: [[1068, 1069], [1071, 1072], [1082, 1082]] },
+                { category: "Met", codes: [[1001, 1089], [1201, 1221], [1601, 1610], [1701, 1710], [1801, 1805], [2001, 2007], [2029, 2033], [2050, 2054], [2070, 2084], [2100, 2135], [2150, 2168], [2190, 2193], [2200, 2243], [2300, 2426], [2501, 2641], [2713, 2723], [2749, 2756], [2791, 2797], [2801, 2839]] },
+            ],
+        },
         Availability: {
             Minutely: ["CN", "HK", "MO"],
             AirQuality: ["AD", "BE", "BG", "CA", "CN", "HR", "CZ", "DK", "FI", "FR", "DE", "GI", "GR", "HK", "HU", "IE", "JP", "KR", "LV", "LT", "MO", "MT", "NL", "MK", "NO", "PL", "PT", "RO", "RS", "SG", "SK", "SI", "ES", "SE", "CH", "TW", "TH", "GB", "US"],
@@ -735,7 +744,8 @@ export default class QWeather {
     /**
      * 将单条 QWeather 预警转成 Apple alertDetails JSON 的中间记录。
      * Convert one QWeather alert item to the intermediate record used by Apple alertDetails JSON.
-     * @param {any} alert QWeather alerts[] 项；senderName=签发者/source，areaName=受影响区域，onsetTime=eventOnsetTime，eventType=phenomenon/token。
+     * @param {any} alert QWeather alerts[] 项；senderName 为签发者，areaName 为受影响区域，onsetTime 为事件开始时间，eventType.name 为本地化事件名，eventType.code 用于分类和 token。
+     * QWeather alerts[] item; senderName is the issuer, areaName is the affected area, onsetTime is the event onset, eventType.name is the localized event name, and eventType.code supplies the category and token.
      * @returns {object | undefined} 标准化后的预警记录 / Normalized alert record.
      */
     #CreateWeatherAlert(alert) {
@@ -746,14 +756,16 @@ export default class QWeather {
         const eventOnsetTime = this.#DateISOString(alert?.eventOnsetTime || alert?.onsetTime || alert?.effectiveTime) || effectiveTime;
         const eventEndTime = this.#DateISOString(alert?.eventEndTime || alert?.endTime || alert?.expiresTime || alert?.expireTime);
         const guidelines = this.#SplitWeatherAlertGuidelines(alert?.instruction ?? alert?.instructions);
-        const description = String(alert?.headline ?? alert?.eventType?.name ?? alert?.description ?? "").trim();
+        const description = String(alert?.headline ?? "").trim();
         const message = String(alert?.description ?? "").trim() || String(alert?.headline ?? description ?? "").trim();
         const source = String(alert?.senderName ?? "").trim();
         const severity = alert?.severity ?? "unknown";
         const areaId = String(alert?.areaId ?? alert?.areaCode ?? "").trim();
         const areaName = String(alert?.areaName ?? "").trim();
-        const phenomenon = String(alert?.eventType?.name ?? "").trim();
         const token = String(alert?.token ?? alert?.eventType?.code ?? alert?.icon ?? "").trim();
+        const eventCode = Number(alert?.eventType?.code);
+        const eventName = String(alert?.eventType?.name ?? "").trim();
+        const phenomenon = (this.#Config.WeatherAlert.EventCategories.find(({ codes }) => codes.some(([start, end]) => eventCode >= start && eventCode <= end))?.category ?? eventName) || "Other";
         const certainty = alert?.certainty ?? "unknown";
         const importance = alert?.importance ?? "";
         const significance = alert?.significance ?? "";
@@ -771,6 +783,7 @@ export default class QWeather {
             identifier: alert?.id,
             ...(importance ? { importance } : {}),
             issuedTime,
+            ...(eventName ? { eventName } : {}),
             message,
             ...(phenomenon ? { phenomenon } : {}),
             responses: Array.isArray(alert?.responseTypes) ? alert.responseTypes.map(response => String(response ?? "").trim()).filter(Boolean) : [],
