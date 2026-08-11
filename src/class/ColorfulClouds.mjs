@@ -801,13 +801,12 @@ export default class ColorfulClouds {
     #CreateWeatherAlerts(body) {
         Console.info("☑️ CreateWeatherAlerts");
         const convertedAlerts = (Array.isArray(body?.alerts) ? body.alerts : []).map(alert => this.#CreateWeatherAlert(alert)).filter(Boolean);
-        const weatherAlerts = {
+        Console.info("✅ CreateWeatherAlerts");
+        return {
             alerts: convertedAlerts,
             areaName: convertedAlerts.find(alert => alert?.areaName)?.areaName ?? "",
             source: convertedAlerts.find(alert => alert?.source)?.source || "彩云天气",
         };
-        Console.info("✅ CreateWeatherAlerts");
-        return weatherAlerts;
     }
 
     #CreateWeatherAlert(alert) {
@@ -819,16 +818,13 @@ export default class ColorfulClouds {
         const eventOnsetTime = this.#DateISOString(alert?.onset_time) || effectiveTime;
         const area = Array.isArray(alert?.areas) ? alert.areas.find(item => item) : undefined;
         const geocode = Array.isArray(area?.geocodes) ? area.geocodes.find(item => item?.value) : undefined;
-        const description = String(alert?.headline ?? "").trim();
-        const message = String(alert?.description ?? alert?.headline ?? description).trim();
         const source = String(alert?.sender_name ?? "").trim() || weatherAlertConfig.Sources[Number(alert?.source)] || "";
         const eventName = String(alert?.event_name ?? "").trim();
-        const phenomenon = (Array.isArray(alert?.categories) ? alert.categories : []).map(category => weatherAlertConfig.Categories[Number(category)]).find(Boolean) || eventName || "Other";
         return {
             ...(geocode?.value ? { areaId: String(geocode.value).trim() } : {}),
             ...(area?.area_desc ? { areaName: String(area.area_desc).trim() } : {}),
             certainty: weatherAlertConfig.Certainties[Number(alert?.certainty)] || "unknown",
-            description,
+            description: String(alert?.headline ?? "").trim(),
             effectiveTime,
             eventOnsetTime,
             ...(expireTime ? { eventEndTime: expireTime, expireTime } : {}),
@@ -836,8 +832,8 @@ export default class ColorfulClouds {
             identifier: alert?.id,
             issuedTime,
             ...(eventName ? { eventName } : {}),
-            message,
-            phenomenon,
+            message: String(alert?.description ?? alert?.headline ?? "").trim(),
+            phenomenon: (Array.isArray(alert?.categories) ? alert.categories : []).map(category => weatherAlertConfig.Categories[Number(category)]).find(Boolean) || eventName || "Other",
             reportedAt: issuedTime,
             severity: weatherAlertConfig.Severities[Number(alert?.severity)] || "unknown",
             ...(source ? { source } : {}),

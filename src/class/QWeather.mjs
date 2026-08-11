@@ -739,18 +739,13 @@ export default class QWeather {
 
     #CreateWeatherAlerts(body) {
         Console.info("☑️ CreateWeatherAlerts");
-        const alerts = Array.isArray(body?.alerts) ? body.alerts : [];
-        const attributions = Array.isArray(body?.metadata?.attributions) ? body.metadata.attributions : [];
-        const convertedAlerts = alerts.map(alert => this.#CreateWeatherAlert(alert)).filter(Boolean);
-        const attributionSource = attributions.find(item => item && !/延迟|过时|disclaimer|delayed|outdated/i.test(item)) || "国家预警信息发布中心";
-        const source = convertedAlerts.find(alert => alert?.source)?.source || attributionSource;
-        const weatherAlerts = {
+        const convertedAlerts = (Array.isArray(body?.alerts) ? body.alerts : []).map(alert => this.#CreateWeatherAlert(alert)).filter(Boolean);
+        Console.info("✅ CreateWeatherAlerts");
+        return {
             alerts: convertedAlerts,
             areaName: convertedAlerts.find(alert => alert?.areaName)?.areaName ?? "",
-            source,
+            source: convertedAlerts.find(alert => alert?.source)?.source || (Array.isArray(body?.metadata?.attributions) ? body.metadata.attributions : []).find(item => item && !/延迟|过时|disclaimer|delayed|outdated/i.test(item)) || "国家预警信息发布中心",
         };
-        Console.info("✅ CreateWeatherAlerts");
-        return weatherAlerts;
     }
 
     /**
@@ -767,45 +762,36 @@ export default class QWeather {
         const expireTime = this.#DateISOString(alert?.expiresTime || alert?.expireTime);
         const eventOnsetTime = this.#DateISOString(alert?.eventOnsetTime || alert?.onsetTime || alert?.effectiveTime) || effectiveTime;
         const eventEndTime = this.#DateISOString(alert?.eventEndTime || alert?.endTime || alert?.expiresTime || alert?.expireTime);
-        const guidelines = this.#SplitWeatherAlertGuidelines(alert?.instruction ?? alert?.instructions);
-        const description = String(alert?.headline ?? "").trim();
-        const message = String(alert?.description ?? "").trim() || String(alert?.headline ?? description ?? "").trim();
         const source = String(alert?.senderName ?? "").trim();
-        const severity = alert?.severity ?? "unknown";
         const areaId = String(alert?.areaId ?? alert?.areaCode ?? "").trim();
         const areaName = String(alert?.areaName ?? "").trim();
         const token = String(alert?.token ?? alert?.eventType?.code ?? alert?.icon ?? "").trim();
         const eventCode = Number(alert?.eventType?.code);
         const eventName = String(alert?.eventType?.name ?? "").trim();
-        const phenomenon = (this.#Config.WeatherAlert.EventCategories.find(({ codes }) => codes.some(([start, end]) => eventCode >= start && eventCode <= end))?.category ?? eventName) || "Other";
-        const certainty = alert?.certainty ?? "unknown";
-        const importance = alert?.importance ?? "";
-        const significance = alert?.significance ?? "";
-        const urgency = alert?.urgency ?? "unknown";
         return {
             ...(areaId ? { areaId } : {}),
             ...(areaName ? { areaName } : {}),
-            certainty,
-            description,
+            certainty: alert?.certainty ?? "unknown",
+            description: String(alert?.headline ?? "").trim(),
             effectiveTime,
             ...(eventEndTime ? { eventEndTime } : {}),
             eventOnsetTime,
             ...(expireTime ? { expireTime } : {}),
-            guidelines,
+            guidelines: this.#SplitWeatherAlertGuidelines(alert?.instruction ?? alert?.instructions),
             identifier: alert?.id,
-            ...(importance ? { importance } : {}),
+            ...(alert?.importance ? { importance: alert.importance } : {}),
             issuedTime,
             ...(eventName ? { eventName } : {}),
-            message,
-            ...(phenomenon ? { phenomenon } : {}),
+            message: String(alert?.description ?? "").trim() || String(alert?.headline ?? "").trim(),
+            phenomenon: (this.#Config.WeatherAlert.EventCategories.find(({ codes }) => codes.some(([start, end]) => eventCode >= start && eventCode <= end))?.category ?? eventName) || "Other",
             responses: Array.isArray(alert?.responseTypes) ? alert.responseTypes.map(response => String(response ?? "").trim()).filter(Boolean) : [],
             reportedAt: issuedTime,
-            ...(significance ? { significance } : {}),
+            ...(alert?.significance ? { significance: alert.significance } : {}),
             ...(source ? { source } : {}),
-            severity,
+            severity: alert?.severity ?? "unknown",
             standard: "",
             ...(token ? { token } : {}),
-            urgency,
+            urgency: alert?.urgency ?? "unknown",
         };
     }
 
