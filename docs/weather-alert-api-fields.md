@@ -39,7 +39,7 @@ https://weatherkit.apple.com/alertDetails/index.html?ids={ids}&lang={language}&p
 
 | JSON 字段 | 页面位置 | 官方处理 | 本项目当前填充值 |
 | --- | --- | --- | --- |
-| `description` | 卡片标题 | 作为每张预警卡片标题。 | QWeather 标题去掉 `xxx发布` 前缀后的预警名称，例如 `高温橙色预警`。 |
+| `description` | 卡片标题 | 作为每张预警卡片标题。 | 优先归一化来源 `headline`；无法取得有效标题时回退来源已本地化的 `eventName`，例如 `高温橙色预警`。 |
 | `severity` | 严重程度区块 | 显示本地化严重程度文案。 | QWeather `severity` 规范化为 `extreme` / `severe` / `moderate` / `minor` / `unknown`。 |
 | `eventOnsetTime` | “天气事件发生”区块 | 有值才显示，按 `timezone` 格式化。 | QWeather `onsetTime`，没有则回退 `effectiveTime`。HTML 分支回退发布时间。 |
 | `messages[].text` | 描述区块 | 会处理换行和 URL 自动链接；多语言消息按 `lang` 筛选。 | `description`、`criteria`、防御指南按空行拼接；防御指南继续保留在描述中。 |
@@ -79,7 +79,7 @@ evacuate, shelter, execute, prepare, avoid, monitor, assess, allClear, none
 | `certainty` | 官方 JSON 保留字段，页面当前不显示。 | QWeather `certainty` 规范化；没有则 `unknown`。 |
 | `importance` | 官方 JSON 保留字段，页面当前不显示。 | QWeather 有值就透传；否则从 `severity` 推导：`extreme/severe -> high`、`minor -> low`、其他 `normal`。 |
 | `significance` | 官方 JSON 保留字段，页面当前不显示。 | 仅透传可识别枚举：`advisory` / `watch` / `warning` / `statement` / `emergency` / `unknown`。 |
-| `phenomenon` | 官方 JSON 保留字段，页面当前不显示。 | QWeather `eventType.name`。HTML 分支不伪造。 |
+| `phenomenon` | 官方 JSON 保留字段，页面当前不显示。 | 彩云将 CAP `categories[]` 映射为 `Geo` / `Met` 等类别；QWeather 将 `eventType.code` 映射为同一套类别，未知值回退本地化 `eventName`。HTML 分支不伪造。 |
 | `token` | 官方 JSON 保留字段，页面当前不显示。 | QWeather `token`，没有则用 `eventType.code` 或 `icon`。 |
 | `name` | 官方 JSON 类型名。 | 固定 `WeatherAlert`。 |
 | `precedence` | 官方 JSON 排序/优先级字段。 | 使用数组下标。 |

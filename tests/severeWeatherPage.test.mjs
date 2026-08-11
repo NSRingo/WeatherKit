@@ -325,20 +325,44 @@ test("ColorfulClouds CAP Alert API is standardized by ColorfulClouds class", asy
         assert.equal(extracted.alerts[0].areaId, "CAC037");
         assert.equal(extracted.alerts[0].areaName, "Los Angeles");
         assert.equal(extracted.alerts[0].certainty, "likely");
-        assert.equal(extracted.alerts[0].description, "Flash Flood Warning.");
+        assert.equal(extracted.alerts[0].description, "Flash Flood Warning issued for Los Angeles");
         assert.equal(extracted.alerts[0].effectiveTime, "2025-01-01T00:01:00.000Z");
         assert.equal(extracted.alerts[0].eventOnsetTime, "2025-01-01T00:02:00.000Z");
         assert.equal(extracted.alerts[0].eventEndTime, "2025-01-02T00:00:00.000Z");
         assert.equal(extracted.alerts[0].expireTime, "2025-01-02T00:00:00.000Z");
         assert.equal(extracted.alerts[0].issuedTime, "2025-01-01T00:00:00.000Z");
         assert.equal(extracted.alerts[0].message, "Flash flooding caused by excessive rainfall is expected.");
-        assert.equal(extracted.alerts[0].phenomenon, "Flash Flood Warning.");
+        assert.equal(extracted.alerts[0].eventName, "Flash Flood Warning.");
+        assert.equal(extracted.alerts[0].phenomenon, "Met");
         assert.equal(extracted.alerts[0].reportedAt, "2025-01-01T00:00:00.000Z");
         assert.equal(extracted.alerts[0].severity, "severe");
         assert.equal(extracted.alerts[0].source, "NWS Los Angeles/Oxnard CA");
         assert.equal(extracted.alerts[0].standard, "");
         assert.equal(extracted.alerts[0].urgency, "immediate");
         assert.deepEqual(extracted.alerts[0].guidelines, ["Move to higher ground immediately.", "Avoid flooded roads."]);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test("ColorfulClouds CAP categories map to phenomena", async () => {
+    const originalFetch = globalThis.fetch;
+    const fixtures = [
+        [[2], "Met"],
+        [[6], "Fire"],
+        [[999], "Flash Flood Warning."],
+    ];
+
+    try {
+        for (const [categories, expected] of fixtures) {
+            globalThis.fetch = async () => {
+                const body = structuredClone(colorfulCloudsAlertAPI);
+                body.alerts[0].categories = categories;
+                return new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" } });
+            };
+            const alerts = await new ColorfulClouds({ country: "US", language: "en-US", latitude: "34.05", longitude: "-118.25" }, "test-token").WeatherAlert();
+            assert.equal(alerts.alerts[0].phenomenon, expected, categories.join(","));
+        }
     } finally {
         globalThis.fetch = originalFetch;
     }
