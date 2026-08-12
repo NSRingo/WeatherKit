@@ -14,9 +14,9 @@ https://weatherkit.apple.com/alertDetails/index.html?ids={ids}&lang={language}&p
 
 | 参数 | 官方页面用途 | 本项目用法 |
 | --- | --- | --- |
-| `ids` | 传给 `/api/v1/weatherAlerts?lang=...&ids=...` 获取预警 JSON。官方形态通常是逗号分隔 WeatherAlert UUID。 | 模块/模板触发正则使用 `?[^#]*&ids={latitude},{longitude}` 形态：`ids` 前必须已有查询参数，`ids=` 后只匹配坐标；旧 QWeather 页面标识仍由脚本逻辑兼容备用，但不由模块/模板触发。 |
-| `lang` | 选择页面本地化文案，并筛选 `messages[].language`。 | 传给 QWeather 的语言参数，并写回 `messages[].language`。 |
-| `party` | 页面上下文标识，会影响脚注/归因渲染。 | 生成坐标版 `alertDetails` URL 时写当前 `Settings.WeatherAlerts.Provider`，默认 `QWeather`。 |
+| `ids` | 传给 `/api/v1/weatherAlerts?lang=...&ids=...` 获取预警 JSON。官方形态通常是逗号分隔 WeatherAlert UUID。 | 内置 HTML 路径从 FlatBuffer 的 QWeather `/severe-weather/{identifier}.html?from=AppleWeatherService` 链接提取地区标识；用户 API 路径继续使用经纬度。模块/模板同时接管两种形式，且 `ids` 前必须已有查询参数。 |
+| `lang` | 选择页面本地化文案，并筛选 `messages[].language`。 | 内置路径选择 QWeather HTML 页面语言；用户 API 路径继续传给所选 API；最终写回 `messages[].language`。 |
+| `party` | 页面上下文标识，会影响脚注/归因渲染。 | 内置 HTML 路径固定为小写 `qweather`；用户 API 路径保留所选 `WeatherAlerts.Provider`。 |
 
 官方页面实际请求数据时只拼接：
 
@@ -103,7 +103,7 @@ evacuate, shelter, execute, prepare, avoid, monitor, assess, allClear, none
 | HTML 页面提取 | `src/class/WeatherAlerts.mjs` 的 `ExtractQWeather()` | 保留旧 QWeather 页面解析；从页面标题提取签发机构，从防御指南提取 `guidelines`。 |
 | API 坐标提取 | `src/class/QWeather.mjs` 的 `WeatherAlert()` | 请求 QWeather `weatheralert/v1/current/{latitude}/{longitude}`，标准化为 `WeatherAlerts.Build()` 可消费结构。 |
 | Apple JSON 构造 | `src/class/WeatherAlerts.mjs` 的 `Build()` | 输出官方 `/api/v1/weatherAlerts` 数组形态。 |
-| v2 FlatBuffer 预警补全 | `src/process/Response*.mjs` 的 `InjectWeatherAlerts()` + `src/class/WeatherAlerts.mjs` 的 `mergeAlerts(to, from)` | `InjectWeatherAlerts()` 仅当 `metadata.providerName` 为 `国家预警信息发布中心`、截图中的繁体 `國家預警信息發布中心` 或英文 `National Early Warning Center` 时拉取 QWeather Alert API；同一步把集合级 `weatherAlerts.detailsUrl` 改为坐标版官方页面，`ids` 直接使用 `weatherAlerts.metadata.latitude/longitude`，并把 `metadata.attributionUrl` 改为 `https://developer.qweather.com/attribution.html`；`mergeAlerts(to, from)` 按区域、事件类型、标题、严重度匹配 `alerts[]` 并补全 `effectiveTime` / `eventOnsetTime` / `eventEndTime` / `expireTime` / `issuedTime`、区域与响应枚举等缺失字段，写入 FlatBuffer 枚举时使用 `WK2` 大写 key；不改单条 alert 的 `detailsUrl` / `attributionUrl`，不新增 alert。 |
+| v2 FlatBuffer 预警补全 | `src/process/Response*.mjs` 的 `InjectWeatherAlerts()` + `src/class/WeatherAlerts.mjs` 的 `mergeAlerts(to, from)` | 未配置用户 API 令牌时，`InjectWeatherAlerts()` 从集合级 `weatherAlerts.detailsUrl` 的 QWeather `/severe-weather/{identifier}.html?from=AppleWeatherService` 链接提取地区标识，在内部改成 `ids={identifier}&lang={language}&party=qweather` 的 Apple 官方详情页；随后服务端抓取同一 QWeather 灾害预警 HTML，解析并补全 FlatBuffer `alerts[]`。配置了用户自己的 QWeather 或彩云天气 API 令牌时，仍按 `WeatherAlerts.Provider` 使用原 API 补全和坐标详情链路。`mergeAlerts(to, from)` 保持按区域、事件类型、标题、严重度匹配；客户端同时接管 Apple `/api/v1/weatherAlerts` 的地区标识与 API 坐标请求，但不在外部重写 QWeather 页面。 |
 
 ## 参考
 
