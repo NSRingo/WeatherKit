@@ -96,7 +96,6 @@ test("script module templates hook Apple weatherAlerts without QWeather page red
 });
 
 test("Rewrite templates stay aligned with fixed Rewrite modules", async () => {
-	const configurableTemplates = ["surge.rewrite.handlebars", "shadowrocket.rewrite.handlebars"];
 	const fixedTemplates = ["loon.rewrite.handlebars", "stash.rewrite.handlebars"];
 	for (const filename of rewriteTemplates) {
 		const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
@@ -108,12 +107,16 @@ test("Rewrite templates stay aligned with fixed Rewrite modules", async () => {
 		assert.doesNotMatch(content, /weatherkit\.nanocat\.cloud/);
 	}
 
-	for (const filename of configurableTemplates) {
-		const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
-        assert.ok(content.includes("#!arguments = endpoint:weatherkit.pages.dev"), filename);
-        assert.ok(content.includes("#!arguments-desc = endpoint: [重写] 服务端点\\n"), filename);
-		assert.ok(content.includes("https://\\{{{endpoint}}}/api/v1/weatherAlerts?$1"), filename);
-	}
+
+	const surge = await readFile(new URL("../template/surge.rewrite.handlebars", import.meta.url), "utf8");
+	assert.ok(surge.includes("#!arguments = {{{arguments}}}"));
+	assert.ok(surge.includes("#!arguments-desc = {{{argumentsDesc}}}"));
+	assert.ok(surge.includes("https://\\{{{endpoint}}}/api/v1/weatherAlerts?$1"));
+
+	const shadowrocket = await readFile(new URL("../template/shadowrocket.rewrite.handlebars", import.meta.url), "utf8");
+	assert.ok(shadowrocket.includes("#!arguments = endpoint:weatherkit.pages.dev"));
+	assert.ok(shadowrocket.includes("#!arguments-desc = endpoint: [重写] 服务端点\\n"));
+	assert.ok(shadowrocket.includes("https://\\{{{endpoint}}}/api/v1/weatherAlerts?$1"));
 
 	for (const filename of fixedTemplates) {
 		const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
