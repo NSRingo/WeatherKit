@@ -1,5 +1,4 @@
 import { defineConfig } from "@iringo/arguments-builder";
-import { api, calculate, nextHour, weather } from "./arguments-builder-full.config";
 
 const endpoint = {
 	key: "endpoint",
@@ -14,7 +13,7 @@ const endpoint = {
 };
 
 export default defineConfig({
-	args: [endpoint, ...weather, ...nextHour, ...calculate, ...api],
+	args: [endpoint],
 	output: {
 		surge: {
 			path: "./dist/iRingo.WeatherKit.Rewrite.sgmodule",
