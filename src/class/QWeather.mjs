@@ -782,7 +782,7 @@ export default class QWeather {
             ...(alert?.importance ? { importance: alert.importance } : {}),
             issuedTime,
             ...(eventName ? { eventName } : {}),
-            message: String(alert?.description ?? "").trim() || String(alert?.headline ?? "").trim(),
+            message: (String(alert?.description ?? "").trim() || String(alert?.headline ?? "").trim()).replace(/^\p{Ll}/u, character => character.toUpperCase()),
             phenomenon: (this.#Config.WeatherAlert.EventCategories.find(({ codes }) => codes.some(([start, end]) => eventCode >= start && eventCode <= end))?.category ?? eventName) || "Other",
             responses: Array.isArray(alert?.responseTypes) ? alert.responseTypes.map(response => String(response ?? "").trim()).filter(Boolean) : [],
             reportedAt: issuedTime,

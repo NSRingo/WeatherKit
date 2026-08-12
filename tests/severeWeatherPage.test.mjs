@@ -212,6 +212,22 @@ test("QWeather Alert API is standardized by QWeather class", async () => {
     }
 });
 
+test("QWeather alert messages capitalize the first character without lowercasing acronyms", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+        const body = structuredClone(qWeatherAlertAPI);
+        body.alerts[0].description = "blue warning for strong winds. These conditions are expected to last until 9:00 PM (GMT+8).";
+        return new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" } });
+    };
+
+    try {
+        const extracted = await new QWeather({ country: "CN", language: "en-US", latitude: "31.23", longitude: "121.47" }, "test-token").WeatherAlert();
+        assert.equal(extracted.alerts[0].message, "Blue warning for strong winds. These conditions are expected to last until 9:00 PM (GMT+8).");
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test("QWeather event codes map to CAP phenomena", async () => {
     const originalFetch = globalThis.fetch;
     const fixtures = [
