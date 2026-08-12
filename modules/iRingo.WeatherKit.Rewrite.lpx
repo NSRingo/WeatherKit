@@ -20,6 +20,7 @@ AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),RE
 # 🌤 WeatherKit.api.v2.weather.response
 ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ https://weatherkit.pages.dev/api/v2/weather/ header
 # 🌤 WeatherKit.api.v1.weatherAlerts.response
+^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?([^#]*&ids=[^&#]*-[0-9]{9}(?:&[^#]*)?)$ https://weatherkit.pages.dev/api/v1/weatherAlerts?$1 header
 ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?([^#]*&ids=-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?(?:&[^#]*)?)$ https://weatherkit.pages.dev/api/v1/weatherAlerts?$1 header
 
 [MITM]
