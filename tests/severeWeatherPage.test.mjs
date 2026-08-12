@@ -321,6 +321,7 @@ test("QWeather title normalization supports translated and CAP headline grammars
     const issuedTime = "2026-08-10T00:00:00.000Z";
     const headlines = [
         ["浦东新区气象台发布暴雨橙色预警信号。", "暴雨", "暴雨橙色预警"],
+        ["天津市气象台更新雷雨大风蓝色预警", "天津市气象台更新雷雨大风蓝色预警", "雷雨大风蓝色预警"],
         ["Nanjing Meteorological Observatory issues a blue typhoon warning", "Typhoon", "Blue Typhoon Warning"],
         ["Pudong New Area Meteorological Observatory issued an orange rainstorm warning", "Rainstorm", "Orange Rainstorm Warning"],
         ["Severe Thunderstorm Warning issued August 10 at 2:26AM EDT until August 10 at 3:30AM EDT by NWS Grand Rapids MI", "Severe Thunderstorm Warning", "Severe Thunderstorm Warning"],
@@ -380,6 +381,15 @@ test("localized event names allow complete provider headlines to replace generic
 
     assert.equal(appleAlerts[0].description, "暴雨黄色预警");
     assert.equal(appleAlerts[0].phenomenon, "Met");
+});
+
+test("updated Chinese headlines replace generic FlatBuffer titles", () => {
+    const appleAlerts = [{ description: "雷雨大风", phenomenon: "Other" }];
+    const sourceAlerts = [{ description: "天津市气象台更新雷雨大风蓝色预警", eventName: "天津市气象台更新雷雨大风蓝色预警", guidelines: [], severity: "minor" }];
+
+    WeatherAlerts.mergeAlerts(appleAlerts, sourceAlerts);
+
+    assert.equal(appleAlerts[0].description, "雷雨大风蓝色预警");
 });
 
 test("ColorfulClouds CAP Alert API is standardized by ColorfulClouds class", async () => {
