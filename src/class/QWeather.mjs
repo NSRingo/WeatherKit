@@ -5,6 +5,8 @@ import ForecastNextHour from "./ForecastNextHour.mjs";
 import Weather from "./Weather.mjs";
 
 export default class QWeather {
+    static #MaximumWeatherAlertPageSize = 2 * 1024 * 1024;
+
     constructor(parameters, token, host = "devapi.qweather.com") {
         this.Name = "QWeather";
         this.Version = "5.2.1";
@@ -180,6 +182,223 @@ export default class QWeather {
         const nearest = findNearestFast(latitude, longitude);
         Console.info("✅ GetLocationInfo");
         return nearest;
+    }
+
+    /**
+     * 判断 ids 是否为 QWeather 灾害预警页面标识。
+     * Determine whether ids is a QWeather severe-weather page identifier.
+     * @param {string | null | undefined} ids 页面标识 / Page identifier.
+     * @returns {boolean} 是否为页面标识 / Whether this is a page identifier.
+     */
+    static IsWeatherAlertPageIdentifier(ids) {
+        return /^[\p{L}\p{N}._'-]+-[0-9]{9}$/u.test(ids?.trim() ?? "");
+    }
+
+    /**
+     * 解析 QWeather Alert API 坐标标识。
+     * Parse a QWeather Alert API coordinate identifier.
+     * @param {string | null | undefined} ids 坐标标识 / Coordinate identifier.
+     * @returns {{latitude: string, longitude: string} | null} 坐标对象 / Coordinates.
+     */
+    static ParseWeatherAlertCoordinateIdentifier(ids) {
+        const match = String(ids ?? "")
+            .trim()
+            .match(/^(?<latitude>-?(?:\d+(?:\.\d+)?|\.\d+)),(?<longitude>-?(?:\d+(?:\.\d+)?|\.\d+))$/);
+        if (!match?.groups) return null;
+        const latitude = Number(match.groups.latitude);
+        const longitude = Number(match.groups.longitude);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+        return {
+            latitude: match.groups.latitude,
+            longitude: match.groups.longitude,
+        };
+    }
+
+    /**
+     * 从 FlatBuffer 的 QWeather 预警页面链接中提取地区标识。
+     * Extract the location identifier from a FlatBuffer QWeather severe-weather URL.
+     * @param {string | null | undefined} value 预警页面链接 / Severe-weather URL.
+     * @returns {string | undefined} 地区标识 / Location identifier.
+     */
+    static ParseWeatherAlertPageURL(value) {
+        try {
+            const url = new URL(value);
+            if (url.protocol !== "https:" || url.hostname !== "www.qweather.com") return undefined;
+            if (url.search !== "?from=AppleWeatherService" || url.hash) return undefined;
+            const identifier = decodeURIComponent(url.pathname.match(/^\/{1,2}(?:en\/)?severe-weather\/([^/]+)\.html$/)?.[1] ?? "");
+            return QWeather.IsWeatherAlertPageIdentifier(identifier) ? identifier : undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
+    /**
+     * 生成 QWeather 灾害预警页面链接。
+     * Build a QWeather severe-weather page URL.
+     * @param {string} identifier 地区标识 / Location identifier.
+     * @param {string} language WeatherKit 语言 / WeatherKit language.
+     * @param {boolean} includeAppleSource 是否附加 Apple 来源参数 / Whether to append the Apple source parameter.
+     * @returns {URL | undefined} QWeather 页面链接 / QWeather page URL.
+     */
+    static BuildWeatherAlertPageURL(identifier, language = "zh-CN", includeAppleSource = true) {
+        identifier = identifier?.trim();
+        if (!QWeather.IsWeatherAlertPageIdentifier(identifier)) return undefined;
+        const url = new URL("https://www.qweather.com");
+        url.pathname = language.toLowerCase().startsWith("en") ? `/en/severe-weather/${identifier}.html` : `/severe-weather/${identifier}.html`;
+        if (includeAppleSource) url.searchParams.set("from", "AppleWeatherService");
+        return url;
+    }
+
+    /**
+     * 生成内部使用的 Apple 天气预警详情链接。
+     * Build the internally rewritten Apple weather alert details URL.
+     * @param {string} identifier 地区标识 / Location identifier.
+     * @param {string} language WeatherKit 语言 / WeatherKit language.
+     * @returns {string | undefined} Apple 预警详情链接 / Apple alert details URL.
+     */
+    static BuildAppleAlertDetailsURL(identifier, language = "zh-CN") {
+        if (!QWeather.IsWeatherAlertPageIdentifier(identifier)) return undefined;
+        return `https://weatherkit.apple.com/alertDetails/index.html?ids=${encodeURIComponent(identifier)}&lang=${encodeURIComponent(language)}&party=qweather`;
+    }
+
+    /**
+     * 从 QWeather HTML 提取原始预警来源记录。
+     * Extract raw alert source records from QWeather HTML.
+     * @param {string} html QWeather 页面 HTML / QWeather page HTML.
+     * @returns {{alerts: Array<object>, areaName: string, source: string}} 提取后的来源集合 / Extracted source collection.
+     */
+    static ExtractWeatherAlertPage(html) {
+        const sourceHtml = String(html ?? "");
+        let city = QWeather.#FirstWeatherAlertPageMatch(sourceHtml, /<h1[^>]*class=["'][^"']*c-submenu__location[^"']*["'][^>]*>([\s\S]*?)<\/h1>/i);
+        if (!city) {
+            const titleText = QWeather.#FirstWeatherAlertPageMatch(sourceHtml, /<title>([\s\S]*?)<\/title>/i);
+            city = titleText.replace(/\s*(?:severe weather warning|灾害预警|天气预警).*$/i, "").trim();
+        }
+        const administration = QWeather.#FirstWeatherAlertPageMatch(sourceHtml, /<span[^>]*class=["'][^"']*c-submenu__location-adm[^"']*["'][^>]*>([\s\S]*?)<\/span>/i);
+        const dataSource = QWeather.#FirstWeatherAlertPageMatch(sourceHtml, /<a[^>]*class=["'][^"']*data-source__txt[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)
+            .replace(/^(?:预警数据来源|Warning data source)\s*[:：]\s*/i, "")
+            .trim();
+        const starts = Array.from(sourceHtml.matchAll(/<div[^>]*class=["']([^"']*\bc-city-warning-events\b[^"']*)["'][^>]*>/gi), match => ({
+            index: match.index,
+            contentStart: match.index + match[0].length,
+            className: match[1],
+        }));
+        const alerts = [];
+
+        for (const [index, start] of starts.entries()) {
+            let end = index + 1 < starts.length ? starts[index + 1].index : sourceHtml.length;
+            const nearby = sourceHtml.indexOf('<div class="c-city-warning-around">', start.contentStart);
+            if (nearby !== -1 && nearby < end) end = nearby;
+            const block = sourceHtml.slice(start.contentStart, end);
+            const description = QWeather.#FirstWeatherAlertPageMatch(block, /<h3[^>]*>([\s\S]*?)<\/h3>/i);
+            const issueText = QWeather.#FirstWeatherAlertPageMatch(block, /<p[^>]*>\s*((?:Issue\s+date|发布\s*日期)\s*[:：][\s\S]*?)<\/p>/i)
+                .replace(/^(?:Issue\s+date|发布\s*日期)\s*[:：]\s*/i, "")
+                .trim();
+            const message = QWeather.#FirstWeatherAlertPageMatch(block, /<p[^>]*class=["'][^"']*warning-events__txt[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
+            const standardBlock = block.match(/<div[^>]*class=["'][^"']*warning-explain[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] ?? "";
+            const standard = QWeather.#FirstWeatherAlertPageMatch(standardBlock, /<h4[^>]*>[\s\S]*?<\/h4>\s*<p[^>]*>([\s\S]*?)<\/p>/i);
+            const guideBlock = block.match(/<div[^>]*class=["'][^"']*warning-defense__txt[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] ?? "";
+            const guidelines = Array.from(guideBlock.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi), match =>
+                QWeather.#DecodeWeatherAlertPageHTML(match[1])
+                    .replace(/^\s*\d+[.、]\s*/, "")
+                    .trim(),
+            ).filter(Boolean);
+            const normalizedIssueText = issueText && !/(?:Z|[+-]\d{2}:?\d{2})$/i.test(issueText) ? `${issueText.replace(" ", "T")}+08:00` : issueText;
+            const issueDate = new Date(normalizedIssueText);
+            if ((!description && !message) || Number.isNaN(issueDate.getTime())) continue;
+            const headline = description || message;
+            const parsedHeadline = QWeather.#ParseWeatherAlertPageHeadline(headline);
+            const source = parsedHeadline.source || dataSource || "QWeather";
+
+            const severitySource = `${start.className} ${description}`.toLowerCase();
+            let severity = "unknown";
+            switch (true) {
+                case /warning--red|红色|\bred\b/.test(severitySource):
+                    severity = "extreme";
+                    break;
+                case /warning--orange|橙色|\borange\b/.test(severitySource):
+                    severity = "severe";
+                    break;
+                case /warning--yellow|黄色|\byellow\b/.test(severitySource):
+                    severity = "moderate";
+                    break;
+                case /warning--blue|蓝色|\bblue\b/.test(severitySource):
+                    severity = "minor";
+                    break;
+            }
+
+            alerts.push({
+                description: headline,
+                ...(parsedHeadline.eventName ? { eventName: parsedHeadline.eventName } : {}),
+                guidelines,
+                issuedTime: issueDate.toISOString(),
+                message,
+                reportedAt: issueDate.toISOString(),
+                severity,
+                source,
+                standard,
+            });
+        }
+
+        return {
+            alerts,
+            areaName: city || administration,
+            source: alerts.find(alert => alert?.source)?.source || dataSource || "QWeather",
+        };
+    }
+
+    /**
+     * 抓取并提取 QWeather 灾害预警页面。
+     * Fetch and extract a QWeather severe-weather page.
+     * @param {string} identifier 地区标识 / Location identifier.
+     * @param {string} language WeatherKit 语言 / WeatherKit language.
+     * @param {Record<string, string | string[] | undefined>} requestHeaders 原请求头 / Original request headers.
+     * @returns {Promise<{alerts: Array<object>, areaName: string, source: string}>} 来源集合 / Source collection.
+     */
+    static async FetchWeatherAlertPage(identifier, language = "zh-CN", requestHeaders = {}) {
+        const sourceUrl = QWeather.BuildWeatherAlertPageURL(identifier, language);
+        if (!sourceUrl) return { alerts: [], areaName: "", source: "QWeather" };
+        const normalizedHeaders = Object.fromEntries(Object.entries(requestHeaders).map(([key, value]) => [key.toLowerCase(), value]));
+        const sourceHeaders = {
+            Accept: "text/html,application/xhtml+xml",
+            "Accept-Language": normalizedHeaders["accept-language"] ?? language,
+            Referer: "https://www.qweather.com/",
+        };
+        if (normalizedHeaders["user-agent"]) sourceHeaders["User-Agent"] = normalizedHeaders["user-agent"];
+
+        Console.info("☑️ QWeather.FetchWeatherAlertPage", `url: ${sourceUrl}`, `language: ${language}`);
+        const sourceResponse = await fetch({
+            url: sourceUrl.toString(),
+            headers: sourceHeaders,
+            "auto-cookie": false,
+        });
+        const contentType = sourceResponse.headers?.["Content-Type"] ?? sourceResponse.headers?.["content-type"] ?? "";
+        Console.info("QWeather.FetchWeatherAlertPage", `status: ${sourceResponse.statusCode ?? sourceResponse.status}`, `contentType: ${contentType || "undefined"}`);
+        if (!sourceResponse.ok) {
+            Console.warn("QWeather.FetchWeatherAlertPage", `upstreamStatus: ${sourceResponse.statusCode ?? sourceResponse.status}`);
+            return { alerts: [], areaName: "", source: "QWeather" };
+        }
+        if (!contentType.toLowerCase().includes("text/html")) {
+            Console.warn("QWeather.FetchWeatherAlertPage", `unexpectedContentType: ${contentType || "undefined"}`);
+            return { alerts: [], areaName: "", source: "QWeather" };
+        }
+        const html = String(sourceResponse.body ?? "");
+        const sourceSize = new TextEncoder().encode(html).byteLength;
+        Console.debug("QWeather.FetchWeatherAlertPage", `bodyBytes: ${sourceSize}`);
+        if (sourceSize > QWeather.#MaximumWeatherAlertPageSize) throw new RangeError("QWeather alert page is too large");
+
+        const extracted = QWeather.ExtractWeatherAlertPage(html);
+        Console.info("✅ QWeather.FetchWeatherAlertPage", `alerts: ${extracted.alerts.length}`, `source: ${extracted.source}`);
+        const areaId = identifier.match(/-(\d+)$/)?.[1];
+        return {
+            ...extracted,
+            alerts: extracted.alerts.map(alert => ({
+                ...alert,
+                ...(areaId && !alert.areaId ? { areaId } : {}),
+                ...(extracted.areaName && !alert.areaName ? { areaName: extracted.areaName } : {}),
+            })),
+        };
     }
 
     async GeoAPI(path = "city/lookup") {
@@ -1083,5 +1302,53 @@ export default class QWeather {
             .split(/\r?\n/)
             .map(line => line.replace(/^\s*\d+[.、]\s*/, "").trim())
             .filter(Boolean);
+    }
+
+    /**
+     * 解码 QWeather 灾害预警页面中的 HTML 文本。
+     * Decode HTML text from a QWeather severe-weather page.
+     * @param {string} value HTML 文本 / HTML text.
+     * @returns {string} 纯文本 / Plain text.
+     */
+    static #DecodeWeatherAlertPageHTML(value) {
+        const normalized = String(value ?? "")
+            .replace(/<br\s*\/?\s*>/gi, "\n")
+            .replace(/<[^>]*>/g, "")
+            .replace(/&nbsp;|&#160;/gi, " ")
+            .replace(/&apos;/gi, "&#39;")
+            .replace(/&#(\d+);/g, (_, number) => String.fromCodePoint(Number(number)))
+            .replace(/&#x([0-9a-f]+);/gi, (_, number) => String.fromCodePoint(Number.parseInt(number, 16)));
+        return _.unescape(normalized)
+            .replace(/\r/g, "")
+            .replace(/[ \t]+\n/g, "\n")
+            .replace(/\n[ \t]+/g, "\n")
+            .replace(/[ \t]{2,}/g, " ")
+            .replace(/\n{3,}/g, "\n\n")
+            .trim();
+    }
+
+    static #FirstWeatherAlertPageMatch(source, pattern, fallback = "") {
+        const match = source.match(pattern);
+        return match ? QWeather.#DecodeWeatherAlertPageHTML(match[1]) : fallback;
+    }
+
+    static #ParseWeatherAlertPageHeadline(description) {
+        const title = String(description ?? "").trim();
+        const chinese = title.match(/^(.+?)发布\s*[:：]?\s*(.+)$/);
+        if (chinese?.[1] && chinese?.[2]) return { eventName: chinese[2].trim(), source: chinese[1].trim() };
+
+        const cap = title.match(/^(.+?)\s+issued\b[\s\S]*\s+by\s+(.+)$/i);
+        if (cap?.[1] && cap?.[2]) return { eventName: cap[1].trim(), source: cap[2].trim() };
+
+        const issued = title.match(/^(.+?)\s+issued\b\s*[:：]?\s*(.+)$/i);
+        if (issued?.[1] && issued?.[2]) {
+            const context = issued[2].trim();
+            const capContext = /^(?:for\b|\d{1,2}[/:.-]|\p{L}+\s+(?:\d{1,2}\b|at\b|until\b))/iu.test(context);
+            return capContext ? { eventName: issued[1].trim(), source: "" } : { eventName: context, source: issued[1].trim() };
+        }
+
+        const issues = title.match(/^(.+?)\s+issues?\b\s*[:：]?\s*(.+)$/i);
+        if (issues?.[1] && issues?.[2]) return { eventName: issues[2].trim(), source: issues[1].trim() };
+        return { eventName: title, source: "" };
     }
 }

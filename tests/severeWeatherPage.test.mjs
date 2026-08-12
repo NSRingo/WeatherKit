@@ -6,8 +6,8 @@ import { onRequest } from "../functions/[[route]].js";
 import ColorfulClouds from "../src/class/ColorfulClouds.mjs";
 import QWeather from "../src/class/QWeather.mjs";
 import WeatherAlerts from "../src/class/WeatherAlerts.mjs";
-import { Request as processRequest } from "../src/process/Request.mjs";
 import { Request as processRequestDev } from "../src/process/Request.dev.mjs";
+import { Request as processRequest } from "../src/process/Request.mjs";
 
 globalThis.require = createRequire(import.meta.url);
 
@@ -98,9 +98,14 @@ test("Pages Functions only receive WeatherKit API routes", async () => {
     });
 });
 
+test("WeatherAlerts standardization stays provider-agnostic", async () => {
+    const source = await readFile(new URL("../src/class/WeatherAlerts.mjs", import.meta.url), "utf8");
+    assert.doesNotMatch(source, /\bqWeather\b|\bQWeather\b/);
+});
+
 test("QWeather HTML extraction is separated from WeatherAlert construction", async () => {
-    const attributionUrl = new URL("https://www.qweather.com//severe-weather/jianye-101190110.html");
-    const extracted = WeatherAlerts.ExtractQWeather(sourceHtml);
+    const attributionUrl = new URL("https://www.qweather.com/severe-weather/jianye-101190110.html");
+    const extracted = QWeather.ExtractWeatherAlertPage(sourceHtml);
     const alerts = WeatherAlerts.Build(extracted, {
         attributionUrl,
         identifier: "jianye-101190110",
@@ -120,7 +125,7 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
     assert.match(alerts[0].id, /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     assert.equal(alerts[0].areaId, "101190110");
     assert.equal(alerts[0].areaName, "建邺");
-    assert.equal(alerts[0].attributionURL, "https://www.qweather.com//severe-weather/jianye-101190110.html");
+    assert.equal(alerts[0].attributionURL, "https://www.qweather.com/severe-weather/jianye-101190110.html");
     assert.equal(alerts[0].countryCode, "CN");
     assert.equal(alerts[0].description, "雷暴橙色预警");
     assert.equal(alerts[0].effectiveTime, "2026-07-31T03:00:00.000Z");
@@ -156,6 +161,26 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
         })[0].eventSource,
         "EUMETNET",
     );
+});
+
+test("QWeather HTML keeps the complete headline separate from the long alert body", () => {
+    const longMessage = "许昌市气象台2026年8月12日17时50分将暴雨橙色预警信号调整为暴雨黄色预警信号，预计未来6小时仍有强降水。";
+    const extracted = QWeather.ExtractWeatherAlertPage(`
+        <title>建安天气预警</title>
+        <h1 class="c-submenu__location">建安</h1>
+        <div class="c-city-warning-events warning--yellow">
+            <h3>许昌市气象台发布暴雨黄色预警</h3>
+            <p>发布日期：2026-08-12T17:50:00+08:00</p>
+            <p class="warning-events__txt">${longMessage}</p>
+        </div>
+        <div class="c-city-warning-around"></div>
+    `);
+    const appleAlerts = [{ description: "暴雨", phenomenon: "Other" }];
+
+    assert.equal(extracted.alerts[0].description, "许昌市气象台发布暴雨黄色预警");
+    assert.equal(extracted.alerts[0].message, longMessage);
+    WeatherAlerts.mergeAlerts(appleAlerts, extracted.alerts);
+    assert.equal(appleAlerts[0].description, "暴雨黄色预警");
 });
 
 test("QWeather Alert API is standardized by QWeather class", async () => {
@@ -349,11 +374,11 @@ test("localized event names select the matching provider alert", () => {
 
 test("localized event names allow complete provider headlines to replace generic titles", () => {
     const appleAlerts = [{ description: "暴雨", phenomenon: "Other" }];
-    const providerAlerts = [{ description: "南京市气象台发布暴雨蓝色预警信号。", eventName: "暴雨", guidelines: [], phenomenon: "Met", severity: "minor" }];
+    const providerAlerts = [{ description: "许昌市气象台发布暴雨黄色预警", eventName: "暴雨黄色预警", guidelines: [], phenomenon: "Met", severity: "moderate" }];
 
     WeatherAlerts.mergeAlerts(appleAlerts, providerAlerts);
 
-    assert.equal(appleAlerts[0].description, "暴雨蓝色预警");
+    assert.equal(appleAlerts[0].description, "暴雨黄色预警");
     assert.equal(appleAlerts[0].phenomenon, "Met");
 });
 
@@ -447,7 +472,7 @@ test("QWeather source extraction falls back to the English attribution label", (
     const englishHtml = sourceHtml
         .replace("建邺区气象台发布雷暴橙色预警信号。", "Thunderstorm orange warning.")
         .replace("预警数据来源：国家预警信息发布中心", "Warning data source: National Early Warning Center");
-    assert.equal(WeatherAlerts.ExtractQWeather(englishHtml).source, "National Early Warning Center");
+    assert.equal(QWeather.ExtractWeatherAlertPage(englishHtml).source, "National Early Warning Center");
 });
 
 test("QWeather HTML extraction distinguishes CAP issuers from translated agency prefixes", () => {
@@ -456,10 +481,10 @@ test("QWeather HTML extraction distinguishes CAP issuers from translated agency 
     const translatedHtml = sourceHtml.replace("建邺区气象台发布雷暴橙色预警信号。", "Nanjing Meteorological Observatory issues a blue typhoon warning");
     const translatedIssuedHtml = sourceHtml.replace("建邺区气象台发布雷暴橙色预警信号。", "Pudong New Area Meteorological Observatory issued an orange rainstorm warning");
 
-    const capAlert = WeatherAlerts.ExtractQWeather(capHtml);
-    const capForAlert = WeatherAlerts.ExtractQWeather(capForHtml);
-    const translatedAlert = WeatherAlerts.ExtractQWeather(translatedHtml);
-    const translatedIssuedAlert = WeatherAlerts.ExtractQWeather(translatedIssuedHtml);
+    const capAlert = QWeather.ExtractWeatherAlertPage(capHtml);
+    const capForAlert = QWeather.ExtractWeatherAlertPage(capForHtml);
+    const translatedAlert = QWeather.ExtractWeatherAlertPage(translatedHtml);
+    const translatedIssuedAlert = QWeather.ExtractWeatherAlertPage(translatedIssuedHtml);
     const context = {
         attributionUrl: new URL("https://www.qweather.com/severe-weather/test.html"),
         countryCode: "US",
@@ -472,9 +497,9 @@ test("QWeather HTML extraction distinguishes CAP issuers from translated agency 
     assert.equal(capAlert.alerts[0].source, "NWS San Francisco CA");
     assert.equal(capForAlert.alerts[0].eventName, "Flash Flood Warning");
     assert.equal(translatedAlert.alerts[0].description, "Nanjing Meteorological Observatory issues a blue typhoon warning");
-    assert.equal(translatedAlert.alerts[0].eventName, "Blue Typhoon Warning");
+    assert.equal(translatedAlert.alerts[0].eventName, "a blue typhoon warning");
     assert.equal(translatedAlert.alerts[0].source, "Nanjing Meteorological Observatory");
-    assert.equal(translatedIssuedAlert.alerts[0].eventName, "Orange Rainstorm Warning");
+    assert.equal(translatedIssuedAlert.alerts[0].eventName, "an orange rainstorm warning");
     assert.equal(translatedIssuedAlert.alerts[0].source, "Pudong New Area Meteorological Observatory");
     assert.equal(WeatherAlerts.Build(capAlert, context)[0].description, "Coastal Flood Advisory");
     assert.equal(WeatherAlerts.Build(capForAlert, context)[0].description, "Flash Flood Warning");
@@ -507,9 +532,9 @@ test("Pages routes WeatherAlert requests through Hono before fetching QWeather",
             assert.equal(response.status, 200, pathname);
             assert.equal(response.headers.get("Access-Control-Allow-Origin"), "*", pathname);
             assert.equal(response.headers.get("Cache-Control"), "max-age=0", pathname);
-            assert.equal(sourceRequest.url.toString(), "https://www.qweather.com//severe-weather/jianye-101190110.html?from=AppleWeatherService", pathname);
+            assert.equal(sourceRequest.url.toString(), "https://www.qweather.com/severe-weather/jianye-101190110.html?from=AppleWeatherService", pathname);
             assert.equal(body.length, 1, pathname);
-            assert.equal(body[0].attributionURL, "https://www.qweather.com//severe-weather/jianye-101190110.html", pathname);
+            assert.equal(body[0].attributionURL, "https://www.qweather.com/severe-weather/jianye-101190110.html", pathname);
             assert.equal(body[0].description, "雷暴橙色预警", pathname);
             assert.equal(body[0].eventSource, "CN", pathname);
             assert.equal(body[0].reportedAt, "2026-07-31T03:00:00.000Z", pathname);
@@ -601,15 +626,23 @@ test("Pages routes native WeatherAlert identifiers through Hono", async () => {
 });
 
 test("only QWeather location tokens are eligible for takeover", () => {
-    assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("jianye-101190110"), true);
-    assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("jianye-10119011"), false);
-    assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("jianye-1011901100"), false);
-    assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("32.115,118.814"), false);
-    assert.equal(WeatherAlerts.IsQWeatherCoordinateIdentifier("32.115,118.814"), true);
-    assert.deepEqual(WeatherAlerts.ParseQWeatherCoordinateIdentifier("32.115,118.814"), { latitude: "32.115", longitude: "118.814" });
-    assert.equal(WeatherAlerts.IsQWeatherCoordinateIdentifier("118.814,32.115"), false);
-    assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("35889ee6-fa82-5f9f-8e49-fad78c4f383a"), false);
-    assert.equal(WeatherAlerts.IsQWeatherPageIdentifier("https://evil.example"), false);
+    assert.equal(QWeather.IsWeatherAlertPageIdentifier("jianye-101190110"), true);
+    assert.equal(QWeather.IsWeatherAlertPageIdentifier("jian'an-101180407"), true);
+    assert.equal(QWeather.IsWeatherAlertPageIdentifier("jianye-10119011"), false);
+    assert.equal(QWeather.IsWeatherAlertPageIdentifier("jianye-1011901100"), false);
+    assert.equal(QWeather.IsWeatherAlertPageIdentifier("32.115,118.814"), false);
+    assert.deepEqual(QWeather.ParseWeatherAlertCoordinateIdentifier("32.115,118.814"), { latitude: "32.115", longitude: "118.814" });
+    assert.equal(QWeather.ParseWeatherAlertCoordinateIdentifier("118.814,32.115"), null);
+    assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com/severe-weather/jian'an-101180407.html?from=AppleWeatherService"), "jian'an-101180407");
+    assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com//severe-weather/jianye-101190110.html?from=AppleWeatherService"), "jianye-101190110");
+    assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com/en/severe-weather/jianye-101190110.html?from=AppleWeatherService"), "jianye-101190110");
+    assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com/air/jianye-101190110.html"), undefined);
+    assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com/severe-weather/jianye-101190110.html"), undefined);
+    assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com/severe-weather/jianye-101190110.html?from=AppleWeatherService&lang=zh-CN"), undefined);
+    assert.equal(QWeather.ParseWeatherAlertPageURL("https://evil.example/severe-weather/jianye-101190110.html?from=AppleWeatherService"), undefined);
+    assert.equal(QWeather.BuildAppleAlertDetailsURL("jianye-101190110", "zh-CN"), "https://weatherkit.apple.com/alertDetails/index.html?ids=jianye-101190110&lang=zh-CN&party=qweather");
+    assert.equal(QWeather.IsWeatherAlertPageIdentifier("35889ee6-fa82-5f9f-8e49-fad78c4f383a"), false);
+    assert.equal(QWeather.IsWeatherAlertPageIdentifier("https://evil.example"), false);
 });
 
 test("the request scripts return QWeather data before Apple weatherAlerts is requested", async () => {

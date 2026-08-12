@@ -1,4 +1,4 @@
-import { Console, Lodash as _, fetch } from "@nsnanocat/util";
+import { Console } from "@nsnanocat/util";
 
 /**
  * 从来源页面提取的预警记录。
@@ -90,86 +90,57 @@ import { Console, Lodash as _, fetch } from "@nsnanocat/util";
  * WeatherKit REST WeatherAlert collection converter.
  */
 export default class WeatherAlerts {
-    static #MaximumSourceSize = 2 * 1024 * 1024;
-
     /**
-     * 判断 ids 是否为 QWeather 灾害预警页面标识，避免接管 Apple 原生 UUID 预警。
-     * Determine whether ids is a QWeather severe-weather page token so native Apple UUID alerts pass through.
-     * @param {string | null | undefined} ids QWeather 页面标识 / QWeather page identifier.
-     * @returns {boolean} 是否为 QWeather 页面标识 / Whether this is a QWeather page identifier.
-     */
-    static IsQWeatherPageIdentifier(ids) {
-        return /^[\p{L}\p{N}._-]+-[0-9]{9}$/u.test(ids?.trim() ?? "");
-    }
-
-    /**
-     * 判断 ids 是否为新 QWeather Alert API 坐标标识。
-     * Determine whether ids is a QWeather Alert API coordinate identifier.
-     * @param {string | null | undefined} ids Apple alertDetails 标识 / Apple alertDetails identifier.
-     * @returns {boolean} 是否为坐标标识 / Whether this is a coordinate identifier.
-     */
-    static IsQWeatherCoordinateIdentifier(ids) {
-        return WeatherAlerts.#ParseCoordinateIdentifier(ids) !== null;
-    }
-
-    /**
-     * 解析 QWeather Alert API 坐标标识。
-     * Parse a QWeather Alert API coordinate identifier.
-     * @param {string | null | undefined} ids Apple alertDetails 标识 / Apple alertDetails identifier.
-     * @returns {{latitude: string, longitude: string} | null} 坐标对象 / Coordinates.
-     */
-    static ParseQWeatherCoordinateIdentifier(ids) {
-        return WeatherAlerts.#ParseCoordinateIdentifier(ids);
-    }
-
-    /**
-     * 将新的 QWeather 预警数组合并到原始 Apple 预警数组。
-     * 只补空值 / unknown，不改 url，也不新增 alert。
+     * 将新的来源预警数组合并到原始 Apple 预警数组。
+     * Merge new source alerts into the original Apple alert array.
+     * 来源完整标题优先；其他字段只补空值 / unknown，不改 url，也不新增 alert。
+     * Prefer the complete provider title; only fill empty / unknown values for other fields without changing URLs or adding alerts.
      * @param {array} to - 原始 Apple 预警数组
-     * @param {array} from - 新的 QWeather 预警数组
+     * @param {array} from - 新的来源预警数组
      * @returns {array} 原始 Apple 预警数组
      */
     static mergeAlerts(to = [], from = []) {
         if (!Array.isArray(to) || !Array.isArray(from)) return to;
         if (!to.length || !from.length) return to;
         WeatherAlerts.#LogMergeAlertsStart(to, from);
-        const usedQWeatherAlertIndexes = new Set();
+        const usedSourceAlertIndexes = new Set();
         for (let appleAlertIndex = 0; appleAlertIndex < to.length; appleAlertIndex++) {
             const appleAlert = to[appleAlertIndex];
-            const qWeatherAlertIndex = WeatherAlerts.#FindQWeatherAlert(appleAlert, from, usedQWeatherAlertIndexes, appleAlertIndex);
-            WeatherAlerts.#LogMergeAlertMatch(appleAlert, from, usedQWeatherAlertIndexes, appleAlertIndex, qWeatherAlertIndex);
-            if (!appleAlert || qWeatherAlertIndex < 0 || !from[qWeatherAlertIndex]) {
+            const sourceAlertIndex = WeatherAlerts.#FindSourceAlert(appleAlert, from, usedSourceAlertIndexes, appleAlertIndex);
+            WeatherAlerts.#LogMergeAlertMatch(appleAlert, from, usedSourceAlertIndexes, appleAlertIndex, sourceAlertIndex);
+            if (!appleAlert || sourceAlertIndex < 0 || !from[sourceAlertIndex]) {
                 WeatherAlerts.#LogMergeAlertSkip(appleAlertIndex);
                 continue;
             }
-            usedQWeatherAlertIndexes.add(qWeatherAlertIndex);
-            WeatherAlerts.#FillAlert(appleAlert, from[qWeatherAlertIndex], appleAlertIndex, qWeatherAlertIndex);
+            usedSourceAlertIndexes.add(sourceAlertIndex);
+            WeatherAlerts.#FillAlert(appleAlert, from[sourceAlertIndex], appleAlertIndex, sourceAlertIndex);
         }
 
         return to;
     }
 
-    static #FillAlert(appleAlert, qWeatherAlert, appleAlertIndex, qWeatherAlertIndex) {
+    static #FillAlert(appleAlert, sourceAlert, appleAlertIndex, sourceAlertIndex) {
         let before;
         if (WeatherAlerts.#IsDebug()) before = WeatherAlerts.#WeatherAlertDebugSnapshot(appleAlert, appleAlertIndex);
-        WeatherAlerts.#FillText(appleAlert, "areaId", qWeatherAlert.areaId);
-        WeatherAlerts.#FillText(appleAlert, "areaName", qWeatherAlert.areaName);
-        WeatherAlerts.#FillTime(appleAlert, "effectiveTime", qWeatherAlert.effectiveTime ?? qWeatherAlert.issuedTime);
-        WeatherAlerts.#FillTime(appleAlert, "eventOnsetTime", qWeatherAlert.eventOnsetTime ?? qWeatherAlert.effectiveTime ?? qWeatherAlert.issuedTime ?? appleAlert.effectiveTime ?? appleAlert.issuedTime);
-        WeatherAlerts.#FillTime(appleAlert, "eventEndTime", qWeatherAlert.eventEndTime ?? qWeatherAlert.expireTime ?? appleAlert.expireTime);
-        WeatherAlerts.#FillTime(appleAlert, "expireTime", qWeatherAlert.expireTime ?? qWeatherAlert.eventEndTime);
-        WeatherAlerts.#FillTime(appleAlert, "issuedTime", qWeatherAlert.issuedTime ?? qWeatherAlert.effectiveTime);
-        WeatherAlerts.#FillDescription(appleAlert, qWeatherAlert);
-        WeatherAlerts.#FillText(appleAlert, "source", qWeatherAlert.source);
-        WeatherAlerts.#FillEnum(appleAlert, "phenomenon", qWeatherAlert.phenomenon);
-        WeatherAlerts.#FillText(appleAlert, "token", qWeatherAlert.token);
-        WeatherAlerts.#FillResponses(appleAlert, qWeatherAlert);
-        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "severity", qWeatherAlert.severity, ["UNKNOWN"]);
-        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "certainty", qWeatherAlert.certainty);
-        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "importance", qWeatherAlert.importance || WeatherAlerts.#ImportanceFromSeverity(qWeatherAlert.severity));
-        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "significance", qWeatherAlert.significance);
-        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "urgency", qWeatherAlert.urgency);
-        if (before) WeatherAlerts.#LogMergeAlertPatch(before, appleAlert, appleAlertIndex, qWeatherAlertIndex);
+        const sourceExpireTime = sourceAlert.expireTime === "9999-12-31T23:59:59Z" ? undefined : sourceAlert.expireTime;
+        WeatherAlerts.#FillText(appleAlert, "areaId", sourceAlert.areaId);
+        WeatherAlerts.#FillText(appleAlert, "areaName", sourceAlert.areaName);
+        WeatherAlerts.#FillTime(appleAlert, "effectiveTime", sourceAlert.effectiveTime ?? sourceAlert.issuedTime);
+        WeatherAlerts.#FillTime(appleAlert, "eventOnsetTime", sourceAlert.eventOnsetTime ?? sourceAlert.effectiveTime ?? sourceAlert.issuedTime ?? appleAlert.effectiveTime ?? appleAlert.issuedTime);
+        WeatherAlerts.#FillTime(appleAlert, "eventEndTime", sourceAlert.eventEndTime ?? sourceExpireTime ?? appleAlert.expireTime);
+        WeatherAlerts.#FillTime(appleAlert, "expireTime", sourceExpireTime ?? sourceAlert.eventEndTime);
+        WeatherAlerts.#FillTime(appleAlert, "issuedTime", sourceAlert.issuedTime ?? sourceAlert.effectiveTime);
+        WeatherAlerts.#FillDescription(appleAlert, sourceAlert);
+        WeatherAlerts.#FillText(appleAlert, "source", sourceAlert.source);
+        WeatherAlerts.#FillEnum(appleAlert, "phenomenon", sourceAlert.phenomenon);
+        WeatherAlerts.#FillText(appleAlert, "token", sourceAlert.token);
+        WeatherAlerts.#FillResponses(appleAlert, sourceAlert);
+        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "severity", sourceAlert.severity, ["UNKNOWN"]);
+        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "certainty", sourceAlert.certainty);
+        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "importance", sourceAlert.importance || WeatherAlerts.#ImportanceFromSeverity(sourceAlert.severity));
+        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "significance", sourceAlert.significance);
+        WeatherAlerts.#FillFlatBufferEnum(appleAlert, "urgency", sourceAlert.urgency);
+        if (before) WeatherAlerts.#LogMergeAlertPatch(before, appleAlert, appleAlertIndex, sourceAlertIndex);
     }
 
     static #ToUnixSeconds(value) {
@@ -179,43 +150,42 @@ export default class WeatherAlerts {
         return Number.isNaN(time) ? undefined : Math.trunc(time / 1000);
     }
 
-    static #FillText(appleAlert, key, qWeatherValue) {
+    static #FillText(appleAlert, key, sourceValue) {
         if (String(appleAlert?.[key] ?? "").trim()) return;
-        const value = String(qWeatherValue ?? "").trim();
+        const value = String(sourceValue ?? "").trim();
         if (value) appleAlert[key] = value;
     }
 
-    static #FillDescription(appleAlert, qWeatherAlert) {
-        const current = String(appleAlert?.description ?? "").trim();
-        const value = WeatherAlerts.#NormalizeWeatherAlertTitle(qWeatherAlert?.description, qWeatherAlert?.eventName);
+    static #FillDescription(appleAlert, sourceAlert) {
+        const sourceTitle = String(sourceAlert?.description ?? "").trim();
+        const value = WeatherAlerts.#NormalizeWeatherAlertTitle(sourceAlert?.description, sourceAlert?.eventName);
         if (!value) return;
-        const currentKey = WeatherAlerts.#NormalizeAlertMatchText(current);
-        const eventNameKey = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.eventName);
-        if (!currentKey || currentKey === eventNameKey || currentKey === "other" || currentKey === "unknown") appleAlert.description = value;
+        const current = String(appleAlert?.description ?? "").trim();
+        if (sourceTitle || !current || current.toLowerCase() === "other" || current.toLowerCase() === "unknown") appleAlert.description = value;
     }
 
-    static #FillEnum(appleAlert, key, qWeatherValue, fallbackValues = ["unknown", "Other"]) {
+    static #FillEnum(appleAlert, key, sourceValue, fallbackValues = ["unknown", "Other"]) {
         const current = String(appleAlert?.[key] ?? "").trim();
         const currentFallback = fallbackValues.some(value => current.toLowerCase() === String(value).toLowerCase());
         if (current && !currentFallback) return;
-        const value = String(qWeatherValue ?? "").trim();
+        const value = String(sourceValue ?? "").trim();
         if (value) appleAlert[key] = value;
     }
 
-    static #FillFlatBufferEnum(appleAlert, key, qWeatherValue, fallbackValues = ["UNKNOWN"]) {
-        const value = WeatherAlerts.#FlatBufferWeatherAlertEnum(key, qWeatherValue);
+    static #FillFlatBufferEnum(appleAlert, key, sourceValue, fallbackValues = ["UNKNOWN"]) {
+        const value = WeatherAlerts.#FlatBufferWeatherAlertEnum(key, sourceValue);
         if (value) WeatherAlerts.#FillEnum(appleAlert, key, value, fallbackValues);
     }
 
-    static #FillTime(appleAlert, key, qWeatherValue) {
+    static #FillTime(appleAlert, key, sourceValue) {
         if (appleAlert?.[key]) return;
-        const value = WeatherAlerts.#ToUnixSeconds(qWeatherValue);
+        const value = WeatherAlerts.#ToUnixSeconds(sourceValue);
         if (value !== undefined) appleAlert[key] = value;
     }
 
-    static #FillResponses(appleAlert, qWeatherAlert) {
+    static #FillResponses(appleAlert, sourceAlert) {
         if (Array.isArray(appleAlert?.responses) && appleAlert.responses.length) return;
-        const responses = WeatherAlerts.#BuildFlatBufferResponses(qWeatherAlert.guidelines, qWeatherAlert.responses);
+        const responses = WeatherAlerts.#BuildFlatBufferResponses(sourceAlert.guidelines, sourceAlert.responses);
         if (responses.length) appleAlert.responses = responses;
     }
 
@@ -228,19 +198,19 @@ export default class WeatherAlerts {
         return responses;
     }
 
-    static #FindQWeatherAlert(appleAlert, qWeatherAlerts, usedQWeatherAlertIndexes, appleAlertIndex) {
+    static #FindSourceAlert(appleAlert, sourceAlerts, usedSourceAlertIndexes, appleAlertIndex) {
         let bestIndex = -1;
         let bestScore = 0;
-        for (let index = 0; index < qWeatherAlerts.length; index++) {
-            if (usedQWeatherAlertIndexes.has(index)) continue;
-            const score = WeatherAlerts.#ScoreQWeatherAlert(appleAlert, qWeatherAlerts[index]);
+        for (let index = 0; index < sourceAlerts.length; index++) {
+            if (usedSourceAlertIndexes.has(index)) continue;
+            const score = WeatherAlerts.#ScoreSourceAlert(appleAlert, sourceAlerts[index]);
             if (score > bestScore) {
                 bestScore = score;
                 bestIndex = index;
             }
         }
         if (bestScore >= 30) return bestIndex;
-        if (appleAlertIndex < qWeatherAlerts.length && !usedQWeatherAlertIndexes.has(appleAlertIndex)) return appleAlertIndex;
+        if (appleAlertIndex < sourceAlerts.length && !usedSourceAlertIndexes.has(appleAlertIndex)) return appleAlertIndex;
         return -1;
     }
 
@@ -253,83 +223,83 @@ export default class WeatherAlerts {
         Console.debug(
             "mergeAlerts",
             `appleAlertCount: ${to.length}`,
-            `qWeatherAlertCount: ${from.length}`,
+            `sourceAlertCount: ${from.length}`,
             `appleAlerts: ${JSON.stringify(to.map((alert, index) => WeatherAlerts.#WeatherAlertDebugSnapshot(alert, index)), null, 2)}`,
-            `qWeatherAlerts: ${JSON.stringify(from.map((alert, index) => WeatherAlerts.#WeatherAlertDebugSnapshot(alert, index)), null, 2)}`,
+            `sourceAlerts: ${JSON.stringify(from.map((alert, index) => WeatherAlerts.#WeatherAlertDebugSnapshot(alert, index)), null, 2)}`,
         );
     }
 
-    static #LogMergeAlertMatch(appleAlert, qWeatherAlerts, usedQWeatherAlertIndexes, appleAlertIndex, qWeatherAlertIndex) {
+    static #LogMergeAlertMatch(appleAlert, sourceAlerts, usedSourceAlertIndexes, appleAlertIndex, sourceAlertIndex) {
         if (!WeatherAlerts.#IsDebug()) return;
-        const candidates = WeatherAlerts.#QWeatherAlertCandidates(appleAlert, qWeatherAlerts, usedQWeatherAlertIndexes);
+        const candidates = WeatherAlerts.#SourceAlertCandidates(appleAlert, sourceAlerts, usedSourceAlertIndexes);
         Console.debug(
             "mergeAlerts",
             `appleAlertIndex: ${appleAlertIndex}`,
-            `selectedQWeatherAlertIndex: ${qWeatherAlertIndex}`,
+            `selectedSourceAlertIndex: ${sourceAlertIndex}`,
             `selectedScore: ${candidates[0]?.score ?? 0}`,
-            `usedSameIndexFallback: ${qWeatherAlertIndex === appleAlertIndex && (candidates[0]?.score ?? 0) < 30}`,
+            `usedSameIndexFallback: ${sourceAlertIndex === appleAlertIndex && (candidates[0]?.score ?? 0) < 30}`,
             `candidates: ${JSON.stringify(candidates, null, 2)}`,
             `appleAlert: ${JSON.stringify(WeatherAlerts.#WeatherAlertDebugSnapshot(appleAlert, appleAlertIndex), null, 2)}`,
-            `qWeatherAlert: ${JSON.stringify(qWeatherAlertIndex >= 0 ? WeatherAlerts.#WeatherAlertDebugSnapshot(qWeatherAlerts[qWeatherAlertIndex], qWeatherAlertIndex) : undefined, null, 2)}`,
+            `sourceAlert: ${JSON.stringify(sourceAlertIndex >= 0 ? WeatherAlerts.#WeatherAlertDebugSnapshot(sourceAlerts[sourceAlertIndex], sourceAlertIndex) : undefined, null, 2)}`,
         );
     }
 
     static #LogMergeAlertSkip(appleAlertIndex) {
         if (!WeatherAlerts.#IsDebug()) return;
-        Console.debug("mergeAlerts", `appleAlertIndex: ${appleAlertIndex}`, "skip: no matched QWeather alert");
+        Console.debug("mergeAlerts", `appleAlertIndex: ${appleAlertIndex}`, "skip: no matched source alert");
     }
 
-    static #LogMergeAlertPatch(before, appleAlert, appleAlertIndex, qWeatherAlertIndex) {
+    static #LogMergeAlertPatch(before, appleAlert, appleAlertIndex, sourceAlertIndex) {
         if (!WeatherAlerts.#IsDebug()) return;
         const after = WeatherAlerts.#WeatherAlertDebugSnapshot(appleAlert, appleAlertIndex);
         Console.debug(
             "mergeAlerts",
             `appleAlertIndex: ${appleAlertIndex}`,
-            `qWeatherAlertIndex: ${qWeatherAlertIndex}`,
+            `sourceAlertIndex: ${sourceAlertIndex}`,
             `changed: ${JSON.stringify(WeatherAlerts.#WeatherAlertDebugChanges(before, after), null, 2)}`,
             `after: ${JSON.stringify(after, null, 2)}`,
         );
     }
 
-    static #QWeatherAlertCandidates(appleAlert, qWeatherAlerts, usedQWeatherAlertIndexes) {
+    static #SourceAlertCandidates(appleAlert, sourceAlerts, usedSourceAlertIndexes) {
         const candidates = [];
-        for (let index = 0; index < qWeatherAlerts.length; index++) {
-            if (usedQWeatherAlertIndexes.has(index)) continue;
+        for (let index = 0; index < sourceAlerts.length; index++) {
+            if (usedSourceAlertIndexes.has(index)) continue;
             candidates.push({
                 index,
-                score: WeatherAlerts.#ScoreQWeatherAlert(appleAlert, qWeatherAlerts[index]),
-                qWeatherAlert: WeatherAlerts.#WeatherAlertDebugSnapshot(qWeatherAlerts[index], index),
+                score: WeatherAlerts.#ScoreSourceAlert(appleAlert, sourceAlerts[index]),
+                sourceAlert: WeatherAlerts.#WeatherAlertDebugSnapshot(sourceAlerts[index], index),
             });
         }
         return candidates.sort((a, b) => b.score - a.score);
     }
 
-    static #ScoreQWeatherAlert(appleAlert, qWeatherAlert) {
+    static #ScoreSourceAlert(appleAlert, sourceAlert) {
         let score = 0;
         const appleAreaId = WeatherAlerts.#NormalizeAlertMatchText(appleAlert?.areaId);
-        const qWeatherAreaId = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.areaId);
+        const sourceAreaId = WeatherAlerts.#NormalizeAlertMatchText(sourceAlert?.areaId);
         const appleAreaName = WeatherAlerts.#NormalizeAlertMatchText(appleAlert?.areaName);
-        const qWeatherAreaName = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.areaName);
+        const sourceAreaName = WeatherAlerts.#NormalizeAlertMatchText(sourceAlert?.areaName);
         const appleToken = WeatherAlerts.#NormalizeAlertMatchText(appleAlert?.token);
-        const qWeatherToken = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.token);
+        const sourceToken = WeatherAlerts.#NormalizeAlertMatchText(sourceAlert?.token);
         const appleDescription = WeatherAlerts.#NormalizeAlertMatchText(appleAlert?.description);
-        const qWeatherDescription = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.description);
-        const qWeatherEventName = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.eventName);
-        const qWeatherMessage = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.message);
+        const sourceDescription = WeatherAlerts.#NormalizeAlertMatchText(sourceAlert?.description);
+        const sourceEventName = WeatherAlerts.#NormalizeAlertMatchText(sourceAlert?.eventName);
+        const sourceMessage = WeatherAlerts.#NormalizeAlertMatchText(sourceAlert?.message);
         const applePhenomenon = WeatherAlerts.#NormalizeAlertMatchText(appleAlert?.phenomenon);
-        const qWeatherPhenomenon = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.phenomenon);
+        const sourcePhenomenon = WeatherAlerts.#NormalizeAlertMatchText(sourceAlert?.phenomenon);
         const appleSeverity = WeatherAlerts.#NormalizeAlertMatchText(appleAlert?.severity);
-        const qWeatherSeverity = WeatherAlerts.#NormalizeAlertMatchText(qWeatherAlert?.severity);
+        const sourceSeverity = WeatherAlerts.#NormalizeAlertMatchText(sourceAlert?.severity);
 
-        if (appleAreaId && qWeatherAreaId && appleAreaId === qWeatherAreaId) score += 60;
-        if (appleAreaName && qWeatherAreaName && appleAreaName === qWeatherAreaName) score += 40;
-        if (appleToken && qWeatherToken && appleToken === qWeatherToken) score += 50;
-        if (appleDescription && qWeatherEventName && appleDescription === qWeatherEventName) score += 50;
-        if (appleDescription && qWeatherPhenomenon && appleDescription === qWeatherPhenomenon) score += 50;
-        if (appleDescription && qWeatherDescription && qWeatherDescription.includes(appleDescription)) score += 40;
-        if (appleDescription && qWeatherMessage && qWeatherMessage.includes(appleDescription)) score += 30;
-        if (applePhenomenon && qWeatherPhenomenon && (applePhenomenon === qWeatherPhenomenon || qWeatherPhenomenon.includes(applePhenomenon))) score += 30;
-        if (appleSeverity && qWeatherSeverity && appleSeverity === qWeatherSeverity && appleSeverity !== "unknown") score += 10;
+        if (appleAreaId && sourceAreaId && appleAreaId === sourceAreaId) score += 60;
+        if (appleAreaName && sourceAreaName && appleAreaName === sourceAreaName) score += 40;
+        if (appleToken && sourceToken && appleToken === sourceToken) score += 50;
+        if (appleDescription && sourceEventName && appleDescription === sourceEventName) score += 50;
+        if (appleDescription && sourcePhenomenon && appleDescription === sourcePhenomenon) score += 50;
+        if (appleDescription && sourceDescription && sourceDescription.includes(appleDescription)) score += 40;
+        if (appleDescription && sourceMessage && sourceMessage.includes(appleDescription)) score += 30;
+        if (applePhenomenon && sourcePhenomenon && (applePhenomenon === sourcePhenomenon || sourcePhenomenon.includes(applePhenomenon))) score += 30;
+        if (appleSeverity && sourceSeverity && appleSeverity === sourceSeverity && appleSeverity !== "unknown") score += 10;
         return score;
     }
 
@@ -377,93 +347,6 @@ export default class WeatherAlerts {
     }
 
     /**
-     * 从 QWeather HTML 提取与 WeatherKit 输出结构无关的预警记录。
-     * Extract alert records from QWeather HTML without constructing WeatherKit output.
-     * @param {string} html QWeather 页面 HTML / QWeather page HTML.
-     * @returns {ExtractedWeatherAlerts} 提取后的预警集合 / Extracted alert collection.
-     */
-    static ExtractQWeather(html) {
-        const sourceHtml = String(html ?? "");
-        let city = WeatherAlerts.#FirstMatch(sourceHtml, /<h1[^>]*class=["'][^"']*c-submenu__location[^"']*["'][^>]*>([\s\S]*?)<\/h1>/i);
-        if (!city) {
-            const titleText = WeatherAlerts.#FirstMatch(sourceHtml, /<title>([\s\S]*?)<\/title>/i);
-            city = titleText.replace(/\s*(?:severe weather warning|灾害预警|天气预警).*$/i, "").trim();
-        }
-        const administration = WeatherAlerts.#FirstMatch(sourceHtml, /<span[^>]*class=["'][^"']*c-submenu__location-adm[^"']*["'][^>]*>([\s\S]*?)<\/span>/i);
-        const dataSource = WeatherAlerts.#FirstMatch(sourceHtml, /<a[^>]*class=["'][^"']*data-source__txt[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)
-            .replace(/^(?:预警数据来源|Warning data source)\s*[:：]\s*/i, "")
-            .trim();
-        const starts = Array.from(sourceHtml.matchAll(/<div[^>]*class=["']([^"']*\bc-city-warning-events\b[^"']*)["'][^>]*>/gi), match => ({
-            index: match.index,
-            contentStart: match.index + match[0].length,
-            className: match[1],
-        }));
-        /** @type {ExtractedWeatherAlert[]} */
-        const alerts = [];
-
-        for (const [index, start] of starts.entries()) {
-            let end = index + 1 < starts.length ? starts[index + 1].index : sourceHtml.length;
-            const nearby = sourceHtml.indexOf('<div class="c-city-warning-around">', start.contentStart);
-            if (nearby !== -1 && nearby < end) end = nearby;
-            const block = sourceHtml.slice(start.contentStart, end);
-            const description = WeatherAlerts.#FirstMatch(block, /<h3[^>]*>([\s\S]*?)<\/h3>/i);
-            const issueText = WeatherAlerts.#FirstMatch(block, /<p[^>]*>\s*((?:Issue\s+date|发布\s*日期)\s*[:：][\s\S]*?)<\/p>/i)
-                .replace(/^(?:Issue\s+date|发布\s*日期)\s*[:：]\s*/i, "")
-                .trim();
-            const message = WeatherAlerts.#FirstMatch(block, /<p[^>]*class=["'][^"']*warning-events__txt[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
-            const standardBlock = block.match(/<div[^>]*class=["'][^"']*warning-explain[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] ?? "";
-            const standard = WeatherAlerts.#FirstMatch(standardBlock, /<h4[^>]*>[\s\S]*?<\/h4>\s*<p[^>]*>([\s\S]*?)<\/p>/i);
-            const guideBlock = block.match(/<div[^>]*class=["'][^"']*warning-defense__txt[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] ?? "";
-            const guidelines = Array.from(guideBlock.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi), match =>
-                WeatherAlerts.#DecodeHTML(match[1])
-                    .replace(/^\s*\d+[.、]\s*/, "")
-                    .trim(),
-            ).filter(Boolean);
-            const normalizedIssueText = issueText && !/(?:Z|[+-]\d{2}:?\d{2})$/i.test(issueText) ? `${issueText.replace(" ", "T")}+08:00` : issueText;
-            const issueDate = new Date(normalizedIssueText);
-            if ((!description && !message) || Number.isNaN(issueDate.getTime())) continue;
-            const headline = description || message;
-            const parsedHeadline = WeatherAlerts.#ParseQWeatherHeadline(headline);
-            const source = parsedHeadline.source || dataSource || "QWeather";
-
-            const severitySource = `${start.className} ${description}`.toLowerCase();
-            let severity = "unknown";
-            switch (true) {
-                case /warning--red|红色|\bred\b/.test(severitySource):
-                    severity = "extreme";
-                    break;
-                case /warning--orange|橙色|\borange\b/.test(severitySource):
-                    severity = "severe";
-                    break;
-                case /warning--yellow|黄色|\byellow\b/.test(severitySource):
-                    severity = "moderate";
-                    break;
-                case /warning--blue|蓝色|\bblue\b/.test(severitySource):
-                    severity = "minor";
-                    break;
-            }
-
-            alerts.push({
-                description: headline,
-                ...(parsedHeadline.eventName ? { eventName: parsedHeadline.eventName } : {}),
-                guidelines,
-                issuedTime: issueDate.toISOString(),
-                message,
-                reportedAt: issueDate.toISOString(),
-                severity,
-                source,
-                standard,
-            });
-        }
-
-        return {
-            alerts,
-            areaName: city || administration,
-            source: alerts.find(alert => alert?.source)?.source || dataSource || "QWeather",
-        };
-    }
-
-    /**
      * 将提取后的来源记录构造成 WeatherKit REST WeatherAlert 数组。
      * Build the /api/v1/weatherAlerts JSON array consumed by Apple alertDetails.
      * @param {ExtractedWeatherAlerts} extracted 标准化后的来源数据；alert.source 映射官方页面“签发者”，areaName 映射“受影响区域”。
@@ -486,7 +369,7 @@ export default class WeatherAlerts {
             const expireTime = alert.expireTime ?? "9999-12-31T23:59:59Z";
             const eventOnsetTime = alert.eventOnsetTime ?? effectiveTime;
             const eventEndTime = alert.eventEndTime ?? (alert.expireTime ? expireTime : undefined);
-            const source = alert.source || extracted.source || "QWeather";
+            const source = alert.source || extracted.source || "";
             const importance = alert.importance || WeatherAlerts.#ImportanceFromSeverity(alert.severity);
             const phenomenon = alert.phenomenon;
             const description = WeatherAlerts.#NormalizeWeatherAlertTitle(alert.description, alert.eventName);
@@ -502,7 +385,7 @@ export default class WeatherAlerts {
                 effectiveTime,
                 ...(eventEndTime ? { eventEndTime } : {}),
                 ...(eventOnsetTime ? { eventOnsetTime } : {}),
-                eventSource: context.eventSource ?? "CN",
+                eventSource: context.eventSource ?? context.countryCode ?? "",
                 expireTime,
                 issuedTime: alert.issuedTime,
                 ...(importance ? { importance } : {}),
@@ -522,116 +405,8 @@ export default class WeatherAlerts {
     }
 
     /**
-     * 根据 Apple weatherAlerts 请求抓取并转换 QWeather 页面。
-     * Fetch and convert the QWeather page for an Apple weatherAlerts request.
-     * @param {string} identifier QWeather 页面标识 / QWeather page identifier.
-     * @param {string} language Apple alertDetails 语言 / Apple alertDetails language.
-     * @param {Record<string, string | string[] | undefined>} requestHeaders 原请求头 / Original request headers.
-     * @returns {Promise<WeatherAlert[]>} WeatherAlert 数组 / WeatherAlert array.
-     */
-    static async GetQWeatherFromPage(identifier, language = "zh-CN", requestHeaders = {}) {
-        identifier = identifier?.trim();
-        if (!WeatherAlerts.IsQWeatherPageIdentifier(identifier)) return [];
-
-        const sourceUrl = new URL("https://www.qweather.com");
-        sourceUrl.pathname = language.toLowerCase().startsWith("en") ? `/en/severe-weather/${identifier}.html` : `//severe-weather/${identifier}.html`;
-        sourceUrl.searchParams.set("from", "AppleWeatherService");
-        const normalizedHeaders = Object.fromEntries(Object.entries(requestHeaders).map(([key, value]) => [key.toLowerCase(), value]));
-        const sourceHeaders = {
-            Accept: "text/html,application/xhtml+xml",
-            "Accept-Language": normalizedHeaders["accept-language"] ?? language,
-            Referer: "https://www.qweather.com/",
-        };
-        if (normalizedHeaders["user-agent"]) sourceHeaders["User-Agent"] = normalizedHeaders["user-agent"];
-
-        Console.info("☑️ WeatherAlerts.FetchQWeather", `url: ${sourceUrl}`, `language: ${language}`);
-        const sourceResponse = await fetch({
-            url: sourceUrl.toString(),
-            headers: sourceHeaders,
-            "auto-cookie": false,
-        });
-        const contentType = sourceResponse.headers?.["Content-Type"] ?? sourceResponse.headers?.["content-type"] ?? "";
-        Console.info("WeatherAlerts.FetchQWeather", `status: ${sourceResponse.statusCode ?? sourceResponse.status}`, `contentType: ${contentType || "undefined"}`);
-        if (!sourceResponse.ok) {
-            Console.warn("WeatherAlerts.FetchQWeather", `upstreamStatus: ${sourceResponse.statusCode ?? sourceResponse.status}`);
-            return [];
-        }
-        if (!contentType.toLowerCase().includes("text/html")) {
-            Console.warn("WeatherAlerts.FetchQWeather", `unexpectedContentType: ${contentType || "undefined"}`);
-            return [];
-        }
-        const html = String(sourceResponse.body ?? "");
-        const sourceSize = new TextEncoder().encode(html).byteLength;
-        Console.debug("WeatherAlerts.FetchQWeather", `bodyBytes: ${sourceSize}`);
-        if (sourceSize > WeatherAlerts.#MaximumSourceSize) throw new RangeError("QWeather alert page is too large");
-
-        const extracted = WeatherAlerts.ExtractQWeather(html);
-        Console.info("✅ WeatherAlerts.FetchQWeather", `alerts: ${extracted.alerts.length}`, `source: ${extracted.source}`);
-        const areaId = identifier.match(/-(\d+)$/)?.[1];
-        const attributionUrl = new URL(sourceUrl);
-        attributionUrl.search = "";
-        return WeatherAlerts.Build(extracted, {
-            attributionUrl,
-            identifier,
-            language,
-            countryCode: areaId?.startsWith("101") ? "CN" : "",
-        });
-    }
-
-    /**
-     * 解码 HTML 文本。
-     * Decode HTML text.
-     * @param {string} value HTML 文本 / HTML text.
-     * @returns {string} 纯文本 / Plain text.
-     */
-    static #DecodeHTML(value) {
-        const normalized = String(value ?? "")
-            .replace(/<br\s*\/?\s*>/gi, "\n")
-            .replace(/<[^>]*>/g, "")
-            .replace(/&nbsp;|&#160;/gi, " ")
-            .replace(/&apos;/gi, "&#39;")
-            .replace(/&#(\d+);/g, (_, number) => String.fromCodePoint(Number(number)))
-            .replace(/&#x([0-9a-f]+);/gi, (_, number) => String.fromCodePoint(Number.parseInt(number, 16)));
-        return _.unescape(normalized)
-            .replace(/\r/g, "")
-            .replace(/[ \t]+\n/g, "\n")
-            .replace(/\n[ \t]+/g, "\n")
-            .replace(/[ \t]{2,}/g, " ")
-            .replace(/\n{3,}/g, "\n\n")
-            .trim();
-    }
-
-    /**
-     * 提取并解码第一个正则捕获组。
-     * Extract and decode the first regular-expression capture group.
-     * @param {string} source 原始 HTML / Source HTML.
-     * @param {RegExp} pattern 提取表达式 / Extraction pattern.
-     * @param {string} fallback 未匹配时的值 / Value used when unmatched.
-     * @returns {string} 解码后的值 / Decoded value.
-     */
-    static #FirstMatch(source, pattern, fallback = "") {
-        const match = source.match(pattern);
-        return match ? WeatherAlerts.#DecodeHTML(match[1]) : fallback;
-    }
-
-    static #ParseCoordinateIdentifier(ids) {
-        const match = String(ids ?? "")
-            .trim()
-            .match(/^(?<latitude>-?(?:\d+(?:\.\d+)?|\.\d+)),(?<longitude>-?(?:\d+(?:\.\d+)?|\.\d+))$/);
-        if (!match?.groups) return null;
-        const latitude = Number(match.groups.latitude);
-        const longitude = Number(match.groups.longitude);
-        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
-        return {
-            latitude: match.groups.latitude,
-            longitude: match.groups.longitude,
-        };
-    }
-
-    /**
-     * 根据 Apple 官方样例中的 importance 分层，从 QWeather 严重度推导重要性。
-     * Derive WeatherKit importance from QWeather severity when upstream does not provide it.
+     * 根据 Apple 官方样例中的 importance 分层，从来源严重度推导重要性。
+     * Derive WeatherKit importance from source severity when upstream does not provide it.
      * @param {string} severity 预警严重度 / Alert severity.
      * @returns {"high" | "normal" | "low"} Apple WeatherAlert importance.
      */
@@ -649,8 +424,8 @@ export default class WeatherAlerts {
     }
 
     /**
-     * 将 QWeather 的防御指南压缩为 Apple 前端能识别的动作 token。
-     * Convert QWeather defense guidance into Apple-recognized action tokens.
+     * 将来源防御指南压缩为 Apple 前端能识别的动作 token。
+     * Convert source defense guidance into Apple-recognized action tokens.
      * @param {string[]} guidelines 防御指南 / Defense guidance.
      * @returns {string[]} 动作 token / Action tokens.
      */
@@ -875,34 +650,6 @@ export default class WeatherAlerts {
             .replace(/\s*[。．.]+\s*$/gu, "")
             .replace(/预警信号$/u, "预警")
             .replace(/預警信號$/u, "預警");
-    }
-
-    /**
-     * 从 QWeather HTML 标题中解析事件名称和签发机构。
-     * Parse the event name and issuer from a QWeather HTML headline.
-     * @param {string} description QWeather 标题 / QWeather alert headline.
-     * @returns {{eventName: string, source: string}} 标题结构 / Parsed headline fields.
-     */
-    static #ParseQWeatherHeadline(description) {
-        const title = String(description ?? "").trim();
-        const chinese = title.match(/^(.+?)发布\s*[:：]?\s*(.+)$/);
-        if (chinese?.[1] && chinese?.[2]) return { eventName: chinese[2].trim(), source: chinese[1].trim() };
-
-        const cap = title.match(/^(.+?)\s+issued\b[\s\S]*\s+by\s+(.+)$/i);
-        if (cap?.[1] && cap?.[2]) return { eventName: cap[1].trim(), source: WeatherAlerts.#TrimWeatherAlertTitle(cap[2]) };
-
-        const issued = title.match(/^(.+?)\s+issued\b\s*[:：]?\s*(.+)$/i);
-        if (issued?.[1] && issued?.[2]) {
-            const context = issued[2].trim();
-            const capContext = /^(?:for\b|\d{1,2}[/:.-]|\p{L}+\s+(?:\d{1,2}\b|at\b|until\b))/iu.test(context);
-            return capContext
-                ? { eventName: issued[1].trim(), source: "" }
-                : { eventName: WeatherAlerts.#FormatTranslatedEnglishAlertTitle(context), source: issued[1].trim() };
-        }
-
-        const issues = title.match(/^(.+?)\s+issues?\b\s*[:：]?\s*(.+)$/i);
-        if (issues?.[1] && issues?.[2]) return { eventName: WeatherAlerts.#FormatTranslatedEnglishAlertTitle(issues[2]), source: issues[1].trim() };
-        return { eventName: title, source: "" };
     }
 
     /**

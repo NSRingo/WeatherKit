@@ -94,10 +94,10 @@ export async function Request($request) {
                             const identifier = url.searchParams.get("ids");
                             const language = url.searchParams.get("lang")?.trim() || "zh-CN";
                             const country = url.searchParams.get("country")?.toUpperCase() || "CN";
-                            const isQWeatherPage = WeatherAlerts.IsQWeatherPageIdentifier(identifier);
-                            const coordinates = WeatherAlerts.ParseQWeatherCoordinateIdentifier(identifier);
+                            const isQWeatherPage = QWeather.IsWeatherAlertPageIdentifier(identifier);
+                            const coordinates = QWeather.ParseWeatherAlertCoordinateIdentifier(identifier);
                             if (!isQWeatherPage && !coordinates) break;
-                            const handlerName = coordinates ? "QWeather.WeatherAlert" : "WeatherAlerts.GetQWeatherFromPage";
+                            const handlerName = coordinates ? "QWeather.WeatherAlert" : "QWeather.FetchWeatherAlertPage";
                             Console.info(`☑️ ${handlerName}`, `ids: ${identifier}`);
                             let body;
                             try {
@@ -110,7 +110,13 @@ export async function Request($request) {
                                         countryCode: country,
                                     });
                                 } else {
-                                    body = await WeatherAlerts.GetQWeatherFromPage(identifier, language, $request.headers);
+                                    const source = await QWeather.FetchWeatherAlertPage(identifier, language, $request.headers);
+                                    body = WeatherAlerts.Build(source, {
+                                        attributionUrl: QWeather.BuildWeatherAlertPageURL(identifier, language, false),
+                                        identifier,
+                                        language,
+                                        countryCode: identifier.match(/-([0-9]+)$/)?.[1]?.startsWith("101") ? "CN" : "",
+                                    });
                                 }
                             } catch (error) {
                                 Console.error(handlerName, error?.stack ?? error?.message ?? String(error));
