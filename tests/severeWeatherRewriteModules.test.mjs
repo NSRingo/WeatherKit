@@ -180,3 +180,21 @@ test("Handler generation keeps Loon local and excludes Egern", async () => {
     assert.match(content, /path: "\.\/dist\/iRingo\.WeatherKit\.lpx"/);
     assert.doesNotMatch(content, /transformEgern|iRingo\.WeatherKit\.yaml/);
 });
+
+test("WeatherAlert provider settings expose web and user API choices", async () => {
+    const [full, lite, database, types, boxjs] = await Promise.all([
+        readFile(new URL("../arguments-builder-full.config.ts", import.meta.url), "utf8"),
+        readFile(new URL("../arguments-builder.config.ts", import.meta.url), "utf8"),
+        readFile(new URL("../src/function/database.mjs", import.meta.url), "utf8"),
+        readFile(new URL("../src/types.d.ts", import.meta.url), "utf8"),
+        readFile(new URL("../template/boxjs.settings.json", import.meta.url), "utf8"),
+    ]);
+
+    assert.match(full, /key: "WeatherAlerts\.Provider"[\s\S]*defaultValue: "QWeatherWeb"[\s\S]*key: "QWeatherWeb"[\s\S]*key: "QWeather"[\s\S]*key: "ColorfulClouds"/);
+    assert.match(full, /export const weatherAlerts = \[weatherAlertsProvider\]/);
+    assert.match(lite, /import \{[^}]*weatherAlerts[^}]*\} from "\.\/arguments-builder-full\.config"/);
+    assert.match(lite, /args: \[[^\]]*\.\.\.weatherAlerts/);
+    assert.match(database, /WeatherAlerts: \{ Provider: "QWeatherWeb" \}/);
+    assert.match(types, /WeatherAlerts\?: \{[\s\S]*Provider\?: "QWeatherWeb" \| "QWeather" \| "ColorfulClouds"/);
+    assert.match(boxjs, /@iRingo\.WeatherKit\.Settings\.WeatherAlerts\.Provider[\s\S]*"val": "QWeatherWeb"/);
+});

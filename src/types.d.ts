@@ -56,6 +56,9 @@ export interface Settings {
          */
         Provider?: "WeatherKit" | "ColorfulClouds" | "QWeather";
     };
+    WeatherAlerts?: {
+        Provider?: "QWeatherWeb" | "QWeather" | "ColorfulClouds";
+    };
     NextHour?: {
         /**
          * [未来一小时降水强度] 添加范围

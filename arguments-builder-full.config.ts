@@ -87,6 +87,21 @@ const weatherProvider: Arg = {
 export const weather = [weatherProvider];
 const weatherFull = [weatherReplace, weatherProvider];
 
+const weatherAlertsProvider: Arg = {
+    key: "WeatherAlerts.Provider",
+    name: "[天气预警] 数据源",
+    defaultValue: "QWeatherWeb",
+    type: "string",
+    options: [
+        { key: "QWeatherWeb", label: "和风天气网页" },
+        { key: "QWeather", label: "和风天气 API" },
+        { key: "ColorfulClouds", label: "彩云天气 API" },
+    ],
+    description: "使用选定的数据源补全天气预警数据。",
+};
+
+export const weatherAlerts = [weatherAlertsProvider];
+
 const nextHourProvider: Arg = {
     key: "NextHour.Provider",
     name: "[未来一小时降水强度] 数据源",
@@ -330,5 +345,5 @@ export const logLevel: Arg[] = [
 
 export default defineConfig({
     output,
-    args: [...dataSets, ...weatherFull, ...nextHourFull, ...airQualityFull, ...calculateFull, ...api, ...storage, ...logLevel],
+    args: [...dataSets, ...weatherFull, ...weatherAlerts, ...nextHourFull, ...airQualityFull, ...calculateFull, ...api, ...storage, ...logLevel],
 });

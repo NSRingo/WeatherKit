@@ -70,6 +70,32 @@ const qWeatherAlertAPI = {
     ],
 };
 const qWeatherHighTemperatureAlert = qWeatherAlertAPI.alerts[1];
+const colorfulCloudsAlertAPI = {
+    alerts: [
+        {
+            id: "urn:oid:2.49.0.1.840.0.weatherkit-test",
+            region_code: "CN",
+            source: 1,
+            msg_type: 1,
+            event_name: "高温",
+            categories: [2],
+            urgency: 1,
+            severity: 2,
+            certainty: 2,
+            sent_time: 1785664080,
+            effective_time: 1785664080,
+            onset_time: 1785664080,
+            expires_time: 1785750480,
+            references: [],
+            areas: [{ area_desc: "南京市", geocodes: [{ value_name: "CODE", value: "320100", namespace: "CN" }], polygons: [], circles: [] }],
+            language_code: "zh-CN",
+            sender_name: "南京市气象台",
+            headline: "南京市气象台发布高温橙色预警",
+            description: "预计明天最高气温可达37℃以上。",
+            instruction: "1.做好防暑降温。",
+        },
+    ],
+};
 
 test("WeatherKit2 is a configured reusable root processor", () => {
     assert.ok(WeatherKit2 instanceof FlatBufferRootProcessor);
@@ -285,6 +311,51 @@ test("response preserves the user-supplied QWeather Alert API path", async () =>
     }
 });
 
+test("response selects the ColorfulClouds WeatherAlert API explicitly", async () => {
+    const originalArgument = globalThis.$argument;
+    const originalHttpClient = globalThis.$httpClient;
+    let sourceUrl;
+    globalThis.$argument = {
+        API: { ColorfulClouds: { Token: "colorful-token" }, QWeather: { Host: "devapi.qweather.com", Token: "qweather-token" } },
+        LogLevel: "OFF",
+        Storage: "Argument",
+        WeatherAlerts: { Provider: "ColorfulClouds" },
+    };
+    globalThis.$httpClient = {
+        get(resource, callback) {
+            sourceUrl = new URL(resource.url);
+            callback(undefined, { headers: { "Content-Type": "application/json" }, status: 200 }, JSON.stringify(colorfulCloudsAlertAPI));
+        },
+    };
+
+    try {
+        for (const handler of [Response, ResponseDev]) {
+            const originalBytes = createWeatherAlertRoot("国家预警信息发布中心");
+            const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["weatherAlerts"]);
+            const response = await runResponseHandler(
+                handler,
+                {
+                    headers: {},
+                    url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/31.23/121.47?timezone=Asia%2FShanghai&country=CN&dataSets=weatherAlerts",
+                },
+                {
+                    bodyBytes: originalBytes,
+                    headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
+                },
+            );
+            const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["weatherAlerts"]);
+
+            assert.equal(sourceUrl.toString(), "https://singer.caiyunhub.com/v3/cap_alert/location?token=colorful-token&longitude=121.47&latitude=31.23&language=zh_CN");
+            assert.equal(decoded.weatherAlerts.metadata.attributionUrl, "https://www.caiyunapp.com/h5");
+            assert.equal(decoded.weatherAlerts.detailsUrl, `https://weatherkit.apple.com/alertDetails/index.html?ids=${originalDecoded.weatherAlerts.metadata.latitude},${originalDecoded.weatherAlerts.metadata.longitude}&lang=zh-CN&party=ColorfulClouds`);
+            assert.equal(decoded.weatherAlerts.alerts[0].description, "高温橙色预警");
+        }
+    } finally {
+        globalThis.$argument = originalArgument;
+        globalThis.$httpClient = originalHttpClient;
+    }
+});
+
 test("response derives QWeather HTML alerts and the internal details URL from the FlatBuffer severe-weather URL", async () => {
     const expectedDetailsUrl = "https://weatherkit.apple.com/alertDetails/index.html?ids=jian'an-101180407&lang=zh-CN&party=qweather";
     const expectedAttributionUrl = "https://www.qweather.com/severe-weather/jian'an-101180407.html?from=AppleWeatherService";
@@ -293,10 +364,10 @@ test("response derives QWeather HTML alerts and the internal details URL from th
     const originalHttpClient = globalThis.$httpClient;
     let sourceUrl;
     globalThis.$argument = {
-        API: { ColorfulClouds: { Token: null }, QWeather: { Token: null } },
+        API: { ColorfulClouds: { Token: "colorful-token" }, QWeather: { Host: "devapi.qweather.com", Token: "qweather-token" } },
         LogLevel: "OFF",
         Storage: "Argument",
-        WeatherAlerts: { Provider: "QWeather" },
+        WeatherAlerts: { Provider: "QWeatherWeb" },
     };
     globalThis.$httpClient = {
         get(resource, callback) {

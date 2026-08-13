@@ -384,77 +384,81 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  */
 async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments, requestHeaders = {}) {
     Console.info("☑️ InjectWeatherAlerts");
-    const provider = Settings?.WeatherAlerts?.Provider ?? "QWeather";
-    const token = provider === "ColorfulClouds" ? Settings?.API?.ColorfulClouds?.Token : Settings?.API?.QWeather?.Token;
+    const provider = Settings?.WeatherAlerts?.Provider ?? "QWeatherWeb";
+    switch (provider) {
+        case "ColorfulClouds":
+        case "QWeather": {
+            switch (weatherAlerts?.metadata?.providerName) {
+                case "国家预警信息发布中心":
+                case "國家預警信息發布中心":
+                case "National Early Warning Center":
+                    break;
+                default:
+                    if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: providerName is not National Warning Center", `providerName: ${weatherAlerts?.metadata?.providerName}`);
+                    Console.info("✅ InjectWeatherAlerts");
+                    return weatherAlerts;
+            }
 
-    if (token) {
-        switch (weatherAlerts?.metadata?.providerName) {
-            case "国家预警信息发布中心":
-            case "國家預警信息發布中心":
-            case "National Early Warning Center": {
-                let newWeatherAlerts;
-                switch (provider) {
-                    case "ColorfulClouds":
-                        newWeatherAlerts = await enviroments.colorfulClouds.WeatherAlert();
-                        weatherAlerts.metadata.attributionUrl = "https://www.caiyunapp.com/h5";
-                        break;
-                    case "QWeather":
-                    default:
-                        newWeatherAlerts = await enviroments.qWeather.WeatherAlert();
-                        weatherAlerts.metadata.attributionUrl = "https://developer.qweather.com/attribution.html";
-                        break;
-                }
+            let newWeatherAlerts;
+            switch (provider) {
+                case "ColorfulClouds":
+                    newWeatherAlerts = await enviroments.colorfulClouds.WeatherAlert();
+                    weatherAlerts.metadata.attributionUrl = "https://www.caiyunapp.com/h5";
+                    break;
+                case "QWeather":
+                    newWeatherAlerts = await enviroments.qWeather.WeatherAlert();
+                    weatherAlerts.metadata.attributionUrl = "https://developer.qweather.com/attribution.html";
+                    break;
+            }
 
-                if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
-                    Console.debug(
-                        "InjectWeatherAlerts",
-                        `country: ${enviroments.country}`,
-                        `providerName: ${weatherAlerts?.metadata?.providerName}`,
-                        `appleAlertCount: ${weatherAlerts?.alerts?.length ?? 0}`,
-                        `sourceAlertCount: ${newWeatherAlerts?.alerts?.length ?? 0}`,
-                        `sourceAreaName: ${newWeatherAlerts?.areaName}`,
-                        `sourceIssuedBy: ${newWeatherAlerts?.source}`,
-                    );
-                }
-                WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts?.alerts);
-                weatherAlerts.detailsUrl = `https://weatherkit.apple.com/alertDetails/index.html?ids=${weatherAlerts.metadata.latitude},${weatherAlerts.metadata.longitude}&lang=${encodeURIComponent(weatherAlerts.metadata.language)}&party=${encodeURIComponent(provider)}`;
+            if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
+                Console.debug(
+                    "InjectWeatherAlerts",
+                    `provider: ${provider}`,
+                    `country: ${enviroments.country}`,
+                    `providerName: ${weatherAlerts?.metadata?.providerName}`,
+                    `appleAlertCount: ${weatherAlerts?.alerts?.length ?? 0}`,
+                    `sourceAlertCount: ${newWeatherAlerts?.alerts?.length ?? 0}`,
+                    `sourceAreaName: ${newWeatherAlerts?.areaName}`,
+                    `sourceIssuedBy: ${newWeatherAlerts?.source}`,
+                );
+            }
+            WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts?.alerts);
+            weatherAlerts.detailsUrl = `https://weatherkit.apple.com/alertDetails/index.html?ids=${weatherAlerts.metadata.latitude},${weatherAlerts.metadata.longitude}&lang=${encodeURIComponent(weatherAlerts.metadata.language)}&party=${encodeURIComponent(provider)}`;
+            Console.info("✅ InjectWeatherAlerts");
+            return weatherAlerts;
+        }
+        case "QWeatherWeb":
+        default: {
+            const identifier = QWeather.ParseWeatherAlertPageURL(weatherAlerts?.detailsUrl);
+            if (!identifier) {
+                if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: detailsUrl is not a supported QWeather severe-weather URL", `detailsUrl: ${weatherAlerts?.detailsUrl}`);
                 Console.info("✅ InjectWeatherAlerts");
                 return weatherAlerts;
             }
-            default:
-                if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: providerName is not National Warning Center", `providerName: ${weatherAlerts?.metadata?.providerName}`);
-                Console.info("✅ InjectWeatherAlerts");
-                return weatherAlerts;
+
+            const language = weatherAlerts?.metadata?.language || "zh-CN";
+            weatherAlerts.detailsUrl = QWeather.BuildAppleAlertDetailsURL(identifier, language);
+            let sourceAlerts = [];
+            try {
+                sourceAlerts = (await QWeather.FetchWeatherAlertPage(identifier, language, requestHeaders)).alerts;
+            } catch (error) {
+                Console.error("InjectWeatherAlerts", error?.stack ?? error?.message ?? String(error));
+            }
+            if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
+                Console.debug(
+                    "InjectWeatherAlerts",
+                    "provider: QWeatherWeb",
+                    `providerName: ${weatherAlerts?.metadata?.providerName}`,
+                    `appleAlertCount: ${weatherAlerts?.alerts?.length ?? 0}`,
+                    `sourceAlertCount: ${sourceAlerts.length}`,
+                );
+            }
+            WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, sourceAlerts);
+            Console.info("✅ InjectWeatherAlerts");
+            return weatherAlerts;
         }
     }
-
-    const identifier = QWeather.ParseWeatherAlertPageURL(weatherAlerts?.detailsUrl);
-    if (!identifier) {
-        if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: detailsUrl is not a supported QWeather severe-weather URL", `detailsUrl: ${weatherAlerts?.detailsUrl}`);
-        Console.info("✅ InjectWeatherAlerts");
-        return weatherAlerts;
-    }
-
-    const language = weatherAlerts?.metadata?.language || "zh-CN";
-    weatherAlerts.detailsUrl = QWeather.BuildAppleAlertDetailsURL(identifier, language);
-    let sourceAlerts = [];
-    try {
-        sourceAlerts = (await QWeather.FetchWeatherAlertPage(identifier, language, requestHeaders)).alerts;
-    } catch (error) {
-        Console.error("InjectWeatherAlerts", error?.stack ?? error?.message ?? String(error));
-    }
-    if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
-        Console.debug(
-            "InjectWeatherAlerts",
-            "provider: QWeatherHTML",
-            `providerName: ${weatherAlerts?.metadata?.providerName}`,
-            `appleAlertCount: ${weatherAlerts?.alerts?.length ?? 0}`,
-            `sourceAlertCount: ${sourceAlerts.length}`,
-        );
-    }
-    WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, sourceAlerts);
-    Console.info("✅ InjectWeatherAlerts");
-    return weatherAlerts;
 }
 
 /**
