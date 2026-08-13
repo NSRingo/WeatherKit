@@ -1,4 +1,5 @@
 import { Lodash as _, Console, Storage } from "@nsnanocat/util";
+import AirQualityScale from "../class/AirQualityScale.mjs";
 import ColorfulClouds from "../class/ColorfulClouds.mjs";
 import QWeather from "../class/QWeather.mjs";
 import WeatherAlerts from "../class/WeatherAlerts.mjs";
@@ -164,7 +165,21 @@ export async function Request($request) {
                             break;
                         }
                         default:
-                            if (url.pathname.startsWith("/api/v2/weather/")) {
+                            if (url.pathname.startsWith("/api/v1/airQualityScale/")) {
+                                const pathParts = url.pathname.split("/").filter(Boolean);
+                                const language = pathParts[3] ?? "en";
+                                const scaleName = (pathParts[4] ?? "").replace(/\.\d+$/, "");
+                                pathParts[4] = scaleName;
+                                url.pathname = `/${pathParts.join("/")}`;
+                                switch (url.pathname) {
+                                    case `/api/v1/airQualityScale/${language}/HK.AQHI`:
+                                        $response = AirQualityScale.buildHKAQHIScale(language, scaleName);
+                                        break;
+                                    case `/api/v1/airQualityScale/${language}/CN.AQHI`:
+                                        $response = AirQualityScale.buildCNAQHIScale(language, scaleName);
+                                        break;
+                                }
+                            } else if (url.pathname.startsWith("/api/v2/weather/")) {
                                 // 解决 macOS 天气 app 如果使用国际版 Maps 时，country 丢失不显示未来一小时降水的问题
                                 switch (true) {
                                     case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):

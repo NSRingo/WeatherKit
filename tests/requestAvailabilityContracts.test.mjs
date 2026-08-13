@@ -60,6 +60,60 @@ test("request keeps future datasets while removing a known explicitly disabled d
     }
 });
 
+test("request strips numeric versions from every air-quality scale", async () => {
+    const cases = [
+        ["CA.AQHI.2414", "CA.AQHI"],
+        ["EU.EAQI.2604", "EU.EAQI"],
+        ["EPA_NowCast.2604", "EPA_NowCast"],
+    ];
+
+    for (const handler of [Request, RequestDev]) {
+        for (const [inputScale, expectedScale] of cases) {
+            const { $request, $response } = await handler({
+                headers: {},
+                method: "GET",
+                url: `https://weatherkit.apple.com/api/v1/airQualityScale/zh-Hans-CN/${inputScale}`,
+            });
+
+            assert.equal(new URL($request.url).pathname, `/api/v1/airQualityScale/zh-Hans-CN/${expectedScale}`);
+            assert.equal($response, undefined);
+        }
+    }
+});
+
+test("request serves custom AQHI scales locally after stripping their versions", async () => {
+    const cases = [
+        ["HK.AQHI.2414", "zh-Hant-HK", "HK.AQHI"],
+        ["CN.AQHI.2414", "zh-Hans-CN", "CN.AQHI"],
+    ];
+
+    for (const handler of [Request, RequestDev]) {
+        for (const [inputScale, language, expectedScale] of cases) {
+            const { $request, $response } = await handler({
+                headers: {},
+                method: "GET",
+                url: `https://weatherkit.apple.com/api/v1/airQualityScale/${language}/${inputScale}`,
+            });
+
+            assert.equal(new URL($request.url).pathname, `/api/v1/airQualityScale/${language}/${expectedScale}`);
+            assert.equal($response.status, 200);
+            assert.equal(JSON.parse($response.body).name, expectedScale);
+        }
+    }
+});
+
+test("request only serves custom AQHI scales on an exact pathname match", async () => {
+    for (const handler of [Request, RequestDev]) {
+        const { $response } = await handler({
+            headers: {},
+            method: "GET",
+            url: "https://weatherkit.apple.com/api/v1/airQualityScale/zh-Hans-CN/extra/HK.AQHI.2414",
+        });
+
+        assert.equal($response, undefined);
+    }
+});
+
 test("only response-injectable datasets remain configurable", () => {
     assert.deepEqual(database.WeatherKit.Settings.DataSets, ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour"]);
 });
