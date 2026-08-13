@@ -480,7 +480,7 @@ test("response does not rewrite weatherAlerts without a supported QWeather sever
     }
 });
 
-test("development response patches a dynamically decoded non-injection root when its dataSet was requested", async () => {
+test("development response preserves a dynamically decoded non-injection root when its dataSet was requested", async () => {
     const originalBytes = WeatherKit2.encode(undefined, {
         news: {
             metadata: {
@@ -489,6 +489,7 @@ test("development response patches a dynamically decoded non-injection root when
             placements: [],
         },
     });
+    const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["news"]);
     const request = {
         headers: {},
         url: "https://weatherkit.apple.com/api/v2/weather/en-US/22.5431/114.0579?country=US&dataSets=news",
@@ -506,7 +507,7 @@ test("development response patches a dynamically decoded non-injection root when
     }
     const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["news"]);
 
-    assert.equal(decoded.news.metadata.providerLogo, "https://weatherkit.apple.com/assets/v2/TWC.png");
+    assert.deepEqual(decoded.news, originalDecoded.news);
 });
 
 function createWeatherRoot(presentSlots) {

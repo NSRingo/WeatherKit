@@ -116,6 +116,21 @@ test("response WeatherAlert injection only selects and merges provider slot obje
     }
 });
 
+test("response provider logos are finalized inside Inject methods", async () => {
+    const injectMethods = ["InjectCurrentWeather", "InjectForecastDaily", "InjectForecastHourly", "InjectForecastNextHour", "InjectWeatherAlerts"];
+    for (const path of ["../src/process/Response.mjs", "../src/process/Response.dev.mjs"]) {
+        const source = await readFile(new URL(path, import.meta.url), "utf8");
+        const topLevel = source.slice(0, source.indexOf("async function InjectCurrentWeather"));
+
+        assert.doesNotMatch(topLevel, /\.metadata\.providerLogo\s*=/);
+        for (const [index, method] of injectMethods.entries()) {
+            const end = injectMethods[index + 1] ? source.indexOf(`async function ${injectMethods[index + 1]}`) : source.indexOf("async function InjectAirQuality");
+            const body = source.slice(source.indexOf(`async function ${method}`), end);
+            assert.match(body, /\.metadata\.providerLogo\s*=\s*providerNameToLogo\(/, `${path}: ${method}`);
+        }
+    }
+});
+
 test("QWeather HTML extraction is separated from WeatherAlert construction", async () => {
     const attributionUrl = new URL("https://www.qweather.com/severe-weather/jianye-101190110.html");
     const extracted = QWeather.ExtractWeatherAlertPage(sourceHtml);

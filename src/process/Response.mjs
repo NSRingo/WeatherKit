@@ -107,27 +107,22 @@ export async function Response($request, $response) {
                                             }
                                             case "currentWeather": {
                                                 body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
-                                                if (body?.currentWeather?.metadata?.providerName && !body?.currentWeather?.metadata?.providerLogo) body.currentWeather.metadata.providerLogo = providerNameToLogo(body?.currentWeather?.metadata?.providerName, "v2");
                                                 break;
                                             }
                                             case "forecastDaily": {
                                                 body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
-                                                if (body?.forecastDaily?.metadata?.providerName && !body?.forecastDaily?.metadata?.providerLogo) body.forecastDaily.metadata.providerLogo = providerNameToLogo(body?.forecastDaily?.metadata?.providerName, "v2");
                                                 break;
                                             }
                                             case "forecastHourly": {
                                                 body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
-                                                if (body?.forecastHourly?.metadata?.providerName && !body?.forecastHourly?.metadata?.providerLogo) body.forecastHourly.metadata.providerLogo = providerNameToLogo(body?.forecastHourly?.metadata?.providerName, "v2");
                                                 break;
                                             }
                                             case "forecastNextHour": {
                                                 body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
-                                                if (body?.forecastNextHour?.metadata?.providerName && !body?.forecastNextHour?.metadata?.providerLogo) body.forecastNextHour.metadata.providerLogo = providerNameToLogo(body?.forecastNextHour?.metadata?.providerName, "v2");
                                                 break;
                                             }
                                             case "weatherAlerts": {
                                                 body.weatherAlerts = await InjectWeatherAlerts(body.weatherAlerts, Settings, enviroments);
-                                                if (Settings?.WeatherAlerts?.Provider !== "WeatherKit" && body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
                                                 break;
                                             }
                                             default:
@@ -191,6 +186,7 @@ async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
     if (newCurrentWeather?.metadata) {
         newCurrentWeather.metadata = { ...currentWeather?.metadata, ...newCurrentWeather.metadata };
         currentWeather = { ...currentWeather, ...newCurrentWeather };
+        if (currentWeather?.metadata?.providerName && !currentWeather?.metadata?.providerLogo) currentWeather.metadata.providerLogo = providerNameToLogo(currentWeather.metadata.providerName, "v2");
     }
     Console.info("✅ InjectCurrentWeather");
     return currentWeather;
@@ -229,6 +225,7 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
     if (newForecastDaily?.metadata) {
         forecastDaily.metadata = { ...forecastDaily?.metadata, ...newForecastDaily.metadata };
         Weather.mergeForecast(forecastDaily?.days, newForecastDaily?.days);
+        if (forecastDaily?.metadata?.providerName && !forecastDaily?.metadata?.providerLogo) forecastDaily.metadata.providerLogo = providerNameToLogo(forecastDaily.metadata.providerName, "v2");
     }
     Console.info("✅ InjectForecastDaily");
     return forecastDaily;
@@ -267,6 +264,7 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
     if (newForecastHourly?.metadata) {
         forecastHourly.metadata = { ...forecastHourly?.metadata, ...newForecastHourly.metadata };
         forecastHourly.hours = Weather.mergeForecast(forecastHourly?.hours, newForecastHourly?.hours);
+        if (forecastHourly?.metadata?.providerName && !forecastHourly?.metadata?.providerLogo) forecastHourly.metadata.providerLogo = providerNameToLogo(forecastHourly.metadata.providerName, "v2");
     }
     Console.info("✅ InjectForecastHourly");
     return forecastHourly;
@@ -304,6 +302,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
     if (newForecastNextHour?.metadata) {
         newForecastNextHour.metadata = { ...forecastNextHour?.metadata, ...newForecastNextHour.metadata };
         forecastNextHour = { ...forecastNextHour, ...newForecastNextHour };
+        if (forecastNextHour?.metadata?.providerName && !forecastNextHour?.metadata?.providerLogo) forecastNextHour.metadata.providerLogo = providerNameToLogo(forecastNextHour.metadata.providerName, "v2");
     }
     Console.info("✅ InjectForecastNextHour");
     return forecastNextHour;
@@ -343,6 +342,7 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
         weatherAlerts.metadata = { ...weatherAlerts?.metadata, ...newWeatherAlerts.metadata };
         weatherAlerts.detailsUrl = newWeatherAlerts.detailsUrl ?? weatherAlerts.detailsUrl;
         weatherAlerts.alerts = WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts?.alerts);
+        if (weatherAlerts?.metadata?.providerName && !weatherAlerts?.metadata?.providerLogo) weatherAlerts.metadata.providerLogo = providerNameToLogo(weatherAlerts.metadata.providerName, "v2");
     }
     Console.info("✅ InjectWeatherAlerts");
     return weatherAlerts;
