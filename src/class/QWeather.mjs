@@ -9,7 +9,7 @@ export default class QWeather {
 
     constructor(parameters, token, host = "devapi.qweather.com") {
         this.Name = "QWeather";
-        this.Version = "5.2.1";
+        this.Version = "5.3.0";
         Console.log(`🟧 ${this.Name} v${this.Version}`);
         this.endpoint = `https://${host}`;
         this.headers = { "X-QW-Api-Key": token };
@@ -23,6 +23,7 @@ export default class QWeather {
         this.latitude = parameters.latitude;
         this.longitude = parameters.longitude;
         this.country = parameters.country;
+        this.weatherKitLanguage = String(parameters.weatherKitLanguage ?? parameters.language ?? "").trim() || "zh-CN";
     }
 
     #cache = {
@@ -435,11 +436,15 @@ export default class QWeather {
     /**
      * 拉取 QWeather weatheralert/v1/current，并标准化为 WeatherAlerts.Build 可消费的来源结构。
      * Fetch QWeather weatheralert/v1/current and normalize it for WeatherAlerts.Build.
-     * @returns {Promise<{alerts: Array<object>, areaName: string, source: string}>} 预警来源集合 / Normalized alert source collection.
+     * @returns {Promise<{metadata: object, detailsUrl: string, alerts: Array<object>, areaName: string, source: string}>} WeatherKit 顶级预警对象 / Top-level WeatherKit alert object.
      */
     async WeatherAlert() {
         Console.info("☑️ WeatherAlert");
         const failedWeatherAlerts = {
+            metadata: {
+                attributionUrl: "https://developer.qweather.com/attribution.html",
+            },
+            detailsUrl: `https://weatherkit.apple.com/alertDetails/index.html?ids=${this.latitude},${this.longitude}&lang=${encodeURIComponent(this.weatherKitLanguage)}&party=QWeather`,
             alerts: [],
             areaName: "",
             source: "国家预警信息发布中心",
@@ -460,11 +465,44 @@ export default class QWeather {
                 return failedWeatherAlerts;
             }
             if (!body?.metadata || !Array.isArray(body?.alerts)) throw Error(JSON.stringify(body?.error ?? body?.code ?? body));
-            weatherAlerts = this.#CreateWeatherAlerts(body);
+            weatherAlerts = { ...failedWeatherAlerts, ...this.#CreateWeatherAlerts(body) };
         } catch (error) {
             Console.error(`WeatherAlert: ${error}`);
         } finally {
             Console.info("✅ WeatherAlert");
+        }
+        return weatherAlerts;
+    }
+
+    /**
+     * 拉取 QWeather 灾害预警页面，并生成 WeatherKit 顶级预警对象。
+     * Fetch a QWeather severe-weather page and build a top-level WeatherKit alert object.
+     * @param {string | URL | null | undefined} url QWeather 预警页面链接 / QWeather severe-weather page URL.
+     * @returns {Promise<object | undefined>} WeatherKit 顶级预警对象 / Top-level WeatherKit alert object.
+     */
+    async WeatherAlertWeb(url) {
+        Console.info("☑️ WeatherAlertWeb");
+        const identifier = QWeather.ParseWeatherAlertPageURL(url);
+        if (!identifier) {
+            Console.info("✅ WeatherAlertWeb", "Unsupported URL");
+            return undefined;
+        }
+        const failedWeatherAlerts = {
+            metadata: {
+                attributionUrl: String(url),
+            },
+            detailsUrl: QWeather.BuildAppleAlertDetailsURL(identifier, this.weatherKitLanguage),
+            alerts: [],
+            areaName: "",
+            source: "QWeather",
+        };
+        let weatherAlerts = failedWeatherAlerts;
+        try {
+            weatherAlerts = { ...failedWeatherAlerts, ...(await QWeather.FetchWeatherAlertPage(identifier, this.weatherKitLanguage)) };
+        } catch (error) {
+            Console.error(`WeatherAlertWeb: ${error}`);
+        } finally {
+            Console.info("✅ WeatherAlertWeb");
         }
         return weatherAlerts;
     }

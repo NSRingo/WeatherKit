@@ -90,9 +90,10 @@ export async function Response($request, $response) {
                             if (url.pathname.startsWith("/api/v2/weather/")) {
                                 const parameters = parseWeatherKitURL(url);
                                 body = WeatherKit2.decode(ByteBuffer, parameters.dataSets);
+                                const providerParameters = { ...parameters, weatherKitLanguage: body.weatherAlerts?.metadata?.language };
                                 const enviroments = {
-                                    colorfulClouds: new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
-                                    qWeather: new QWeather(parameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host),
+                                    colorfulClouds: new ColorfulClouds(providerParameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
+                                    qWeather: new QWeather(providerParameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host),
                                     waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
                                     country: parameters.country,
                                 };
@@ -125,7 +126,7 @@ export async function Response($request, $response) {
                                                 break;
                                             }
                                             case "weatherAlerts": {
-                                                body.weatherAlerts = await InjectWeatherAlerts(body.weatherAlerts, Settings, enviroments, $request.headers);
+                                                body.weatherAlerts = await InjectWeatherAlerts(body.weatherAlerts, Settings, enviroments);
                                                 if (body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
                                                 break;
                                             }
@@ -313,86 +314,35 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  * @param {any} weatherAlerts - 预警集合数据对象
  * @param {import('../types').Settings} Settings - 设置对象
  * @param {any} enviroments - 环境变量
- * @param {Record<string, string | string[] | undefined>} requestHeaders - 原始请求头 / Original request headers.
  * @returns {Promise<any>} 补全后的预警集合数据
  */
-async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments, requestHeaders = {}) {
+async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
     Console.info("☑️ InjectWeatherAlerts");
     const provider = Settings?.WeatherAlerts?.Provider ?? "QWeatherWeb";
+    const isNationalWarningCenter = ["国家预警信息发布中心", "國家預警信息發布中心", "National Early Warning Center"].includes(weatherAlerts?.metadata?.providerName);
+    let newWeatherAlerts;
     switch (provider) {
-        case "ColorfulClouds":
+        case "ColorfulClouds": {
+            if (isNationalWarningCenter) newWeatherAlerts = await enviroments.colorfulClouds.WeatherAlert();
+            break;
+        }
         case "QWeather": {
-            switch (weatherAlerts?.metadata?.providerName) {
-                case "国家预警信息发布中心":
-                case "國家預警信息發布中心":
-                case "National Early Warning Center":
-                    break;
-                default:
-                    if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: providerName is not National Warning Center", `providerName: ${weatherAlerts?.metadata?.providerName}`);
-                    Console.info("✅ InjectWeatherAlerts");
-                    return weatherAlerts;
-            }
-
-            let newWeatherAlerts;
-            switch (provider) {
-                case "ColorfulClouds":
-                    newWeatherAlerts = await enviroments.colorfulClouds.WeatherAlert();
-                    weatherAlerts.metadata.attributionUrl = "https://www.caiyunapp.com/h5";
-                    break;
-                case "QWeather":
-                    newWeatherAlerts = await enviroments.qWeather.WeatherAlert();
-                    weatherAlerts.metadata.attributionUrl = "https://developer.qweather.com/attribution.html";
-                    break;
-            }
-
-            if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
-                Console.debug(
-                    "InjectWeatherAlerts",
-                    `provider: ${provider}`,
-                    `country: ${enviroments.country}`,
-                    `providerName: ${weatherAlerts?.metadata?.providerName}`,
-                    `appleAlertCount: ${weatherAlerts?.alerts?.length ?? 0}`,
-                    `sourceAlertCount: ${newWeatherAlerts?.alerts?.length ?? 0}`,
-                    `sourceAreaName: ${newWeatherAlerts?.areaName}`,
-                    `sourceIssuedBy: ${newWeatherAlerts?.source}`,
-                );
-            }
-            WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts?.alerts);
-            weatherAlerts.detailsUrl = `https://weatherkit.apple.com/alertDetails/index.html?ids=${weatherAlerts.metadata.latitude},${weatherAlerts.metadata.longitude}&lang=${encodeURIComponent(weatherAlerts.metadata.language)}&party=${encodeURIComponent(provider)}`;
-            Console.info("✅ InjectWeatherAlerts");
-            return weatherAlerts;
+            if (isNationalWarningCenter) newWeatherAlerts = await enviroments.qWeather.WeatherAlert();
+            break;
         }
         case "QWeatherWeb":
         default: {
-            const identifier = QWeather.ParseWeatherAlertPageURL(weatherAlerts?.detailsUrl);
-            if (!identifier) {
-                if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug("InjectWeatherAlerts", "skip: detailsUrl is not a supported QWeather severe-weather URL", `detailsUrl: ${weatherAlerts?.detailsUrl}`);
-                Console.info("✅ InjectWeatherAlerts");
-                return weatherAlerts;
-            }
-
-            const language = weatherAlerts?.metadata?.language || "zh-CN";
-            weatherAlerts.detailsUrl = QWeather.BuildAppleAlertDetailsURL(identifier, language);
-            let sourceAlerts = [];
-            try {
-                sourceAlerts = (await QWeather.FetchWeatherAlertPage(identifier, language, requestHeaders)).alerts;
-            } catch (error) {
-                Console.error("InjectWeatherAlerts", error?.stack ?? error?.message ?? String(error));
-            }
-            if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") {
-                Console.debug(
-                    "InjectWeatherAlerts",
-                    "provider: QWeatherWeb",
-                    `providerName: ${weatherAlerts?.metadata?.providerName}`,
-                    `appleAlertCount: ${weatherAlerts?.alerts?.length ?? 0}`,
-                    `sourceAlertCount: ${sourceAlerts.length}`,
-                );
-            }
-            WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, sourceAlerts);
-            Console.info("✅ InjectWeatherAlerts");
-            return weatherAlerts;
+            newWeatherAlerts = await enviroments.qWeather.WeatherAlertWeb(weatherAlerts?.detailsUrl);
+            break;
         }
     }
+    if (newWeatherAlerts?.metadata) {
+        weatherAlerts.metadata = { ...weatherAlerts?.metadata, ...newWeatherAlerts.metadata };
+        weatherAlerts.detailsUrl = newWeatherAlerts.detailsUrl ?? weatherAlerts.detailsUrl;
+        weatherAlerts.alerts = WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts?.alerts);
+    }
+    Console.info("✅ InjectWeatherAlerts");
+    return weatherAlerts;
 }
 
 /**

@@ -103,6 +103,19 @@ test("WeatherAlerts standardization stays provider-agnostic", async () => {
     assert.doesNotMatch(source, /\bqWeather\b|\bQWeather\b/);
 });
 
+test("response WeatherAlert injection only selects and merges provider slot objects", async () => {
+    for (const path of ["../src/process/Response.mjs", "../src/process/Response.dev.mjs"]) {
+        const source = await readFile(new URL(path, import.meta.url), "utf8");
+        const injectWeatherAlerts = source.match(/async function InjectWeatherAlerts\([\s\S]*?(?=\n\/\*\*)/)?.[0] ?? "";
+
+        assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.colorfulClouds\.WeatherAlert\(\)/);
+        assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.qWeather\.WeatherAlert\(\)/);
+        assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.qWeather\.WeatherAlertWeb\(weatherAlerts\?\.detailsUrl\)/);
+        assert.match(injectWeatherAlerts, /if \(newWeatherAlerts\?\.metadata\) \{[\s\S]*weatherAlerts\.metadata = \{ \.\.\.weatherAlerts\?\.metadata, \.\.\.newWeatherAlerts\.metadata \}/);
+        assert.doesNotMatch(injectWeatherAlerts, /QWeather\.(?:ParseWeatherAlertPageURL|BuildAppleAlertDetailsURL|FetchWeatherAlertPage)|attributionUrl|Console\.debug/);
+    }
+});
+
 test("QWeather HTML extraction is separated from WeatherAlert construction", async () => {
     const attributionUrl = new URL("https://www.qweather.com/severe-weather/jianye-101190110.html");
     const extracted = QWeather.ExtractWeatherAlertPage(sourceHtml);
@@ -163,6 +176,28 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
     );
 });
 
+test("QWeather WeatherAlertWeb returns a complete top-level slot object", async () => {
+    const originalFetch = globalThis.fetch;
+    let sourceUrl;
+    globalThis.fetch = async input => {
+        sourceUrl = new URL(input);
+        return new Response(sourceHtml, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    };
+
+    try {
+        const url = "https://www.qweather.com/severe-weather/jianye-101190110.html?from=AppleWeatherService";
+        const weatherAlerts = await new QWeather({ country: "CN", language: "zh-CN", latitude: "32.115", longitude: "118.814" }, "test-token").WeatherAlertWeb(url);
+
+        assert.equal(sourceUrl.toString(), url);
+        assert.deepEqual(weatherAlerts.metadata, { attributionUrl: url });
+        assert.equal(weatherAlerts.detailsUrl, "https://weatherkit.apple.com/alertDetails/index.html?ids=jianye-101190110&lang=zh-CN&party=qweather");
+        assert.equal(weatherAlerts.alerts.length, 1);
+        assert.equal(weatherAlerts.alerts[0].areaId, "101190110");
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test("QWeather HTML keeps the complete headline separate from the long alert body", () => {
     const longMessage = "许昌市气象台2026年8月12日17时50分将暴雨橙色预警信号调整为暴雨黄色预警信号，预计未来6小时仍有强降水。";
     const extracted = QWeather.ExtractWeatherAlertPage(`
@@ -210,6 +245,8 @@ test("QWeather Alert API is standardized by QWeather class", async () => {
         }
         assert.equal(extracted.source, "南京市气象台");
         assert.equal(extracted.areaName, "南京市");
+        assert.deepEqual(extracted.metadata, { attributionUrl: "https://developer.qweather.com/attribution.html" });
+        assert.equal(extracted.detailsUrl, "https://weatherkit.apple.com/alertDetails/index.html?ids=32.115,118.814&lang=de&party=QWeather");
         assert.equal(extracted.alerts.length, 1);
         assert.equal(extracted.alerts[0].areaId, "320100");
         assert.equal(extracted.alerts[0].areaName, "南京市");
@@ -421,6 +458,8 @@ test("ColorfulClouds CAP Alert API is standardized by ColorfulClouds class", asy
 
         assert.equal(extracted.source, "NWS Los Angeles/Oxnard CA");
         assert.equal(extracted.areaName, "Los Angeles");
+        assert.deepEqual(extracted.metadata, { attributionUrl: "https://www.caiyunapp.com/h5" });
+        assert.equal(extracted.detailsUrl, "https://weatherkit.apple.com/alertDetails/index.html?ids=34.05,-118.25&lang=de&party=ColorfulClouds");
         assert.equal(extracted.alerts.length, 1);
         assert.equal(extracted.alerts[0].areaId, "CAC037");
         assert.equal(extracted.alerts[0].areaName, "Los Angeles");

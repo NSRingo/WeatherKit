@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
     constructor(parameters, token) {
         this.Name = "ColorfulClouds";
-        this.Version = "4.2.1";
+        this.Version = "4.2.2";
         Console.log(`🟧 ${this.Name} v${this.Version}`);
         this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
         this.headers = { Referer: "https://caiyunapp.com/" };
@@ -22,6 +22,7 @@ export default class ColorfulClouds {
         this.latitude = parameters.latitude;
         this.longitude = parameters.longitude;
         this.country = parameters.country;
+        this.weatherKitLanguage = String(parameters.weatherKitLanguage ?? parameters.language ?? "").trim() || "zh-CN";
     }
 
     #cache = {
@@ -306,11 +307,15 @@ export default class ColorfulClouds {
     /**
      * 拉取彩云 CAP 预警，并标准化为 WeatherAlerts.mergeAlerts 可消费的来源结构。
      * Fetch Caiyun CAP alerts and normalize them for WeatherAlerts.mergeAlerts.
-     * @returns {Promise<{alerts: Array<object>, areaName: string, source: string}>} 预警来源集合 / Normalized alert source collection.
+     * @returns {Promise<{metadata: object, detailsUrl: string, alerts: Array<object>, areaName: string, source: string}>} WeatherKit 顶级预警对象 / Top-level WeatherKit alert object.
      */
     async WeatherAlert() {
         Console.info("☑️ WeatherAlert");
         const failedWeatherAlerts = {
+            metadata: {
+                attributionUrl: "https://www.caiyunapp.com/h5",
+            },
+            detailsUrl: `https://weatherkit.apple.com/alertDetails/index.html?ids=${this.latitude},${this.longitude}&lang=${encodeURIComponent(this.weatherKitLanguage)}&party=ColorfulClouds`,
             alerts: [],
             areaName: "",
             source: "彩云天气",
@@ -333,7 +338,7 @@ export default class ColorfulClouds {
                 return failedWeatherAlerts;
             }
             if (!Array.isArray(body?.alerts)) throw Error(JSON.stringify(body?.error ?? body?.reason ?? body?.code ?? body));
-            weatherAlerts = this.#CreateWeatherAlerts(body);
+            weatherAlerts = { ...failedWeatherAlerts, ...this.#CreateWeatherAlerts(body) };
         } catch (error) {
             Console.error(`WeatherAlert: ${error}`);
         } finally {

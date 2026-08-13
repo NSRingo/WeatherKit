@@ -269,7 +269,7 @@ test("response preserves the user-supplied QWeather Alert API path", async () =>
         for (const providerName of ["国家预警信息发布中心", "國家預警信息發布中心", "National Early Warning Center"]) {
             const originalBytes = createWeatherAlertRoot(providerName);
             const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["weatherAlerts"]);
-            const expectedDetailsUrl = `https://weatherkit.apple.com/alertDetails/index.html?ids=${originalDecoded.weatherAlerts.metadata.latitude},${originalDecoded.weatherAlerts.metadata.longitude}&lang=zh-CN&party=QWeather`;
+            const expectedDetailsUrl = "https://weatherkit.apple.com/alertDetails/index.html?ids=31.23,121.47&lang=zh-CN&party=QWeather";
             const expectedEndTime = originalDecoded.weatherAlerts.alerts[0].expireTime;
             for (const handler of [Response, ResponseDev]) {
                 const request = {
@@ -331,7 +331,6 @@ test("response selects the ColorfulClouds WeatherAlert API explicitly", async ()
     try {
         for (const handler of [Response, ResponseDev]) {
             const originalBytes = createWeatherAlertRoot("国家预警信息发布中心");
-            const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["weatherAlerts"]);
             const response = await runResponseHandler(
                 handler,
                 {
@@ -347,7 +346,7 @@ test("response selects the ColorfulClouds WeatherAlert API explicitly", async ()
 
             assert.equal(sourceUrl.toString(), "https://singer.caiyunhub.com/v3/cap_alert/location?token=colorful-token&longitude=121.47&latitude=31.23&language=zh_CN");
             assert.equal(decoded.weatherAlerts.metadata.attributionUrl, "https://www.caiyunapp.com/h5");
-            assert.equal(decoded.weatherAlerts.detailsUrl, `https://weatherkit.apple.com/alertDetails/index.html?ids=${originalDecoded.weatherAlerts.metadata.latitude},${originalDecoded.weatherAlerts.metadata.longitude}&lang=zh-CN&party=ColorfulClouds`);
+            assert.equal(decoded.weatherAlerts.detailsUrl, "https://weatherkit.apple.com/alertDetails/index.html?ids=31.23,121.47&lang=zh-CN&party=ColorfulClouds");
             assert.equal(decoded.weatherAlerts.alerts[0].description, "高温橙色预警");
         }
     } finally {
