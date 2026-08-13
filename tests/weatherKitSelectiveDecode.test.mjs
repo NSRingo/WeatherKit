@@ -419,6 +419,45 @@ test("response derives QWeather HTML alerts and the internal details URL from th
     }
 });
 
+test("response preserves the original WeatherAlert slot when WeatherKit is selected", async () => {
+    const originalArgument = globalThis.$argument;
+    const originalHttpClient = globalThis.$httpClient;
+    globalThis.$argument = {
+        LogLevel: "OFF",
+        Storage: "Argument",
+        WeatherAlerts: { Provider: "WeatherKit" },
+    };
+    globalThis.$httpClient = {
+        get() {
+            assert.fail("WeatherKit must not fetch a replacement WeatherAlert source");
+        },
+    };
+
+    try {
+        const originalBytes = createWeatherAlertRoot();
+        const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["weatherAlerts"]);
+        for (const handler of [Response, ResponseDev]) {
+            const response = await runResponseHandler(
+                handler,
+                {
+                    headers: {},
+                    url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/31.23/121.47?timezone=Asia%2FShanghai&country=CN&dataSets=weatherAlerts",
+                },
+                {
+                    bodyBytes: originalBytes,
+                    headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
+                },
+            );
+            const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["weatherAlerts"]);
+
+            assert.deepEqual(decoded.weatherAlerts, originalDecoded.weatherAlerts);
+        }
+    } finally {
+        globalThis.$argument = originalArgument;
+        globalThis.$httpClient = originalHttpClient;
+    }
+});
+
 test("response does not rewrite weatherAlerts without a supported QWeather severe-weather URL", async () => {
     const originalBytes = createWeatherAlertRoot("The Weather Channel", "https://weather.com/alerts/example");
     const originalDecoded = WeatherKit2.decode(new ByteBuffer(originalBytes), ["weatherAlerts"]);

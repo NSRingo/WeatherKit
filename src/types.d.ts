@@ -57,7 +57,7 @@ export interface Settings {
         Provider?: "WeatherKit" | "ColorfulClouds" | "QWeather";
     };
     WeatherAlerts?: {
-        Provider?: "QWeatherWeb" | "QWeather" | "ColorfulClouds";
+        Provider?: "WeatherKit" | "QWeatherWeb" | "QWeather" | "ColorfulClouds";
     };
     NextHour?: {
         /**

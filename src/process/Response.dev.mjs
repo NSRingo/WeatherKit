@@ -173,7 +173,7 @@ export async function Response($request, $response) {
                                                     matchEnum.responseType();
                                                 }
                                                 body.weatherAlerts = await InjectWeatherAlerts(body.weatherAlerts, Settings, enviroments);
-                                                if (body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
+                                                if (Settings?.WeatherAlerts?.Provider !== "WeatherKit" && body?.weatherAlerts?.metadata?.providerName && !body?.weatherAlerts?.metadata?.providerLogo) body.weatherAlerts.metadata.providerLogo = providerNameToLogo(body?.weatherAlerts?.metadata?.providerName, "v2");
                                                 Console.debug(`body.weatherAlerts: ${JSON.stringify(body?.weatherAlerts, null, 2)}`);
                                                 break;
                                             }
@@ -388,6 +388,9 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
     const isNationalWarningCenter = ["国家预警信息发布中心", "國家預警信息發布中心", "National Early Warning Center"].includes(weatherAlerts?.metadata?.providerName);
     let newWeatherAlerts;
     switch (provider) {
+        case "WeatherKit": {
+            break;
+        }
         case "ColorfulClouds": {
             if (isNationalWarningCenter) newWeatherAlerts = await enviroments.colorfulClouds.WeatherAlert();
             break;

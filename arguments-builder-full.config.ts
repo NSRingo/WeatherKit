@@ -93,11 +93,12 @@ const weatherAlertsProvider: Arg = {
     defaultValue: "QWeatherWeb",
     type: "string",
     options: [
+        { key: "WeatherKit", label: "WeatherKit（不修改）" },
         { key: "QWeatherWeb", label: "和风天气网页" },
         { key: "QWeather", label: "和风天气 API" },
         { key: "ColorfulClouds", label: "彩云天气 API" },
     ],
-    description: "使用选定的数据源补全天气预警数据。",
+    description: "使用选定的数据源处理天气预警数据。",
 };
 
 export const weatherAlerts = [weatherAlertsProvider];

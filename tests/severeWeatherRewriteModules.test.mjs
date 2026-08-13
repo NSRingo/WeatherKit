@@ -190,11 +190,11 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
         readFile(new URL("../template/boxjs.settings.json", import.meta.url), "utf8"),
     ]);
 
-    assert.match(full, /key: "WeatherAlerts\.Provider"[\s\S]*defaultValue: "QWeatherWeb"[\s\S]*key: "QWeatherWeb"[\s\S]*key: "QWeather"[\s\S]*key: "ColorfulClouds"/);
+    assert.match(full, /key: "WeatherAlerts\.Provider"[\s\S]*defaultValue: "QWeatherWeb"[\s\S]*key: "WeatherKit"[\s\S]*key: "QWeatherWeb"[\s\S]*key: "QWeather"[\s\S]*key: "ColorfulClouds"/);
     assert.match(full, /export const weatherAlerts = \[weatherAlertsProvider\]/);
     assert.match(lite, /import \{[^}]*weatherAlerts[^}]*\} from "\.\/arguments-builder-full\.config"/);
     assert.match(lite, /args: \[[^\]]*\.\.\.weatherAlerts/);
     assert.match(database, /WeatherAlerts: \{ Provider: "QWeatherWeb" \}/);
-    assert.match(types, /WeatherAlerts\?: \{[\s\S]*Provider\?: "QWeatherWeb" \| "QWeather" \| "ColorfulClouds"/);
-    assert.match(boxjs, /@iRingo\.WeatherKit\.Settings\.WeatherAlerts\.Provider[\s\S]*"val": "QWeatherWeb"/);
+    assert.match(types, /WeatherAlerts\?: \{[\s\S]*Provider\?: "WeatherKit" \| "QWeatherWeb" \| "QWeather" \| "ColorfulClouds"/);
+    assert.match(boxjs, /@iRingo\.WeatherKit\.Settings\.WeatherAlerts\.Provider[\s\S]*"val": "QWeatherWeb"[\s\S]*"key": "WeatherKit"/);
 });
