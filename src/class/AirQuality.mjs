@@ -306,7 +306,8 @@ export default class AirQuality {
 
         const replaceUnits = Settings?.AirQuality?.Current?.Pollutants?.Units?.Replace ?? [];
         const isIndexInjected = needInjectIndex && injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable;
-        const scaleName = AirQuality.GetNameFromScale(isIndexInjected ? injectedIndex?.scale : airQuality?.scale);
+        const currentScale = isIndexInjected ? injectedIndex?.scale : airQuality?.scale;
+        const scaleName = replaceUnits.find(name => AirQuality.ScaleMatches(currentScale, name));
 
         const pollutants = injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable ? injectedPollutants.pollutants : airQuality?.pollutants;
         Console.info("✅ ConvertPollutants");
@@ -331,31 +332,7 @@ export default class AirQuality {
     // Apple 的无版本 AQ scale 路径会解析到当前资源；仅自定义 scale 明确配置版本时才拼接。
     static ToWeatherKitScale = ({ name, version }) => (version ? `${name}.${version}` : name);
 
-    /**
-     * 将已知 AQ scale 归一为配置中的稳定标识。
-     *
-     * Apple 内置 scale 使用无版本 alias，由服务端解析到当前资源；这里只替换 scale 字符串，
-     * 不重算 index、categoryIndex 或污染物，避免元数据升级改变已有空气质量结果。
-     */
-    static NormalizeScaleIdentifier(airQuality) {
-        if (!airQuality?.scale) return airQuality;
-
-        const scaleName = AirQuality.GetNameFromScale(airQuality.scale);
-        const scale = Object.values(AirQuality.Config.Scales).find(({ weatherKitScale }) => weatherKitScale.name === scaleName);
-        if (!scale) return airQuality;
-
-        const currentScale = AirQuality.ToWeatherKitScale(scale.weatherKitScale);
-        return airQuality.scale === currentScale ? airQuality : { ...airQuality, scale: currentScale };
-    }
-
-    static GetNameFromScale(scale) {
-        Console.info("☑️ GetNameFromScale", `scale: ${scale}`);
-
-        // EU.EAQI 本身包含点号，只移除末尾纯数字版本，不能按最后一个点无条件截断。
-        const scaleName = scale?.replace(/\.\d+$/, "");
-        Console.info("✅ GetNameFromScale", `scaleName: ${scaleName}`);
-        return scaleName;
-    }
+    static ScaleMatches = (scale, name) => scale === name || (scale?.startsWith(`${name}.`) && /^\d+$/.test(scale.slice(name.length + 1)));
 
     /**
      * 根据“昨日对比指数来源”和当前空气质量 scale，选择用于昨日对比计算的算法。
@@ -380,18 +357,18 @@ export default class AirQuality {
                 return "WAQI_InstantCast_CN";
             }
             case "WeatherKit": {
-                const currentScale = AirQuality.GetNameFromScale(airQuality?.scale);
                 const scales = AirQuality.Config.Scales;
 
-                if (currentScale === scales.HJ6332012.weatherKitScale.name) {
+                if (AirQuality.ScaleMatches(airQuality?.scale, scales.HJ6332012.weatherKitScale.name)) {
                     Console.info("✅ chooseAlogrithm", `algorithm: WAQI_InstantCast_CN`);
                     return "WAQI_InstantCast_CN";
-                } else if (currentScale === scales.EPA_NowCast.weatherKitScale.name) {
+                } else if (AirQuality.ScaleMatches(airQuality?.scale, scales.EPA_NowCast.weatherKitScale.name)) {
                     Console.info("✅ chooseAlogrithm", `algorithm: WAQI_InstantCast_US`);
                     return "WAQI_InstantCast_US";
                 } else {
                     const supportedScales = [scales.EU_EAQI.weatherKitScale.name, scales.UBA.weatherKitScale.name];
-                    if (supportedScales.includes(currentScale)) {
+                    const currentScale = supportedScales.find(name => AirQuality.ScaleMatches(airQuality?.scale, name));
+                    if (currentScale) {
                         Console.info("✅ chooseAlogrithm", `algorithm: ${currentScale}`);
                         return currentScale;
                     }
