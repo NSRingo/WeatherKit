@@ -1,9 +1,24 @@
 import { Console } from "@nsnanocat/util";
 
-export default function providerNameToLogo(providerName, version) {
+/**
+ * 根据数据源名称返回对应版本的标志；Apple、WeatherKit、空值及未知来源不补标志。
+ * Return the versioned logo for a provider; Apple, WeatherKit, empty, and unknown providers do not receive a logo.
+ * @param {string | null | undefined} providerName - 数据源名称。
+ * Provider name.
+ * @param {string} [version="v2"] - 标志资源版本。
+ * Logo asset version.
+ * @returns {string | undefined} 匹配的数据源标志地址。
+ * Matched provider logo URL.
+ */
+export default function providerNameToLogo(providerName, version = "v2") {
     Console.info("☑️ providerNameToLogo", `providerName: ${providerName}`, `version: ${version}`);
+    const normalizedProviderName = providerName?.split("\n")?.[0]?.trim();
+    if (!normalizedProviderName || ["apple", "apple weather", "weatherkit"].includes(normalizedProviderName.toLowerCase())) {
+        Console.info("✅ providerNameToLogo");
+        return;
+    }
     let providerLogo;
-    switch (providerName?.split("\n")?.[0]) {
+    switch (normalizedProviderName) {
         case "WAQI":
         case "World Air Quality Index Project":
             switch (version) {

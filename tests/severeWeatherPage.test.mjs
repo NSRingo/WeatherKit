@@ -126,7 +126,7 @@ test("response provider logos are finalized inside Inject methods", async () => 
         for (const [index, method] of injectMethods.entries()) {
             const end = injectMethods[index + 1] ? source.indexOf(`async function ${injectMethods[index + 1]}`) : source.indexOf("async function InjectAirQuality");
             const body = source.slice(source.indexOf(`async function ${method}`), end);
-            assert.match(body, /\.metadata\.providerLogo\s*=\s*providerNameToLogo\(/, `${path}: ${method}`);
+            assert.match(body, /\.metadata\.providerLogo\s*\|\|=\s*providerNameToLogo\(/, `${path}: ${method}`);
         }
     }
 });

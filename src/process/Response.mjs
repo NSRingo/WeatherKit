@@ -186,7 +186,7 @@ async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
     if (newCurrentWeather?.metadata) {
         newCurrentWeather.metadata = { ...currentWeather?.metadata, ...newCurrentWeather.metadata };
         currentWeather = { ...currentWeather, ...newCurrentWeather };
-        if (currentWeather?.metadata?.providerName && !currentWeather?.metadata?.providerLogo) currentWeather.metadata.providerLogo = providerNameToLogo(currentWeather.metadata.providerName, "v2");
+        currentWeather.metadata.providerLogo ||= providerNameToLogo(currentWeather.metadata.providerName);
     }
     Console.info("✅ InjectCurrentWeather");
     return currentWeather;
@@ -225,7 +225,7 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
     if (newForecastDaily?.metadata) {
         forecastDaily.metadata = { ...forecastDaily?.metadata, ...newForecastDaily.metadata };
         Weather.mergeForecast(forecastDaily?.days, newForecastDaily?.days);
-        if (forecastDaily?.metadata?.providerName && !forecastDaily?.metadata?.providerLogo) forecastDaily.metadata.providerLogo = providerNameToLogo(forecastDaily.metadata.providerName, "v2");
+        forecastDaily.metadata.providerLogo ||= providerNameToLogo(forecastDaily.metadata.providerName);
     }
     Console.info("✅ InjectForecastDaily");
     return forecastDaily;
@@ -264,7 +264,7 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
     if (newForecastHourly?.metadata) {
         forecastHourly.metadata = { ...forecastHourly?.metadata, ...newForecastHourly.metadata };
         forecastHourly.hours = Weather.mergeForecast(forecastHourly?.hours, newForecastHourly?.hours);
-        if (forecastHourly?.metadata?.providerName && !forecastHourly?.metadata?.providerLogo) forecastHourly.metadata.providerLogo = providerNameToLogo(forecastHourly.metadata.providerName, "v2");
+        forecastHourly.metadata.providerLogo ||= providerNameToLogo(forecastHourly.metadata.providerName);
     }
     Console.info("✅ InjectForecastHourly");
     return forecastHourly;
@@ -302,7 +302,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
     if (newForecastNextHour?.metadata) {
         newForecastNextHour.metadata = { ...forecastNextHour?.metadata, ...newForecastNextHour.metadata };
         forecastNextHour = { ...forecastNextHour, ...newForecastNextHour };
-        if (forecastNextHour?.metadata?.providerName && !forecastNextHour?.metadata?.providerLogo) forecastNextHour.metadata.providerLogo = providerNameToLogo(forecastNextHour.metadata.providerName, "v2");
+        forecastNextHour.metadata.providerLogo ||= providerNameToLogo(forecastNextHour.metadata.providerName);
     }
     Console.info("✅ InjectForecastNextHour");
     return forecastNextHour;
@@ -342,7 +342,7 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
         weatherAlerts.metadata = { ...weatherAlerts?.metadata, ...newWeatherAlerts.metadata };
         weatherAlerts.detailsUrl = newWeatherAlerts.detailsUrl ?? weatherAlerts.detailsUrl;
         weatherAlerts.alerts = WeatherAlerts.mergeAlerts(weatherAlerts?.alerts, newWeatherAlerts?.alerts);
-        if (weatherAlerts?.metadata?.providerName && !weatherAlerts?.metadata?.providerLogo) weatherAlerts.metadata.providerLogo = providerNameToLogo(weatherAlerts.metadata.providerName, "v2");
+        weatherAlerts.metadata.providerLogo ||= providerNameToLogo(weatherAlerts.metadata.providerName);
     }
     Console.info("✅ InjectWeatherAlerts");
     return weatherAlerts;
@@ -390,7 +390,7 @@ async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
     ];
 
     // Step6. 选取首个有效 provider，生成统一 logo
-    const firstValidProvider = weatherKitMetadata?.providerName || pollutantMetadata?.providerName || indexMetadata?.providerName || comparisonMetadata?.providerName;
+    const providerLogo = providerNameToLogo(weatherKitMetadata?.providerName || pollutantMetadata?.providerName || indexMetadata?.providerName || comparisonMetadata?.providerName);
 
     // Step7. 合并输出：优先使用可用注入结果，并统一 metadata / pollutants / previousDayComparison
     airQuality = {
@@ -399,7 +399,7 @@ async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
         metadata: {
             ...(airQuality?.metadata ? airQuality.metadata : injectedPollutants?.metadata),
             providerName: providers.join("\n"),
-            ...(firstValidProvider ? { providerLogo: providerNameToLogo(firstValidProvider, "v2") } : {}),
+            ...(providerLogo ? { providerLogo } : {}),
         },
         pollutants: AirQuality.ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) ?? [],
         previousDayComparison: injectedComparison?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN,

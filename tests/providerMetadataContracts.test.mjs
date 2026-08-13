@@ -24,7 +24,7 @@ globalThis.$httpClient = {
     },
 };
 
-const [{ default: ColorfulClouds }, { default: QWeather }, { default: WeatherKit2 }, { Console }] = await Promise.all([import("../src/class/ColorfulClouds.mjs"), import("../src/class/QWeather.mjs"), import("../src/class/WeatherKit2.mjs"), import("@nsnanocat/util")]);
+const [{ default: ColorfulClouds }, { default: QWeather }, { default: WeatherKit2 }, { default: providerNameToLogo }, { Console }] = await Promise.all([import("../src/class/ColorfulClouds.mjs"), import("../src/class/QWeather.mjs"), import("../src/class/WeatherKit2.mjs"), import("../src/function/providerNameToLogo.mjs"), import("@nsnanocat/util")]);
 Console.logLevel = "OFF";
 
 const parameters = {
@@ -34,6 +34,14 @@ const parameters = {
     longitude: 113.899,
     version: "v2",
 };
+
+test("providerNameToLogo owns empty, Apple, and default-version handling", () => {
+    assert.equal(providerNameToLogo(), undefined);
+    assert.equal(providerNameToLogo("Apple"), undefined);
+    assert.equal(providerNameToLogo("Apple Weather"), undefined);
+    assert.equal(providerNameToLogo("WeatherKit"), undefined);
+    assert.equal(providerNameToLogo("QWeather"), "https://weatherkit.apple.com/assets/v2/QWeather.png");
+});
 
 test("ColorfulClouds maps the API latitude-longitude response order in every weather product", async () => {
     colorfulCloudsRequestUrls.length = 0;
