@@ -46,19 +46,32 @@ export const output = {
 };
 
 // 必须与 database.mjs 中允许配置关闭的可注入数据集保持一致。
-const dataSets: Arg[] = [
+export const dataSets: Arg[] = [
+    {
+        key: "DataSets",
+        defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour"],
+        type: "array",
+    },
+];
+
+export const dataSetsFull: Arg[] = [
     {
         key: "DataSets",
         name: "[数据集]",
-        defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour"],
+        defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
         type: "array",
-        description: "仅控制插件可修改的数据集；取消选中会停止请求该数据集，其他 Apple 数据集始终透传。",
+        description: "选中的数据集会被包含在请求中。",
         options: [
             { key: "airQuality", label: "空气质量" },
             { key: "currentWeather", label: "当前天气" },
             { key: "forecastDaily", label: "每日预报" },
             { key: "forecastHourly", label: "每小时预报" },
             { key: "forecastNextHour", label: "未来一小时降水强度" },
+            { key: "locationInfo", label: "位置信息" },
+            { key: "news", label: "新闻" },
+            { key: "historicalComparisons", label: "历史对比" },
+            { key: "weatherAlerts", label: "天气预警" },
+            { key: "weatherChanges", label: "天气变化" },
         ],
     },
 ];
@@ -85,7 +98,7 @@ const weatherProvider: Arg = {
 };
 
 export const weather = [weatherProvider];
-const weatherFull = [weatherReplace, weatherProvider];
+export const weatherFull = [weatherReplace, weatherProvider];
 
 const weatherAlertsProvider: Arg = {
     key: "WeatherAlerts.Provider",
@@ -117,7 +130,7 @@ const nextHourProvider: Arg = {
 };
 
 export const nextHour = [nextHourProvider];
-const nextHourFull = [nextHourProvider];
+export const nextHourFull = [nextHourProvider];
 
 const airQualityCurrentPollutantsProvider: Arg = {
     key: "AirQuality.Current.Pollutants.Provider",
@@ -247,7 +260,7 @@ const airQualityComparisonYesterdayIndexProvider: Arg = {
 
 const airQualityComparisonFull = [airQualityComparisonReplace, airQualityComparisonYesterdayPollutantsProvider, airQualityComparisonYesterdayIndexProvider];
 
-const airQualityFull = [...airQualityCurrentFull, ...airQualityComparisonFull];
+export const airQualityFull = [...airQualityCurrentFull, ...airQualityComparisonFull];
 
 const calculateAlgorithm: Arg = {
     key: "AirQuality.Calculate.Algorithm",
@@ -274,7 +287,7 @@ const calculateAllowOverRange: Arg = {
 };
 
 export const calculate = [calculateAlgorithm];
-const calculateFull = [calculateAlgorithm, calculateAllowOverRange];
+export const calculateFull = [calculateAlgorithm, calculateAllowOverRange];
 
 export const api: Arg[] = [
     {
@@ -346,5 +359,5 @@ export const logLevel: Arg[] = [
 
 export default defineConfig({
     output,
-    args: [...dataSets, ...weatherFull, ...weatherAlerts, ...nextHourFull, ...airQualityFull, ...calculateFull, ...api, ...storage, ...logLevel],
+    args: [...dataSetsFull, ...weatherFull, ...weatherAlerts, ...nextHourFull, ...airQualityFull, ...calculateFull, ...api, ...storage, ...logLevel],
 });

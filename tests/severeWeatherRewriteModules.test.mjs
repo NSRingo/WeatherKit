@@ -175,16 +175,82 @@ test("Rewrite builder outputs use Rewrite names", async () => {
     assert.doesNotMatch(content, /\.workers\.handlebars/);
 });
 
+test("Argument builder consumers use purpose-specific configs", async () => {
+    const [packageJson, sgmoduleTools] = await Promise.all([readFile(new URL("../package.json", import.meta.url), "utf8"), readFile(new URL("../sgmodule-tools.config.ts", import.meta.url), "utf8")]);
+
+    assert.match(packageJson, /arguments-builder build -c arguments-builder\.release\.config\.ts/);
+    assert.match(packageJson, /arguments-builder build -c arguments-builder\.dev\.config\.ts/);
+    assert.match(packageJson, /arguments-builder boxjs -c arguments-builder\.full\.config\.ts/);
+    assert.match(packageJson, /arguments-builder build --config arguments-builder\.rewrite\.config\.ts/);
+    assert.match(packageJson, /arguments-builder dts -c arguments-builder\.full\.config\.ts/);
+    assert.match(sgmoduleTools, /from "\.\/arguments-builder\.dev\.config"/);
+});
+
+test("Dev builds use dev templates, bundles, and output names", async () => {
+    const devTemplates = ["surge.dev.handlebars", "loon.dev.handlebars", "quantumultx.dev.handlebars", "stash.dev.handlebars"];
+    const [config, packageJson, rollup, devWorkflow, deployWorkflow, sgmoduleTools, ...templates] = await Promise.all([
+        readFile(new URL("../arguments-builder.dev.config.ts", import.meta.url), "utf8"),
+        readFile(new URL("../package.json", import.meta.url), "utf8"),
+        readFile(new URL("../rollup.dev.config.mjs", import.meta.url), "utf8"),
+        readFile(new URL("../.github/workflows/dev.yml", import.meta.url), "utf8"),
+        readFile(new URL("../.github/workflows/deploy.yml", import.meta.url), "utf8"),
+        readFile(new URL("../sgmodule-tools.config.ts", import.meta.url), "utf8"),
+        ...devTemplates.map(filename => readFile(new URL(`../template/${filename}`, import.meta.url), "utf8")),
+    ]);
+
+    for (const output of ["sgmodule", "plugin", "snippet", "stoverride", "boxjs.json"]) {
+        assert.ok(config.includes(`iRingo.WeatherKit.dev.${output}`), output);
+    }
+    for (const template of devTemplates) {
+        assert.ok(config.includes(`./template/${template}`), template);
+    }
+    assert.doesNotMatch(config, /\boutput\b[^\n]*from "\.\/arguments-builder\.full\.config"/);
+    assert.match(packageJson, /"dev": "npm-run-all --parallel build:dev build:dev-args"/);
+    assert.match(devWorkflow, /run: npm run dev/);
+    assert.match(rollup, /\.\/dist\/request\.dev\.bundle\.js/);
+    assert.match(rollup, /\.\/dist\/response\.dev\.bundle\.js/);
+    assert.doesNotMatch(rollup, /\.\/dist\/(?:request|response)\.bundle\.js/);
+    assert.match(sgmoduleTools, /\.\/dist\/response\.dev\.bundle\.js/);
+
+    for (const output of ["request.dev.bundle.js", "response.dev.bundle.js", "iRingo.WeatherKit.dev.sgmodule", "iRingo.WeatherKit.dev.plugin", "iRingo.WeatherKit.dev.snippet", "iRingo.WeatherKit.dev.stoverride"]) {
+        assert.ok(deployWorkflow.includes(`dist/${output}`), output);
+    }
+    for (const [index, template] of templates.entries()) {
+        assert.match(template, / β/, devTemplates[index]);
+        assert.match(template, /(?:request|response)\.dev\.bundle\.js/, devTemplates[index]);
+        assert.doesNotMatch(template, /\/raw\/(?:request|response)\.bundle\.js/, devTemplates[index]);
+        assert.ok(template.includes(weatherAlertsPageHandlerPattern), devTemplates[index]);
+        assert.ok(template.includes(weatherAlertsCoordinateHandlerPattern), devTemplates[index]);
+    }
+
+    const [surge, loon, quantumultX, stash] = templates;
+    for (const template of [surge, loon]) {
+        assert.match(template, /^\[URL Rewrite\]$/m);
+        assert.match(template, /www\\\.qweather\\\.com\\\/\{1,2\}severe-weather/);
+        assert.match(template, /www\\\.qweather\\\.com\\\/en\\\/severe-weather/);
+        assert.match(template, /weather-\*\.apple\.com, www\.qweather\.com, \*api\.qweather\.com, api\.caiyunapp\.com, \*\.waqi\.info/);
+        assert.doesNotMatch(template, /PROTOCOL,QUIC/);
+    }
+    assert.match(surge, /api\.v1\.airQualityScale\.request[^\n]+releases\/download\/v\/request\.bundle\.js/);
+    assert.equal(surge.match(/releases\/download/g)?.length, 1);
+    assert.doesNotMatch(loon, /airQualityScale/);
+    assert.match(loon, /api\.v1\.weather\.request/);
+    for (const template of [loon, quantumultX, stash]) {
+        assert.doesNotMatch(template, /releases\/download/);
+    }
+});
+
 test("Handler generation keeps Loon local and excludes Egern", async () => {
-    const content = await readFile(new URL("../arguments-builder-full.config.ts", import.meta.url), "utf8");
+    const content = await readFile(new URL("../arguments-builder.full.config.ts", import.meta.url), "utf8");
     assert.match(content, /path: "\.\/dist\/iRingo\.WeatherKit\.lpx"/);
     assert.doesNotMatch(content, /transformEgern|iRingo\.WeatherKit\.yaml/);
 });
 
 test("WeatherAlert provider settings expose web and user API choices", async () => {
-    const [full, lite, database, types, boxjs] = await Promise.all([
-        readFile(new URL("../arguments-builder-full.config.ts", import.meta.url), "utf8"),
-        readFile(new URL("../arguments-builder.config.ts", import.meta.url), "utf8"),
+    const [full, release, dev, database, types, boxjs] = await Promise.all([
+        readFile(new URL("../arguments-builder.full.config.ts", import.meta.url), "utf8"),
+        readFile(new URL("../arguments-builder.release.config.ts", import.meta.url), "utf8"),
+        readFile(new URL("../arguments-builder.dev.config.ts", import.meta.url), "utf8"),
         readFile(new URL("../src/function/database.mjs", import.meta.url), "utf8"),
         readFile(new URL("../src/types.d.ts", import.meta.url), "utf8"),
         readFile(new URL("../template/boxjs.settings.json", import.meta.url), "utf8"),
@@ -192,8 +258,14 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
 
     assert.match(full, /key: "WeatherAlerts\.Provider"[\s\S]*defaultValue: "QWeatherWeb"[\s\S]*key: "WeatherKit"[\s\S]*key: "QWeatherWeb"[\s\S]*key: "QWeather"[\s\S]*key: "ColorfulClouds"/);
     assert.match(full, /export const weatherAlerts = \[weatherAlertsProvider\]/);
-    assert.match(lite, /import \{[^}]*weatherAlerts[^}]*\} from "\.\/arguments-builder-full\.config"/);
-    assert.match(lite, /args: \[[^\]]*\.\.\.weatherAlerts/);
+    assert.match(full, /export const dataSets: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour"\]/);
+    assert.match(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"\][\s\S]*key: "weatherChanges", label: "天气变化"/);
+    assert.doesNotMatch(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*\.\.\.dataSets\[0\]/);
+    assert.match(full, /args: \[\.\.\.dataSetsFull/);
+    assert.match(release, /import \{[^}]*dataSets[^}]*weatherAlerts[^}]*\} from "\.\/arguments-builder\.full\.config"/);
+    assert.match(release, /args: \[\.\.\.dataSets,[^\]]*\.\.\.weatherAlerts/);
+    assert.match(dev, /import \{[^}]*airQualityFull[^}]*dataSetsFull[^}]*weatherFull[^}]*\} from "\.\/arguments-builder\.full\.config"/);
+    assert.match(dev, /args: \[\.\.\.dataSetsFull, \.\.\.weatherFull, \.\.\.weatherAlerts, \.\.\.nextHourFull, \.\.\.airQualityFull, \.\.\.calculateFull, \.\.\.api, \.\.\.storage, \.\.\.logLevel\]/);
     assert.match(database, /WeatherAlerts: \{ Provider: "QWeatherWeb" \}/);
     assert.match(types, /WeatherAlerts\?: \{[\s\S]*Provider\?: "WeatherKit" \| "QWeatherWeb" \| "QWeather" \| "ColorfulClouds"/);
     assert.match(boxjs, /@iRingo\.WeatherKit\.Settings\.WeatherAlerts\.Provider[\s\S]*"val": "QWeatherWeb"[\s\S]*"key": "WeatherKit"/);

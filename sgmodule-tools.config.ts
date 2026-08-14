@@ -1,6 +1,6 @@
 import { defineConfig } from "@iringo/sgmoudle-tools";
 import { ArgumentsBuilder } from "@iringo/arguments-builder";
-import argConfig from "./arguments-builder.config";
+import argConfig from "./arguments-builder.dev.config";
 
 const args = new ArgumentsBuilder(argConfig);
 
@@ -13,7 +13,7 @@ export default defineConfig({
             {
                 name: "🌤 WeatherKit.api.v1.availability.response",
                 type: "http-response",
-                scriptPath: "./dist/response.js",
+                scriptPath: "./dist/response.dev.bundle.js",
                 pattern: "^https?://weatherkit.apple.com/api/v1/availability/",
                 requiresBody: true,
                 engine: "webview",
@@ -22,7 +22,7 @@ export default defineConfig({
             {
                 name: "🌤 WeatherKit.api.v2.weather.response",
                 type: "http-response",
-                scriptPath: "./dist/response.js",
+                scriptPath: "./dist/response.dev.bundle.js",
                 pattern: "^https?://weatherkit.apple.com/api/v2/weather/",
                 requiresBody: true,
                 binaryBodyMode: true,

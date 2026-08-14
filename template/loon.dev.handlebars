@@ -1,0 +1,34 @@
+#!name = {{@package 'displayName'}} β
+#!desc = BETA: {{inline (@package 'description')}}
+#!openUrl = {{@package 'openUrl'}}.beta
+#!author = {{@package 'contributors'}}
+#!homepage = {{@package 'homepage'}}
+#!icon = {{@package 'icon'}}
+#!tag = {{@package 'organizationName'}}
+#!system = {{@package 'system'}}
+#!date = {{now "yyyy-MM-dd HH:mm:ss"}}
+#!version = dev
+#!system_version = {{ @package 'systemVersion'}}
+
+[Argument]
+{{{arguments}}}
+
+[Rule]
+DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
+DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
+DOMAIN,tether.edge.apple,REJECT-DROP
+
+[Script]
+http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ requires-body=1, script-path=https://gist.githubusercontent.com/VirgilClyne/862db28df04be7523476d10b61b128f2/raw/response.dev.bundle.js, tag=🌤 WeatherKit.api.v1.availability.response, argument={{{scriptParams}}}
+http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&|$) script-path=https://gist.githubusercontent.com/VirgilClyne/862db28df04be7523476d10b61b128f2/raw/request.dev.bundle.js, tag=🌤 WeatherKit.api.v1.weatherAlerts.html.request, argument={{{scriptParams}}}
+http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?(?:&|$) script-path=https://gist.githubusercontent.com/VirgilClyne/862db28df04be7523476d10b61b128f2/raw/request.dev.bundle.js, tag=🌤 WeatherKit.api.v1.weatherAlerts.api.request, argument={{{scriptParams}}}
+http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ script-path=https://gist.githubusercontent.com/VirgilClyne/862db28df04be7523476d10b61b128f2/raw/request.dev.bundle.js, tag=🌤 WeatherKit.api.v1.weather.request, argument={{{scriptParams}}}
+http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ requires-body=1, binary-body-mode=1, script-path=https://gist.githubusercontent.com/VirgilClyne/862db28df04be7523476d10b61b128f2/raw/response.dev.bundle.js, tag=🌤 WeatherKit.api.v2.weather.response, argument={{{scriptParams}}}
+http-request ^https?:\/\/weather-map2\.apple\.com\/v1\/mapOverlay\/ script-path=https://gist.githubusercontent.com/VirgilClyne/862db28df04be7523476d10b61b128f2/raw/request.dev.bundle.js, tag=🌤 WeatherKit.api.v1.mapOverlay.request, argument={{{scriptParams}}}
+
+[URL Rewrite]
+^https?:\/\/www\.qweather\.com\/{1,2}severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=zh-CN&party=qweather 302
+^https?:\/\/www\.qweather\.com\/en\/severe-weather\/([^/?#]+)\.html\?from=AppleWeatherService$ https://weatherkit.apple.com/alertDetails/index.html?ids=$1&lang=en-US&party=qweather 302
+
+[MITM]
+hostname = weatherkit.apple.com, weather-*.apple.com, www.qweather.com, *api.qweather.com, api.caiyunapp.com, *.waqi.info
