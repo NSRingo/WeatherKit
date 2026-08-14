@@ -155,6 +155,7 @@ test("response WeatherAlert injection only selects and merges provider slot obje
         const source = await readFile(new URL(path, import.meta.url), "utf8");
         const injectWeatherAlerts = source.match(/async function InjectWeatherAlerts\([\s\S]*?(?=\n\/\*\*)/)?.[0] ?? "";
 
+        assert.match(source, /case "weatherAlerts": \{[\s\S]*body\.weatherAlerts = await InjectWeatherAlerts\(body\.weatherAlerts, Settings, enviroments\)/);
         assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.colorfulClouds\.WeatherAlert\(\)/);
         assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.qWeather\.WeatherAlert\(\)/);
         assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.qWeather\.WeatherAlertWeb\(weatherAlerts\?\.detailsUrl\)/);

@@ -258,7 +258,7 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
 
     assert.match(full, /key: "WeatherAlerts\.Provider"[\s\S]*defaultValue: "QWeatherWeb"[\s\S]*key: "WeatherKit"[\s\S]*key: "QWeatherWeb"[\s\S]*key: "QWeather"[\s\S]*key: "ColorfulClouds"/);
     assert.match(full, /export const weatherAlerts = \[weatherAlertsProvider\]/);
-    assert.match(full, /export const dataSets: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour"\]/);
+    assert.match(full, /export const dataSets: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"\]/);
     assert.match(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"\][\s\S]*key: "weatherChanges", label: "天气变化"/);
     assert.doesNotMatch(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*\.\.\.dataSets\[0\]/);
     assert.match(full, /args: \[\.\.\.dataSetsFull/);

@@ -45,11 +45,10 @@ export const output = {
     },
 };
 
-// 必须与 database.mjs 中允许配置关闭的可注入数据集保持一致。
 export const dataSets: Arg[] = [
     {
         key: "DataSets",
-        defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour"],
+        defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"],
         type: "array",
     },
 ];
