@@ -240,11 +240,12 @@ test("Dev builds use dev templates, bundles, and output names", async () => {
         assert.match(template, /weather-\*\.apple\.com, www\.qweather\.com, \*api\.qweather\.com, api\.caiyunapp\.com, \*\.waqi\.info/);
         assert.doesNotMatch(template, /PROTOCOL,QUIC/);
     }
-    assert.match(surge, /api\.v1\.airQualityScale\.request[^\n]+releases\/download\/v\/request\.bundle\.js/);
-    assert.equal(surge.match(/releases\/download/g)?.length, 1);
-    assert.doesNotMatch(loon, /airQualityScale/);
+    for (const template of [surge, loon, quantumultX]) {
+        assert.match(template, /airQualityScale[^\n]+request\.dev\.bundle\.js/);
+    }
+    assert.match(stash, /WeatherKit\.api\.v1\.airQualityScale\.request:[\s\S]*?url: [^\n]+request\.dev\.bundle\.js/);
     assert.match(loon, /api\.v1\.weather\.request/);
-    for (const template of [loon, quantumultX, stash]) {
+    for (const template of [surge, loon, quantumultX, stash]) {
         assert.doesNotMatch(template, /releases\/download/);
     }
 });

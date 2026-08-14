@@ -15,6 +15,7 @@ host, tether.edge.apple, reject
 
 #[rewrite_local]
 ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/availability\/ url script-response-body https://gist.githubusercontent.com/VirgilClyne/862db28df04be7523476d10b61b128f2/raw/response.dev.bundle.js
+^https?:\/\/weatherkit\.apple\.com\/api\/v1\/airQualityScale\/ url script-request-header https://gist.githubusercontent.com/VirgilClyne/862db28df04be7523476d10b61b128f2/raw/request.dev.bundle.js
 ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&|$) url script-echo-response https://gist.githubusercontent.com/VirgilClyne/862db28df04be7523476d10b61b128f2/raw/request.dev.bundle.js
 ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?(?:&|$) url script-echo-response https://gist.githubusercontent.com/VirgilClyne/862db28df04be7523476d10b61b128f2/raw/request.dev.bundle.js
 ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ url script-request-header https://gist.githubusercontent.com/VirgilClyne/862db28df04be7523476d10b61b128f2/raw/request.dev.bundle.js
