@@ -95,7 +95,6 @@ export async function Request($request) {
                     switch (url.pathname) {
                         case "/api/v1/weatherAlerts": {
                             const identifier = url.searchParams.get("ids");
-                            const { country, language } = parameters;
                             const isQWeatherPage = QWeather.IsWeatherAlertPageIdentifier(identifier);
                             let body;
                             try {
@@ -110,8 +109,8 @@ export async function Request($request) {
                                         body = WeatherAlerts.Build(source, {
                                             attributionUrl: source?.metadata?.attributionUrl ?? "https://www.caiyunapp.com/h5",
                                             identifier: `${parameters.latitude},${parameters.longitude}`,
-                                            language,
-                                            countryCode: country,
+                                            language: parameters.language,
+                                            countryCode: parameters.country,
                                         });
                                         break;
                                     }
@@ -121,8 +120,8 @@ export async function Request($request) {
                                         body = WeatherAlerts.Build(await qWeather.WeatherAlert(), {
                                             attributionUrl: "https://www.12379.cn/",
                                             identifier: `${parameters.latitude},${parameters.longitude}`,
-                                            language,
-                                            countryCode: country,
+                                            language: parameters.language,
+                                            countryCode: parameters.country,
                                         });
                                         break;
                                     }
@@ -130,11 +129,11 @@ export async function Request($request) {
                                     default: {
                                         if (isQWeatherPage) {
                                             Console.info("☑️ QWeather.FetchWeatherAlertPage", `ids: ${identifier}`);
-                                            const source = await QWeather.FetchWeatherAlertPage(identifier, language, $request.headers);
+                                            const source = await QWeather.FetchWeatherAlertPage(identifier, parameters.language, $request.headers);
                                             body = WeatherAlerts.Build(source, {
-                                                attributionUrl: QWeather.BuildWeatherAlertPageURL(identifier, language, false),
+                                                attributionUrl: QWeather.BuildWeatherAlertPageURL(identifier, parameters.language, false),
                                                 identifier,
-                                                language,
+                                                language: parameters.language,
                                                 countryCode: identifier.match(/-([0-9]+)$/)?.[1]?.startsWith("101") ? "CN" : "",
                                             });
                                         }
