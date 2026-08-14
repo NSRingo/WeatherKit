@@ -13,6 +13,7 @@ export async function Request($request) {
     // 解构URL
     const url = new URL($request.url);
     Console.info(`url: ${url.toJSON()}`);
+    const parameters = parseWeatherKitURL(url);
     // 解析格式
     const FORMAT = ($request.headers?.["Content-Type"] ?? $request.headers?.["content-type"])?.split(";")?.[0];
     Console.info(`FORMAT: ${FORMAT}`);
@@ -93,7 +94,6 @@ export async function Request($request) {
                     // 路径判断
                     switch (url.pathname) {
                         case "/api/v1/weatherAlerts": {
-                            const parameters = parseWeatherKitURL(url);
                             const identifier = url.searchParams.get("ids");
                             const { country, language } = parameters;
                             const isQWeatherPage = QWeather.IsWeatherAlertPageIdentifier(identifier);
