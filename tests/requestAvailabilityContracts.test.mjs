@@ -33,10 +33,23 @@ test("WeatherKit locales split language, script, and country deterministically",
     }
 });
 
+test("air-quality scale URLs expose their exact language and scale through the shared parser", () => {
+    assert.deepEqual(parseWeatherKitURL(new URL("https://weatherkit.apple.com/api/v1/airQualityScale/zh-Hans-CN/HK.AQHI.2414")), {
+        version: "v1",
+        language: "zh-Hans-CN",
+        scale: "HK.AQHI.2414",
+        latitude: undefined,
+        longitude: undefined,
+        country: undefined,
+        dataSets: [],
+    });
+});
+
 test("WeatherKit Alert URLs expose validated coordinates through the shared URL parser", () => {
     assert.deepEqual(parseWeatherKitURL(new URL("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&country=CN&ids=32.115,118.814")), {
         version: "v1",
         language: "zh-CN",
+        scale: undefined,
         latitude: "32.115",
         longitude: "118.814",
         country: "CN",

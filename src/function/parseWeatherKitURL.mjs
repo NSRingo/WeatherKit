@@ -5,6 +5,7 @@ export default function parseWeatherKitURL(url = new URL($request.url)) {
     const result = {
         version: undefined,
         language: undefined,
+        scale: undefined,
         latitude: undefined,
         longitude: undefined,
         country: undefined,
@@ -30,6 +31,13 @@ export default function parseWeatherKitURL(url = new URL($request.url)) {
             break;
         }
         default: {
+            const scaleParameters = url.pathname.match(/^\/api\/(?<version>v1)\/airQualityScale\/(?<language>[A-Z0-9]+(?:-[A-Z0-9]+)*)\/(?<scale>[^/]+)$/i)?.groups;
+            if (scaleParameters) {
+                result.version = scaleParameters.version;
+                result.language = scaleParameters.language;
+                result.scale = scaleParameters.scale;
+                break;
+            }
             const parameters = url.pathname.match(/^\/api\/(?<version>v1|v2|v3)\/(availability|weather)\/(?<locale>[A-Z0-9]+(?:-[A-Z0-9]+)*)\/(?<latitude>-?\d+\.?\d*)\/(?<longitude>-?\d+\.?\d*)$/i)?.groups;
             const localeParts = parameters?.locale?.split("-") || [];
             let localeCountry;
