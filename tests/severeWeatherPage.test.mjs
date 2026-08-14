@@ -786,12 +786,12 @@ test("Pages routes WeatherAlert requests through Hono before fetching QWeather",
     }
 });
 
-test("Pages routes coordinate WeatherAlert identifiers through QWeather Alert API", async () => {
+test("Pages preserves coordinate WeatherAlert identifiers with the default QWeatherWeb provider", async () => {
     const originalFetch = globalThis.fetch;
     let sourceRequest;
     globalThis.fetch = async (input, init) => {
         sourceRequest = { url: new URL(input), init };
-        return new Response(JSON.stringify(qWeatherAlertAPI), { headers: { "Content-Type": "application/json" } });
+        return new Response("[]", { headers: { "Content-Type": "application/json" } });
     };
 
     try {
@@ -806,39 +806,13 @@ test("Pages routes coordinate WeatherAlert identifiers through QWeather Alert AP
                 env: {},
             });
             const body = await response.json();
-            const headers = new Headers(sourceRequest.init?.headers ?? {});
 
             assert.equal(response.status, 200, pathname);
-            assert.equal(sourceRequest.url.toString(), "https://devapi.qweather.com/weatheralert/v1/current/32.115/118.814?lang=zh-hans", pathname);
-            assert.equal(headers.get("X-QW-Api-Key"), "bdd98ec1d87747f3a2e8b1741a5af796", pathname);
-            assert.equal(body.length, 1, pathname);
-            assert.equal(body[0].attributionURL, "https://www.12379.cn/", pathname);
-            assert.equal(body[0].areaId, "320100", pathname);
-            assert.equal(body[0].areaName, "南京市", pathname);
-            assert.equal(body[0].countryCode, "CN", pathname);
-            assert.equal(body[0].description, "高温橙色预警", pathname);
-            assert.equal(body[0].effectiveTime, "2026-08-02T09:48:00.000Z", pathname);
-            assert.equal(body[0].eventOnsetTime, "2026-08-02T09:48:00.000Z", pathname);
-            assert.equal(body[0].eventEndTime, "2026-08-03T09:48:00.000Z", pathname);
-            assert.equal(body[0].expireTime, "2026-08-03T09:48:00.000Z", pathname);
-            assert.equal(body[0].issuedTime, "2026-08-02T09:48:00.000Z", pathname);
-            assert.equal(body[0].importance, "high", pathname);
-            assert.equal(body[0].phenomenon, "Met", pathname);
-            assert.equal(body[0].reportedAt, "2026-08-02T09:48:00.000Z", pathname);
-            assert.equal(body[0].source, "南京市气象台", pathname);
-            assert.equal(body[0].token, "1009", pathname);
-            assert.deepEqual(body[0].responses, ["monitor"]);
-            assert.equal("area" in body[0], false, pathname);
-            assert.deepEqual(body[0].messages, [
-                {
-                    language: "zh-CN",
-                    text: "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。",
-                },
-                {
-                    language: "zh-CN",
-                    text: "有关部门和单位按照职责落实防暑降温保障措施；\n尽量避免在高温时段进行户外活动；\n对老、弱、病、幼人群提供防暑降温指导；\n高温条件下作业人员应当缩短连续工作时间。",
-                },
-            ], pathname);
+            assert.equal(sourceRequest.url.origin, "https://weatherkit.apple.com", pathname);
+            assert.equal(sourceRequest.url.pathname, "/api/v1/weatherAlerts", pathname);
+            assert.equal(sourceRequest.url.searchParams.get("lang"), "zh-CN", pathname);
+            assert.equal(sourceRequest.url.searchParams.get("ids"), "32.115,118.814", pathname);
+            assert.deepEqual(body, [], pathname);
         }
     } finally {
         globalThis.fetch = originalFetch;
@@ -943,8 +917,15 @@ test("the request scripts return an empty Apple-compatible array when the QWeath
 });
 
 test("the request scripts route coordinate identifiers through QWeather Alert API", async () => {
+    const originalArgument = globalThis.$argument;
     const originalFetch = globalThis.fetch;
     let sourceUrl;
+    globalThis.$argument = {
+        API: { QWeather: { Host: "devapi.qweather.com", Token: "qweather-token" } },
+        LogLevel: "OFF",
+        Storage: "Argument",
+        WeatherAlerts: { Provider: "QWeather" },
+    };
     globalThis.fetch = async input => {
         sourceUrl = new URL(input);
         return new Response(JSON.stringify(qWeatherAlertAPI), { headers: { "Content-Type": "application/json" } });
@@ -967,6 +948,76 @@ test("the request scripts route coordinate identifiers through QWeather Alert AP
             assert.equal(body[0].source, "南京市气象台");
         }
     } finally {
+        globalThis.$argument = originalArgument;
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test("the request scripts route coordinate identifiers through configured ColorfulClouds v2.6 alerts", async () => {
+    const originalArgument = globalThis.$argument;
+    const originalFetch = globalThis.fetch;
+    let sourceUrl;
+    globalThis.$argument = {
+        API: { ColorfulClouds: { Token: "colorful-token" } },
+        LogLevel: "OFF",
+        Storage: "Argument",
+        WeatherAlerts: { Provider: "ColorfulClouds" },
+    };
+    globalThis.fetch = async input => {
+        sourceUrl = new URL(input);
+        return new Response(JSON.stringify(colorfulCloudsRealtimeAPI), { headers: { "Content-Type": "application/json" } });
+    };
+
+    try {
+        for (const handler of [processRequest, processRequestDev]) {
+            const { $response } = await handler({
+                method: "GET",
+                url: "https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&country=CN&ids=32.115,118.814",
+                headers: { "Accept-Language": "zh-CN" },
+            });
+            const body = JSON.parse($response.body);
+
+            assert.equal(sourceUrl.toString(), "https://api.caiyunapp.com/v2.6/colorful-token/118.814,32.115/realtime?lang=zh_CN&alert=true");
+            assert.equal($response.status, 200);
+            assert.equal($response.statusCode, 200);
+            assert.equal($response.headers["Content-Type"], "application/json");
+            assert.equal(body[0].attributionURL, "https://www.caiyunapp.com/h5");
+            assert.equal(body[0].description, "大风蓝色预警");
+            assert.equal(body[0].source, "国家预警信息发布中心");
+        }
+    } finally {
+        globalThis.$argument = originalArgument;
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test("the request scripts preserve coordinate WeatherAlert requests when WeatherKit is selected", async () => {
+    const originalArgument = globalThis.$argument;
+    const originalFetch = globalThis.fetch;
+    let fetchCount = 0;
+    globalThis.$argument = {
+        LogLevel: "OFF",
+        Storage: "Argument",
+        WeatherAlerts: { Provider: "WeatherKit" },
+    };
+    globalThis.fetch = async () => {
+        fetchCount++;
+        return new Response("[]", { headers: { "Content-Type": "application/json" } });
+    };
+
+    try {
+        for (const handler of [processRequest, processRequestDev]) {
+            const { $response } = await handler({
+                method: "GET",
+                url: "https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=32.115,118.814",
+                headers: {},
+            });
+
+            assert.equal($response, undefined);
+        }
+        assert.equal(fetchCount, 0);
+    } finally {
+        globalThis.$argument = originalArgument;
         globalThis.fetch = originalFetch;
     }
 });

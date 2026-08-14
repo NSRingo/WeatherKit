@@ -1,4 +1,5 @@
 import { Lodash as _, Console, Storage } from "@nsnanocat/util";
+import ColorfulClouds from "../class/ColorfulClouds.mjs";
 import QWeather from "../class/QWeather.mjs";
 import WeatherAlerts from "../class/WeatherAlerts.mjs";
 import WeatherKit2 from "../class/WeatherKit2.mjs";
@@ -96,47 +97,75 @@ export async function Request($request) {
                             const country = url.searchParams.get("country")?.toUpperCase() || "CN";
                             const isQWeatherPage = QWeather.IsWeatherAlertPageIdentifier(identifier);
                             const coordinates = QWeather.ParseWeatherAlertCoordinateIdentifier(identifier);
-                            if (!isQWeatherPage && !coordinates) break;
-                            const handlerName = coordinates ? "QWeather.WeatherAlert" : "QWeather.FetchWeatherAlertPage";
-                            Console.info(`☑️ ${handlerName}`, `ids: ${identifier}`);
                             let body;
                             try {
-                                if (coordinates) {
-                                    const qWeather = new QWeather({ ...coordinates, country, language }, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host);
-                                    body = WeatherAlerts.Build(await qWeather.WeatherAlert(), {
-                                        attributionUrl: "https://www.12379.cn/",
-                                        identifier: `${coordinates.latitude},${coordinates.longitude}`,
-                                        language,
-                                        countryCode: country,
-                                    });
-                                } else {
-                                    const source = await QWeather.FetchWeatherAlertPage(identifier, language, $request.headers);
-                                    body = WeatherAlerts.Build(source, {
-                                        attributionUrl: QWeather.BuildWeatherAlertPageURL(identifier, language, false),
-                                        identifier,
-                                        language,
-                                        countryCode: identifier.match(/-([0-9]+)$/)?.[1]?.startsWith("101") ? "CN" : "",
-                                    });
+                                switch (Settings?.WeatherAlerts?.Provider) {
+                                    case "WeatherKit": {
+                                        break;
+                                    }
+                                    case "ColorfulClouds": {
+                                        if (coordinates) {
+                                            Console.info("☑️ ColorfulClouds.WeatherAlert", `ids: ${identifier}`);
+                                            const colorfulClouds = new ColorfulClouds({ ...coordinates, country, language }, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
+                                            const source = await colorfulClouds.WeatherAlert();
+                                            body = WeatherAlerts.Build(source, {
+                                                attributionUrl: source?.metadata?.attributionUrl ?? "https://www.caiyunapp.com/h5",
+                                                identifier: `${coordinates.latitude},${coordinates.longitude}`,
+                                                language,
+                                                countryCode: country,
+                                            });
+                                        }
+                                        break;
+                                    }
+                                    case "QWeather": {
+                                        if (coordinates) {
+                                            Console.info("☑️ QWeather.WeatherAlert", `ids: ${identifier}`);
+                                            const qWeather = new QWeather({ ...coordinates, country, language }, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host);
+                                            body = WeatherAlerts.Build(await qWeather.WeatherAlert(), {
+                                                attributionUrl: "https://www.12379.cn/",
+                                                identifier: `${coordinates.latitude},${coordinates.longitude}`,
+                                                language,
+                                                countryCode: country,
+                                            });
+                                        }
+                                        break;
+                                    }
+                                    case "QWeatherWeb":
+                                    default: {
+                                        if (isQWeatherPage) {
+                                            Console.info("☑️ QWeather.FetchWeatherAlertPage", `ids: ${identifier}`);
+                                            const source = await QWeather.FetchWeatherAlertPage(identifier, language, $request.headers);
+                                            body = WeatherAlerts.Build(source, {
+                                                attributionUrl: QWeather.BuildWeatherAlertPageURL(identifier, language, false),
+                                                identifier,
+                                                language,
+                                                countryCode: identifier.match(/-([0-9]+)$/)?.[1]?.startsWith("101") ? "CN" : "",
+                                            });
+                                        }
+                                        break;
+                                    }
                                 }
                             } catch (error) {
-                                Console.error(handlerName, error?.stack ?? error?.message ?? String(error));
+                                Console.error("WeatherAlerts", error?.stack ?? error?.message ?? String(error));
                                 body = [];
                             }
-                            if (!Array.isArray(body)) {
-                                Console.warn(handlerName, `unexpectedBodyType: ${typeof body}`);
-                                body = [];
+                            if (body !== undefined) {
+                                if (!Array.isArray(body)) {
+                                    Console.warn("WeatherAlerts", `unexpectedBodyType: ${typeof body}`);
+                                    body = [];
+                                }
+                                Console.info("✅ WeatherAlerts", `alerts: ${body.length}`, "status: 200");
+                                $response = {
+                                    status: 200,
+                                    statusCode: 200,
+                                    headers: {
+                                        "Access-Control-Allow-Origin": "*",
+                                        "Cache-Control": "max-age=0",
+                                        "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify(body),
+                                };
                             }
-                            Console.info(`✅ ${handlerName}`, `alerts: ${body.length}`, "status: 200");
-                            $response = {
-                                status: 200,
-                                statusCode: 200,
-                                headers: {
-                                    "Access-Control-Allow-Origin": "*",
-                                    "Cache-Control": "max-age=0",
-                                    "Content-Type": "application/json",
-                                },
-                                body: JSON.stringify(body),
-                            };
                             break;
                         }
                         case url.pathname.startsWith("/api/v2/weather/"): {
