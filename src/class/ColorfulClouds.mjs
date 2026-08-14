@@ -870,7 +870,35 @@ export default class ColorfulClouds {
 
     #CreateWeatherAlerts(body) {
         Console.info("☑️ CreateWeatherAlerts");
-        const convertedAlerts = (Array.isArray(body?.content) ? body.content : []).map(alert => this.#CreateWeatherAlert(alert)).filter(Boolean);
+        const convertedAlerts = (Array.isArray(body?.content) ? body.content : [])
+            .map(alert => {
+                const issuedTime = this.#DateISOString(alert?.pubtimestamp);
+                if (!issuedTime) return undefined;
+                const code = String(alert?.code ?? "").trim();
+                const eventName = this.#Config.WeatherAlert.Events[code.slice(0, 2)] ?? "";
+                const source = String(alert?.source ?? "").trim();
+                return {
+                    ...(alert?.adcode ? { areaId: String(alert.adcode).trim() } : {}),
+                    ...(alert?.location ? { areaName: String(alert.location).trim() } : {}),
+                    certainty: "unknown",
+                    description: String(alert?.title ?? "").trim(),
+                    effectiveTime: issuedTime,
+                    eventOnsetTime: issuedTime,
+                    guidelines: [],
+                    identifier: alert?.alertId,
+                    issuedTime,
+                    ...(eventName ? { eventName } : {}),
+                    message: String(alert?.description ?? alert?.title ?? "").trim(),
+                    phenomenon: eventName || "Other",
+                    reportedAt: issuedTime,
+                    severity: this.#Config.WeatherAlert.Severities[code.slice(2, 4)] || "unknown",
+                    ...(source ? { source } : {}),
+                    standard: "",
+                    ...(code ? { token: code } : {}),
+                    urgency: "unknown",
+                };
+            })
+            .filter(Boolean);
         Console.info("✅ CreateWeatherAlerts");
         return {
             alerts: convertedAlerts,
@@ -879,81 +907,46 @@ export default class ColorfulClouds {
         };
     }
 
-    /**
-     * 将单条彩云 v2.6 预警转成 WeatherAlert 中间记录。
-     * Convert one Caiyun v2.6 alert into an intermediate WeatherAlert record.
-     * @param {any} alert result.alert.content[] 记录；code 前两位为事件类型，后两位为预警级别。
-     * result.alert.content[] item; the first two code digits identify the event and the last two identify severity.
-     * @returns {object | undefined} 标准化后的预警记录 / Normalized alert record.
-     */
-    #CreateWeatherAlert(alert) {
-        const issuedTime = this.#DateISOString(alert?.pubtimestamp);
-        if (!issuedTime) return undefined;
-        const code = String(alert?.code ?? "").trim();
-        const eventName = this.#Config.WeatherAlert.Events[code.slice(0, 2)] ?? "";
-        const source = String(alert?.source ?? "").trim();
-        return {
-            ...(alert?.adcode ? { areaId: String(alert.adcode).trim() } : {}),
-            ...(alert?.location ? { areaName: String(alert.location).trim() } : {}),
-            certainty: "unknown",
-            description: String(alert?.title ?? "").trim(),
-            effectiveTime: issuedTime,
-            eventOnsetTime: issuedTime,
-            guidelines: [],
-            identifier: alert?.alertId,
-            issuedTime,
-            ...(eventName ? { eventName } : {}),
-            message: String(alert?.description ?? alert?.title ?? "").trim(),
-            phenomenon: eventName || "Other",
-            reportedAt: issuedTime,
-            severity: this.#Config.WeatherAlert.Severities[code.slice(2, 4)] || "unknown",
-            ...(source ? { source } : {}),
-            standard: "",
-            ...(code ? { token: code } : {}),
-            urgency: "unknown",
-        };
-    }
-
     #CreateWeatherAlertsV3CAP(body) {
         Console.info("☑️ CreateWeatherAlertsV3CAP");
-        const convertedAlerts = (Array.isArray(body?.alerts) ? body.alerts : []).map(alert => this.#CreateWeatherAlertV3CAP(alert)).filter(Boolean);
+        const convertedAlerts = (Array.isArray(body?.alerts) ? body.alerts : [])
+            .map(alert => {
+                const issuedTime = this.#DateISOString(alert?.sent_time);
+                if (!issuedTime) return undefined;
+                const effectiveTime = this.#DateISOString(alert?.effective_time) || issuedTime;
+                const expireTime = this.#DateISOString(alert?.expires_time);
+                const eventOnsetTime = this.#DateISOString(alert?.onset_time) || effectiveTime;
+                const area = Array.isArray(alert?.areas) ? alert.areas.find(item => item) : undefined;
+                const geocode = Array.isArray(area?.geocodes) ? area.geocodes.find(item => item?.value) : undefined;
+                const source = String(alert?.sender_name ?? "").trim() || this.#Config.WeatherAlert.Sources[Number(alert?.source)] || "";
+                const eventName = String(alert?.event_name ?? "").trim();
+                return {
+                    ...(geocode?.value ? { areaId: String(geocode.value).trim() } : {}),
+                    ...(area?.area_desc ? { areaName: String(area.area_desc).trim() } : {}),
+                    certainty: this.#Config.WeatherAlert.Certainties[Number(alert?.certainty)] || "unknown",
+                    description: String(alert?.headline ?? "").trim(),
+                    effectiveTime,
+                    eventOnsetTime,
+                    ...(expireTime ? { eventEndTime: expireTime, expireTime } : {}),
+                    guidelines: this.#SplitWeatherAlertGuidelines(alert?.instruction),
+                    identifier: alert?.id,
+                    issuedTime,
+                    ...(eventName ? { eventName } : {}),
+                    message: String(alert?.description ?? alert?.headline ?? "").trim(),
+                    phenomenon: (Array.isArray(alert?.categories) ? alert.categories : []).map(category => this.#Config.WeatherAlert.Categories[Number(category)]).find(Boolean) || eventName || "Other",
+                    reportedAt: issuedTime,
+                    severity: this.#Config.WeatherAlert.Severities[Number(alert?.severity)] || "unknown",
+                    ...(source ? { source } : {}),
+                    standard: "",
+                    urgency: this.#Config.WeatherAlert.Urgencies[Number(alert?.urgency)] || "unknown",
+                };
+            })
+            .filter(Boolean);
         Console.info("✅ CreateWeatherAlertsV3CAP");
         return {
             alerts: convertedAlerts,
             areaName: convertedAlerts.find(alert => alert?.areaName)?.areaName ?? "",
             source: convertedAlerts.find(alert => alert?.source)?.source || "彩云天气",
-        };
-    }
-
-    #CreateWeatherAlertV3CAP(alert) {
-        const issuedTime = this.#DateISOString(alert?.sent_time);
-        if (!issuedTime) return undefined;
-        const effectiveTime = this.#DateISOString(alert?.effective_time) || issuedTime;
-        const expireTime = this.#DateISOString(alert?.expires_time);
-        const eventOnsetTime = this.#DateISOString(alert?.onset_time) || effectiveTime;
-        const area = Array.isArray(alert?.areas) ? alert.areas.find(item => item) : undefined;
-        const geocode = Array.isArray(area?.geocodes) ? area.geocodes.find(item => item?.value) : undefined;
-        const source = String(alert?.sender_name ?? "").trim() || this.#Config.WeatherAlert.Sources[Number(alert?.source)] || "";
-        const eventName = String(alert?.event_name ?? "").trim();
-        return {
-            ...(geocode?.value ? { areaId: String(geocode.value).trim() } : {}),
-            ...(area?.area_desc ? { areaName: String(area.area_desc).trim() } : {}),
-            certainty: this.#Config.WeatherAlert.Certainties[Number(alert?.certainty)] || "unknown",
-            description: String(alert?.headline ?? "").trim(),
-            effectiveTime,
-            eventOnsetTime,
-            ...(expireTime ? { eventEndTime: expireTime, expireTime } : {}),
-            guidelines: this.#SplitWeatherAlertGuidelines(alert?.instruction),
-            identifier: alert?.id,
-            issuedTime,
-            ...(eventName ? { eventName } : {}),
-            message: String(alert?.description ?? alert?.headline ?? "").trim(),
-            phenomenon: (Array.isArray(alert?.categories) ? alert.categories : []).map(category => this.#Config.WeatherAlert.Categories[Number(category)]).find(Boolean) || eventName || "Other",
-            reportedAt: issuedTime,
-            severity: this.#Config.WeatherAlert.Severities[Number(alert?.severity)] || "unknown",
-            ...(source ? { source } : {}),
-            standard: "",
-            urgency: this.#Config.WeatherAlert.Urgencies[Number(alert?.urgency)] || "unknown",
         };
     }
 
