@@ -196,27 +196,6 @@ export default class QWeather {
     }
 
     /**
-     * 解析 QWeather Alert API 坐标标识。
-     * Parse a QWeather Alert API coordinate identifier.
-     * @param {string | null | undefined} ids 坐标标识 / Coordinate identifier.
-     * @returns {{latitude: string, longitude: string} | null} 坐标对象 / Coordinates.
-     */
-    static ParseWeatherAlertCoordinateIdentifier(ids) {
-        const match = String(ids ?? "")
-            .trim()
-            .match(/^(?<latitude>-?(?:\d+(?:\.\d+)?|\.\d+)),(?<longitude>-?(?:\d+(?:\.\d+)?|\.\d+))$/);
-        if (!match?.groups) return null;
-        const latitude = Number(match.groups.latitude);
-        const longitude = Number(match.groups.longitude);
-        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
-        return {
-            latitude: match.groups.latitude,
-            longitude: match.groups.longitude,
-        };
-    }
-
-    /**
      * 从 FlatBuffer 的 QWeather 预警页面链接中提取地区标识。
      * Extract the location identifier from a FlatBuffer QWeather severe-weather URL.
      * @param {string | null | undefined} value 预警页面链接 / Severe-weather URL.

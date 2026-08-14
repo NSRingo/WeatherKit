@@ -32,6 +32,19 @@ test("WeatherKit locales split language, script, and country deterministically",
     }
 });
 
+test("WeatherKit Alert URLs expose validated coordinates through the shared URL parser", () => {
+    assert.deepEqual(parseWeatherKitURL(new URL("https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&country=CN&ids=32.115,118.814")), {
+        version: "v1",
+        language: "zh-CN",
+        latitude: "32.115",
+        longitude: "118.814",
+        country: "CN",
+        dataSets: [],
+    });
+    assert.equal(parseWeatherKitURL(new URL("https://weatherkit.apple.com/api/v1/weatherAlerts?ids=118.814,32.115")).latitude, undefined);
+    assert.equal(parseWeatherKitURL(new URL("https://weatherkit.apple.com/api/v1/weatherAlerts/extra?ids=32.115,118.814")).latitude, undefined);
+});
+
 test("request keeps future datasets while removing a known explicitly disabled dataset", async () => {
     const input = "airQuality,news,forecastPrecipitation,forecastNextHour,currentWeather";
     const expected = ["airQuality", "news", "forecastPrecipitation", "currentWeather"];

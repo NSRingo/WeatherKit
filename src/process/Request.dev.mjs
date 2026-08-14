@@ -4,6 +4,7 @@ import QWeather from "../class/QWeather.mjs";
 import WeatherAlerts from "../class/WeatherAlerts.mjs";
 import WeatherKit2 from "../class/WeatherKit2.mjs";
 import database from "../function/database.mjs";
+import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
 import setENV from "../function/setENV.mjs";
 /***************** Processing *****************/
 export async function Request($request) {
@@ -92,11 +93,10 @@ export async function Request($request) {
                     // 路径判断
                     switch (url.pathname) {
                         case "/api/v1/weatherAlerts": {
+                            const parameters = parseWeatherKitURL(url);
                             const identifier = url.searchParams.get("ids");
-                            const language = url.searchParams.get("lang")?.trim() || "zh-CN";
-                            const country = url.searchParams.get("country")?.toUpperCase() || "CN";
+                            const { country, language } = parameters;
                             const isQWeatherPage = QWeather.IsWeatherAlertPageIdentifier(identifier);
-                            const coordinates = QWeather.ParseWeatherAlertCoordinateIdentifier(identifier);
                             let body;
                             try {
                                 switch (Settings?.WeatherAlerts?.Provider) {
@@ -104,13 +104,13 @@ export async function Request($request) {
                                         break;
                                     }
                                     case "ColorfulClouds": {
-                                        if (coordinates) {
+                                        if (parameters.latitude && parameters.longitude) {
                                             Console.info("☑️ ColorfulClouds.WeatherAlert", `ids: ${identifier}`);
-                                            const colorfulClouds = new ColorfulClouds({ ...coordinates, country, language }, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
+                                            const colorfulClouds = new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
                                             const source = await colorfulClouds.WeatherAlert();
                                             body = WeatherAlerts.Build(source, {
                                                 attributionUrl: source?.metadata?.attributionUrl ?? "https://www.caiyunapp.com/h5",
-                                                identifier: `${coordinates.latitude},${coordinates.longitude}`,
+                                                identifier: `${parameters.latitude},${parameters.longitude}`,
                                                 language,
                                                 countryCode: country,
                                             });
@@ -118,12 +118,12 @@ export async function Request($request) {
                                         break;
                                     }
                                     case "QWeather": {
-                                        if (coordinates) {
+                                        if (parameters.latitude && parameters.longitude) {
                                             Console.info("☑️ QWeather.WeatherAlert", `ids: ${identifier}`);
-                                            const qWeather = new QWeather({ ...coordinates, country, language }, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host);
+                                            const qWeather = new QWeather(parameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host);
                                             body = WeatherAlerts.Build(await qWeather.WeatherAlert(), {
                                                 attributionUrl: "https://www.12379.cn/",
-                                                identifier: `${coordinates.latitude},${coordinates.longitude}`,
+                                                identifier: `${parameters.latitude},${parameters.longitude}`,
                                                 language,
                                                 countryCode: country,
                                             });

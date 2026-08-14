@@ -846,8 +846,6 @@ test("only QWeather location tokens are eligible for takeover", () => {
     assert.equal(QWeather.IsWeatherAlertPageIdentifier("jianye-10119011"), false);
     assert.equal(QWeather.IsWeatherAlertPageIdentifier("jianye-1011901100"), false);
     assert.equal(QWeather.IsWeatherAlertPageIdentifier("32.115,118.814"), false);
-    assert.deepEqual(QWeather.ParseWeatherAlertCoordinateIdentifier("32.115,118.814"), { latitude: "32.115", longitude: "118.814" });
-    assert.equal(QWeather.ParseWeatherAlertCoordinateIdentifier("118.814,32.115"), null);
     assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com/severe-weather/jian'an-101180407.html?from=AppleWeatherService"), "jian'an-101180407");
     assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com//severe-weather/jianye-101190110.html?from=AppleWeatherService"), "jianye-101190110");
     assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com/en/severe-weather/jianye-101190110.html?from=AppleWeatherService"), "jianye-101190110");
