@@ -1032,3 +1032,14 @@ test("the request scripts leave non-QWeather identifiers alone", async () => {
         assert.equal($response, undefined);
     }
 });
+
+test("the request scripts only intercept the exact WeatherAlert pathname", async () => {
+    for (const handler of [processRequest, processRequestDev]) {
+        const { $response } = await handler({
+            method: "GET",
+            url: "https://weatherkit.apple.com/api/v1/weatherAlerts/extra?lang=zh-CN&ids=jianye-101190110",
+            headers: {},
+        });
+        assert.equal($response, undefined);
+    }
+});

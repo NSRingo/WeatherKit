@@ -90,8 +90,8 @@ export async function Request($request) {
             switch (url.hostname) {
                 case "weatherkit.apple.com":
                     // 路径判断
-                    switch (true) {
-                        case url.pathname === "/api/v1/weatherAlerts": {
+                    switch (url.pathname) {
+                        case "/api/v1/weatherAlerts": {
                             const identifier = url.searchParams.get("ids");
                             const language = url.searchParams.get("lang")?.trim() || "zh-CN";
                             const country = url.searchParams.get("country")?.toUpperCase() || "CN";
@@ -168,26 +168,27 @@ export async function Request($request) {
                             }
                             break;
                         }
-                        case url.pathname.startsWith("/api/v2/weather/"): {
-                            // 解决 macOS 天气 app 如果使用国际版 Maps 时，country 丢失不显示未来一小时降水的问题
-                            switch (true) {
-                                case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
-                                case $request.headers["user-agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
-                                    if (url.searchParams.has("country")) {
-                                        //if (url.searchParams.get("country") === "CN") url.searchParams.set("country", "TW");
-                                    } else {
-                                        const gcc = Storage.getItem("@iRingo.Location.Caches")?.pep?.gcc;
-                                        if (gcc) url.searchParams.set("country", gcc);
-                                    }
-                                    break;
-                            }
-                            let dataSets = url.searchParams.get("dataSets")?.split(",");
-                            if (dataSets) {
-                                dataSets = WeatherKit2.filterRootNames(dataSets, Settings.DataSets);
-                                url.searchParams.set("dataSets", dataSets?.join(","));
+                        default:
+                            if (url.pathname.startsWith("/api/v2/weather/")) {
+                                // 解决 macOS 天气 app 如果使用国际版 Maps 时，country 丢失不显示未来一小时降水的问题
+                                switch (true) {
+                                    case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
+                                    case $request.headers["user-agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):
+                                        if (url.searchParams.has("country")) {
+                                            //if (url.searchParams.get("country") === "CN") url.searchParams.set("country", "TW");
+                                        } else {
+                                            const gcc = Storage.getItem("@iRingo.Location.Caches")?.pep?.gcc;
+                                            if (gcc) url.searchParams.set("country", gcc);
+                                        }
+                                        break;
+                                }
+                                let dataSets = url.searchParams.get("dataSets")?.split(",");
+                                if (dataSets) {
+                                    dataSets = WeatherKit2.filterRootNames(dataSets, Settings.DataSets);
+                                    url.searchParams.set("dataSets", dataSets?.join(","));
+                                }
                             }
                             break;
-                        }
                     }
                     break;
                 case "weather-map2.apple.com": {
