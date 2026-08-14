@@ -119,6 +119,15 @@ test("script module templates hook Apple weatherAlerts without QWeather page red
     assert.doesNotMatch(stash, /name: WeatherKit\.api\.v1\.weatherAlerts\.request\n      type: request\n      require-body/);
 });
 
+test("Stash weather-alert requests declare the required request type", async () => {
+    const requestEntry = /    - match: [^\n]*weatherAlerts[^\n]*\n      name: WeatherKit\.api\.v1\.weatherAlerts\.request\n      type: request\n/g;
+
+    for (const filename of ["stash.handlebars", "stash.dev.handlebars"]) {
+        const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
+        assert.equal(content.match(requestEntry)?.length, 2, filename);
+    }
+});
+
 test("Rewrite templates stay aligned with fixed Rewrite modules", async () => {
 	const fixedTemplates = ["loon.rewrite.handlebars", "stash.rewrite.handlebars"];
 	for (const filename of rewriteTemplates) {
