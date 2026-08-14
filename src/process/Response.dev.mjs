@@ -381,7 +381,7 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
             break;
         }
         case "ColorfulClouds": {
-            if (isNationalWarningCenter) newWeatherAlerts = await enviroments.colorfulClouds.WeatherAlertV3CAP();
+            if (isNationalWarningCenter) newWeatherAlerts = await enviroments.colorfulClouds.WeatherAlert();
             break;
         }
         case "QWeather": {

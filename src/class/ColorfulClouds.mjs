@@ -7,7 +7,7 @@ import providerNameToLogo from "../function/providerNameToLogo.mjs";
 export default class ColorfulClouds {
     constructor(parameters, token) {
         this.Name = "ColorfulClouds";
-        this.Version = "4.2.2";
+        this.Version = "4.3.0";
         Console.log(`🟧 ${this.Name} v${this.Version}`);
         this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
         this.headers = { Referer: "https://caiyunapp.com/" };
@@ -26,6 +26,7 @@ export default class ColorfulClouds {
     }
 
     #cache = {
+        alert: {},
         realtime: {},
     };
 
@@ -64,16 +65,41 @@ export default class ColorfulClouds {
             other: "NOT_AVAILABLE",
         },
         WeatherAlert: {
-            Sources: {
-                1: "US National Weather Service",
-                2: "Environment and Climate Change Canada",
+            Events: {
+                "01": "台风",
+                "02": "暴雨",
+                "03": "暴雪",
+                "04": "寒潮",
+                "05": "大风",
+                "06": "沙尘暴",
+                "07": "高温",
+                "08": "干旱",
+                "09": "雷电",
+                10: "冰雹",
+                11: "霜冻",
+                12: "大雾",
+                13: "霾",
+                14: "道路结冰",
+                15: "森林火险",
+                16: "雷雨大风",
+                17: "春季沙尘天气趋势预警",
+                18: "沙尘",
             },
             Severities: {
+                "00": "unknown",
+                "01": "minor",
+                "02": "moderate",
+                "03": "severe",
+                "04": "extreme",
                 1: "extreme",
                 2: "severe",
                 3: "moderate",
                 4: "minor",
                 5: "unknown",
+            },
+            Sources: {
+                1: "US National Weather Service",
+                2: "Environment and Climate Change Canada",
             },
             Certainties: {
                 1: "observed",
@@ -189,24 +215,33 @@ export default class ColorfulClouds {
         }
 
         const request = {
-            url: `${this.endpoint}/realtime?lang=${this.language}`,
+            url: `${this.endpoint}/realtime?lang=${this.language}&alert=true`,
             headers: this.headers,
         };
         try {
             const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
             switch (body?.status) {
-                case "ok":
+                case "ok": {
                     switch (body?.result?.realtime?.status) {
                         case "ok": {
                             this.#cache.realtime = body;
-                            Console.info("✅ RealTime");
-                            return body;
+                            break;
                         }
                         case "error":
                         case undefined:
                             throw Error(JSON.stringify({ status: body?.result?.realtime?.status, reason: body?.result?.realtime }));
                     }
-                    break;
+                    switch (body?.result?.alert?.status) {
+                        case "ok":
+                            this.#cache.alert = body.result.alert;
+                            break;
+                        case "error":
+                        case undefined:
+                            break;
+                    }
+                    Console.info("✅ RealTime");
+                    return body;
+                }
                 case "error":
                 case "failed":
                 case undefined:
@@ -305,8 +340,38 @@ export default class ColorfulClouds {
     }
 
     /**
-     * 拉取彩云 CAP 预警，并标准化为 WeatherAlerts.mergeAlerts 可消费的来源结构。
-     * Fetch Caiyun CAP alerts and normalize them for WeatherAlerts.mergeAlerts.
+     * 从彩云实况缓存读取 v2.6 预警，并标准化为 WeatherAlerts.mergeAlerts 可消费的来源结构。
+     * Read Caiyun v2.6 alerts from the realtime cache and normalize them for WeatherAlerts.mergeAlerts.
+     * @link https://docs.caiyunapp.com/weather-api/v2/v2.6/5-alert.html
+     * @returns {Promise<{metadata: object, detailsUrl: string, alerts: Array<object>, areaName: string, source: string}>} WeatherKit 顶级预警对象 / Top-level WeatherKit alert object.
+     */
+    async WeatherAlert() {
+        Console.info("☑️ WeatherAlert");
+        const failedWeatherAlerts = {
+            metadata: {
+                attributionUrl: "https://www.caiyunapp.com/h5",
+            },
+            detailsUrl: `https://weatherkit.apple.com/alertDetails/index.html?ids=${this.latitude},${this.longitude}&lang=${encodeURIComponent(this.weatherKitLanguage)}&party=ColorfulClouds`,
+            alerts: [],
+            areaName: "",
+            source: "彩云天气",
+        };
+        let weatherAlerts = failedWeatherAlerts;
+        try {
+            await this.#RealTime();
+            if (!Array.isArray(this.#cache.alert?.content)) throw Error(JSON.stringify(this.#cache.alert));
+            weatherAlerts = { ...failedWeatherAlerts, ...this.#CreateWeatherAlerts(this.#cache.alert) };
+        } catch (error) {
+            Console.error(`WeatherAlert: ${error}`);
+        } finally {
+            Console.info("✅ WeatherAlert");
+        }
+        return weatherAlerts;
+    }
+
+    /**
+     * 拉取彩云 v3 CAP 预警，并标准化为 WeatherAlerts.mergeAlerts 可消费的来源结构。
+     * Fetch Caiyun v3 CAP alerts and normalize them for WeatherAlerts.mergeAlerts.
      * @returns {Promise<{metadata: object, detailsUrl: string, alerts: Array<object>, areaName: string, source: string}>} WeatherKit 顶级预警对象 / Top-level WeatherKit alert object.
      */
     async WeatherAlertV3CAP() {
@@ -800,6 +865,52 @@ export default class ColorfulClouds {
                 // windGust: 0, // Not given
                 windSpeed: hourly.result.hourly.wind[i].speed,
             })),
+        };
+    }
+
+    #CreateWeatherAlerts(body) {
+        Console.info("☑️ CreateWeatherAlerts");
+        const convertedAlerts = (Array.isArray(body?.content) ? body.content : []).map(alert => this.#CreateWeatherAlert(alert)).filter(Boolean);
+        Console.info("✅ CreateWeatherAlerts");
+        return {
+            alerts: convertedAlerts,
+            areaName: convertedAlerts.find(alert => alert?.areaName)?.areaName ?? "",
+            source: convertedAlerts.find(alert => alert?.source)?.source || "彩云天气",
+        };
+    }
+
+    /**
+     * 将单条彩云 v2.6 预警转成 WeatherAlert 中间记录。
+     * Convert one Caiyun v2.6 alert into an intermediate WeatherAlert record.
+     * @param {any} alert result.alert.content[] 记录；code 前两位为事件类型，后两位为预警级别。
+     * result.alert.content[] item; the first two code digits identify the event and the last two identify severity.
+     * @returns {object | undefined} 标准化后的预警记录 / Normalized alert record.
+     */
+    #CreateWeatherAlert(alert) {
+        const issuedTime = this.#DateISOString(alert?.pubtimestamp);
+        if (!issuedTime) return undefined;
+        const code = String(alert?.code ?? "").trim();
+        const eventName = this.#Config.WeatherAlert.Events[code.slice(0, 2)] ?? "";
+        const source = String(alert?.source ?? "").trim();
+        return {
+            ...(alert?.adcode ? { areaId: String(alert.adcode).trim() } : {}),
+            ...(alert?.location ? { areaName: String(alert.location).trim() } : {}),
+            certainty: "unknown",
+            description: String(alert?.title ?? "").trim(),
+            effectiveTime: issuedTime,
+            eventOnsetTime: issuedTime,
+            guidelines: [],
+            identifier: alert?.alertId,
+            issuedTime,
+            ...(eventName ? { eventName } : {}),
+            message: String(alert?.description ?? alert?.title ?? "").trim(),
+            phenomenon: eventName || "Other",
+            reportedAt: issuedTime,
+            severity: this.#Config.WeatherAlert.Severities[code.slice(2, 4)] || "unknown",
+            ...(source ? { source } : {}),
+            standard: "",
+            ...(code ? { token: code } : {}),
+            urgency: "unknown",
         };
     }
 

@@ -70,31 +70,30 @@ const qWeatherAlertAPI = {
     ],
 };
 const qWeatherHighTemperatureAlert = qWeatherAlertAPI.alerts[1];
-const colorfulCloudsAlertAPI = {
-    alerts: [
-        {
-            id: "urn:oid:2.49.0.1.840.0.weatherkit-test",
-            region_code: "CN",
-            source: 1,
-            msg_type: 1,
-            event_name: "高温",
-            categories: [2],
-            urgency: 1,
-            severity: 2,
-            certainty: 2,
-            sent_time: 1785664080,
-            effective_time: 1785664080,
-            onset_time: 1785664080,
-            expires_time: 1785750480,
-            references: [],
-            areas: [{ area_desc: "南京市", geocodes: [{ value_name: "CODE", value: "320100", namespace: "CN" }], polygons: [], circles: [] }],
-            language_code: "zh-CN",
-            sender_name: "南京市气象台",
-            headline: "南京市气象台发布高温橙色预警",
-            description: "预计明天最高气温可达37℃以上。",
-            instruction: "1.做好防暑降温。",
+const colorfulCloudsRealtimeAPI = {
+    status: "ok",
+    location: [31.23, 121.47],
+    result: {
+        realtime: { status: "ok" },
+        alert: {
+            status: "ok",
+            content: [
+                {
+                    code: "0703",
+                    description: "南京市气象台发布高温橙色预警：预计明天最高气温可达37℃以上。",
+                    regionId: "101190101",
+                    pubtimestamp: 1785664080,
+                    alertId: "32010041600000_20260802174800",
+                    title: "南京市气象台发布高温橙色预警",
+                    adcode: "320100",
+                    source: "南京市气象台",
+                    location: "南京市",
+                    request_status: "ok",
+                },
+            ],
+            adcodes: [{ adcode: 320100, name: "南京市" }],
         },
-    ],
+    },
 };
 
 test("WeatherKit2 is a configured reusable root processor", () => {
@@ -311,7 +310,7 @@ test("response preserves the user-supplied QWeather Alert API path", async () =>
     }
 });
 
-test("response selects the ColorfulClouds WeatherAlert API explicitly", async () => {
+test("response selects ColorfulClouds v2.6 alerts explicitly", async () => {
     const originalArgument = globalThis.$argument;
     const originalHttpClient = globalThis.$httpClient;
     let sourceUrl;
@@ -324,7 +323,7 @@ test("response selects the ColorfulClouds WeatherAlert API explicitly", async ()
     globalThis.$httpClient = {
         get(resource, callback) {
             sourceUrl = new URL(resource.url);
-            callback(undefined, { headers: { "Content-Type": "application/json" }, status: 200 }, JSON.stringify(colorfulCloudsAlertAPI));
+            callback(undefined, { headers: { "Content-Type": "application/json" }, status: 200 }, JSON.stringify(colorfulCloudsRealtimeAPI));
         },
     };
 
@@ -344,7 +343,7 @@ test("response selects the ColorfulClouds WeatherAlert API explicitly", async ()
             );
             const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["weatherAlerts"]);
 
-            assert.equal(sourceUrl.toString(), "https://singer.caiyunhub.com/v3/cap_alert/location?token=colorful-token&longitude=121.47&latitude=31.23&language=zh_CN");
+            assert.equal(sourceUrl.toString(), "https://api.caiyunapp.com/v2.6/colorful-token/121.47,31.23/realtime?lang=zh_CN&alert=true");
             assert.equal(decoded.weatherAlerts.metadata.attributionUrl, "https://www.caiyunapp.com/h5");
             assert.equal(decoded.weatherAlerts.detailsUrl, "https://weatherkit.apple.com/alertDetails/index.html?ids=31.23,121.47&lang=zh-CN&party=ColorfulClouds");
             assert.equal(decoded.weatherAlerts.alerts[0].description, "高温橙色预警");

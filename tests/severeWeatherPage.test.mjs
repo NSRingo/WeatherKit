@@ -55,7 +55,54 @@ const qWeatherAlertAPI = {
         },
     ],
 };
-const colorfulCloudsAlertAPI = {
+const colorfulCloudsRealtimeAPI = {
+    status: "ok",
+    api_version: "v2.6",
+    lang: "zh_CN",
+    server_time: 1640759880,
+    location: [39.976, 116.3176],
+    result: {
+        alert: {
+            status: "ok",
+            content: [
+                {
+                    province: "北京市",
+                    status: "预警中",
+                    code: "0501",
+                    description: "海淀区气象台29日07时25分发布大风蓝色预警,预计，当前至29日16时，海淀区将有3、4级偏北风，阵风6、7级，请注意防范。",
+                    regionId: "101010200",
+                    county: "无",
+                    pubtimestamp: 1640733900,
+                    latlon: [39.959912, 116.298056],
+                    city: "海淀区",
+                    alertId: "11010841600000_20211229072633",
+                    title: "海淀区气象台发布大风蓝色预警[IV/一般]",
+                    adcode: "110108",
+                    source: "国家预警信息发布中心",
+                    location: "北京市海淀区",
+                    request_status: "ok",
+                },
+            ],
+            adcodes: [
+                { adcode: 110000, name: "北京市" },
+                { adcode: 110108, name: "海淀区" },
+            ],
+        },
+        realtime: {
+            status: "ok",
+            cloudrate: 0.1,
+            skycon: "CLEAR_DAY",
+            humidity: 0.4,
+            precipitation: { local: { intensity: 0 } },
+            pressure: 101325,
+            temperature: 20,
+            apparent_temperature: 20,
+            visibility: 10,
+            wind: { direction: 90, speed: 5 },
+        },
+    },
+};
+const colorfulCloudsCAPAlertAPI = {
     alerts: [
         {
             id: "urn:oid:2.49.0.1.840.0.test",
@@ -108,7 +155,7 @@ test("response WeatherAlert injection only selects and merges provider slot obje
         const source = await readFile(new URL(path, import.meta.url), "utf8");
         const injectWeatherAlerts = source.match(/async function InjectWeatherAlerts\([\s\S]*?(?=\n\/\*\*)/)?.[0] ?? "";
 
-        assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.colorfulClouds\.WeatherAlertV3CAP\(\)/);
+        assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.colorfulClouds\.WeatherAlert\(\)/);
         assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.qWeather\.WeatherAlert\(\)/);
         assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.qWeather\.WeatherAlertWeb\(weatherAlerts\?\.detailsUrl\)/);
         assert.match(injectWeatherAlerts, /if \(newWeatherAlerts\?\.metadata\) \{[\s\S]*weatherAlerts\.metadata = \{ \.\.\.weatherAlerts\?\.metadata, \.\.\.newWeatherAlerts\.metadata \}/);
@@ -452,13 +499,135 @@ test("updated Chinese headlines replace generic FlatBuffer titles", () => {
     assert.equal(appleAlerts[1].description, "暴雨橙色预警");
 });
 
-test("ColorfulClouds v3 CAP alerts are available through WeatherAlertV3CAP", async () => {
+test("ColorfulClouds reuses its realtime cache and standardizes v2.6 alerts", async () => {
+    const originalFetch = globalThis.fetch;
+    let sourceRequest;
+    let requestCount = 0;
+    globalThis.fetch = async (input, init) => {
+        requestCount++;
+        const requestUrl = typeof input === "string" ? input : input?.url ?? input;
+        sourceRequest = { url: new URL(requestUrl), headers: new Headers(init?.headers ?? input?.headers ?? {}) };
+        return new Response(JSON.stringify(colorfulCloudsRealtimeAPI), { headers: { "Content-Type": "application/json" } });
+    };
+
+    try {
+        let extracted;
+        for (const [index, [weatherKitLanguage, colorfulCloudsLanguage]] of [
+            ["zh-CN", "zh_CN"],
+            ["zh-TW", "zh_TW"],
+            ["zh-Hant", "zh_TW"],
+            ["en-US", "en_US"],
+            ["en-GB", "en_GB"],
+            ["ja", "ja"],
+            ["de", "zh_CN"],
+        ].entries()) {
+            const colorfulClouds = new ColorfulClouds({ country: "CN", language: weatherKitLanguage, latitude: "39.976", longitude: "116.3176" }, "test-token");
+            await colorfulClouds.CurrentWeather();
+            extracted = await colorfulClouds.WeatherAlert();
+
+            assert.equal(sourceRequest.url.toString(), `https://api.caiyunapp.com/v2.6/test-token/116.3176,39.976/realtime?lang=${colorfulCloudsLanguage}&alert=true`);
+            assert.equal(sourceRequest.headers.get("Referer"), "https://caiyunapp.com/");
+            assert.equal(requestCount, index + 1);
+        }
+
+        assert.equal(extracted.source, "国家预警信息发布中心");
+        assert.equal(extracted.areaName, "北京市海淀区");
+        assert.deepEqual(extracted.metadata, { attributionUrl: "https://www.caiyunapp.com/h5" });
+        assert.equal(extracted.detailsUrl, "https://weatherkit.apple.com/alertDetails/index.html?ids=39.976,116.3176&lang=de&party=ColorfulClouds");
+        assert.equal(extracted.alerts.length, 1);
+        assert.equal(extracted.alerts[0].areaId, "110108");
+        assert.equal(extracted.alerts[0].areaName, "北京市海淀区");
+        assert.equal(extracted.alerts[0].certainty, "unknown");
+        assert.equal(extracted.alerts[0].description, "海淀区气象台发布大风蓝色预警[IV/一般]");
+        assert.equal(extracted.alerts[0].effectiveTime, "2021-12-28T23:25:00.000Z");
+        assert.equal(extracted.alerts[0].eventOnsetTime, "2021-12-28T23:25:00.000Z");
+        assert.equal(extracted.alerts[0].eventEndTime, undefined);
+        assert.equal(extracted.alerts[0].expireTime, undefined);
+        assert.equal(extracted.alerts[0].issuedTime, "2021-12-28T23:25:00.000Z");
+        assert.equal(extracted.alerts[0].message, colorfulCloudsRealtimeAPI.result.alert.content[0].description);
+        assert.equal(extracted.alerts[0].eventName, "大风");
+        assert.equal(extracted.alerts[0].phenomenon, "大风");
+        assert.equal(extracted.alerts[0].reportedAt, "2021-12-28T23:25:00.000Z");
+        assert.equal(extracted.alerts[0].severity, "minor");
+        assert.equal(extracted.alerts[0].source, "国家预警信息发布中心");
+        assert.equal(extracted.alerts[0].standard, "");
+        assert.equal(extracted.alerts[0].token, "0501");
+        assert.equal(extracted.alerts[0].urgency, "unknown");
+        assert.deepEqual(extracted.alerts[0].guidelines, []);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test("only ColorfulClouds realtime requests and caches v2.6 alerts", async () => {
+    const source = await readFile(new URL("../src/class/ColorfulClouds.mjs", import.meta.url), "utf8");
+
+    assert.match(source, /\/realtime\?[^\n]*alert=true/);
+    for (const endpoint of ["minutely", "hourly", "daily"]) assert.doesNotMatch(source, new RegExp(`/${endpoint}\\?[^\\n]*alert=true`), endpoint);
+    assert.match(source, /switch \(body\?\.result\?\.realtime\?\.status\)[\s\S]*switch \(body\?\.result\?\.alert\?\.status\) \{\s*case "ok":\s*this\.#cache\.alert = body\.result\.alert;/);
+    assert.doesNotMatch(source, /result\?\.alert\?\.status === "ok"/);
+});
+
+test("ColorfulClouds v2.6 alert codes map event names and severities", async () => {
+    const originalFetch = globalThis.fetch;
+    const events = [
+        ["01", "台风"],
+        ["02", "暴雨"],
+        ["03", "暴雪"],
+        ["04", "寒潮"],
+        ["05", "大风"],
+        ["06", "沙尘暴"],
+        ["07", "高温"],
+        ["08", "干旱"],
+        ["09", "雷电"],
+        ["10", "冰雹"],
+        ["11", "霜冻"],
+        ["12", "大雾"],
+        ["13", "霾"],
+        ["14", "道路结冰"],
+        ["15", "森林火险"],
+        ["16", "雷雨大风"],
+        ["17", "春季沙尘天气趋势预警"],
+        ["18", "沙尘"],
+    ];
+    const severities = [
+        ["00", "unknown"],
+        ["01", "minor"],
+        ["02", "moderate"],
+        ["03", "severe"],
+        ["04", "extreme"],
+    ];
+
+    try {
+        globalThis.fetch = async () => {
+            const body = structuredClone(colorfulCloudsRealtimeAPI);
+            const sourceAlert = body.result.alert.content[0];
+            body.result.alert.content = [
+                ...events.map(([eventCode], index) => ({ ...sourceAlert, alertId: `event-${eventCode}`, code: `${eventCode}01`, pubtimestamp: sourceAlert.pubtimestamp + index })),
+                ...severities.map(([severityCode], index) => ({ ...sourceAlert, alertId: `severity-${severityCode}`, code: `02${severityCode}`, pubtimestamp: sourceAlert.pubtimestamp + events.length + index })),
+            ];
+            return new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" } });
+        };
+        const alerts = await new ColorfulClouds({ country: "CN", language: "zh-CN", latitude: "39.976", longitude: "116.3176" }, "test-token").WeatherAlert();
+        for (const [index, [eventCode, eventName]] of events.entries()) {
+            assert.equal(alerts.alerts[index].eventName, eventName, eventCode);
+            assert.equal(alerts.alerts[index].phenomenon, eventName, eventCode);
+        }
+        for (const [index, [severityCode, severity]] of severities.entries()) {
+            assert.equal(alerts.alerts[events.length + index].severity, severity, severityCode);
+        }
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test("ColorfulClouds v3 CAP alerts remain available through WeatherAlertV3CAP", async () => {
     const originalFetch = globalThis.fetch;
     let sourceRequest;
     globalThis.fetch = async (input, init) => {
         const requestUrl = typeof input === "string" ? input : input?.url ?? input;
         sourceRequest = { url: new URL(requestUrl), headers: new Headers(init?.headers ?? input?.headers ?? {}) };
-        return new Response(JSON.stringify(colorfulCloudsAlertAPI), { headers: { "Content-Type": "application/json" } });
+        return new Response(JSON.stringify(colorfulCloudsCAPAlertAPI), { headers: { "Content-Type": "application/json" } });
     };
 
     try {
@@ -507,7 +676,7 @@ test("ColorfulClouds v3 CAP alerts are available through WeatherAlertV3CAP", asy
     }
 });
 
-test("ColorfulClouds CAP categories map to phenomena", async () => {
+test("ColorfulClouds v3 CAP categories remain mapped to phenomena", async () => {
     const originalFetch = globalThis.fetch;
     const fixtures = [
         [[1], "Geo"],
@@ -528,7 +697,7 @@ test("ColorfulClouds CAP categories map to phenomena", async () => {
     try {
         for (const [categories, expected] of fixtures) {
             globalThis.fetch = async () => {
-                const body = structuredClone(colorfulCloudsAlertAPI);
+                const body = structuredClone(colorfulCloudsCAPAlertAPI);
                 body.alerts[0].categories = categories;
                 return new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" } });
             };
