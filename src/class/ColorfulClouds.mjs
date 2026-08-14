@@ -309,8 +309,8 @@ export default class ColorfulClouds {
      * Fetch Caiyun CAP alerts and normalize them for WeatherAlerts.mergeAlerts.
      * @returns {Promise<{metadata: object, detailsUrl: string, alerts: Array<object>, areaName: string, source: string}>} WeatherKit 顶级预警对象 / Top-level WeatherKit alert object.
      */
-    async WeatherAlert() {
-        Console.info("☑️ WeatherAlert");
+    async WeatherAlertV3CAP() {
+        Console.info("☑️ WeatherAlertV3CAP");
         const failedWeatherAlerts = {
             metadata: {
                 attributionUrl: "https://www.caiyunapp.com/h5",
@@ -334,15 +334,15 @@ export default class ColorfulClouds {
             const response = await fetch(request);
             const body = JSON.parse(response?.body ?? "{}");
             if (response?.ok === false) {
-                Console.warn("WeatherAlert", `upstreamStatus: ${response.statusCode ?? response.status}`);
+                Console.warn("WeatherAlertV3CAP", `upstreamStatus: ${response.statusCode ?? response.status}`);
                 return failedWeatherAlerts;
             }
             if (!Array.isArray(body?.alerts)) throw Error(JSON.stringify(body?.error ?? body?.reason ?? body?.code ?? body));
-            weatherAlerts = { ...failedWeatherAlerts, ...this.#CreateWeatherAlerts(body) };
+            weatherAlerts = { ...failedWeatherAlerts, ...this.#CreateWeatherAlertsV3CAP(body) };
         } catch (error) {
-            Console.error(`WeatherAlert: ${error}`);
+            Console.error(`WeatherAlertV3CAP: ${error}`);
         } finally {
-            Console.info("✅ WeatherAlert");
+            Console.info("✅ WeatherAlertV3CAP");
         }
         return weatherAlerts;
     }
@@ -803,10 +803,10 @@ export default class ColorfulClouds {
         };
     }
 
-    #CreateWeatherAlerts(body) {
-        Console.info("☑️ CreateWeatherAlerts");
-        const convertedAlerts = (Array.isArray(body?.alerts) ? body.alerts : []).map(alert => this.#CreateWeatherAlert(alert)).filter(Boolean);
-        Console.info("✅ CreateWeatherAlerts");
+    #CreateWeatherAlertsV3CAP(body) {
+        Console.info("☑️ CreateWeatherAlertsV3CAP");
+        const convertedAlerts = (Array.isArray(body?.alerts) ? body.alerts : []).map(alert => this.#CreateWeatherAlertV3CAP(alert)).filter(Boolean);
+        Console.info("✅ CreateWeatherAlertsV3CAP");
         return {
             alerts: convertedAlerts,
             areaName: convertedAlerts.find(alert => alert?.areaName)?.areaName ?? "",
@@ -814,8 +814,7 @@ export default class ColorfulClouds {
         };
     }
 
-    #CreateWeatherAlert(alert) {
-        const weatherAlertConfig = this.#Config.WeatherAlert;
+    #CreateWeatherAlertV3CAP(alert) {
         const issuedTime = this.#DateISOString(alert?.sent_time);
         if (!issuedTime) return undefined;
         const effectiveTime = this.#DateISOString(alert?.effective_time) || issuedTime;
@@ -823,12 +822,12 @@ export default class ColorfulClouds {
         const eventOnsetTime = this.#DateISOString(alert?.onset_time) || effectiveTime;
         const area = Array.isArray(alert?.areas) ? alert.areas.find(item => item) : undefined;
         const geocode = Array.isArray(area?.geocodes) ? area.geocodes.find(item => item?.value) : undefined;
-        const source = String(alert?.sender_name ?? "").trim() || weatherAlertConfig.Sources[Number(alert?.source)] || "";
+        const source = String(alert?.sender_name ?? "").trim() || this.#Config.WeatherAlert.Sources[Number(alert?.source)] || "";
         const eventName = String(alert?.event_name ?? "").trim();
         return {
             ...(geocode?.value ? { areaId: String(geocode.value).trim() } : {}),
             ...(area?.area_desc ? { areaName: String(area.area_desc).trim() } : {}),
-            certainty: weatherAlertConfig.Certainties[Number(alert?.certainty)] || "unknown",
+            certainty: this.#Config.WeatherAlert.Certainties[Number(alert?.certainty)] || "unknown",
             description: String(alert?.headline ?? "").trim(),
             effectiveTime,
             eventOnsetTime,
@@ -838,12 +837,12 @@ export default class ColorfulClouds {
             issuedTime,
             ...(eventName ? { eventName } : {}),
             message: String(alert?.description ?? alert?.headline ?? "").trim(),
-            phenomenon: (Array.isArray(alert?.categories) ? alert.categories : []).map(category => weatherAlertConfig.Categories[Number(category)]).find(Boolean) || eventName || "Other",
+            phenomenon: (Array.isArray(alert?.categories) ? alert.categories : []).map(category => this.#Config.WeatherAlert.Categories[Number(category)]).find(Boolean) || eventName || "Other",
             reportedAt: issuedTime,
-            severity: weatherAlertConfig.Severities[Number(alert?.severity)] || "unknown",
+            severity: this.#Config.WeatherAlert.Severities[Number(alert?.severity)] || "unknown",
             ...(source ? { source } : {}),
             standard: "",
-            urgency: weatherAlertConfig.Urgencies[Number(alert?.urgency)] || "unknown",
+            urgency: this.#Config.WeatherAlert.Urgencies[Number(alert?.urgency)] || "unknown",
         };
     }
 

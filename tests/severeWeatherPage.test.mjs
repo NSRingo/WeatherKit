@@ -108,7 +108,7 @@ test("response WeatherAlert injection only selects and merges provider slot obje
         const source = await readFile(new URL(path, import.meta.url), "utf8");
         const injectWeatherAlerts = source.match(/async function InjectWeatherAlerts\([\s\S]*?(?=\n\/\*\*)/)?.[0] ?? "";
 
-        assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.colorfulClouds\.WeatherAlert\(\)/);
+        assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.colorfulClouds\.WeatherAlertV3CAP\(\)/);
         assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.qWeather\.WeatherAlert\(\)/);
         assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.qWeather\.WeatherAlertWeb\(weatherAlerts\?\.detailsUrl\)/);
         assert.match(injectWeatherAlerts, /if \(newWeatherAlerts\?\.metadata\) \{[\s\S]*weatherAlerts\.metadata = \{ \.\.\.weatherAlerts\?\.metadata, \.\.\.newWeatherAlerts\.metadata \}/);
@@ -452,7 +452,7 @@ test("updated Chinese headlines replace generic FlatBuffer titles", () => {
     assert.equal(appleAlerts[1].description, "暴雨橙色预警");
 });
 
-test("ColorfulClouds CAP Alert API is standardized by ColorfulClouds class", async () => {
+test("ColorfulClouds v3 CAP alerts are available through WeatherAlertV3CAP", async () => {
     const originalFetch = globalThis.fetch;
     let sourceRequest;
     globalThis.fetch = async (input, init) => {
@@ -473,7 +473,7 @@ test("ColorfulClouds CAP Alert API is standardized by ColorfulClouds class", asy
             ["de", "zh_CN"],
         ]) {
             const colorfulClouds = new ColorfulClouds({ country: "US", language, latitude: "34.05", longitude: "-118.25" }, "test-token");
-            extracted = await colorfulClouds.WeatherAlert();
+            extracted = await colorfulClouds.WeatherAlertV3CAP();
 
             assert.equal(sourceRequest.url.toString(), `https://singer.caiyunhub.com/v3/cap_alert/location?token=test-token&longitude=-118.25&latitude=34.05&language=${colorfulCloudsLanguage}`);
             assert.equal(sourceRequest.headers.get("Referer"), "https://caiyunapp.com/");
@@ -532,7 +532,7 @@ test("ColorfulClouds CAP categories map to phenomena", async () => {
                 body.alerts[0].categories = categories;
                 return new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" } });
             };
-            const alerts = await new ColorfulClouds({ country: "US", language: "en-US", latitude: "34.05", longitude: "-118.25" }, "test-token").WeatherAlert();
+            const alerts = await new ColorfulClouds({ country: "US", language: "en-US", latitude: "34.05", longitude: "-118.25" }, "test-token").WeatherAlertV3CAP();
             assert.equal(alerts.alerts[0].phenomenon, expected, categories.join(","));
         }
     } finally {
