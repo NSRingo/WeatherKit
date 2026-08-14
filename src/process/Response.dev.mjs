@@ -373,10 +373,9 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  */
 async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
     Console.info("☑️ InjectWeatherAlerts");
-    const provider = Settings?.WeatherAlerts?.Provider ?? "QWeatherWeb";
     const isNationalWarningCenter = ["国家预警信息发布中心", "國家預警信息發布中心", "National Early Warning Center"].includes(weatherAlerts?.metadata?.providerName);
     let newWeatherAlerts;
-    switch (provider) {
+    switch (Settings?.WeatherAlerts?.Provider) {
         case "WeatherKit": {
             break;
         }
