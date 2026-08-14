@@ -84,7 +84,7 @@ const colorfulCloudsRealtimeAPI = {
                     regionId: "101190101",
                     pubtimestamp: 1785664080,
                     alertId: "32010041600000_20260802174800",
-                    title: "南京市气象台发布高温橙色预警",
+                    title: "南京市气象台发布高温橙色预警[II/严重]",
                     adcode: "320100",
                     source: "南京市气象台",
                     location: "南京市",

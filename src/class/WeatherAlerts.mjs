@@ -647,6 +647,7 @@ export default class WeatherAlerts {
     static #TrimWeatherAlertTitle(title) {
         return String(title ?? "")
             .trim()
+            .replace(/\s*[\[【][^\]】]+[\]】]\s*$/u, "")
             .replace(/\s*[。．.]+\s*$/gu, "")
             .replace(/预警信号$/u, "预警")
             .replace(/預警信號$/u, "預警");
