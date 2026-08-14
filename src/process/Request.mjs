@@ -22,7 +22,7 @@ export async function Request($request) {
      * 设置
      * @type {{Settings: import('./types').Settings}}
      */
-    const { Settings, Caches, Configs } = setENV("iRingo", "WeatherKit", database);
+    const { Settings, Caches } = setENV("iRingo", "WeatherKit", database);
     // 方法判断
     switch ($request.method) {
         case "POST":
@@ -173,10 +173,8 @@ export async function Request($request) {
                                 url.pathname = `/${pathParts.join("/")}`;
                                 switch (url.pathname) {
                                     case `/api/v1/airQualityScale/${language}/HK.AQHI`:
-                                        $response = AirQualityScale.buildHKAQHIScale(language, scaleName);
-                                        break;
                                     case `/api/v1/airQualityScale/${language}/CN.AQHI`:
-                                        $response = AirQualityScale.buildCNAQHIScale(language, scaleName);
+                                        $response = new AirQualityScale().Build(language, scaleName);
                                         break;
                                 }
                             } else if (url.pathname.startsWith("/api/v2/weather/")) {

@@ -9,7 +9,8 @@ globalThis.$argument = {
     DataSets: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly"],
 };
 
-const [{ default: parseWeatherKitURL }, { Request }, { Request: RequestDev }, { Response }, { Response: ResponseDev }, { default: database }] = await Promise.all([
+const [{ default: AirQualityScale }, { default: parseWeatherKitURL }, { Request }, { Request: RequestDev }, { Response }, { Response: ResponseDev }, { default: database }] = await Promise.all([
+    import("../src/class/AirQualityScale.mjs"),
     import("../src/function/parseWeatherKitURL.mjs"),
     import("../src/process/Request.mjs"),
     import("../src/process/Request.dev.mjs"),
@@ -43,6 +44,47 @@ test("WeatherKit Alert URLs expose validated coordinates through the shared URL 
     });
     assert.equal(parseWeatherKitURL(new URL("https://weatherkit.apple.com/api/v1/weatherAlerts?ids=118.814,32.115")).latitude, undefined);
     assert.equal(parseWeatherKitURL(new URL("https://weatherkit.apple.com/api/v1/weatherAlerts/extra?ids=32.115,118.814")).latitude, undefined);
+});
+
+test("AirQualityScale exposes class metadata", () => {
+    assert.equal(AirQualityScale.Name, "AirQualityScale");
+    assert.equal(AirQualityScale.Version, "1.0.0");
+    assert.equal(AirQualityScale.Author, "Virgil Clyne & Wordless Echo");
+});
+
+test("AirQualityScale resolves maintained language aliases through one builder", () => {
+    const builder = new AirQualityScale();
+    assert.equal(AirQualityScale.Build, undefined);
+    assert.equal(typeof builder.Build, "function");
+    assert.equal(AirQualityScale.normalizeLanguage, undefined);
+    assert.equal(AirQualityScale.buildHKAQHIScale, undefined);
+    assert.equal(AirQualityScale.buildCNAQHIScale, undefined);
+
+    const aliases = [
+        ["en", "en-US"],
+        ["en-US", "en-US"],
+        ["en-GB", "en-US"],
+        ["en-AU", "en-US"],
+        ["en-CA", "en-US"],
+        ["en-IN", "en-US"],
+        ["en-Latn-AU", "en-US"],
+        ["zh-Hans-CN", "zh-Hans-CN"],
+        ["zh-CN", "zh-Hans-CN"],
+        ["zh-SG", "zh-Hans-CN"],
+        ["zh-Hans-HK", "zh-Hans-CN"],
+        ["zh-Hant-HK", "zh-Hant-HK"],
+        ["zh-HK", "zh-Hant-HK"],
+        ["zh-Hant-MO", "zh-Hant-HK"],
+        ["zh-Hant-TW", "zh-Hant-TW"],
+        ["zh-TW", "zh-Hant-TW"],
+        ["zh", "zh-Hant-TW"],
+    ];
+    const expected = new Map();
+    for (const [language, configLanguage] of aliases) {
+        const body = JSON.parse(builder.Build(language, "HK.AQHI").body);
+        if (expected.has(configLanguage)) assert.deepEqual(body, expected.get(configLanguage), language);
+        else expected.set(configLanguage, body);
+    }
 });
 
 test("request keeps future datasets while removing a known explicitly disabled dataset", async () => {
@@ -83,12 +125,12 @@ test("request strips numeric versions from every air-quality scale", async () =>
 
 test("request serves custom AQHI scales locally after stripping their versions", async () => {
     const cases = [
-        ["HK.AQHI.2414", "zh-Hant-HK", "HK.AQHI"],
-        ["CN.AQHI.2414", "zh-Hans-CN", "CN.AQHI"],
+        ["HK.AQHI.2414", "zh-Hant-HK", "HK.AQHI", "zh-Hant-HK"],
+        ["CN.AQHI.2414", "zh-Hans-CN", "CN.AQHI", "zh-Hans-CN"],
     ];
 
     for (const handler of [Request, RequestDev]) {
-        for (const [inputScale, language, expectedScale] of cases) {
+        for (const [inputScale, language, expectedScale, configLanguage] of cases) {
             const { $request, $response } = await handler({
                 headers: {},
                 method: "GET",
@@ -97,7 +139,53 @@ test("request serves custom AQHI scales locally after stripping their versions",
 
             assert.equal(new URL($request.url).pathname, `/api/v1/airQualityScale/${language}/${expectedScale}`);
             assert.equal($response.status, 200);
-            assert.equal(JSON.parse($response.body).name, expectedScale);
+            assert.deepEqual(JSON.parse($response.body), JSON.parse(new AirQualityScale().Build(configLanguage, expectedScale).body));
+        }
+    }
+});
+
+test("request leaves unsupported custom-scale languages to Apple", async () => {
+    for (const handler of [Request, RequestDev]) {
+        const { $request, $response } = await handler({
+            headers: {},
+            method: "GET",
+            url: "https://weatherkit.apple.com/api/v1/airQualityScale/fr-FR/HK.AQHI.2414",
+        });
+
+        assert.equal(new URL($request.url).pathname, "/api/v1/airQualityScale/fr-FR/HK.AQHI");
+        assert.equal($response, undefined);
+    }
+});
+
+test("custom AQHI scales are stored as complete JSON configurations", () => {
+    const expectedLanguages = ["zh-Hans-CN", "zh-Hant-HK", "zh-Hant-TW", "en-US"];
+    assert.equal(database.WeatherKit.Configs.AirQualityScale, undefined);
+    const builder = new AirQualityScale();
+    for (const language of expectedLanguages) {
+        for (const scaleName of ["HK.AQHI", "CN.AQHI"]) {
+            const scale = JSON.parse(builder.Build(language, scaleName).body);
+            assert.equal(scale.name, scaleName);
+            assert.equal(typeof scale.displayName, "string");
+            assert.equal(typeof scale.shortDisplayName, "string");
+            assert.equal(typeof scale.longDisplayName, "string");
+            assert.equal(typeof scale.displayLabel, "string");
+            assert.equal(typeof scale.language, "string");
+            assert.equal(scale.version, 1);
+            assert.equal(scale.aqi.numerical, true);
+            assert.equal(scale.aqi.ascending, true);
+            assert.deepEqual(scale.aqi.range, [1, 11]);
+            assert.deepEqual(
+                scale.aqi.categories.map(({ categoryNumber }) => categoryNumber),
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            );
+            for (const category of scale.aqi.categories) {
+                assert.deepEqual(category.range, [category.categoryNumber, category.categoryNumber]);
+                assert.equal(typeof category.color, "string");
+                assert.equal(typeof category.categoryName, "string");
+                assert.equal(typeof category.recommendation, "string");
+                assert.equal(typeof category.glyph, "string");
+            }
+            assert.ok(scale.aqi.gradient.stops.length > 0);
         }
     }
 });

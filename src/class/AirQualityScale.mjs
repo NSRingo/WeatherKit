@@ -1,377 +1,1184 @@
 /**
- * AirQualityScale
- * 提供空气质量标尺（AQI Scale）的本地构建能力，
- * 用于替代 WeatherKit /api/v1/airQualityScale 接口返回。
- *
- * 语言键说明：
- *   zh-Hans-CN  简体中文
- *   zh-Hant-HK  繁体中文
- *   en-US       英文（默认回退）
+ * 提供空气质量标尺（AQI Scale）的本地响应能力。
+ * Provides local responses for air-quality scales.
  */
-
-// ─── 工具函数 ──────────────────────────────────────────────────────────────────
-
-/**
- * 从三键 i18n map 中根据语言标签获取字符串。
- * 回退链：zh-Hans-CN → zh-Hant-TW → zh-Hant-HK → en
- * @param {{ "zh-Hans-CN": string, "zh-Hant-HK": string, "en": string }} map
- * @param {"zh-Hans-CN"|"zh-Hant-TW"|"zh-Hant-HK"|"en-US"} lang
- * @returns {string}
- */
-function i18n(map, lang) {
-    return map[lang] ?? map["en-US"] ?? "";
-}
-
-/**
- * 将请求语言映射为响应中的地区语言标签：
- * zh-Hans-CN -> zh-CN, zh-Hant-HK -> zh-HK, 其余 zh* -> zh-TW, 非中文 -> en
- * @param {string} language
- * @returns {"zh-HK"|"zh-CN"|"zh-TW"|"en"}
- */
-function normalizeScaleLanguage(language) {
-    if (/zh-Hans-CN/i.test(language)) return "zh-CN";
-    if (/^zh-Hant-HK$/i.test(language)) return "zh-HK";
-    if (/^zh/i.test(language)) return "zh-TW";
-    return "en";
-}
-
-// ─── AirQualityScale 类 ────────────────────────────────────────────────────────
-
 export default class AirQualityScale {
-    static #Config = {
-        // ─── 多语言字符串常量 ──────────────────────────────────────────────────────────
+    static Name = "AirQualityScale";
+    static Version = "1.0.0";
+    static Author = "Virgil Clyne & Wordless Echo";
 
-        /** 空气质量标尺通用标签 */
-        ScaleDisplayLabel: {
-            "zh-Hant-HK": "空氣質素",
-            "zh-Hant-TW": "空氣品質",
-            "zh-Hans-CN": "空气质量",
-            "en-US": "Air Quality",
+    #Config = {
+        Headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "max-age=31536000, public, s-maxage=31536000",
         },
-
-        /** HK AQHI 常量 */
-        HK_AQHI: {
-            displayName: {
-                "zh-Hant-HK": "AQHI (HK)",
-                "zh-Hans-CN": "AQHI (HK)",
-                "en-US": "AQHI (HK)",
-            },
-            shortDisplayName: {
-                "zh-Hant-HK": "AQHI",
-                "zh-Hans-CN": "AQHI",
-                "en-US": "AQHI",
-            },
-            longDisplayName: {
-                "zh-Hant-HK": "香港 (AQHI)",
-                "zh-Hans-CN": "香港 (AQHI)",
-                "en-US": "Hong Kong (AQHI)",
-            },
-            /**
-             * HK EPD 五大风险等级（低/中/高/甚高/严重），每级含 categoryName、recommendation、颜色与图标。
-             * 级别: 低(1-3), 中(4-6), 高(7), 甚高(8-10), 严重(11)
-             */
-            categories: [
-                // 低 (1-3)
-                {
-                    range: [1, 3],
-                    glyph: "aqi.low",
-                    // #58E156 RGB(88, 225, 86) = 2/3 #04DE71 RGB(4, 222, 113) + 1/3 #FFE620 RGB(255, 230, 32)
-                    colors: ["#04DE71", "#04DE71", "#58E156"],
-                    categoryName: {
-                        "zh-Hant-HK": "低",
-                        "zh-Hans-CN": "低",
-                        "en-US": "Low",
-                    },
-                    recommendation: {
-                        "zh-Hant-HK": "可如常活動。",
-                        "zh-Hans-CN": "可如常活动。",
-                        "en-US": "No response action is required.",
-                    },
-                },
-                // 中 (4-6)
-                {
-                    range: [4, 6],
-                    glyph: "aqi.medium",
-                    colors: ["#FFE620", "#FFBE10", "#FF9500"],
-                    categoryName: {
-                        "zh-Hant-HK": "中",
-                        "zh-Hans-CN": "中",
-                        "en-US": "Moderate",
-                    },
-                    recommendation: {
-                        "zh-Hant-HK": "一般可如常活動，但個別出現症狀的人士應考慮減少戶外體力消耗。",
-                        "zh-Hans-CN": "一般可如常活动，但個別出现症状的人士应考虑减少户外体力消耗。",
-                        "en-US": "No response action is normally required. Individuals who are experiencing symptoms are advised to consider reducing outdoor physical exertion.",
-                    },
-                },
-                // 高 (7)
-                {
-                    range: [7, 7],
-                    glyph: "aqi.high",
-                    colors: ["#FA114F"],
-                    categoryName: {
-                        "zh-Hant-HK": "高",
-                        "zh-Hans-CN": "高",
-                        "en-US": "High",
-                    },
-                    recommendation: {
-                        "zh-Hant-HK": "心臟病或呼吸系統疾病患者、兒童及長者應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。心臟病或呼吸系統疾病患者在參與體育活動前應諮詢醫生意見，在體能活動期間應多作歇息。",
-                        "zh-Hans-CN": "心脏病或呼吸系统疾病患者、儿童及长者应减少户外体力消耗，以及减少在户外逗留的时间，特别在交通繁忙地方。心脏病或呼吸系统疾病患者在参与体育活动前应咨询医生意见，在体能活动期间应多作歇息。",
-                        "en-US":
-                            "People with existing heart or respiratory illnesses, Children and the elderly are advised to reduce outdoor physical exertion, and to reduce the time of their stay outdoors, especially in areas with heavy traffic. People with existing heart or respiratory illnesses should also seek advice from a medical doctor before participating in sport activities and take more breaks during physical activities.",
-                    },
-                },
-                // 甚高 (8-10)
-                {
-                    range: [8, 10],
-                    glyph: "aqi.high",
-                    colors: ["#D11343", "#A91537", "#80172B"],
-                    categoryName: {
-                        "zh-Hant-HK": "甚高",
-                        "zh-Hans-CN": "甚高",
-                        "en-US": "Very High",
-                    },
-                    recommendation: {
-                        "zh-Hant-HK": "心臟病或呼吸系統疾病患者、兒童及長者應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。",
-                        "zh-Hans-CN": "心脏病或呼吸系统疾病患者、儿童及长者应尽量减少户外体力消耗，以及尽量减少在户外逗留的时间，特别在交通繁忙地方。从事重体力劳动的户外工作僱员的僱主应评估户外工作的风险，并採取适当的预防措施保障僱员的健康。一般市民应减少户外体力消耗，以及减少在户外逗留的时间，特别在交通繁忙地方。",
-                        "en-US":
-                            "People with existing heart or respiratory illnesses, Children and the elderly are advised to reduce to the minimum outdoor physical exertion, and to reduce to the minimum the time of their stay outdoors, especially in areas with heavy traffic. Employers of outdoor workers performing heavy manual work are advised to assess the risk of outdoor work, and take appropriate preventive measures to protect the health of their employees. The general public is advised to reduce outdoor physical exertion, and to reduce the time of their stay outdoors, especially in areas with heavy traffic.",
-                    },
-                },
-                // 严重 (11 = 10+)
-                {
-                    range: [11, 11],
-                    glyph: "aqi.high",
-                    colors: ["#80172B"],
-                    categoryName: {
-                        "zh-Hant-HK": "嚴重",
-                        "zh-Hans-CN": "严重",
-                        "en-US": "Serious",
-                    },
-                    recommendation: {
-                        "zh-Hant-HK": "心臟病或呼吸系統疾病患者、兒童及長者應避免戶外體力消耗，以及避免在戶外逗留，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。",
-                        "zh-Hans-CN": "心脏病或呼吸系统疾病患者、儿童及长者应避免户外体力消耗，以及避免在户外逗留，特别在交通繁忙地方。从事重体力劳动的户外工作雇员的雇主应评估户外工作的风险，并采取适当的预防措施保障雇员的健康。一般市民应尽量减少户外体力消耗，以及尽量减少在户外逗留的时间，特别在交通繁忙地方。",
-                        "en-US":
-                            "People with existing heart or respiratory illnesses, Children and the elderly are advised to avoid outdoor physical exertion, and to avoid staying outdoors, especially in areas with heavy traffic. Employers of outdoor workers performing heavy manual work are advised to assess the risk of outdoor work, and take appropriate preventive measures to protect the health of their employees. The general public is advised to reduce to the minimum outdoor physical exertion, and to reduce to the minimum the time of their stay outdoors, especially in areas with heavy traffic.",
-                    },
-                },
-            ],
-            gradient: {
-                stops: [
-                    { location: 1, color: "#04DE71" },
-                    { location: 2.5, color: "#04DE71" },
-                    { location: 4, color: "#FFE620" },
-                    { location: 6, color: "#FF9500" },
-                    { location: 7, color: "#FA114F" },
-                    { location: 8, color: "#D11343" },
-                    { location: 9.5, color: "#80172B" },
-                ],
-            },
+        Language: {
+            en: "en-US",
+            "en-au": "en-US",
+            "en-ca": "en-US",
+            "en-gb": "en-US",
+            "en-ie": "en-US",
+            "en-in": "en-US",
+            "en-latn": "en-US",
+            "en-latn-au": "en-US",
+            "en-nz": "en-US",
+            "en-sg": "en-US",
+            "en-us": "en-US",
+            "en-za": "en-US",
+            zh: "zh-Hant-CN",
+            "zh-hans": "zh-Hans-CN",
+            "zh-cn": "zh-Hans-CN",
+            "zh-sg": "zh-Hans-CN",
+            "zh-hans-cn": "zh-Hans-CN",
+            "zh-hans-hk": "zh-Hans-CN",
+            "zh-hans-mo": "zh-Hans-CN",
+            "zh-hans-sg": "zh-Hans-CN",
+            "zh-hant": "zh-Hant-TW",
+            "zh-tw": "zh-Hant-TW",
+            "zh-hant-tw": "zh-Hant-TW",
+            "zh-hk": "zh-Hant-HK",
+            "zh-mo": "zh-Hant-HK",
+            "zh-hant-hk": "zh-Hant-HK",
+            "zh-hant-mo": "zh-Hant-HK",
         },
-
-        /** CN AQHI 常量 */
-        CN_AQHI: {
-            displayName: {
-                "zh-Hans-CN": "AQHI (CN)",
+        AirQualityScale: {
+            "HK.AQHI": {
+                "zh-Hans-CN": {
+                    name: "HK.AQHI",
+                    displayName: "AQHI (HK)",
+                    shortDisplayName: "AQHI",
+                    longDisplayName: "香港 (AQHI)",
+                    displayLabel: "空气质量",
+                    language: "zh-CN",
+                    version: 1,
+                    aqi: {
+                        numerical: true,
+                        ascending: true,
+                        range: [1, 11],
+                        categories: [
+                            {
+                                categoryNumber: 1,
+                                range: [1, 1],
+                                color: "#04DE71",
+                                categoryName: "低",
+                                recommendation: "可如常活动。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 2,
+                                range: [2, 2],
+                                color: "#04DE71",
+                                categoryName: "低",
+                                recommendation: "可如常活动。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 3,
+                                range: [3, 3],
+                                color: "#58E156",
+                                categoryName: "低",
+                                recommendation: "可如常活动。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 4,
+                                range: [4, 4],
+                                color: "#FFE620",
+                                categoryName: "中",
+                                recommendation: "一般可如常活动，但個別出现症状的人士应考虑减少户外体力消耗。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 5,
+                                range: [5, 5],
+                                color: "#FFBE10",
+                                categoryName: "中",
+                                recommendation: "一般可如常活动，但個別出现症状的人士应考虑减少户外体力消耗。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 6,
+                                range: [6, 6],
+                                color: "#FF9500",
+                                categoryName: "中",
+                                recommendation: "一般可如常活动，但個別出现症状的人士应考虑减少户外体力消耗。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 7,
+                                range: [7, 7],
+                                color: "#FA114F",
+                                categoryName: "高",
+                                recommendation: "心脏病或呼吸系统疾病患者、儿童及长者应减少户外体力消耗，以及减少在户外逗留的时间，特别在交通繁忙地方。心脏病或呼吸系统疾病患者在参与体育活动前应咨询医生意见，在体能活动期间应多作歇息。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 8,
+                                range: [8, 8],
+                                color: "#D11343",
+                                categoryName: "甚高",
+                                recommendation:
+                                    "心脏病或呼吸系统疾病患者、儿童及长者应尽量减少户外体力消耗，以及尽量减少在户外逗留的时间，特别在交通繁忙地方。从事重体力劳动的户外工作僱员的僱主应评估户外工作的风险，并採取适当的预防措施保障僱员的健康。一般市民应减少户外体力消耗，以及减少在户外逗留的时间，特别在交通繁忙地方。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 9,
+                                range: [9, 9],
+                                color: "#A91537",
+                                categoryName: "甚高",
+                                recommendation:
+                                    "心脏病或呼吸系统疾病患者、儿童及长者应尽量减少户外体力消耗，以及尽量减少在户外逗留的时间，特别在交通繁忙地方。从事重体力劳动的户外工作僱员的僱主应评估户外工作的风险，并採取适当的预防措施保障僱员的健康。一般市民应减少户外体力消耗，以及减少在户外逗留的时间，特别在交通繁忙地方。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 10,
+                                range: [10, 10],
+                                color: "#80172B",
+                                categoryName: "甚高",
+                                recommendation:
+                                    "心脏病或呼吸系统疾病患者、儿童及长者应尽量减少户外体力消耗，以及尽量减少在户外逗留的时间，特别在交通繁忙地方。从事重体力劳动的户外工作僱员的僱主应评估户外工作的风险，并採取适当的预防措施保障僱员的健康。一般市民应减少户外体力消耗，以及减少在户外逗留的时间，特别在交通繁忙地方。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 11,
+                                range: [11, 11],
+                                color: "#80172B",
+                                categoryName: "严重",
+                                recommendation:
+                                    "心脏病或呼吸系统疾病患者、儿童及长者应避免户外体力消耗，以及避免在户外逗留，特别在交通繁忙地方。从事重体力劳动的户外工作雇员的雇主应评估户外工作的风险，并采取适当的预防措施保障雇员的健康。一般市民应尽量减少户外体力消耗，以及尽量减少在户外逗留的时间，特别在交通繁忙地方。",
+                                glyph: "aqi.high",
+                            },
+                        ],
+                        gradient: {
+                            stops: [
+                                {
+                                    location: 1,
+                                    color: "#04DE71",
+                                },
+                                {
+                                    location: 2.5,
+                                    color: "#04DE71",
+                                },
+                                {
+                                    location: 4,
+                                    color: "#FFE620",
+                                },
+                                {
+                                    location: 6,
+                                    color: "#FF9500",
+                                },
+                                {
+                                    location: 7,
+                                    color: "#FA114F",
+                                },
+                                {
+                                    location: 8,
+                                    color: "#D11343",
+                                },
+                                {
+                                    location: 9.5,
+                                    color: "#80172B",
+                                },
+                            ],
+                        },
+                    },
+                },
+                "zh-Hant-HK": {
+                    name: "HK.AQHI",
+                    displayName: "AQHI (HK)",
+                    shortDisplayName: "AQHI",
+                    longDisplayName: "香港 (AQHI)",
+                    displayLabel: "空氣質素",
+                    language: "zh-HK",
+                    version: 1,
+                    aqi: {
+                        numerical: true,
+                        ascending: true,
+                        range: [1, 11],
+                        categories: [
+                            {
+                                categoryNumber: 1,
+                                range: [1, 1],
+                                color: "#04DE71",
+                                categoryName: "低",
+                                recommendation: "可如常活動。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 2,
+                                range: [2, 2],
+                                color: "#04DE71",
+                                categoryName: "低",
+                                recommendation: "可如常活動。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 3,
+                                range: [3, 3],
+                                color: "#58E156",
+                                categoryName: "低",
+                                recommendation: "可如常活動。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 4,
+                                range: [4, 4],
+                                color: "#FFE620",
+                                categoryName: "中",
+                                recommendation: "一般可如常活動，但個別出現症狀的人士應考慮減少戶外體力消耗。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 5,
+                                range: [5, 5],
+                                color: "#FFBE10",
+                                categoryName: "中",
+                                recommendation: "一般可如常活動，但個別出現症狀的人士應考慮減少戶外體力消耗。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 6,
+                                range: [6, 6],
+                                color: "#FF9500",
+                                categoryName: "中",
+                                recommendation: "一般可如常活動，但個別出現症狀的人士應考慮減少戶外體力消耗。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 7,
+                                range: [7, 7],
+                                color: "#FA114F",
+                                categoryName: "高",
+                                recommendation: "心臟病或呼吸系統疾病患者、兒童及長者應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。心臟病或呼吸系統疾病患者在參與體育活動前應諮詢醫生意見，在體能活動期間應多作歇息。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 8,
+                                range: [8, 8],
+                                color: "#D11343",
+                                categoryName: "甚高",
+                                recommendation:
+                                    "心臟病或呼吸系統疾病患者、兒童及長者應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 9,
+                                range: [9, 9],
+                                color: "#A91537",
+                                categoryName: "甚高",
+                                recommendation:
+                                    "心臟病或呼吸系統疾病患者、兒童及長者應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 10,
+                                range: [10, 10],
+                                color: "#80172B",
+                                categoryName: "甚高",
+                                recommendation:
+                                    "心臟病或呼吸系統疾病患者、兒童及長者應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 11,
+                                range: [11, 11],
+                                color: "#80172B",
+                                categoryName: "嚴重",
+                                recommendation:
+                                    "心臟病或呼吸系統疾病患者、兒童及長者應避免戶外體力消耗，以及避免在戶外逗留，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。",
+                                glyph: "aqi.high",
+                            },
+                        ],
+                        gradient: {
+                            stops: [
+                                {
+                                    location: 1,
+                                    color: "#04DE71",
+                                },
+                                {
+                                    location: 2.5,
+                                    color: "#04DE71",
+                                },
+                                {
+                                    location: 4,
+                                    color: "#FFE620",
+                                },
+                                {
+                                    location: 6,
+                                    color: "#FF9500",
+                                },
+                                {
+                                    location: 7,
+                                    color: "#FA114F",
+                                },
+                                {
+                                    location: 8,
+                                    color: "#D11343",
+                                },
+                                {
+                                    location: 9.5,
+                                    color: "#80172B",
+                                },
+                            ],
+                        },
+                    },
+                },
+                "zh-Hant-TW": {
+                    name: "HK.AQHI",
+                    displayName: "AQHI (HK)",
+                    shortDisplayName: "AQHI",
+                    longDisplayName: "香港 (AQHI)",
+                    displayLabel: "空氣品質",
+                    language: "zh-TW",
+                    version: 1,
+                    aqi: {
+                        numerical: true,
+                        ascending: true,
+                        range: [1, 11],
+                        categories: [
+                            {
+                                categoryNumber: 1,
+                                range: [1, 1],
+                                color: "#04DE71",
+                                categoryName: "低",
+                                recommendation: "可如常活動。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 2,
+                                range: [2, 2],
+                                color: "#04DE71",
+                                categoryName: "低",
+                                recommendation: "可如常活動。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 3,
+                                range: [3, 3],
+                                color: "#58E156",
+                                categoryName: "低",
+                                recommendation: "可如常活動。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 4,
+                                range: [4, 4],
+                                color: "#FFE620",
+                                categoryName: "中",
+                                recommendation: "一般可如常活動，但個別出現症狀的人士應考慮減少戶外體力消耗。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 5,
+                                range: [5, 5],
+                                color: "#FFBE10",
+                                categoryName: "中",
+                                recommendation: "一般可如常活動，但個別出現症狀的人士應考慮減少戶外體力消耗。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 6,
+                                range: [6, 6],
+                                color: "#FF9500",
+                                categoryName: "中",
+                                recommendation: "一般可如常活動，但個別出現症狀的人士應考慮減少戶外體力消耗。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 7,
+                                range: [7, 7],
+                                color: "#FA114F",
+                                categoryName: "高",
+                                recommendation: "心臟病或呼吸系統疾病患者、兒童及長者應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。心臟病或呼吸系統疾病患者在參與體育活動前應諮詢醫生意見，在體能活動期間應多作歇息。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 8,
+                                range: [8, 8],
+                                color: "#D11343",
+                                categoryName: "甚高",
+                                recommendation:
+                                    "心臟病或呼吸系統疾病患者、兒童及長者應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 9,
+                                range: [9, 9],
+                                color: "#A91537",
+                                categoryName: "甚高",
+                                recommendation:
+                                    "心臟病或呼吸系統疾病患者、兒童及長者應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 10,
+                                range: [10, 10],
+                                color: "#80172B",
+                                categoryName: "甚高",
+                                recommendation:
+                                    "心臟病或呼吸系統疾病患者、兒童及長者應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應減少戶外體力消耗，以及減少在戶外逗留的時間，特別在交通繁忙地方。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 11,
+                                range: [11, 11],
+                                color: "#80172B",
+                                categoryName: "嚴重",
+                                recommendation:
+                                    "心臟病或呼吸系統疾病患者、兒童及長者應避免戶外體力消耗，以及避免在戶外逗留，特別在交通繁忙地方。從事重體力勞動的戶外工作僱員的僱主應評估戶外工作的風險，並採取適當的預防措施保障僱員的健康。一般市民應盡量減少戶外體力消耗，以及盡量減少在戶外逗留的時間，特別在交通繁忙地方。",
+                                glyph: "aqi.high",
+                            },
+                        ],
+                        gradient: {
+                            stops: [
+                                {
+                                    location: 1,
+                                    color: "#04DE71",
+                                },
+                                {
+                                    location: 2.5,
+                                    color: "#04DE71",
+                                },
+                                {
+                                    location: 4,
+                                    color: "#FFE620",
+                                },
+                                {
+                                    location: 6,
+                                    color: "#FF9500",
+                                },
+                                {
+                                    location: 7,
+                                    color: "#FA114F",
+                                },
+                                {
+                                    location: 8,
+                                    color: "#D11343",
+                                },
+                                {
+                                    location: 9.5,
+                                    color: "#80172B",
+                                },
+                            ],
+                        },
+                    },
+                },
+                "en-US": {
+                    name: "HK.AQHI",
+                    displayName: "AQHI (HK)",
+                    shortDisplayName: "AQHI",
+                    longDisplayName: "Hong Kong (AQHI)",
+                    displayLabel: "Air Quality",
+                    language: "en",
+                    version: 1,
+                    aqi: {
+                        numerical: true,
+                        ascending: true,
+                        range: [1, 11],
+                        categories: [
+                            {
+                                categoryNumber: 1,
+                                range: [1, 1],
+                                color: "#04DE71",
+                                categoryName: "Low",
+                                recommendation: "No response action is required.",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 2,
+                                range: [2, 2],
+                                color: "#04DE71",
+                                categoryName: "Low",
+                                recommendation: "No response action is required.",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 3,
+                                range: [3, 3],
+                                color: "#58E156",
+                                categoryName: "Low",
+                                recommendation: "No response action is required.",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 4,
+                                range: [4, 4],
+                                color: "#FFE620",
+                                categoryName: "Moderate",
+                                recommendation: "No response action is normally required. Individuals who are experiencing symptoms are advised to consider reducing outdoor physical exertion.",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 5,
+                                range: [5, 5],
+                                color: "#FFBE10",
+                                categoryName: "Moderate",
+                                recommendation: "No response action is normally required. Individuals who are experiencing symptoms are advised to consider reducing outdoor physical exertion.",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 6,
+                                range: [6, 6],
+                                color: "#FF9500",
+                                categoryName: "Moderate",
+                                recommendation: "No response action is normally required. Individuals who are experiencing symptoms are advised to consider reducing outdoor physical exertion.",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 7,
+                                range: [7, 7],
+                                color: "#FA114F",
+                                categoryName: "High",
+                                recommendation:
+                                    "People with existing heart or respiratory illnesses, Children and the elderly are advised to reduce outdoor physical exertion, and to reduce the time of their stay outdoors, especially in areas with heavy traffic. People with existing heart or respiratory illnesses should also seek advice from a medical doctor before participating in sport activities and take more breaks during physical activities.",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 8,
+                                range: [8, 8],
+                                color: "#D11343",
+                                categoryName: "Very High",
+                                recommendation:
+                                    "People with existing heart or respiratory illnesses, Children and the elderly are advised to reduce to the minimum outdoor physical exertion, and to reduce to the minimum the time of their stay outdoors, especially in areas with heavy traffic. Employers of outdoor workers performing heavy manual work are advised to assess the risk of outdoor work, and take appropriate preventive measures to protect the health of their employees. The general public is advised to reduce outdoor physical exertion, and to reduce the time of their stay outdoors, especially in areas with heavy traffic.",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 9,
+                                range: [9, 9],
+                                color: "#A91537",
+                                categoryName: "Very High",
+                                recommendation:
+                                    "People with existing heart or respiratory illnesses, Children and the elderly are advised to reduce to the minimum outdoor physical exertion, and to reduce to the minimum the time of their stay outdoors, especially in areas with heavy traffic. Employers of outdoor workers performing heavy manual work are advised to assess the risk of outdoor work, and take appropriate preventive measures to protect the health of their employees. The general public is advised to reduce outdoor physical exertion, and to reduce the time of their stay outdoors, especially in areas with heavy traffic.",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 10,
+                                range: [10, 10],
+                                color: "#80172B",
+                                categoryName: "Very High",
+                                recommendation:
+                                    "People with existing heart or respiratory illnesses, Children and the elderly are advised to reduce to the minimum outdoor physical exertion, and to reduce to the minimum the time of their stay outdoors, especially in areas with heavy traffic. Employers of outdoor workers performing heavy manual work are advised to assess the risk of outdoor work, and take appropriate preventive measures to protect the health of their employees. The general public is advised to reduce outdoor physical exertion, and to reduce the time of their stay outdoors, especially in areas with heavy traffic.",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 11,
+                                range: [11, 11],
+                                color: "#80172B",
+                                categoryName: "Serious",
+                                recommendation:
+                                    "People with existing heart or respiratory illnesses, Children and the elderly are advised to avoid outdoor physical exertion, and to avoid staying outdoors, especially in areas with heavy traffic. Employers of outdoor workers performing heavy manual work are advised to assess the risk of outdoor work, and take appropriate preventive measures to protect the health of their employees. The general public is advised to reduce to the minimum outdoor physical exertion, and to reduce to the minimum the time of their stay outdoors, especially in areas with heavy traffic.",
+                                glyph: "aqi.high",
+                            },
+                        ],
+                        gradient: {
+                            stops: [
+                                {
+                                    location: 1,
+                                    color: "#04DE71",
+                                },
+                                {
+                                    location: 2.5,
+                                    color: "#04DE71",
+                                },
+                                {
+                                    location: 4,
+                                    color: "#FFE620",
+                                },
+                                {
+                                    location: 6,
+                                    color: "#FF9500",
+                                },
+                                {
+                                    location: 7,
+                                    color: "#FA114F",
+                                },
+                                {
+                                    location: 8,
+                                    color: "#D11343",
+                                },
+                                {
+                                    location: 9.5,
+                                    color: "#80172B",
+                                },
+                            ],
+                        },
+                    },
+                },
             },
-            shortDisplayName: {
-                "zh-Hans-CN": "AQHI",
-            },
-            longDisplayName: {
-                "zh-Hans-CN": "中国 (AQHI)",
-            },
-            /**
-             * 中国 AQHI 五级健康风险（极低/低/中/高/极高）。
-             * 级别: 极低(1), 低(2-4), 中(5), 高(6-10), 极高(11)
-             */
-            categories: [
-                {
-                    range: [1, 1],
-                    glyph: "aqi.low",
-                    colors: ["#2094FA"],
-                    categoryName: {
-                        "zh-Hans-CN": "极低",
-                    },
-                    recommendation: {
-                        "zh-Hans-CN": "适宜进行户外活动。",
+            "CN.AQHI": {
+                "zh-Hans-CN": {
+                    name: "CN.AQHI",
+                    displayName: "AQHI (CN)",
+                    shortDisplayName: "AQHI",
+                    longDisplayName: "中国 (AQHI)",
+                    displayLabel: "空气质量",
+                    language: "zh-CN",
+                    version: 1,
+                    aqi: {
+                        numerical: true,
+                        ascending: true,
+                        range: [1, 11],
+                        categories: [
+                            {
+                                categoryNumber: 1,
+                                range: [1, 1],
+                                color: "#2094FA",
+                                categoryName: "极低",
+                                recommendation: "适宜进行户外活动。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 2,
+                                range: [2, 2],
+                                color: "#04DE71",
+                                categoryName: "低",
+                                recommendation: "正常进行户外活动。心肺疾病患者可遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 3,
+                                range: [3, 3],
+                                color: "#CCFF66",
+                                categoryName: "低",
+                                recommendation: "正常进行户外活动。心肺疾病患者可遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 4,
+                                range: [4, 4],
+                                color: "#FFE620",
+                                categoryName: "中",
+                                recommendation: "心肺疾病患者应减少长时间、高强度的户外活动，并遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 5,
+                                range: [5, 5],
+                                color: "#FF9500",
+                                categoryName: "中",
+                                recommendation: "心肺疾病患者应减少长时间、高强度的户外活动，并遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 6,
+                                range: [6, 6],
+                                color: "#FA114F",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 7,
+                                range: [7, 7],
+                                color: "#DC1346",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 8,
+                                range: [8, 8],
+                                color: "#BD143D",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 9,
+                                range: [9, 9],
+                                color: "#9F1634",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 10,
+                                range: [10, 10],
+                                color: "#80172B",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 11,
+                                range: [11, 11],
+                                color: "#80172B",
+                                categoryName: "极高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应避免户外活动，避免体力消耗。一般人群应尽量减少户外活动，特别是在交通繁忙的地方。",
+                                glyph: "aqi.high",
+                            },
+                        ],
+                        gradient: {
+                            stops: [
+                                {
+                                    location: 1,
+                                    color: "#2094FA",
+                                },
+                                {
+                                    location: 2,
+                                    color: "#04DE71",
+                                },
+                                {
+                                    location: 3.5,
+                                    color: "#CCFF66",
+                                },
+                                {
+                                    location: 4,
+                                    color: "#FFE620",
+                                },
+                                {
+                                    location: 6,
+                                    color: "#FA114F",
+                                },
+                                {
+                                    location: 8,
+                                    color: "#BD143D",
+                                },
+                                {
+                                    location: 10,
+                                    color: "#80172B",
+                                },
+                            ],
+                        },
                     },
                 },
-                {
-                    range: [2, 3],
-                    glyph: "aqi.low",
-                    colors: ["#04DE71", "#CCFF66"],
-                    categoryName: {
-                        "zh-Hans-CN": "低",
-                    },
-                    recommendation: {
-                        "zh-Hans-CN": "正常进行户外活动。心肺疾病患者可遵照医嘱进行身体锻炼。",
+                "zh-Hant-HK": {
+                    name: "CN.AQHI",
+                    displayName: "AQHI (CN)",
+                    shortDisplayName: "AQHI",
+                    longDisplayName: "中国 (AQHI)",
+                    displayLabel: "空气质量",
+                    language: "zh-HK",
+                    version: 1,
+                    aqi: {
+                        numerical: true,
+                        ascending: true,
+                        range: [1, 11],
+                        categories: [
+                            {
+                                categoryNumber: 1,
+                                range: [1, 1],
+                                color: "#2094FA",
+                                categoryName: "极低",
+                                recommendation: "适宜进行户外活动。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 2,
+                                range: [2, 2],
+                                color: "#04DE71",
+                                categoryName: "低",
+                                recommendation: "正常进行户外活动。心肺疾病患者可遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 3,
+                                range: [3, 3],
+                                color: "#CCFF66",
+                                categoryName: "低",
+                                recommendation: "正常进行户外活动。心肺疾病患者可遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 4,
+                                range: [4, 4],
+                                color: "#FFE620",
+                                categoryName: "中",
+                                recommendation: "心肺疾病患者应减少长时间、高强度的户外活动，并遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 5,
+                                range: [5, 5],
+                                color: "#FF9500",
+                                categoryName: "中",
+                                recommendation: "心肺疾病患者应减少长时间、高强度的户外活动，并遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 6,
+                                range: [6, 6],
+                                color: "#FA114F",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 7,
+                                range: [7, 7],
+                                color: "#DC1346",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 8,
+                                range: [8, 8],
+                                color: "#BD143D",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 9,
+                                range: [9, 9],
+                                color: "#9F1634",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 10,
+                                range: [10, 10],
+                                color: "#80172B",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 11,
+                                range: [11, 11],
+                                color: "#80172B",
+                                categoryName: "极高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应避免户外活动，避免体力消耗。一般人群应尽量减少户外活动，特别是在交通繁忙的地方。",
+                                glyph: "aqi.high",
+                            },
+                        ],
+                        gradient: {
+                            stops: [
+                                {
+                                    location: 1,
+                                    color: "#2094FA",
+                                },
+                                {
+                                    location: 2,
+                                    color: "#04DE71",
+                                },
+                                {
+                                    location: 3.5,
+                                    color: "#CCFF66",
+                                },
+                                {
+                                    location: 4,
+                                    color: "#FFE620",
+                                },
+                                {
+                                    location: 6,
+                                    color: "#FA114F",
+                                },
+                                {
+                                    location: 8,
+                                    color: "#BD143D",
+                                },
+                                {
+                                    location: 10,
+                                    color: "#80172B",
+                                },
+                            ],
+                        },
                     },
                 },
-                {
-                    range: [4, 5],
-                    glyph: "aqi.medium",
-                    colors: ["#FFE620", "#FF9500"],
-                    categoryName: {
-                        "zh-Hans-CN": "中",
-                    },
-                    recommendation: {
-                        "zh-Hans-CN": "心肺疾病患者应减少长时间、高强度的户外活动，并遵照医嘱进行身体锻炼。",
+                "zh-Hant-TW": {
+                    name: "CN.AQHI",
+                    displayName: "AQHI (CN)",
+                    shortDisplayName: "AQHI",
+                    longDisplayName: "中国 (AQHI)",
+                    displayLabel: "空气质量",
+                    language: "zh-TW",
+                    version: 1,
+                    aqi: {
+                        numerical: true,
+                        ascending: true,
+                        range: [1, 11],
+                        categories: [
+                            {
+                                categoryNumber: 1,
+                                range: [1, 1],
+                                color: "#2094FA",
+                                categoryName: "极低",
+                                recommendation: "适宜进行户外活动。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 2,
+                                range: [2, 2],
+                                color: "#04DE71",
+                                categoryName: "低",
+                                recommendation: "正常进行户外活动。心肺疾病患者可遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 3,
+                                range: [3, 3],
+                                color: "#CCFF66",
+                                categoryName: "低",
+                                recommendation: "正常进行户外活动。心肺疾病患者可遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 4,
+                                range: [4, 4],
+                                color: "#FFE620",
+                                categoryName: "中",
+                                recommendation: "心肺疾病患者应减少长时间、高强度的户外活动，并遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 5,
+                                range: [5, 5],
+                                color: "#FF9500",
+                                categoryName: "中",
+                                recommendation: "心肺疾病患者应减少长时间、高强度的户外活动，并遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 6,
+                                range: [6, 6],
+                                color: "#FA114F",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 7,
+                                range: [7, 7],
+                                color: "#DC1346",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 8,
+                                range: [8, 8],
+                                color: "#BD143D",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 9,
+                                range: [9, 9],
+                                color: "#9F1634",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 10,
+                                range: [10, 10],
+                                color: "#80172B",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 11,
+                                range: [11, 11],
+                                color: "#80172B",
+                                categoryName: "极高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应避免户外活动，避免体力消耗。一般人群应尽量减少户外活动，特别是在交通繁忙的地方。",
+                                glyph: "aqi.high",
+                            },
+                        ],
+                        gradient: {
+                            stops: [
+                                {
+                                    location: 1,
+                                    color: "#2094FA",
+                                },
+                                {
+                                    location: 2,
+                                    color: "#04DE71",
+                                },
+                                {
+                                    location: 3.5,
+                                    color: "#CCFF66",
+                                },
+                                {
+                                    location: 4,
+                                    color: "#FFE620",
+                                },
+                                {
+                                    location: 6,
+                                    color: "#FA114F",
+                                },
+                                {
+                                    location: 8,
+                                    color: "#BD143D",
+                                },
+                                {
+                                    location: 10,
+                                    color: "#80172B",
+                                },
+                            ],
+                        },
                     },
                 },
-                {
-                    range: [6, 10],
-                    glyph: "aqi.high",
-                    colors: ["#FA114F", "#DC1346", "#BD143D", "#9F1634", "#80172B"],
-                    categoryName: {
-                        "zh-Hans-CN": "高",
-                    },
-                    recommendation: {
-                        "zh-Hans-CN": "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                "en-US": {
+                    name: "CN.AQHI",
+                    displayName: "AQHI (CN)",
+                    shortDisplayName: "AQHI",
+                    longDisplayName: "中国 (AQHI)",
+                    displayLabel: "空气质量",
+                    language: "en",
+                    version: 1,
+                    aqi: {
+                        numerical: true,
+                        ascending: true,
+                        range: [1, 11],
+                        categories: [
+                            {
+                                categoryNumber: 1,
+                                range: [1, 1],
+                                color: "#2094FA",
+                                categoryName: "极低",
+                                recommendation: "适宜进行户外活动。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 2,
+                                range: [2, 2],
+                                color: "#04DE71",
+                                categoryName: "低",
+                                recommendation: "正常进行户外活动。心肺疾病患者可遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 3,
+                                range: [3, 3],
+                                color: "#CCFF66",
+                                categoryName: "低",
+                                recommendation: "正常进行户外活动。心肺疾病患者可遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.low",
+                            },
+                            {
+                                categoryNumber: 4,
+                                range: [4, 4],
+                                color: "#FFE620",
+                                categoryName: "中",
+                                recommendation: "心肺疾病患者应减少长时间、高强度的户外活动，并遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 5,
+                                range: [5, 5],
+                                color: "#FF9500",
+                                categoryName: "中",
+                                recommendation: "心肺疾病患者应减少长时间、高强度的户外活动，并遵照医嘱进行身体锻炼。",
+                                glyph: "aqi.medium",
+                            },
+                            {
+                                categoryNumber: 6,
+                                range: [6, 6],
+                                color: "#FA114F",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 7,
+                                range: [7, 7],
+                                color: "#DC1346",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 8,
+                                range: [8, 8],
+                                color: "#BD143D",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 9,
+                                range: [9, 9],
+                                color: "#9F1634",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 10,
+                                range: [10, 10],
+                                color: "#80172B",
+                                categoryName: "高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应尽量减少户外活动，特别是在交通繁忙的地方。一般人群应减少长时间、高强度的户外活动。",
+                                glyph: "aqi.high",
+                            },
+                            {
+                                categoryNumber: 11,
+                                range: [11, 11],
+                                color: "#80172B",
+                                categoryName: "极高",
+                                recommendation: "心肺疾病患者、老人、儿童及孕妇应避免户外活动，避免体力消耗。一般人群应尽量减少户外活动，特别是在交通繁忙的地方。",
+                                glyph: "aqi.high",
+                            },
+                        ],
+                        gradient: {
+                            stops: [
+                                {
+                                    location: 1,
+                                    color: "#2094FA",
+                                },
+                                {
+                                    location: 2,
+                                    color: "#04DE71",
+                                },
+                                {
+                                    location: 3.5,
+                                    color: "#CCFF66",
+                                },
+                                {
+                                    location: 4,
+                                    color: "#FFE620",
+                                },
+                                {
+                                    location: 6,
+                                    color: "#FA114F",
+                                },
+                                {
+                                    location: 8,
+                                    color: "#BD143D",
+                                },
+                                {
+                                    location: 10,
+                                    color: "#80172B",
+                                },
+                            ],
+                        },
                     },
                 },
-                {
-                    range: [11, 11],
-                    glyph: "aqi.high",
-                    colors: ["#80172B"],
-                    categoryName: {
-                        "zh-Hans-CN": "极高",
-                    },
-                    recommendation: {
-                        "zh-Hans-CN": "心肺疾病患者、老人、儿童及孕妇应避免户外活动，避免体力消耗。一般人群应尽量减少户外活动，特别是在交通繁忙的地方。",
-                    },
-                },
-            ],
-            gradient: {
-                stops: [
-                    { location: 1, color: "#2094FA" },
-                    { location: 2, color: "#04DE71" },
-                    { location: 3.5, color: "#CCFF66" },
-                    { location: 4, color: "#FFE620" },
-                    { location: 6, color: "#FA114F" },
-                    { location: 8, color: "#BD143D" },
-                    { location: 10, color: "#80172B" },
-                ],
             },
         },
     };
+
     /**
-     * 将 Apple WeatherKit BCP47 语言标签规范化为三键形式：zh-Hans-CN / zh-Hant-HK / en-US。
-     * 例：zh-Hans-CN → zh-Hans-CN，zh-Hant-HK → zh-Hant-HK，zh* → zh-Hant-TW，* → en
+     * 从完整配置中读取并序列化指定标尺。
+     * Reads and serializes the requested scale from the complete configuration.
      * @param {string} language
-     * @returns {"zh-Hans-CN"|"zh-Hant-HK"|"en-US"}
+     * @param {string} scaleName
+     * @returns {{ status: number, headers: Record<string, string>, body: string }|undefined}
      */
-    static normalizeLanguage(language) {
-        if (/zh-Hans-CN/i.test(language)) return "zh-Hans-CN";
-        if (/zh-Hant-HK/i.test(language)) return "zh-Hant-HK";
-        if (/^zh/i.test(language)) return "zh-Hant-TW"; // 无脚本标签的 zh-* 默认繁体
-        return "en-US";
-    }
-
-    /**
-     * 构建 HK AQHI 标尺 JSON 响应体。
-     * 格式与 WeatherKit /api/v1/airQualityScale/{lang}/CA.AQHI.2414 保持一致。
-     *
-     * @param {string} language - 请求的语言标签，如 "zh-Hant-HK"、"en-US"
-     * @param {string} scaleName - 标尺名称，如 "HK.AQHI.2414"
-     * @returns {{ status: number, headers: Record<string, string>, body: string }}
-     */
-    static buildHKAQHIScale(language, scaleName) {
-        const normalizeLang = AirQualityScale.normalizeLanguage(language);
-        const lang = normalizeLang === "zh-Hant-TW" ? "zh-Hant-HK" : normalizeLang;
-
-        // 展开每一级 categoryNumber (1~11)
-        const categories = [];
-        for (const band of AirQualityScale.#Config.HK_AQHI.categories) {
-            const [min, max] = band.range;
-            for (let idx = min; idx <= max; idx++) {
-                categories.push({
-                    categoryNumber: idx,
-                    range: [idx, idx],
-                    color: band.colors[idx - min],
-                    categoryName: i18n(band.categoryName, lang),
-                    recommendation: i18n(band.recommendation, lang),
-                    glyph: band.glyph,
-                });
-            }
-        }
-
-        const scale = {
-            name: scaleName,
-            displayName: i18n(AirQualityScale.#Config.HK_AQHI.displayName, lang),
-            shortDisplayName: i18n(AirQualityScale.#Config.HK_AQHI.shortDisplayName, lang),
-            longDisplayName: i18n(AirQualityScale.#Config.HK_AQHI.longDisplayName, lang),
-            displayLabel: i18n(AirQualityScale.#Config.ScaleDisplayLabel, normalizeLang),
-            language: normalizeScaleLanguage(language),
-            version: 1,
-            aqi: {
-                numerical: true,
-                ascending: true,
-                range: [1, 11],
-                categories,
-                gradient: AirQualityScale.#Config.HK_AQHI.gradient,
-            },
-        };
-
+    Build(language, scaleName) {
+        const configLanguage = this.#GetConfigLanguage(language);
+        const scale = this.#Config.AirQualityScale[scaleName]?.[configLanguage];
+        if (!scale) return undefined;
         return {
             status: 200,
-            headers: {
-                "Content-Type": "application/json",
-                "Cache-Control": "max-age=31536000, public, s-maxage=31536000",
-            },
+            headers: { ...this.#Config.Headers },
             body: JSON.stringify(scale),
         };
     }
 
     /**
-     * 构建 CN AQHI 标尺 JSON 响应体。
-     * 格式与 WeatherKit /api/v1/airQualityScale/{lang}/CA.AQHI.2414 保持一致。
-     *
-     * @param {string} language - 请求的语言标签，如 "zh-Hans-CN"、"en-US"
-     * @param {string} scaleName - 标尺名称，如 "CN.AQHI.2414"
-     * @returns {{ status: number, headers: Record<string, string>, body: string }}
+     * 按显式 BCP 47 映射表查找数据库语言键。
+     * Resolves the database language key through the explicit BCP 47 map.
+     * @param {string} language
+     * @returns {string|undefined}
      */
-    static buildCNAQHIScale(language, scaleName) {
-        const lang = "zh-Hans-CN";
-
-        const categories = [];
-        for (const band of AirQualityScale.#Config.CN_AQHI.categories) {
-            const [min, max] = band.range;
-            for (let idx = min; idx <= max; idx++) {
-                categories.push({
-                    categoryNumber: idx,
-                    range: [idx, idx],
-                    color: band.colors[idx - min],
-                    categoryName: i18n(band.categoryName, lang),
-                    recommendation: i18n(band.recommendation, lang),
-                    glyph: band.glyph,
-                });
-            }
-        }
-
-        const scale = {
-            name: scaleName,
-            displayName: i18n(AirQualityScale.#Config.CN_AQHI.displayName, lang),
-            shortDisplayName: i18n(AirQualityScale.#Config.CN_AQHI.shortDisplayName, lang),
-            longDisplayName: i18n(AirQualityScale.#Config.CN_AQHI.longDisplayName, lang),
-            displayLabel: i18n(AirQualityScale.#Config.ScaleDisplayLabel, lang),
-            language: normalizeScaleLanguage(language),
-            version: 1,
-            aqi: {
-                numerical: true,
-                ascending: true,
-                range: [1, 11],
-                categories,
-                gradient: AirQualityScale.#Config.CN_AQHI.gradient,
-            },
-        };
-
-        return {
-            status: 200,
-            headers: {
-                "Content-Type": "application/json",
-                "Cache-Control": "max-age=31536000, public, s-maxage=31536000",
-            },
-            body: JSON.stringify(scale),
-        };
+    #GetConfigLanguage(language) {
+        return this.#Config.Language[language?.toLowerCase()];
     }
 }
