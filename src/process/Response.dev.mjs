@@ -110,8 +110,8 @@ export async function Response($request, $response) {
                                     await matchEnum.init();
                                 }
                                 const enviroments = {
-                                    colorfulClouds: new ColorfulClouds(providerParameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
-                                    qWeather: new QWeather(providerParameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host),
+                                    colorfulClouds: new ColorfulClouds(providerParameters, Settings.API.ColorfulClouds.Token),
+                                    qWeather: new QWeather(providerParameters, Settings.API.QWeather.Token, Settings.API.QWeather.Host),
                                     waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
                                     country: parameters.country,
                                 };

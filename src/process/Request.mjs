@@ -175,7 +175,7 @@ async function GetWeatherAlerts(identifier, parameters, Settings, headers) {
                 switch (Settings?.WeatherAlerts?.Provider) {
                     case "ColorfulClouds": {
                         Console.info("☑️ ColorfulClouds.WeatherAlert", `ids: ${identifier}`);
-                        const colorfulClouds = new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
+                        const colorfulClouds = new ColorfulClouds(parameters, Settings.API.ColorfulClouds.Token);
                         const source = await colorfulClouds.WeatherAlert();
                         body = WeatherAlerts.Build(source, {
                             attributionUrl: source?.metadata?.attributionUrl ?? "https://www.caiyunapp.com/h5",
@@ -187,7 +187,7 @@ async function GetWeatherAlerts(identifier, parameters, Settings, headers) {
                     }
                     case "QWeatherWeb":
                     case "QWeather": {
-                        const qWeather = new QWeather(parameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host);
+                        const qWeather = new QWeather(parameters, Settings.API.QWeather.Token, Settings.API.QWeather.Host);
                         body = WeatherAlerts.Build(await qWeather.WeatherAlert(), {
                             attributionUrl: "https://www.12379.cn/",
                             identifier: `${parameters.latitude},${parameters.longitude}`,
