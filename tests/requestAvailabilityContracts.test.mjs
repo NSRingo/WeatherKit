@@ -219,6 +219,11 @@ test("only response-injectable datasets remain configurable", () => {
     assert.deepEqual(database.WeatherKit.Settings.DataSets, ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour"]);
 });
 
+test("provider API defaults live in the database", () => {
+    assert.equal(database.WeatherKit.Settings.API.ColorfulClouds.Token, "Y2FpeXVuX25vdGlmeQ==");
+    assert.equal(database.WeatherKit.Settings.API.QWeather.Token, "bdd98ec1d87747f3a2e8b1741a5af796");
+});
+
 test("availability keeps Apple's capabilities and appends plugin requirements in prod and dev", async () => {
     const appleCapabilities = ["currentWeather", "forecastSnowfall", "weatherMaps"];
     const expected = [...new Set([...appleCapabilities, ...database.WeatherKit.Configs.Availability.v2])];
