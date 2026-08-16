@@ -186,16 +186,6 @@ export default class QWeather {
     }
 
     /**
-     * 判断 ids 是否为 QWeather 灾害预警页面标识。
-     * Determine whether ids is a QWeather severe-weather page identifier.
-     * @param {string | null | undefined} ids 页面标识 / Page identifier.
-     * @returns {boolean} 是否为页面标识 / Whether this is a page identifier.
-     */
-    static IsWeatherAlertPageIdentifier(ids) {
-        return /^[\p{L}\p{N}._'-]+-[0-9]{9}$/u.test(ids?.trim() ?? "");
-    }
-
-    /**
      * 从 FlatBuffer 的 QWeather 预警页面链接中提取地区标识。
      * Extract the location identifier from a FlatBuffer QWeather severe-weather URL.
      * @param {string | null | undefined} value 预警页面链接 / Severe-weather URL.
@@ -206,8 +196,7 @@ export default class QWeather {
             const url = new URL(value);
             if (url.protocol !== "https:" || url.hostname !== "www.qweather.com") return undefined;
             if (url.search !== "?from=AppleWeatherService" || url.hash) return undefined;
-            const identifier = decodeURIComponent(url.pathname.match(/^\/{1,2}(?:en\/)?severe-weather\/([^/]+)\.html$/)?.[1] ?? "");
-            return QWeather.IsWeatherAlertPageIdentifier(identifier) ? identifier : undefined;
+            return decodeURIComponent(url.pathname).match(/^\/{1,2}(?:en\/)?severe-weather\/([^/]+)\.html$/)?.[1];
         } catch {
             return undefined;
         }
@@ -219,11 +208,10 @@ export default class QWeather {
      * @param {string} identifier 地区标识 / Location identifier.
      * @param {string} language WeatherKit 语言 / WeatherKit language.
      * @param {boolean} includeAppleSource 是否附加 Apple 来源参数 / Whether to append the Apple source parameter.
-     * @returns {URL | undefined} QWeather 页面链接 / QWeather page URL.
+     * @returns {URL} QWeather 页面链接 / QWeather page URL.
      */
     static BuildWeatherAlertPageURL(identifier, language = "zh-CN", includeAppleSource = true) {
         identifier = identifier?.trim();
-        if (!QWeather.IsWeatherAlertPageIdentifier(identifier)) return undefined;
         const url = new URL("https://www.qweather.com");
         url.pathname = language.toLowerCase().startsWith("en") ? `/en/severe-weather/${identifier}.html` : `/severe-weather/${identifier}.html`;
         if (includeAppleSource) url.searchParams.set("from", "AppleWeatherService");
@@ -235,10 +223,9 @@ export default class QWeather {
      * Build the internally rewritten Apple weather alert details URL.
      * @param {string} identifier 地区标识 / Location identifier.
      * @param {string} language WeatherKit 语言 / WeatherKit language.
-     * @returns {string | undefined} Apple 预警详情链接 / Apple alert details URL.
+     * @returns {string} Apple 预警详情链接 / Apple alert details URL.
      */
     static BuildAppleAlertDetailsURL(identifier, language = "zh-CN") {
-        if (!QWeather.IsWeatherAlertPageIdentifier(identifier)) return undefined;
         return `https://weatherkit.apple.com/alertDetails/index.html?ids=${encodeURIComponent(identifier)}&lang=${encodeURIComponent(language)}&party=qweather`;
     }
 
@@ -338,7 +325,6 @@ export default class QWeather {
      */
     static async FetchWeatherAlertPage(identifier, language = "zh-CN", requestHeaders = {}) {
         const sourceUrl = QWeather.BuildWeatherAlertPageURL(identifier, language);
-        if (!sourceUrl) return { alerts: [], areaName: "", source: "QWeather" };
         const normalizedHeaders = Object.fromEntries(Object.entries(requestHeaders).map(([key, value]) => [key.toLowerCase(), value]));
         const sourceHeaders = {
             Accept: "text/html,application/xhtml+xml",

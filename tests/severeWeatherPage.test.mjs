@@ -839,12 +839,7 @@ test("Pages returns an empty Apple-compatible array for native WeatherAlert iden
     }
 });
 
-test("only QWeather location tokens are eligible for takeover", () => {
-    assert.equal(QWeather.IsWeatherAlertPageIdentifier("jianye-101190110"), true);
-    assert.equal(QWeather.IsWeatherAlertPageIdentifier("jian'an-101180407"), true);
-    assert.equal(QWeather.IsWeatherAlertPageIdentifier("jianye-10119011"), false);
-    assert.equal(QWeather.IsWeatherAlertPageIdentifier("jianye-1011901100"), false);
-    assert.equal(QWeather.IsWeatherAlertPageIdentifier("32.115,118.814"), false);
+test("QWeather page URLs only parse supported paths", () => {
     assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com/severe-weather/jian'an-101180407.html?from=AppleWeatherService"), "jian'an-101180407");
     assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com//severe-weather/jianye-101190110.html?from=AppleWeatherService"), "jianye-101190110");
     assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com/en/severe-weather/jianye-101190110.html?from=AppleWeatherService"), "jianye-101190110");
@@ -853,8 +848,6 @@ test("only QWeather location tokens are eligible for takeover", () => {
     assert.equal(QWeather.ParseWeatherAlertPageURL("https://www.qweather.com/severe-weather/jianye-101190110.html?from=AppleWeatherService&lang=zh-CN"), undefined);
     assert.equal(QWeather.ParseWeatherAlertPageURL("https://evil.example/severe-weather/jianye-101190110.html?from=AppleWeatherService"), undefined);
     assert.equal(QWeather.BuildAppleAlertDetailsURL("jianye-101190110", "zh-CN"), "https://weatherkit.apple.com/alertDetails/index.html?ids=jianye-101190110&lang=zh-CN&party=qweather");
-    assert.equal(QWeather.IsWeatherAlertPageIdentifier("35889ee6-fa82-5f9f-8e49-fad78c4f383a"), false);
-    assert.equal(QWeather.IsWeatherAlertPageIdentifier("https://evil.example"), false);
 });
 
 test("the request scripts return QWeather data before Apple weatherAlerts is requested", async () => {
