@@ -74,5 +74,10 @@
         "flatbuffers": "^24.12.23",
         "hono": "^4.12.31",
         "node-fetch": "^3.3.2"
+    },
+    "overrides": {
+        "@iringo/surge2egern": {
+            "puppeteer": "25.7.0"
+        }
     }
 }
