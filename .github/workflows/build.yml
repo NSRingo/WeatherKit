@@ -30,7 +30,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
       - name: Install Puppeteer Chrome
-        run: npx puppeteer browsers install chrome
+        run: |
+          node node_modules/puppeteer/install.mjs
+          node --input-type=module -e 'import puppeteer from "puppeteer"; console.log(puppeteer.executablePath())'
         env:
           PUPPETEER_CACHE_DIR: ${{ runner.temp }}/puppeteer
       - name: Update local package.json version from release tag
@@ -46,6 +48,8 @@ jobs:
         run: npm run build:args
         env:
           PUPPETEER_CACHE_DIR: ${{ runner.temp }}/puppeteer
+      - name: Verify Egern module
+        run: test -s dist/iRingo.WeatherKit.yaml
       - name: Upload artifact
         uses: actions/upload-artifact@master
         with:
