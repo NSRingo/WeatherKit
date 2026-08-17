@@ -226,6 +226,8 @@ const airQualityCurrentIndexForceCNPrimaryPollutants: Arg = {
 
 const airQualityCurrentFull = [airQualityCurrentPollutantsProvider, airQualityCurrentPollutantsUnitsReplace, airQualityCurrentPollutantsUnitsMode, airQualityCurrentIndexReplace, airQualityCurrentIndexProvider, airQualityCurrentIndexForceCNPrimaryPollutants];
 
+export const airQuality = [airQualityCurrentPollutantsProvider];
+
 const airQualityComparisonReplace: Arg = {
     key: "AirQuality.Comparison.ReplaceWhenCurrentChange",
     name: "[空气质量 - 对比昨日] 变化时替换",
