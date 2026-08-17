@@ -25,7 +25,7 @@ export default class AirQualityScale {
             "en-sg": "en-US",
             "en-us": "en-US",
             "en-za": "en-US",
-            zh: "zh-Hant-CN",
+            zh: "zh-Hant-TW",
             "zh-hans": "zh-Hans-CN",
             "zh-cn": "zh-Hans-CN",
             "zh-sg": "zh-Hans-CN",
