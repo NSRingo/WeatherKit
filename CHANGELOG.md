@@ -10,6 +10,7 @@
   * 修复天气预警请求未按标识类型正确处理的问题：页面地区标识固定使用和风天气网页，坐标标识按所选数据源处理且 `QWeatherWeb` 自动使用和风天气 API，原生或不支持的标识返回 WeatherKit 兼容的空结果。 @VirgilClyne
   * 将 `weatherAlerts` 纳入正式版默认可配置数据集，避免启用天气预警数据源后请求遗漏预警数据。 @VirgilClyne
   * 补充彩云天气与和风天气的默认服务令牌并统一请求、响应脚本的读取路径，未自定义令牌时仍可使用对应天气服务。 @VirgilClyne
+  * 修复用户传入空 token 时覆盖内置默认令牌的问题，空值会回退到 database 提供的默认服务令牌。 @VirgilClyne
   * 恢复正式构建生成普通 Egern 模块 `iRingo.WeatherKit.yaml`。 @VirgilClyne
 
 ### ‼️ Breaking Changes
