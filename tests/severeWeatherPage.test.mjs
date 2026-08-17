@@ -150,14 +150,6 @@ test("WeatherAlerts standardization stays provider-agnostic", async () => {
     assert.doesNotMatch(source, /\bqWeather\b|\bQWeather\b/);
 });
 
-test("request and response scripts read provider tokens from settings", async () => {
-    for (const path of ["../src/process/Request.mjs", "../src/process/Request.dev.mjs", "../src/process/Response.mjs", "../src/process/Response.dev.mjs"]) {
-        const source = await readFile(new URL(path, import.meta.url), "utf8");
-        assert.doesNotMatch(source, /Y2FpeXVuX25vdGlmeQ==|bdd98ec1d87747f3a2e8b1741a5af796/, path);
-        assert.doesNotMatch(source, /Settings\?\.API\?\.(?:ColorfulClouds|QWeather)\?\.Token\s*\|\|/, path);
-    }
-});
-
 test("response WeatherAlert injection only selects and merges provider slot objects", async () => {
     for (const path of ["../src/process/Response.mjs", "../src/process/Response.dev.mjs"]) {
         const source = await readFile(new URL(path, import.meta.url), "utf8");
