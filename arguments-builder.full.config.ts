@@ -21,6 +21,10 @@ type Arg = {
 export const output = {
     surge: {
         path: "./dist/iRingo.WeatherKit.sgmodule",
+        transformEgern: {
+            enable: true,
+            path: "./dist/iRingo.WeatherKit.yaml",
+        },
     },
     loon: {
         path: "./dist/iRingo.WeatherKit.lpx",

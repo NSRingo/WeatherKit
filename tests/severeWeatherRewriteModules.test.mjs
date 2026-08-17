@@ -250,10 +250,11 @@ test("Dev builds use dev templates, bundles, and output names", async () => {
     }
 });
 
-test("Handler generation keeps Loon local and excludes Egern", async () => {
+test("Handler generation keeps Loon local and enables Egern", async () => {
     const content = await readFile(new URL("../arguments-builder.full.config.ts", import.meta.url), "utf8");
     assert.match(content, /path: "\.\/dist\/iRingo\.WeatherKit\.lpx"/);
-    assert.doesNotMatch(content, /transformEgern|iRingo\.WeatherKit\.yaml/);
+    assert.match(content, /transformEgern: \{/);
+    assert.match(content, /path: "\.\/dist\/iRingo\.WeatherKit\.yaml"/);
 });
 
 test("WeatherAlert provider settings expose web and user API choices", async () => {
