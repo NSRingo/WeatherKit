@@ -63,7 +63,7 @@ export const dataSetsFull: Arg[] = [
         name: "[数据集]",
         defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
         type: "array",
-        description: "选中的数据集会被包含在请求中。",
+        description: "选择允许插件处理的数据集；未选中的可配置数据集会从请求中移除，其他 Apple 数据集保持不变。",
         options: [
             { key: "airQuality", label: "空气质量" },
             { key: "currentWeather", label: "当前天气" },
@@ -82,8 +82,8 @@ export const dataSetsFull: Arg[] = [
 const weatherReplace: Arg = {
     key: "Weather.Replace",
     name: "[天气] 替换范围",
-    defaultValue: ["CN"],
-    type: "array",
+    defaultValue: "CN",
+    type: "string",
     description: "正则表达式，只替换指定地区的天气。",
 };
 

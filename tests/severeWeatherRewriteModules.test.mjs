@@ -273,6 +273,7 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
     assert.match(full, /export const dataSets: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"\]/);
     assert.match(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"\][\s\S]*key: "weatherChanges", label: "天气变化"/);
     assert.doesNotMatch(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*\.\.\.dataSets\[0\]/);
+    assert.match(full, /key: "Weather\.Replace"[\s\S]*defaultValue: "CN"[\s\S]*type: "string"/);
     assert.match(full, /args: \[\.\.\.dataSetsFull/);
     assert.match(release, /import \{[^}]*dataSets[^}]*weatherAlerts[^}]*\} from "\.\/arguments-builder\.full\.config"/);
     assert.match(release, /import \{[^}]*airQuality[^}]*\} from "\.\/arguments-builder\.full\.config"/);
@@ -282,4 +283,14 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
     assert.match(database, /WeatherAlerts: \{ Provider: "QWeatherWeb" \}/);
     assert.match(types, /WeatherAlerts\?: \{[\s\S]*Provider\?: "WeatherKit" \| "QWeatherWeb" \| "QWeather" \| "ColorfulClouds"/);
     assert.match(boxjs, /@iRingo\.WeatherKit\.Settings\.WeatherAlerts\.Provider[\s\S]*"val": "QWeatherWeb"[\s\S]*"key": "WeatherKit"/);
+    const boxjsSettings = JSON.parse(boxjs);
+    const dataSetsSetting = boxjsSettings.find(({ id }) => id === "@iRingo.WeatherKit.Settings.DataSets");
+    const weatherReplaceSetting = boxjsSettings.find(({ id }) => id === "@iRingo.WeatherKit.Settings.Weather.Replace");
+    assert.equal(dataSetsSetting.desc, "选择允许插件处理的数据集；未选中的可配置数据集会从请求中移除，其他 Apple 数据集保持不变。");
+    assert.equal(weatherReplaceSetting.type, "text");
+    assert.equal(weatherReplaceSetting.val, "CN");
+    assert.equal(
+        boxjsSettings.some(({ type, val }) => type === "text" && Array.isArray(val)),
+        false,
+    );
 });
