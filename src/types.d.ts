@@ -11,7 +11,7 @@ export interface Settings {
         /**
          * [数据集]
          *
-         * 选择允许插件处理的数据集；未选中的可配置数据集会从请求中移除，其他 Apple 数据集保持不变。
+         * 选择需要解析并处理的数据集；未选择的数据槽始终保持原样透传，不作修改。
          *
          * @remarks
          *
@@ -21,15 +21,15 @@ export interface Settings {
          * - `'forecastDaily'` - 每日预报
          * - `'forecastHourly'` - 每小时预报
          * - `'forecastNextHour'` - 未来一小时降水强度
-         * - `'locationInfo'` - 位置信息
          * - `'news'` - 新闻
-         * - `'historicalComparisons'` - 历史对比
          * - `'weatherAlerts'` - 天气预警
-         * - `'weatherChanges'` - 天气变化
+         * - `'weatherChange'` - 天气变化
+         * - `'trendComparison'` - 历史对比
+         * - `'locationInfo'` - 位置信息
          *
-         * @defaultValue ["airQuality","currentWeather","forecastDaily","forecastHourly","forecastNextHour","locationInfo","news","historicalComparisons","weatherAlerts","weatherChanges"]
+         * @defaultValue ["airQuality","currentWeather","forecastDaily","forecastHourly","forecastNextHour","news","weatherAlerts","weatherChange","trendComparison","locationInfo"]
          */
-        Value?: ("airQuality" | "currentWeather" | "forecastDaily" | "forecastHourly" | "forecastNextHour" | "locationInfo" | "news" | "historicalComparisons" | "weatherAlerts" | "weatherChanges")[];
+        Value?: ("airQuality" | "currentWeather" | "forecastDaily" | "forecastHourly" | "forecastNextHour" | "news" | "weatherAlerts" | "weatherChange" | "trendComparison" | "locationInfo")[];
     };
     Weather?: {
         /**
