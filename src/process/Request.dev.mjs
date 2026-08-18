@@ -3,7 +3,6 @@ import AirQualityScale from "../class/AirQualityScale.mjs";
 import ColorfulClouds from "../class/ColorfulClouds.mjs";
 import QWeather from "../class/QWeather.mjs";
 import WeatherAlerts from "../class/WeatherAlerts.mjs";
-import WeatherKit2 from "../class/WeatherKit2.mjs";
 import database from "../function/database.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
 import setENV from "../function/setENV.mjs";
@@ -126,11 +125,6 @@ export async function Request($request) {
                                                 if (gcc) url.searchParams.set("country", gcc);
                                             }
                                             break;
-                                    }
-                                    let dataSets = url.searchParams.get("dataSets")?.split(",");
-                                    if (dataSets) {
-                                        dataSets = WeatherKit2.filterRootNames(dataSets, Settings.DataSets);
-                                        url.searchParams.set("dataSets", dataSets?.join(","));
                                     }
                                     break;
                                 }
