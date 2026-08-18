@@ -52,8 +52,18 @@ export const output = {
 export const dataSets: Arg[] = [
     {
         key: "DataSets",
+        name: "[数据集]",
         defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"],
         type: "array",
+        description: "选择需要解析并处理的数据集；未选择的数据槽始终保持原样透传，不作修改。",
+        options: [
+            { key: "airQuality", label: "空气质量" },
+            { key: "currentWeather", label: "当前天气" },
+            { key: "forecastDaily", label: "每日预报" },
+            { key: "forecastHourly", label: "每小时预报" },
+            { key: "forecastNextHour", label: "未来一小时降水强度" },
+            { key: "weatherAlerts", label: "天气预警" },
+        ],
     },
 ];
 
@@ -61,20 +71,20 @@ export const dataSetsFull: Arg[] = [
     {
         key: "DataSets",
         name: "[数据集]",
-        defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"],
+        defaultValue: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "news", "weatherAlerts", "weatherChange", "trendComparison", "locationInfo"],
         type: "array",
-        description: "选择允许插件处理的数据集；未选中的可配置数据集会从请求中移除，其他 Apple 数据集保持不变。",
+        description: "选择需要解析并处理的数据集；未选择的数据槽始终保持原样透传，不作修改。",
         options: [
             { key: "airQuality", label: "空气质量" },
             { key: "currentWeather", label: "当前天气" },
             { key: "forecastDaily", label: "每日预报" },
             { key: "forecastHourly", label: "每小时预报" },
             { key: "forecastNextHour", label: "未来一小时降水强度" },
-            { key: "locationInfo", label: "位置信息" },
             { key: "news", label: "新闻" },
-            { key: "historicalComparisons", label: "历史对比" },
             { key: "weatherAlerts", label: "天气预警" },
-            { key: "weatherChanges", label: "天气变化" },
+            { key: "weatherChange", label: "天气变化" },
+            { key: "trendComparison", label: "历史对比" },
+            { key: "locationInfo", label: "位置信息" },
         ],
     },
 ];

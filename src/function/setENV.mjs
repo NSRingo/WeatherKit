@@ -14,6 +14,7 @@ export default function setENV(name, platforms, database) {
     const { Settings, Caches, Configs } = getStorage(name, platforms, database);
     /***************** Settings *****************/
     Console.info(`typeof Settings: ${typeof Settings}`, `Settings: ${JSON.stringify(Settings, null, 2)}`);
+    string2array("DataSets");
     string2array("Weather.Replace");
     string2array("AirQuality.Current.Index.Replace");
     string2array("AirQuality.Current.Pollutants.Units.Replace");
