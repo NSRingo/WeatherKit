@@ -6,13 +6,14 @@ globalThis.$environment = { "surge-version": "test" };
 globalThis.$persistentStore = { read: () => null, write: () => true };
 globalThis.$argument = { LogLevel: "OFF", Storage: "database" };
 
-const [{ default: WeatherKit2 }, { FlatBufferRootProcessor }, { News, Weather }, { Response }, { Response: ResponseDev }, { Console }] = await Promise.all([
+const [{ default: WeatherKit2 }, { FlatBufferRootProcessor }, { News, Weather }, { Response }, { Response: ResponseDev }, { Console }, { default: database }] = await Promise.all([
     import("../src/class/WeatherKit2.mjs"),
     import("@nsringo/flatbuffer-root"),
     import("@nsringo/weatherkit"),
     import("../src/process/Response.mjs"),
     import("../src/process/Response.dev.mjs"),
     import("@nsnanocat/util"),
+    import("../src/function/database.mjs"),
 ]);
 
 const supportedRootDataSets = Object.getOwnPropertyNames(Weather.prototype).filter(dataSet => !["constructor", "__init"].includes(dataSet));
@@ -70,6 +71,13 @@ const qWeatherAlertAPI = {
     ],
 };
 const qWeatherHighTemperatureAlert = qWeatherAlertAPI.alerts[1];
+const qWeatherMinutelyAPI = {
+    code: "200",
+    fxLink: "https://www.qweather.com/",
+    minutely: [{ fxTime: "2026-07-16T08:05:00+08:00", precip: "0.2" }],
+    summary: "未来一小时有小雨",
+    updateTime: "2026-07-16T08:00:37+08:00",
+};
 const colorfulCloudsRealtimeAPI = {
     status: "ok",
     location: [31.23, 121.47],
@@ -211,38 +219,106 @@ test("encode without a source creates a complete root containing only patch keys
     assert.deepEqual(Object.keys(WeatherKit2.decode(new ByteBuffer(rawBody), ["news", "forecastNextHour"])), ["news"]);
 });
 
-test("response preserves an injection root outside the requested dataSets", async () => {
-    const originalBytes = createWeatherRoot([4, 5]);
-    const response = await Response(
-        {
-            url: "https://weatherkit.apple.com/api/v2/weather/en-US/22.5431/114.0579?country=US&dataSets=news",
+test("response processes a configured root outside the requested dataSets", async () => {
+    const originalArgument = globalThis.$argument;
+    const originalHttpClient = globalThis.$httpClient;
+    let requestCount = 0;
+    globalThis.$argument = { DataSets: "forecastNextHour", LogLevel: "OFF", NextHour: { Provider: "QWeather" }, Storage: "Argument" };
+    globalThis.$httpClient = {
+        get(request, callback) {
+            requestCount++;
+            assert.match(request.url, /\/v7\/minutely\/5m\?/);
+            callback(undefined, { headers: {}, status: 200 }, JSON.stringify(qWeatherMinutelyAPI));
         },
-        {
-            bodyBytes: originalBytes,
-            headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
-        },
-    );
+    };
+    try {
+        for (const handler of [Response, ResponseDev]) {
+            const response = await runResponseHandler(
+                handler,
+                {
+                    url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/22.5431/114.0579?country=CN&dataSets=news",
+                },
+                {
+                    bodyBytes: createWeatherRoot([5]),
+                    headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
+                },
+            );
+            const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["forecastNextHour", "news"]);
 
-    const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["forecastNextHour", "news"]);
+            assert.equal(decoded.forecastNextHour.metadata.providerName, "和风天气");
+            assert.ok(decoded.news);
+        }
+    } finally {
+        globalThis.$argument = originalArgument;
+        globalThis.$httpClient = originalHttpClient;
+    }
 
-    assert.deepEqual(Object.keys(decoded), ["forecastNextHour", "news"]);
+    assert.equal(requestCount, 2);
 });
 
-test("response rewrites an injection root when its dataSet was requested", async () => {
+test("response preserves requested roots when no dataSets are configured", async () => {
     const originalBytes = createWeatherRoot([4, 5]);
-    const response = await Response(
-        {
-            url: "https://weatherkit.apple.com/api/v2/weather/en-US/22.5431/114.0579?country=US&dataSets=forecastNextHour,news",
+    const originalArgument = globalThis.$argument;
+    const originalHttpClient = globalThis.$httpClient;
+    let requestCount = 0;
+    globalThis.$argument = { DataSets: "[]", LogLevel: "OFF", NextHour: { Provider: "QWeather" }, Storage: "Argument" };
+    globalThis.$httpClient = {
+        get(_request, callback) {
+            requestCount++;
+            callback(undefined, { headers: {}, status: 200 }, JSON.stringify(qWeatherMinutelyAPI));
         },
-        {
-            bodyBytes: originalBytes,
-            headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
-        },
-    );
-    const responseBytes = new Uint8Array(response.body);
+    };
+    try {
+        for (const handler of [Response, ResponseDev]) {
+            const response = await runResponseHandler(
+                handler,
+                {
+                    url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/22.5431/114.0579?country=CN&dataSets=forecastNextHour,news",
+                },
+                {
+                    bodyBytes: originalBytes,
+                    headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
+                },
+            );
+            const responseBytes = new Uint8Array(response.body);
 
-    assert.notDeepEqual(responseBytes, originalBytes);
-    assert.deepEqual(Object.keys(WeatherKit2.decode(new ByteBuffer(responseBytes), ["forecastNextHour", "news"])), ["forecastNextHour", "news"]);
+            assert.deepEqual(responseBytes, originalBytes);
+            assert.deepEqual(Object.keys(WeatherKit2.decode(new ByteBuffer(responseBytes), ["forecastNextHour", "news"])), ["forecastNextHour", "news"]);
+        }
+    } finally {
+        globalThis.$argument = originalArgument;
+        globalThis.$httpClient = originalHttpClient;
+    }
+
+    assert.equal(requestCount, 0);
+});
+
+test("response maps configured dataSets to FlatBuffer root names before decoding", async () => {
+    const originalArgument = globalThis.$argument;
+    const originalDecode = WeatherKit2.decode;
+    let decodedRootNames;
+    globalThis.$argument = { DataSets: ["weatherChange", "trendComparison"], LogLevel: "OFF", Storage: "Argument" };
+    WeatherKit2.decode = (byteBuffer, rootNames) => {
+        decodedRootNames = rootNames;
+        return originalDecode.call(WeatherKit2, byteBuffer, rootNames);
+    };
+    try {
+        await Response(
+            {
+                url: "https://weatherkit.apple.com/api/v2/weather/en-US/22.5431/114.0579?dataSets=weatherChange,trendComparison",
+            },
+            {
+                bodyBytes: createWeatherRoot([7, 8]),
+                headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
+            },
+        );
+    } finally {
+        WeatherKit2.decode = originalDecode;
+        globalThis.$argument = originalArgument;
+    }
+
+    assert.deepEqual(decodedRootNames, [database.WeatherKit.Configs.DataSets.weatherChange, database.WeatherKit.Configs.DataSets.trendComparison]);
+    assert.deepEqual(decodedRootNames, ["weatherChanges", "historicalComparisons"]);
 });
 
 test("response preserves the user-supplied QWeather Alert API path", async () => {
@@ -253,6 +329,7 @@ test("response preserves the user-supplied QWeather Alert API path", async () =>
     let sourceRequest;
     globalThis.$argument = {
         API: { QWeather: { Host: "devapi.qweather.com", Token: "user-token" } },
+        DataSets: "weatherAlerts",
         LogLevel: "OFF",
         Storage: "Argument",
         WeatherAlerts: { Provider: "QWeather" },
@@ -316,6 +393,7 @@ test("response selects ColorfulClouds v2.6 alerts explicitly", async () => {
     let sourceUrl;
     globalThis.$argument = {
         API: { ColorfulClouds: { Token: "colorful-token" }, QWeather: { Host: "devapi.qweather.com", Token: "qweather-token" } },
+        DataSets: "weatherAlerts",
         LogLevel: "OFF",
         Storage: "Argument",
         WeatherAlerts: { Provider: "ColorfulClouds" },
@@ -363,6 +441,7 @@ test("response derives QWeather HTML alerts and the internal details URL from th
     let sourceUrl;
     globalThis.$argument = {
         API: { ColorfulClouds: { Token: "colorful-token" }, QWeather: { Host: "devapi.qweather.com", Token: "qweather-token" } },
+        DataSets: "weatherAlerts",
         LogLevel: "OFF",
         Storage: "Argument",
         WeatherAlerts: { Provider: "QWeatherWeb" },
@@ -422,6 +501,7 @@ test("response preserves the original WeatherAlert slot when WeatherKit is selec
     const originalArgument = globalThis.$argument;
     const originalHttpClient = globalThis.$httpClient;
     globalThis.$argument = {
+        DataSets: "weatherAlerts",
         LogLevel: "OFF",
         Storage: "Argument",
         WeatherAlerts: { Provider: "WeatherKit" },
@@ -479,7 +559,7 @@ test("response does not rewrite weatherAlerts without a supported QWeather sever
     }
 });
 
-test("development response preserves a dynamically decoded non-injection root when its dataSet was requested", async () => {
+test("development response preserves a disabled non-injection root as opaque data", async () => {
     const originalBytes = WeatherKit2.encode(undefined, {
         news: {
             metadata: {

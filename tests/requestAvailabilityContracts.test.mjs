@@ -214,8 +214,23 @@ test("request only serves custom AQHI scales on an exact pathname match", async 
     }
 });
 
-test("only response-injectable datasets remain configurable", () => {
-    assert.deepEqual(database.WeatherKit.Settings.DataSets, ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour"]);
+test("default processed datasets match the release configuration", () => {
+    assert.deepEqual(database.WeatherKit.Settings.DataSets, ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"]);
+});
+
+test("request dataSet names map to FlatBuffer root slots", () => {
+    assert.deepEqual(database.WeatherKit.Configs.DataSets, {
+        airQuality: "airQuality",
+        currentWeather: "currentWeather",
+        forecastDaily: "forecastDaily",
+        forecastHourly: "forecastHourly",
+        forecastNextHour: "forecastNextHour",
+        news: "news",
+        weatherAlerts: "weatherAlerts",
+        weatherChange: "weatherChanges",
+        trendComparison: "historicalComparisons",
+        locationInfo: "locationInfo",
+    });
 });
 
 test("provider API defaults live in the database", () => {

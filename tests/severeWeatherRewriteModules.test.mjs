@@ -271,7 +271,21 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
     assert.match(full, /export const weatherAlerts = \[weatherAlertsProvider\]/);
     assert.match(full, /export const airQuality = \[airQualityCurrentPollutantsProvider\]/);
     assert.match(full, /export const dataSets: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"\]/);
-    assert.match(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "locationInfo", "news", "historicalComparisons", "weatherAlerts", "weatherChanges"\][\s\S]*key: "weatherChanges", label: "天气变化"/);
+    const releaseDataSets = full.slice(full.indexOf("export const dataSets:"), full.indexOf("export const dataSetsFull:"));
+    assert.match(releaseDataSets, /name: "\[数据集\]"/);
+    assert.match(releaseDataSets, /description: "选择需要解析并处理的数据集；未选择的数据槽始终保持原样透传，不作修改。"/);
+    for (const [key, label] of [
+        ["airQuality", "空气质量"],
+        ["currentWeather", "当前天气"],
+        ["forecastDaily", "每日预报"],
+        ["forecastHourly", "每小时预报"],
+        ["forecastNextHour", "未来一小时降水强度"],
+        ["weatherAlerts", "天气预警"],
+    ]) {
+        assert.match(releaseDataSets, new RegExp(`key: "${key}", label: "${label}"`));
+    }
+    assert.doesNotMatch(releaseDataSets, /locationInfo|trendComparison|weatherChange/);
+    assert.match(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "news", "weatherAlerts", "weatherChange", "trendComparison", "locationInfo"\][\s\S]*key: "weatherChange", label: "天气变化"[\s\S]*key: "trendComparison", label: "历史对比"/);
     assert.doesNotMatch(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*\.\.\.dataSets\[0\]/);
     assert.match(full, /key: "Weather\.Replace"[\s\S]*defaultValue: "CN"[\s\S]*type: "string"/);
     assert.match(full, /args: \[\.\.\.dataSetsFull/);
@@ -286,7 +300,7 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
     const boxjsSettings = JSON.parse(boxjs);
     const dataSetsSetting = boxjsSettings.find(({ id }) => id === "@iRingo.WeatherKit.Settings.DataSets");
     const weatherReplaceSetting = boxjsSettings.find(({ id }) => id === "@iRingo.WeatherKit.Settings.Weather.Replace");
-    assert.equal(dataSetsSetting.desc, "选择允许插件处理的数据集；未选中的可配置数据集会从请求中移除，其他 Apple 数据集保持不变。");
+    assert.equal(dataSetsSetting.desc, "选择需要解析并处理的数据集；未选择的数据槽始终保持原样透传，不作修改。");
     assert.equal(weatherReplaceSetting.type, "text");
     assert.equal(weatherReplaceSetting.val, "CN");
     assert.equal(
