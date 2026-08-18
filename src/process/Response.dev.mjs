@@ -103,7 +103,8 @@ export async function Response($request, $response) {
                             // 路径判断
                             if (url.pathname.startsWith("/api/v2/weather/")) {
                                 const parameters = parseWeatherKitURL(url);
-                                body = WeatherKit2.decode(ByteBuffer, parameters.dataSets);
+                                const rootNames = Settings.DataSets.map(dataSet => Configs.DataSets[dataSet]).filter(Boolean);
+                                body = WeatherKit2.decode(ByteBuffer, rootNames);
                                 const providerParameters = { ...parameters, weatherKitLanguage: body.weatherAlerts?.metadata?.language };
                                 const matchEnum = new MatchEnum(body);
                                 if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
@@ -117,7 +118,7 @@ export async function Response($request, $response) {
                                 };
 
                                 await Promise.all(
-                                    parameters.dataSets.map(async dataSet => {
+                                    Settings.DataSets.map(async dataSet => {
                                         switch (dataSet) {
                                             case "airQuality": {
                                                 if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
@@ -267,8 +268,8 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
             break;
         }
         case "ColorfulClouds": {
-            const dailysteps = forecastDaily.days?.length || 11;
-            const begin = forecastDaily.days?.[0]?.forecastStart || undefined;
+            const dailysteps = forecastDaily?.days?.length || 11;
+            const begin = forecastDaily?.days?.[0]?.forecastStart;
             //Console.debug(`dailysteps: ${dailysteps}, begin: ${begin}`);
             newForecastDaily = await enviroments.colorfulClouds.Daily(dailysteps, begin);
             break;
@@ -308,8 +309,8 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
             break;
         }
         case "ColorfulClouds": {
-            const hourlysteps = forecastHourly.hours?.length || 273;
-            const begin = forecastHourly.hours?.[0]?.forecastStart || undefined;
+            const hourlysteps = forecastHourly?.hours?.length || 273;
+            const begin = forecastHourly?.hours?.[0]?.forecastStart;
             //Console.debug(`hourlysteps: ${hourlysteps}, begin: ${begin}`);
             newForecastHourly = await enviroments.colorfulClouds.ForecastHourly(hourlysteps, begin);
             break;
