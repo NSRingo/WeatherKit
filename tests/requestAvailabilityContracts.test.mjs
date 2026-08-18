@@ -100,9 +100,8 @@ test("AirQualityScale resolves maintained language aliases through one builder",
     }
 });
 
-test("request keeps future datasets while removing a known explicitly disabled dataset", async () => {
-    const input = "airQuality,news,forecastPrecipitation,forecastNextHour,currentWeather";
-    const expected = ["airQuality", "news", "forecastPrecipitation", "currentWeather"];
+test("request preserves WeatherKit dataSets independently of the response processing switch", async () => {
+    const input = "airQuality,news,forecastPrecipitation,forecastNextHour,currentWeather,weatherAlerts";
 
     for (const handler of [Request, RequestDev]) {
         const request = {
@@ -111,7 +110,7 @@ test("request keeps future datasets while removing a known explicitly disabled d
             url: `https://weatherkit.apple.com/api/v2/weather/en-US/22.5431/114.0579?dataSets=${input}`,
         };
         const result = await handler(request);
-        assert.deepEqual(new URL(result.$request.url).searchParams.get("dataSets").split(","), expected);
+        assert.equal(new URL(result.$request.url).searchParams.get("dataSets"), input);
     }
 });
 
