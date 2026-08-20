@@ -296,13 +296,14 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
     assert.match(dev, /args: \[\.\.\.dataSetsFull, \.\.\.weatherFull, \.\.\.weatherAlerts, \.\.\.nextHourFull, \.\.\.airQualityFull, \.\.\.calculateFull, \.\.\.api, \.\.\.storage, \.\.\.logLevel\]/);
     assert.match(database, /WeatherAlerts: \{ Provider: "QWeatherWeb" \}/);
     assert.match(types, /WeatherAlerts\?: \{[\s\S]*Provider\?: "WeatherKit" \| "QWeatherWeb" \| "QWeather" \| "ColorfulClouds"/);
-    assert.match(boxjs, /@iRingo\.WeatherKit\.Settings\.WeatherAlerts\.Provider[\s\S]*"val": "QWeatherWeb"[\s\S]*"key": "WeatherKit"/);
+    assert.match(boxjs, /@iRingo\.WeatherKit\.Settings\.WeatherAlerts\.Provider[\s\S]*"val":\s*"QWeatherWeb"[\s\S]*"key":\s*"WeatherKit"/);
     const boxjsSettings = JSON.parse(boxjs);
     const dataSetsSetting = boxjsSettings.find(({ id }) => id === "@iRingo.WeatherKit.Settings.DataSets");
     const weatherReplaceSetting = boxjsSettings.find(({ id }) => id === "@iRingo.WeatherKit.Settings.Weather.Replace");
     assert.equal(dataSetsSetting.desc, "选择需要解析并处理的数据集；未选择的数据槽始终保持原样透传，不作修改。");
     assert.equal(weatherReplaceSetting.type, "text");
     assert.equal(weatherReplaceSetting.val, "CN");
+    assert.equal(boxjsSettings.some(({ id }) => id === "@iRingo.WeatherKit.Settings.Storage"), false);
     assert.equal(
         boxjsSettings.some(({ type, val }) => type === "text" && Array.isArray(val)),
         false,

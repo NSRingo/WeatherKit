@@ -351,6 +351,7 @@ export const storage: Arg[] = [
         name: "[储存] 配置类型",
         defaultValue: "Argument",
         type: "string",
+        exclude: ["boxjs"],
         options: [
             { key: "Argument", label: "优先使用插件选项与模块参数等，由 $argument 传入的配置，$argument 不包含的设置项由 PersistentStore (BoxJs) 提供" },
             { key: "PersistentStore", label: "只使用来自 BoxJs 等，由 $persistentStore 提供的配置" },

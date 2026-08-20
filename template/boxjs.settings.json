@@ -141,18 +141,6 @@
     { "id": "@iRingo.WeatherKit.Settings.API.QWeather.Token", "name": "[API] 和风天气令牌", "type": "text", "val": "", "desc": "和风天气 API 令牌", "placeholder": "123456789123456789abcdefghijklmnopqrstuv" },
     { "id": "@iRingo.WeatherKit.Settings.API.WAQI.Token", "name": "[API] WAQI 令牌", "type": "text", "val": "", "desc": "WAQI API 令牌，填写此字段将自动使用WAQI高级API", "placeholder": "123456789123456789abcdefghijklmnopqrstuv" },
     {
-        "id": "@iRingo.WeatherKit.Settings.Storage",
-        "name": "[储存] 配置类型",
-        "type": "selects",
-        "val": "Argument",
-        "items": [
-            { "key": "Argument", "label": "优先使用插件选项与模块参数等，由 $argument 传入的配置，$argument 不包含的设置项由 PersistentStore (BoxJs) 提供" },
-            { "key": "PersistentStore", "label": "只使用来自 BoxJs 等，由 $persistentStore 提供的配置" },
-            { "key": "database", "label": "只使用由作者的 database.mjs 文件提供的默认配置，其他任何自定义配置不再起作用" }
-        ],
-        "desc": "选择要使用的配置类型。未设置此选项或不通过此选项的旧版本的配置顺序依旧是 $persistentStore (BoxJs) > $argument > database。"
-    },
-    {
         "id": "@iRingo.WeatherKit.Settings.LogLevel",
         "name": "[调试] 日志等级",
         "type": "selects",
