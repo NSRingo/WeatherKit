@@ -68,7 +68,7 @@
     },
     "dependencies": {
         "@nsnanocat/util": "^2.7.4",
-        "@nsringo/flatbuffer-root": "^0.1.0",
+        "@nsnanocat/flatbuffer-root": "^1.0.0",
         "@nsringo/weatherkit": "^1.1.2",
         "fetch-cookie": "^3.2.0",
         "flatbuffers": "^24.12.23",

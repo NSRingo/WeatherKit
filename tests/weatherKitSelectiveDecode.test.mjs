@@ -8,7 +8,7 @@ globalThis.$argument = { LogLevel: "OFF", Storage: "database" };
 
 const [{ default: WeatherKit2 }, { FlatBufferRootProcessor }, { News, Weather }, { Response }, { Response: ResponseDev }, { Console }, { default: database }] = await Promise.all([
     import("../src/class/WeatherKit2.mjs"),
-    import("@nsringo/flatbuffer-root"),
+    import("@nsnanocat/flatbuffer-root"),
     import("@nsringo/weatherkit"),
     import("../src/process/Response.mjs"),
     import("../src/process/Response.dev.mjs"),
