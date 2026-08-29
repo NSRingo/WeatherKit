@@ -103,7 +103,8 @@ export async function Response($request, $response) {
                             // 路径判断
                             if (url.pathname.startsWith("/api/v2/weather/")) {
                                 const parameters = parseWeatherKitURL(url);
-                                const rootNames = Settings.DataSets.map(dataSet => Configs.DataSets[dataSet]).filter(Boolean);
+                                const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet));
+                                const rootNames = dataSets.map(dataSet => Configs.DataSets[dataSet] ?? dataSet);
                                 body = WeatherKit2.decode(ByteBuffer, rootNames);
                                 const providerParameters = { ...parameters, weatherKitLanguage: body.weatherAlerts?.metadata?.language };
                                 const matchEnum = new MatchEnum(body);
@@ -118,7 +119,7 @@ export async function Response($request, $response) {
                                 };
 
                                 await Promise.all(
-                                    Settings.DataSets.map(async dataSet => {
+                                    dataSets.map(async dataSet => {
                                         switch (dataSet) {
                                             case "airQuality": {
                                                 if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
