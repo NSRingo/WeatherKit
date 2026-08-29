@@ -9,7 +9,7 @@ export default class QWeather {
 
     constructor(parameters, token, host = "devapi.qweather.com") {
         this.Name = "QWeather";
-        this.Version = "5.3.0";
+        this.Version = "5.3.1";
         Console.log(`🟧 ${this.Name} v${this.Version}`);
         this.endpoint = `https://${host}`;
         this.headers = { "X-QW-Api-Key": token };
@@ -930,7 +930,7 @@ export default class QWeather {
     async #HistoricalAir(locationID = new Number(), date = time("yyyyMMdd", Date.now() - 24 * 60 * 60 * 1000)) {
         Console.info("☑️ HistoricalAir", `locationID: ${locationID}`, `date: ${date}`);
         const request = {
-            url: `${this.endpoint}/v7/historical/air/?location=${locationID}&date=${date}`,
+            url: `${this.endpoint}/v7/historical/air?location=${locationID}&date=${date}`,
             headers: this.headers,
         };
         try {
