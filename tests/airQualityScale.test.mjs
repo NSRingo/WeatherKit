@@ -123,6 +123,27 @@ test("QWeather derives a valid category when its index level is null", async () 
     assert.equal(airQuality.scale, "EPA_NowCast");
 });
 
+test("QWeather uses the exact historical air endpoint", async () => {
+    let historicalAirRequest;
+    globalThis.$httpClient = {
+        get(request, callback) {
+            historicalAirRequest = request;
+            callback(null, { headers: {}, status: 200 }, JSON.stringify({ code: "204" }));
+        },
+    };
+
+    const provider = new QWeather({ country: "CN", language: "zh-Hans", latitude: 39.9, longitude: 116.4, version: "v2" }, "test-token", "abc.qweatherapi.com");
+    await provider.YesterdayAirQuality({ id: "101010100", iso: "CN" });
+
+    const url = new URL(historicalAirRequest.url);
+    assert.equal(url.origin, "https://abc.qweatherapi.com");
+    assert.equal(url.pathname, "/v7/historical/air");
+    assert.equal(url.searchParams.get("location"), "101010100");
+    assert.match(url.searchParams.get("date"), /^\d{8}$/);
+    assert.equal(historicalAirRequest.headers["X-QW-Api-Key"], "test-token");
+    assert.equal(provider.Version, "5.3.1");
+});
+
 test("air-quality comparison rejects unavailable category sentinels", () => {
     const { UNKNOWN } = AirQuality.Config.CompareCategoryIndexes;
     for (const pair of [
