@@ -219,15 +219,14 @@ test("encode without a source creates a complete root containing only patch keys
     assert.deepEqual(Object.keys(WeatherKit2.decode(new ByteBuffer(rawBody), ["news", "forecastNextHour"])), ["news"]);
 });
 
-test("response processes a configured root outside the requested dataSets", async () => {
+test("response only processes roots included in the requested dataSets", async () => {
     const originalArgument = globalThis.$argument;
     const originalHttpClient = globalThis.$httpClient;
     let requestCount = 0;
     globalThis.$argument = { DataSets: "forecastNextHour", LogLevel: "OFF", NextHour: { Provider: "QWeather" }, Storage: "Argument" };
     globalThis.$httpClient = {
-        get(request, callback) {
+        get(_request, callback) {
             requestCount++;
-            assert.match(request.url, /\/v7\/minutely\/5m\?/);
             callback(undefined, { headers: {}, status: 200 }, JSON.stringify(qWeatherMinutelyAPI));
         },
     };
@@ -243,9 +242,8 @@ test("response processes a configured root outside the requested dataSets", asyn
                     headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
                 },
             );
-            const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["forecastNextHour", "news"]);
+            const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["news"]);
 
-            assert.equal(decoded.forecastNextHour.metadata.providerName, "和风天气");
             assert.ok(decoded.news);
         }
     } finally {
@@ -253,7 +251,77 @@ test("response processes a configured root outside the requested dataSets", asyn
         globalThis.$httpClient = originalHttpClient;
     }
 
-    assert.equal(requestCount, 2);
+    assert.equal(requestCount, 0);
+});
+
+test("response skips requested roots disabled by the user settings", async () => {
+    const originalArgument = globalThis.$argument;
+    const originalHttpClient = globalThis.$httpClient;
+    let requestCount = 0;
+    globalThis.$argument = { DataSets: "forecastNextHour", LogLevel: "OFF", NextHour: { Provider: "QWeather" }, Storage: "Argument" };
+    globalThis.$httpClient = {
+        get(_request, callback) {
+            requestCount++;
+            callback(undefined, { headers: {}, status: 200 }, JSON.stringify(qWeatherMinutelyAPI));
+        },
+    };
+    try {
+        for (const handler of [Response, ResponseDev]) {
+            const response = await runResponseHandler(
+                handler,
+                {
+                    url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/22.5431/114.0579?country=CN&dataSets=currentWeather,news",
+                },
+                {
+                    bodyBytes: createWeatherRoot([1, 5]),
+                    headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
+                },
+            );
+            const decoded = WeatherKit2.decode(new ByteBuffer(new Uint8Array(response.body)), ["currentWeather", "news"]);
+
+            assert.ok(decoded.currentWeather);
+            assert.ok(decoded.news);
+        }
+    } finally {
+        globalThis.$argument = originalArgument;
+        globalThis.$httpClient = originalHttpClient;
+    }
+
+    assert.equal(requestCount, 0);
+});
+
+test("response does not expand a partial request to all configured roots", async () => {
+    const originalArgument = globalThis.$argument;
+    const originalDecode = WeatherKit2.decode;
+    let decodedRootNames;
+    globalThis.$argument = {
+        DataSets: ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"],
+        LogLevel: "OFF",
+        Storage: "Argument",
+        Weather: { Replace: [] },
+    };
+    WeatherKit2.decode = (byteBuffer, rootNames) => {
+        decodedRootNames = rootNames;
+        return originalDecode.call(WeatherKit2, byteBuffer, rootNames);
+    };
+    try {
+        for (const handler of [Response, ResponseDev]) {
+            await handler(
+                {
+                    url: "https://weatherkit.apple.com/api/v2/weather/en-US/22.5431/114.0579?dataSets=airQuality,currentWeather",
+                },
+                {
+                    bodyBytes: createWeatherRoot([0, 1]),
+                    headers: { "Content-Type": "application/vnd.apple.flatbuffer" },
+                },
+            );
+        }
+    } finally {
+        WeatherKit2.decode = originalDecode;
+        globalThis.$argument = originalArgument;
+    }
+
+    assert.deepEqual(decodedRootNames, ["airQuality", "currentWeather"]);
 });
 
 test("response preserves requested roots when no dataSets are configured", async () => {
