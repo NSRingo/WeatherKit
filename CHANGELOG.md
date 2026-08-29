@@ -1,13 +1,16 @@
 ### 🆕 New Features
-  * 新增按 `Settings.DataSets` 配置选择 WeatherKit 数据集的处理范围：配置项通过数据集映射对应 FlatBuffer root slot，选择的数据集参与 Response 解码与 Inject，未选择的数据槽保持原始内容透传。 @VirgilClyne
+  * none
 
 ### 🛠️ Bug Fixes
-  * 修复 Request 脚本按 `Settings.DataSets` 裁剪 URL `dataSets` 的问题，保留 WeatherKit 原始请求参数，避免把 App 的最低数据需求误当成脚本处理范围。 @VirgilClyne
-  * 修复 Response 脚本误用请求 `dataSets` 作为解析和 Inject 范围的问题，改为使用用户设置及其 FlatBuffer slot 映射，因此可以处理请求参数未列出但响应中实际存在的数据集。 @VirgilClyne
-  * 修正 full 数据集配置的设置名与 FlatBuffer slot 映射，统一 `weatherChange`、`trendComparison` 等选项的名称、类型说明和 BoxJs 数据集描述。 @VirgilClyne
+  * 修复 WeatherKit Response 处理范围未同时受用户设置和 URL `dataSets` 约束的问题：现在只处理两者的交集，避免地图天气小组件只请求当前天气与空气质量时扩展处理其他数据集。
+  * 修复和风天气历史空气质量接口路径多余斜杠的问题，确保请求使用正确的 `/v7/historical/air` 路径。
+
+### 🔣 Dependencies
+  * 将 FlatBuffer Root 处理器迁移至已发布的 `@nsnanocat/flatbuffer-root@1.0.0`，移除仓库内重复实现。
 
 ### ‼️ Breaking Changes
   * none
 
 ### 🔄 Other Changes
-  * 正式版参数配置继续只暴露已支持的 6 个数据集，完整数据集选项保留给 full/开发配置；相关数据集映射和原始 slot 透传行为补充回归测试。 @VirgilClyne
+  * 从 BoxJs 设置中隐藏仅供插件参数使用的 `Storage` 选项，保留运行时配置行为。
+  * 补充数据集交集、用户设置过滤、FlatBuffer 根槽映射和 QWeather 接口路径的回归测试。
