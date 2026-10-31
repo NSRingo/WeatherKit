@@ -8,31 +8,94 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  scripts:
+    name: Build Scripts
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@main
+      - name: Checkout Repository
+        uses: actions/checkout@v4
         with:
-          submodules: recursive
-          token: ${{ secrets.SUBMODULE_TOKEN }}
-          ref: dev
-      - name: Set up Node.js
-        uses: actions/setup-node@main
+          ref: ${{ github.sha }}
+      - name: Setup Node and Dependencies
+        uses: ./.github/actions/setup-node
         with:
-          node-version: 'latest'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
-      - name: Build
-        run: npm run dev
-      - name: Upload artifact
-        uses: actions/upload-artifact@master
+          package-token: ${{ secrets.PACKAGE_TOKEN }}
+      - name: Build Scripts
+        run: npm run build:dev
+      - name: Verify Script Bundles
+        run: |
+          test -s dist/request.dev.bundle.js
+          test -s dist/response.dev.bundle.js
+      - name: Upload Script Bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: scripts
+          path: dist
+          if-no-files-found: error
+
+  modules:
+    name: Generate Modules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Setup Node and Dependencies
+        uses: ./.github/actions/setup-node
+        with:
+          package-token: ${{ secrets.PACKAGE_TOKEN }}
+      - name: Generate Modules
+        run: npm run build:dev-args
+      - name: Verify Generated Modules
+        run: |
+          test -s dist/iRingo.WeatherKit.dev.sgmodule
+          test -s dist/iRingo.WeatherKit.dev.plugin
+          test -s dist/iRingo.WeatherKit.dev.snippet
+          test -s dist/iRingo.WeatherKit.dev.stoverride
+          test -s dist/iRingo.WeatherKit.dev.boxjs.json
+      - name: Upload Modules
+        uses: actions/upload-artifact@v4
+        with:
+          name: modules
+          path: dist
+          if-no-files-found: error
+
+  package:
+    name: Assemble Artifact
+    needs: [scripts, modules]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Download Script Bundles
+        uses: actions/download-artifact@v4
+        with:
+          name: scripts
+          path: dist
+      - name: Download Modules
+        uses: actions/download-artifact@v4
+        with:
+          name: modules
+          path: dist
+      - name: Verify Complete Artifact
+        run: |
+          test -s dist/request.dev.bundle.js
+          test -s dist/response.dev.bundle.js
+          for file in dist/iRingo.WeatherKit.dev.sgmodule dist/iRingo.WeatherKit.dev.plugin dist/iRingo.WeatherKit.dev.snippet dist/iRingo.WeatherKit.dev.stoverride; do
+            test -s "$file"
+            grep -Fq "https://gist.githubusercontent.com/VirgilClyne/862db28df04be7523476d10b61b128f2/raw/" "$file"
+            grep -Fq "request.dev.bundle.js" "$file"
+            grep -Fq "response.dev.bundle.js" "$file"
+          done
+          test -s dist/iRingo.WeatherKit.dev.boxjs.json
+      - name: Upload Complete Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: artifact
+          if-no-files-found: error
           path: |
             CHANGELOG.md
-            rulesets
             dist

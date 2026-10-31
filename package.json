@@ -49,7 +49,6 @@
         "build:args:rewrite": "arguments-builder build --config arguments-builder.rewrite.config.ts",
         "build:args": "npm-run-all --serial build:release-args build:full-args",
         "dts": "arguments-builder dts -c arguments-builder.full.config.ts",
-        "submodule": "git submodule update --remote",
         "update": "npm update --save"
     },
     "browserslist": [

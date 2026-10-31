@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@v4
         with:
           name: artifact
       - name: Publish Release
@@ -27,6 +27,5 @@ jobs:
           body_path: CHANGELOG.md
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            rulesets/*
             dist/*
           make_latest: "true"

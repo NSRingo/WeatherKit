@@ -8,53 +8,118 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  scripts:
+    name: Build Scripts
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@main
+      - name: Checkout Repository
+        uses: actions/checkout@v4
         with:
-          submodules: recursive
-          token: ${{ secrets.SUBMODULE_TOKEN }}
-      - name: Set up Node.js
-        uses: actions/setup-node@main
+          ref: ${{ github.sha }}
+      - name: Setup Node and Dependencies
+        uses: ./.github/actions/setup-node
         with:
-          node-version: 'latest'
-          cache: 'npm'
-      # https://github.com/puppeteer/puppeteer/issues/13595#issuecomment-2640309385
-      # https://github.com/puppeteer/puppeteer/blob/cdfbde6247fbe286c31a91ac62ffed6f2f801ee4/.github/workflows/ci.yml#L140
-      - name: Disable AppArmor
+          package-token: ${{ secrets.PACKAGE_TOKEN }}
+      - name: Set Package Version from Tag
+        if: github.ref_type == 'tag'
+        uses: BellCubeDev/update-package-version-by-release-tag@v2
+        with:
+          version: ${{ github.ref_name }}
+          keep-v: "false"
+          ignore-semver-check: "false"
+      - name: Build Scripts
+        run: npm run build
+      - name: Verify Script Bundles
+        run: |
+          test -s dist/request.bundle.js
+          test -s dist/response.bundle.js
+      - name: Upload Script Bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: scripts
+          path: dist
+          if-no-files-found: error
+
+  modules:
+    name: Generate Modules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Setup Node and Dependencies
+        uses: ./.github/actions/setup-node
+        with:
+          package-token: ${{ secrets.PACKAGE_TOKEN }}
+      - name: Set Package Version from Tag
+        if: github.ref_type == 'tag'
+        uses: BellCubeDev/update-package-version-by-release-tag@v2
+        with:
+          version: ${{ github.ref_name }}
+          keep-v: "false"
+          ignore-semver-check: "false"
+      - name: Disable AppArmor for Chrome
         run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
-      - name: Install dependencies
-        run: npm install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
       - name: Install Puppeteer Chrome
         run: |
           node node_modules/puppeteer/install.mjs
           node --input-type=module -e 'import puppeteer from "puppeteer"; console.log(puppeteer.executablePath())'
         env:
           PUPPETEER_CACHE_DIR: ${{ runner.temp }}/puppeteer
-      - name: Update local package.json version from release tag
-        if: github.ref_type == 'tag'
-        uses: BellCubeDev/update-package-version-by-release-tag@v2
-        with:
-          version: ${{ github.ref_name }}
-          keep-v: "false" # If set to "true", will not remove any 'v' prefix from the version number.
-          ignore-semver-check: "false" # If set to "true", will not check if the version number is a valid semver version.
-      - name: Build scripts
-        run: npm run build
-      - name: Generate modules
+      - name: Generate Modules
         run: npm run build:args
         env:
           PUPPETEER_CACHE_DIR: ${{ runner.temp }}/puppeteer
-      - name: Verify Egern module
-        run: test -s dist/iRingo.WeatherKit.yaml
-      - name: Upload artifact
-        uses: actions/upload-artifact@master
+      - name: Verify Generated Modules
+        run: |
+          test -s dist/iRingo.WeatherKit.sgmodule
+          test -s dist/iRingo.WeatherKit.lpx
+          test -s dist/iRingo.WeatherKit.snippet
+          test -s dist/iRingo.WeatherKit.stoverride
+          test -s dist/iRingo.WeatherKit.yaml
+          test -s template/boxjs.settings.json
+      - name: Upload Modules
+        uses: actions/upload-artifact@v4
+        with:
+          name: modules
+          path: dist
+          if-no-files-found: error
+
+  package:
+    name: Assemble Artifact
+    needs: [scripts, modules]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Download Script Bundles
+        uses: actions/download-artifact@v4
+        with:
+          name: scripts
+          path: dist
+      - name: Download Modules
+        uses: actions/download-artifact@v4
+        with:
+          name: modules
+          path: dist
+      - name: Verify Complete Artifact
+        run: |
+          test -s dist/request.bundle.js
+          test -s dist/response.bundle.js
+          for file in dist/iRingo.WeatherKit.sgmodule dist/iRingo.WeatherKit.lpx dist/iRingo.WeatherKit.snippet dist/iRingo.WeatherKit.stoverride dist/iRingo.WeatherKit.yaml; do
+            test -s "$file"
+            grep -Fq "https://github.com/NSRingo/WeatherKit/releases/download/v" "$file"
+            grep -Fq "request.bundle.js" "$file"
+            grep -Fq "response.bundle.js" "$file"
+          done
+      - name: Upload Complete Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: artifact
+          if-no-files-found: error
           path: |
             CHANGELOG.md
-            rulesets
             dist
