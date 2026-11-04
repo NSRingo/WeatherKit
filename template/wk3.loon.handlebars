@@ -1,0 +1,20 @@
+#!name = WeatherKit-Local-WK3
+#!desc = 本机 WK3：空气质量算法可选、分钟降水与苹果原生预警；WK3 当前/逐日/逐小时天气保持苹果原始数据
+#!homepage = https://github.com/patrickyanxxxxx/WeatherKit-WK3
+#!icon = https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
+#!version = __WK3_VERSION__
+
+[Argument]
+__WK3_ARGUMENTS__
+
+[Rule]
+DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
+DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
+DOMAIN,tether.edge.apple,REJECT-DROP
+AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),REJECT-DROP
+
+[Script]
+__WK3_SCRIPTS__
+
+[MITM]
+hostname = weatherkit.apple.com
