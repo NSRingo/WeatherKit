@@ -6,6 +6,7 @@ on:
 permissions:
   actions: read
   contents: read
+  packages: read
 
 jobs:
   build:
@@ -27,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: npm install
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGE_TOKEN || github.token }}
       - name: Install Puppeteer Chrome
         run: |
           node node_modules/puppeteer/install.mjs
