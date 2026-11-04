@@ -41,6 +41,7 @@
         "deploy:workers": "npx wrangler deploy --minify -c wrangler.workers.jsonc",
         "deploy:vercel": "npx vercel deploy --prod",
         "build": "rollup -c",
+        "build:wk3": "node scripts/build-wk3-release.mjs --outdir dist",
         "build:dev": "rollup -c rollup.dev.config.mjs",
         "build:dev-args": "arguments-builder build -c arguments-builder.dev.config.ts",
         "sgmoudle:dev": "sgmoudle dev",

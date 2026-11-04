@@ -48,7 +48,7 @@ async function bundle(input, name, minify) {
     }
 }
 
-export async function buildEgern({ outdir, minify = true } = {}) {
+export async function buildEgern({ outdir, minify = true, filePrefix = "" } = {}) {
     const runtime = await bundle(runtimePath, "__egernSupport", minify);
     const results = {};
     for (const [name, handler] of [["request", "handleRequest"], ["response", "handleResponse"]]) {
@@ -59,7 +59,7 @@ export async function buildEgern({ outdir, minify = true } = {}) {
         results[name] = { code, bytes: Buffer.byteLength(code), inputs };
         if (outdir) {
             await mkdir(outdir, { recursive: true });
-            await writeFile(path.join(outdir, `${name}.bundle.js`), code);
+            await writeFile(path.join(outdir, `${filePrefix}${name}.bundle.js`), code);
         }
     }
     return results;

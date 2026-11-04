@@ -24,6 +24,13 @@ test('template declares every placeholder and binds identical parameters to both
  const m=renderLocalModule();const line=prefix=>JSON.parse(m.split('\n').find(s=>s.startsWith(prefix)).slice(prefix.length));const args=line('compat_arguments: '),schema=line('env_schema: ');assert.equal(Object.keys(args).length,localParameters.length);assert.deepEqual(Object.keys(args),Object.keys(schema));const refs=[...m.matchAll(/\{\{\{([^}]+)\}\}\}/g)].map(x=>x[1]);for(const p of localParameters){assert.equal(refs.filter(x=>x===p.key).length,localScriptGroups.length);assert.equal(args[p.key],p.value);assert.equal(schema[p.key].default_value,p.value);}
  assert.ok(!m.includes('url_rewrites:')&&!m.includes('vercel.app'));assert.match(m,/binary_body: true/);assert.match(m,/hostnames:\n    includes:/);
 });
+test('tagged Egern module uses the same versioned release attachments as other platforms',()=>{
+ const text=renderLocalModule({version:'3.3.2'});
+ assert.equal((text.match(/script_url: https:\/\/github.com\/patrickyanxxxxx\/WeatherKit-WK3\/releases\/download\/v3\.3\.2\/wk3-egern-(?:request|response)\.bundle\.js/g)||[]).length,localScriptGroups.length);
+ assert.doesNotMatch(text,/gist\.githubusercontent\.com/);
+ assert.match(renderLocalModule(),/gist\.githubusercontent\.com/);
+ assert.throws(()=>renderLocalModule({version:'latest'}),/explicit release version/);
+});
 test('actual built script obeys DataSets=[] and LogLevel OFF, preserving binary bytes with no network',async()=>{
  const {response}=await buildEgern();let logs=0,network=0;const host=vm.createContext({URL,TextEncoder,TextDecoder,atob,btoa,console:Object.fromEntries(['log','info','warn','error','debug'].map(k=>[k,()=>logs++]))});const handler=vm.runInContext('('+response.code.replace('export default ','')+')',host);const bytes=new Uint8Array([255,255,255,255]);const out=await handler({env:{...defaults(),DataSets:'[]',LogLevel:'OFF'},request:{url:'https://weatherkit.apple.com/api/v3/weather/en/31/121?country=CN&dataSets=airQuality',headers:{}},response:new Response(bytes,{headers:{'content-type':'application/vnd.apple.flatbuffer'}}),http:{get(){network++;throw Error('unexpected network')}}});assert.deepEqual(Array.from(out.body),Array.from(bytes));assert.equal(network,0);assert.equal(logs,0);
 });

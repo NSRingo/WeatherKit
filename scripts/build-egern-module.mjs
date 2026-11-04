@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {localParameters} from '../src/egern/entry/parameters.mjs';
+import {release} from './build-wk3-modules.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export const localScriptGroups = [
  { type:'http_response', name:'WeatherKit.api.availability.response', match:'^https://weatherkit\\.apple\\.com/api/v[12]/availability/', body:true, binary:false, file:'response' },
@@ -10,7 +11,7 @@ export const localScriptGroups = [
  { type:'http_request', name:'WeatherKit.api.weatherAlerts.api.request', match:'^https://weatherkit\\.apple\\.com/api/v[12]/weatherAlerts\\?(?:[^#]*&)?ids=(?:wk3_[^&#]*|-?[0-9]+(?:\\.[0-9]+)?,-?[0-9]+(?:\\.[0-9]+)?)(?:&|$)', body:false, binary:false, file:'request' },
  { type:'http_response', name:'WeatherKit.api.weather.response', match:'^https://weatherkit\\.apple\\.com/api/v[23]/weather/', body:true, binary:true, file:'response' },
 ];
-export function renderLocalModule(){
+export function renderLocalModule({version} = {}){
  const template=fs.readFileSync(path.join(root,'template/egern.wk3.handlebars'),'utf8');
  const q=JSON.stringify;
  const compat=Object.fromEntries(localParameters.map(p=>[p.key,p.value]));
@@ -19,8 +20,10 @@ export function renderLocalModule(){
  // JSON objects are valid YAML. Quote individual substitution values using
  // YAML single quotes: literal double quotes in array syntax remain safe.
  let env='    env:\n';for(const p of localParameters)env+=`      ${p.key}: '{{{${p.key}}}}'\n`;
- const base='https://gist.githubusercontent.com/patrickyanxxxxx/9125b747b26480a0c9c37ae1c446c39f/raw';
- const scripts=localScriptGroups.map(g=>`- ${g.type}:\n    name: ${g.name}\n${env}    match: '${g.match}'\n    script_url: ${base}/weatherkit-local-${g.file}.js?v=upstream-groups-1\n    timeout: 30\n    body_required: ${g.body}\n    binary_body: ${g.binary}\n${g.body?'    max_size: 2097152\n':''}    update_interval: 86400\n`).join('');
+ if(version && !/^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/.test(version)) throw Error('Specify an explicit release version');
+ const base=version ? release(version) : 'https://gist.githubusercontent.com/patrickyanxxxxx/9125b747b26480a0c9c37ae1c446c39f/raw';
+ const scriptName=g=>version ? `wk3-egern-${g.file}.bundle.js` : `weatherkit-local-${g.file}.js?v=upstream-groups-1`;
+ const scripts=localScriptGroups.map(g=>`- ${g.type}:\n    name: ${g.name}\n${env}    match: '${g.match}'\n    script_url: ${base}/${scriptName(g)}\n    timeout: 30\n    body_required: ${g.body}\n    binary_body: ${g.binary}\n${g.body?'    max_size: 2097152\n':''}    update_interval: 86400\n`).join('');
  return template.replace('__WK3_COMPAT_ARGUMENTS__',()=>q(compat)).replace('__WK3_ARGUMENT_DESCRIPTION__',()=>q(description)).replace('__WK3_ENV_SCHEMA__',()=>q(schema)).replace('__WK3_SCRIPTINGS__',()=>scripts.trimEnd());
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

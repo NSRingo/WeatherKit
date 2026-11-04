@@ -48,8 +48,24 @@ jobs:
         run: npm run build:args
         env:
           PUPPETEER_CACHE_DIR: ${{ runner.temp }}/puppeteer
-      - name: Verify Egern module
-        run: test -s dist/iRingo.WeatherKit.yaml
+      - name: Build WK3 scripts and tagged modules
+        run: |
+          if [ "${{ github.ref_type }}" = tag ]; then
+            npm run build:wk3 -- --version "${GITHUB_REF_NAME#v}"
+          else
+            npm run build:wk3
+          fi
+      - name: Verify Egern and WK3 artifacts
+        run: |
+          test -s dist/iRingo.WeatherKit.yaml
+          for platform in egern surge loon stash quantumultx; do
+            for stage in request response; do test -s "dist/wk3-$platform-$stage.bundle.js"; done
+          done
+          if [ "${{ github.ref_type }}" = tag ]; then
+            for extension in yaml sgmodule lpx stoverride snippet; do
+              test -s "dist/iRingo.WeatherKit.WK3.$extension"
+            done
+          fi
       - name: Upload artifact
         uses: actions/upload-artifact@master
         with:
