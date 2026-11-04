@@ -7,7 +7,7 @@ export default {
             AirQuality: {
                 Current: { Pollutants: { Provider: "ColorfulClouds", Units: { Replace: [], Mode: "Scale" } }, Index: { Replace: ["HJ6332012"], Provider: "ColorfulCloudsCN", ForceCNPrimaryPollutants: true } },
                 Comparison: { ReplaceWhenCurrentChange: true, Yesterday: { PollutantsProvider: "ColorfulCloudsCN", IndexProvider: "ColorfulCloudsCN" } },
-                Calculate: { Algorithm: "WAQI_InstantCast_CN", AllowOverRange: true },
+                Calculate: { Algorithm: "WAQI_InstantCast_US", AllowOverRange: true },
             },
             API: { QWeather: { Token: null, Host: "devapi.qweather.com" }, ColorfulClouds: { Token: null } },
             EdgeCache: false,
