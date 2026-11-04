@@ -1,0 +1,27 @@
+// Parameter keys follow the fork's settings and upstream argument templates.
+// Defaults reproduce the existing local module; controls do not expand WK3 support.
+export const localParameters = [
+    { key: "DataSets", name: "[数据集] 解析与处理范围", value: "airQuality,currentWeather,forecastDaily,forecastHourly,forecastNextHour,locationInfo,news,historicalComparisons,weatherAlerts,weatherChanges", description: "逗号分隔；填 [] 全部透传。WK3 实际支持空气质量、分钟降水与预警，其余保持苹果数据。" },
+    { key: "Weather.Replace", name: "[天气] 替换范围", value: "CN", description: "逗号分隔国家码；保留现有大陆范围与香港缺失 AQ 专用补入逻辑，不支持正则。" },
+    { key: "Weather.Provider", name: "[天气] 数据源", value: "ColorfulClouds", options: ["WeatherKit", "ColorfulClouds", "QWeather"], description: "WK2 天气数据源；WK3 当前/逐日/逐小时天气仍透传。" },
+    { key: "Weather.ReplaceDaily", name: "[天气] 替换逐日预报", value: "false", boolean: true, description: "用于 WK2；WK3 逐日预报保持苹果数据。" },
+    { key: "Weather.ReplaceHourly", name: "[天气] 替换逐小时预报", value: "false", boolean: true, description: "用于 WK2；WK3 逐小时预报保持苹果数据。" },
+    { key: "WeatherAlerts.Provider", name: "[天气预警] 数据源", value: "QWeatherWeb", options: ["QWeatherWeb", "WeatherKit"], description: "QWeatherWeb：和风公开页面补全，苹果原生展示；WeatherKit：预警原样透传。原项目 API 预警源尚未移植，不提供无效选择。" },
+    { key: "NextHour.Provider", name: "[分钟降水] 数据源", value: "ColorfulClouds", options: ["WeatherKit", "ColorfulClouds", "QWeather"], description: "WeatherKit 不替换；彩云/和风按已验证 WK3 雨况处理。" },
+    { key: "AirQuality.Current.Index.Provider", name: "[今日空气指数] 数据源", value: "ColorfulCloudsUS", options: ["ColorfulCloudsUS", "ColorfulCloudsCN", "QWeather", "Calculate"], description: "默认彩云美标。WK3 已验证国标→美标和同标准指数替换；其他跨标准保留苹果数据。" },
+    { key: "AirQuality.Current.Index.Replace", name: "[今日空气指数] 替换范围（原始标准）", value: "HJ6332012", description: "逗号分隔原始标准；不是输出标准。国内转美标仍填 HJ6332012。现有非国标算法会确保包含国内原标准。" },
+    { key: "AirQuality.Current.Index.ForceCNPrimaryPollutants", name: "[今日空气指数] 强制国标主要污染物", value: "true", boolean: true, description: "沿用原项目：国标指数≤50时仍显示主要污染物。" },
+    { key: "AirQuality.Current.Pollutants.Provider", name: "[今日污染物] 数据源", value: "ColorfulClouds", options: ["ColorfulClouds", "QWeather"], description: "用于 WK2/内置计算；WK3 美标直接替换时污染物跟随指数来源。" },
+    { key: "AirQuality.Current.Pollutants.Units.Replace", name: "[污染物单位] 替换原标准", value: "[]", description: "默认 [] 不额外转换；可填 HJ6332012、EPA_NowCast、EU.EAQI、UBA，逗号分隔。WK3 完整美标 AQ 使用同源单位，此独立设置主要用于 WK2。" },
+    { key: "AirQuality.Current.Pollutants.Units.Mode", name: "[污染物单位] 转换模式", value: "Scale", options: ["Scale", "ugm3", "EU_ppb", "US_ppb", "Force_ugm3", "Force_EU_ppb", "Force_US_ppb"], description: "Scale 按标准；其余为原项目单位模式，适用范围同单位替换项。" },
+    { key: "AirQuality.Comparison.ReplaceWhenCurrentChange", name: "[昨日对比] 今日变化时重算", value: "true", boolean: true, description: "WK2 沿用原设置；WK3 当前美标数据替换后始终仅做同源同标准比较，失败为未知。" },
+    { key: "AirQuality.Comparison.Yesterday.IndexProvider", name: "[昨日空气指数] 数据源", value: "ColorfulCloudsUS", options: ["ColorfulCloudsUS", "ColorfulCloudsCN", "QWeather", "Calculate", "WeatherKit"], description: "默认彩云美标。WK3 不跨来源/算法比较；不兼容组合返回未知；WeatherKit 不注入。" },
+    { key: "AirQuality.Comparison.Yesterday.PollutantsProvider", name: "[昨日污染物] 数据源", value: "ColorfulCloudsCN", options: ["ColorfulCloudsCN", "QWeather"], description: "原项目内置昨日算法所用来源；WK3 裸 Calculate 昨日比较尚未接通。" },
+    { key: "AirQuality.Calculate.Algorithm", name: "[内置算法] 计算公式", value: "WAQI_InstantCast_CN", options: ["None", "WAQI_InstantCast_CN", "WAQI_InstantCast_CN_25_DRAFT", "WAQI_InstantCast_US", "EU_EAQI", "UBA"], description: "沿用当前默认（当前直接彩云美标时不使用此算法）。WK3 仅支持已验证的目标标准，其他目标透传。" },
+    { key: "AirQuality.Calculate.AllowOverRange", name: "[内置算法] 允许指数超标", value: "true", boolean: true, description: "原项目计算开关；WK3 完整美标写入仍校验指数0–500。" },
+    { key: "API.ColorfulClouds.Token", name: "[API] 彩云令牌", value: "", description: "留空沿用当前公共令牌；自有令牌只在设备参数中填写，不写入公开 Gist。" },
+    { key: "API.QWeather.Host", name: "[API] 和风主机", value: "devapi.qweather.com", description: "使用和风 API 数据源时填写控制台主机名。" },
+    { key: "API.QWeather.Token", name: "[API] 和风令牌", value: "", description: "使用和风 API 数据源时需要；网页预警补全不需要。" },
+    { key: "LogLevel", name: "[调试] 日志等级", value: "INFO", options: ["OFF", "ERROR", "WARN", "INFO", "DEBUG", "ALL"], description: "默认 INFO，与当前脚本一致；只控制本机日志。" },
+    { key: "HTTP_TIMEOUT_MS", name: "[网络] 单次请求超时（毫秒）", value: "8000", description: "默认8000毫秒；脚本总体超时仍为30秒。" },
+];
