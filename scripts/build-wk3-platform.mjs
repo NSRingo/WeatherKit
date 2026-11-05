@@ -23,8 +23,18 @@ function runtimePlugin() {
         },
         load(id) { return virtual.get(id) ?? null; },
         transform(code, id) {
-            if (!code.includes("globalThis.fetch") || id === "wk3:runtime") return null;
-            return { code: `import { webFetch as __wk3WebFetch } from "wk3:runtime";\n${code.replace(/\bglobalThis\.fetch\b/g, "__wk3WebFetch")}`, map: null };
+            const original = code;
+            const alertCompat = JSON.stringify(path.join(root, "src/platform/wk3-alert-compat.mjs"));
+            if (id === path.join(root, "src/wk3/class/WeatherAlerts.mjs")) {
+                code = `import { readAlertHeader } from ${alertCompat};\n${code.replace('typeof headers?.get === "function" ? headers.get("content-type") : headers?.["content-type"]', 'readAlertHeader(headers, "content-type")')}`;
+            }
+            if (id === path.join(root, "src/wk3/class/NativeAlertDetails.mjs")) {
+                code = `import { encodeAlertBase64, decodeAlertBase64 } from ${alertCompat};\n${code.replace('btoa(String.fromCharCode(...bytes))', 'encodeAlertBase64(bytes)').replace('atob(encoded.replace', 'decodeAlertBase64(encoded.replace')}`;
+            }
+            if (code.includes("globalThis.fetch") && id !== "wk3:runtime") {
+                code = `import { webFetch as __wk3WebFetch } from "wk3:runtime";\n${code.replace(/\bglobalThis\.fetch\b/g, "__wk3WebFetch")}`;
+            }
+            return code === original ? null : { code, map: null };
         },
     };
 }
