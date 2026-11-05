@@ -2,11 +2,13 @@
 
 此 Fork 以 NSRingo/WeatherKit **v3.3.2** 为基点，v3.3.3 增加本机 WK3 处理，保留原版 WK2 入口；业务统一放在平台无关的 `src/wk3/`，Egern 与其他代理共用处理逻辑。中文独立提交历史已保留。
 
-## WK3 测试分支更新（未发行）
+## v3.3.6 更新
 
-`wk3/ios27-wk3-review` 已合入用户实机确认可用的 Loon 测试版 2 修复：原生 `Uint8Array` 回传、保留 Apple availability、补入大陆缺失 AQ，以及预警原生详情兼容。
+合入 `wk3/ios27-wk3-review` 的 Loon 原生 `Uint8Array` 回传、Apple availability 保留、大陆缺 AQ 补入及非 Egern 预警兼容修复。Loon 测试版 2 已获用户实机确认可用；Egern 测试版的大陆缺 AQ 补入也已确认生效。
 
-大陆缺 AQ 补入由 Egern、Surge、Loon、Stash 共用：请求和设置启用 AQ、替换范围命中大陆、今日来源为 `ColorfulCloudsUS` 且替换目标非空时，补入完整美标 AQ 子表；失败保留原响应。预警响应头大小写和局部 Base64 兼容仅接入其他四平台代理构建，Egern 预警实现保持原样。Quantumult X 保留二进制直通限制，详情请求路径包含兼容修复。正式版仍为 v3.3.5。
+大陆缺 AQ 补入由 Egern、Surge、Loon、Stash 共用：请求和设置启用 AQ、替换范围命中大陆、今日来源为 `ColorfulCloudsUS` 且替换目标非空时，补入完整美标 AQ 子表；失败保留原响应。普通响应头大小写和局部 Base64 预警兼容仅接入其他四平台代理构建，Egern 预警实现保持原样。Quantumult X 保留二进制直通限制，详情请求路径包含兼容修复。
+
+**保留已知问题：**部分城市 UV 面板的防晒时段建议仍可能显示英文，标题和等级正常；根因尚未证实，本次不修改语言设置或建议文案。完整更新、安装方法与默认参数见 [CHANGELOG](CHANGELOG.md)。
 
 ## v3.3.5 日志兼容修复
 
@@ -32,12 +34,16 @@
 
 | 软件 | 模块格式 | 当前验证范围 |
 | --- | --- | --- |
-| Egern | `.yaml` | 用户已反馈 v3.3.3 正式版实机正常；v3.3.5 日志修复已完成自动测试及脚本回放，仍需设备复验。发行模块引用同版本附件。 |
+| Egern | `.yaml` | 用户已确认 Egern 测试版大陆缺 AQ 补入生效；正式模块引用同版本附件，预警实现保持原样。 |
 | Surge | `.sgmodule` | 独立 JS 构建、参数传递与合成 WK3 AQ 响应端到端回放通过（AQI 60→87）；未设备验证。 |
-| Loon | `.lpx` | 用户已确认测试版 2（`3.3.5-test-loon-binary.2-aq.1`）实机可用；修复已合入 WK3 测试分支，尚未正式发行。 |
+| Loon | `.lpx` | 用户已确认测试版 2（`3.3.5-test-loon-binary.2-aq.1`）实机可用；对应修复已纳入 v3.3.6。 |
 | Stash | `.stoverride` | 独立 JS、配置解析、参数与二进制响应模拟通过；未设备验证。 |
 | Quantumult X | `.snippet` | 请求/文本路径及脚本模拟通过；**WK3 二进制天气响应只透传，不作转换**；模块无可交互的参数选择界面。 |
 | Shadowrocket | 无 WK3 本机模块 | 上游仅提供服务端 Rewrite 模板；本分支没有经过验证的本机二进制适配，故不提供伪装可用的模块。 |
+
+正式模块：[Egern](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.yaml) · [Surge](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.sgmodule) · [Loon](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.lpx) · [Stash](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.stoverride) · [Quantumult X](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.snippet)。
+
+升级时停用测试版及其他冲突天气模块，更新整个正式模块，使五条脚本都引用 v3.3.6；保留并核对个人参数。MITM 需启用 `weatherkit.apple.com` 并信任证书。成功补入 AQ 的日志位于 `WeatherKit.api.weather.response`，包含 `WK3 missing AQ patch`。
 
 五平台统一构建入口为 `npm run build:wk3`：调用 Egern `scripts/build-egern.mjs` 和其他平台 `scripts/build-wk3-platform.mjs`，生成 10 份平台专用 JS。打标签时添加 `-- --version <版本号>`，同时生成 5 份模块至 `dist/` 根目录；Egern 模块改为指向同版本的发行附件，与其他平台一同进入现有构建/Release 工作流。请使用发行附件中的模块；五平台脚本不能互换。
 
@@ -67,7 +73,7 @@
 
 - WK3 `currentWeather`、`forecastDaily`、`forecastHourly` 缺少经真实样本验证的编解码映射；不可把上游 WK2 codec 直接用于 WK3。现阶段这三类数据原样透传，即使在设置中选择了天气数据源。
 - Quantumult X 二进制天气不可转换；Loon 测试版 2 已有用户实机确认，Surge、Stash 的本轮修改通过压缩脚本和抓包回放。原生预警补全也依赖可严格匹配到的原事件，失配时原样返回。
-- 本 Fork 的 v3.3.5 WK3 模块在 [Releases](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases) 获取，文件名含 `.WK3.`。发行附件中的 Egern YAML 引用同版本 JS；更新模块后请核对已保存的个人参数。
+- 本 Fork 的 v3.3.6 WK3 模块在 [Releases](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases) 获取，文件名含 `.WK3.`。发行附件中的 Egern YAML 引用同版本 JS；更新模块后请核对已保存的个人参数。
 - 上游的私有 GitHub Packages 依赖在无权限环境会使干净 `npm install` 返回 401。本分支使用已有依赖及上游已声明的 Rollup 工具完成验证，没有新增依赖。
 
 验证命令：`npm run test:wk3`（包含旧入口、算法边界、配置、模块、五平台日志与发行构建回归，串行避免本机并发打包争用）。普通分支运行 `npm run build:wk3` 仅生成五平台脚本；打标签时 CI 使用实际标签版本运行 `npm run build:wk3 -- --version <版本号>`，将十份脚本与五份模块一起写入 `dist/` 并进入现有附件上传步骤。指定版本构建本身不创建标签或 Release；发版后仍须核对客户端能访问每个附件 URL。

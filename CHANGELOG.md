@@ -1,21 +1,43 @@
-# 未发行 — WK3 测试分支同步
+# v3.3.6 — 大陆缺失空气质量补入与 Loon、预警兼容修复
 
-用户已确认 Loon 测试版 2（`3.3.5-test-loon-binary.2-aq.1`）实机可用，修复同步至 `wk3/ios27-wk3-review`。
+合入 `wk3/ios27-wk3-review` 的已验收修复，保留中文独立提交。用户已确认 Loon 测试版 2 可用，并确认 Egern 测试版的大陆缺 AQ 补入生效；Surge、Stash 本轮通过实际压缩脚本及抓包回放，尚无对应设备反馈。
 
-- 大陆缺 AQ 自动补入接入共享核心，Egern、Surge、Loon、Stash 均使用既有编码器补入完整美标子表；遵守数据集、地区、来源和替换选项，数据源失败保持原响应，保留原预警和其他天气数据。
-- Surge、Loon、Stash、Quantumult X 构建兼容普通响应头大小写，并使用局部 Base64 编解码处理原生预警定位符；保留原 Apple 事件 UUID、严格匹配及载荷校验。Egern 预警源码和构建入口不变。
-- Quantumult X 仍保留 WK3 二进制响应直通，预警详情请求兼容修复生效；没有扩大二进制改写能力。
-- Loon 原生字节回写和 availability 合并修复同时纳入。正式版仍为 v3.3.5。
+## 更新内容
 
-## Loon 原生字节回写修复
+- **大陆缺 AQ 自动补入：**Egern、Surge、Loon、Stash 共用已验证的美标编码器。当 WK3 原响应缺少 AQ 子表、请求和设置启用 `airQuality`、天气替换范围命中大陆、今日来源为 `ColorfulCloudsUS` 且指数替换目标非空时，补入完整美标指数、污染物、单位、来源和同源昨日等级比较。已有 AQ 继续按原始标准与替换目标处理；数据源不可用或数据不完整时保留原响应。原预警及其他天气数据保留。
+- **Loon 原生字节回写：**ArrayBuffer、TypedArray 按准确字节范围作为 `Uint8Array` 回传，避免二进制转字符串导致天气不可用；文本响应保持字符串。
+- **保留 Apple availability：**合并 Apple 原有能力并补齐模块能力，保留未知字段、错误状态及语言响应头，不再用固定列表覆盖或把错误强制改成 200。
+- **非 Egern 预警兼容：**Surge、Loon、Stash、Quantumult X 构建兼容普通响应头的大小写，预警定位符采用局部 Base64 编解码，减少对宿主 API 的依赖。保留原 Apple 事件 UUID、严格唯一匹配和载荷校验；Egern 预警实现保持原样。Quantumult X 的修复限于预警详情请求，二进制响应仍直通。
+- 保留五平台共享核心、23 项模块参数、US 默认、日志等级与脱敏；没有新增依赖或缓存层。
 
-用户在 Loon 3.5.4（1015）确认脚本已有执行记录和日志，但天气 App 提示不可用。排查发现平台代理把 Loon 的二进制正文转换成字符串，再传给 `$done`；即使原样透传也会改变原生接口的正文类型。
+## 模块下载与升级
 
-- Loon 的 ArrayBuffer 和 TypedArray 现在按准确的字节范围转换为 `Uint8Array` 回传，不再作为文本发送；文本响应保持字符串。其他平台返回方式不变。
-- 新增原生字节、带偏移视图、原样透传、真实压缩 bundle 与完整 WK3 AQ 回放测试。修复前 4/5 失败，修复后定向及相邻平台代理回归 28/28 通过。
-- 修复分支 [Build 42064167010](https://github.com/patrickyanxxxxx/WeatherKit-WK3/actions/runs/42064167010) 实际执行完整回归 **345/345 通过、0 跳过**，旧入口和五平台构建、产物检查及归档成功。
-- 原生 Loon 回放确认 AQI 60→87，返回的字节仍可解码；后续测试版 2 增加预警和大陆缺 AQ 修复，用户已实机确认该版本可用。
-- 保留日志修复、23 项设置与 US 默认；不改天气算法或扩大 WK3 支持范围。
+安装文件名含 `.WK3.` 的对应平台模块；同次发行的十份 JS 为模块自动加载的依赖，无需单独导入。附件中的旧上游模块不是 WK3 推荐入口。
+
+| 客户端 | 本次模块 | 设置与支持范围 |
+| --- | --- | --- |
+| Egern | [iRingo.WeatherKit.WK3.yaml](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.6/iRingo.WeatherKit.WK3.yaml) | 原生模块参数面板；大陆补 AQ 已有测试版实机确认，预警实现不变。 |
+| Surge | [iRingo.WeatherKit.WK3.sgmodule](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.6/iRingo.WeatherKit.WK3.sgmodule) | 模块参数；支持 WK3 AQ、分钟雨、昨日比较及匹配预警补全。 |
+| Loon | [iRingo.WeatherKit.WK3.lpx](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.6/iRingo.WeatherKit.WK3.lpx) | 插件参数面板；已验收测试版 2 的字节回写、缺 AQ 和预警修复纳入正式版。 |
+| Stash | [iRingo.WeatherKit.WK3.stoverride](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.6/iRingo.WeatherKit.WK3.stoverride) | 编辑首条脚本 argument 的 JSON，其他四条通过 YAML 锚点共享。 |
+| Quantumult X | [iRingo.WeatherKit.WK3.snippet](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.6/iRingo.WeatherKit.WK3.snippet) | 无模块参数面板；请求/文本路径可用，WK3 二进制响应直通，不执行 AQ、分钟雨或预警摘要改写。 |
+
+停用测试模块或其他冲突天气模块，再安装或更新对应正式模块；不要同时启用测试版和正式版。五类脚本分别负责 availability 响应、空气标尺请求、预警网页请求、原生预警详情请求、天气响应。MITM 需启用 `weatherkit.apple.com` 并信任证书。下载后脚本在代理 App 本机执行，Apple、彩云、和风数据仍需联网。
+
+默认今日/昨日指数来源为 `ColorfulCloudsUS`，指数替换目标 `HJ6332012`，内置算法 `WAQI_InstantCast_US`（仅来源选 `Calculate` 时运行）；分钟雨 `ColorfulClouds`、预警 `QWeatherWeb`、天气范围 `CN`、日志 `INFO`、单次请求超时 8000ms。已有个人参数不会被强制重置。空指数替换目标禁用大陆缺 AQ 补入；选择 `WeatherKit`、算法 `None` 或非美标来源不会触发这条补入路径。
+
+查看 `WeatherKit.api.weather.response` 日志可确认 AQ 执行过程；成功补入包含 `WK3 missing AQ patch`，availability 日志不代表天气补入已经运行。
+
+## 已知问题与限制
+
+- **保留 UV 英文建议问题：**部分城市紫外线卡片的防晒时段建议显示英文，例如 `Use sun protection 11:00–16:00.`，标题和等级仍为中文。本次没有修改该文案或语言设置。现有代码核查及历史成都抓包回放未发现 UV 产品被改写；客户端本地化回退是候选解释，根因尚未证实。
+- WK3 当前、逐日、逐小时天气仍保留 Apple 数据；参数中的天气来源选择不能启用这些 WK3 替换功能。分钟雨只处理已验证结构。
+- 预警仅补全可严格匹配的 Apple 原有事件，不凭空新增；第三方网页变化或失配时保留原信息。未实现上游预警 API 来源。
+- Quantumult X 二进制限制如上；Shadowrocket 暂无本机 WK3 模块。
+
+## 验证
+
+测试分支 [Build 42123745628](https://github.com/patrickyanxxxxx/WeatherKit-WK3/actions/runs/42123745628) 完整回归 **359/359 通过、0 失败、0 跳过**，旧入口及五平台构建、模块生成和归档成功。四款支持二进制改写的平台均完成真实缺 AQ 抓包与模拟数据源回放，原天气 arena 和预警保留；回放中的 AQI 87 为模拟值，不代表城市实时读数。标签发布另行运行完整回归与构建。
 
 ---
 
