@@ -24,6 +24,8 @@ Apple 的 WK3 FlatBuffer JSON 表示与主应用 JSON 读取器不同。后者�
 
 Loon 使用 request.loon.bundle.js、response.loon.bundle.js、scale.loon.bundle.js；原版其他客户端的 generic bundle 文件名和模板继续保留。版本由原版发布流程决定，本改动不指定 Fork 版本或下载地址。CI 中的 0.0.0-test 仅用于生成验证夹具，不是可订阅发行版本。
 
+构建同时生成 dist/LICENSE.txt，包含项目 Apache-2.0、@noble/hashes 的完整 MIT 许可与公开地理数据出处；沿用原版的 dist 发行打包即可携带这些说明。
+
 `npm test` 检查算法、供应商失败、缓存边界、WK2 编解码、WK3 开发／发布入口及未知字段保留。`npm run build:loon` 编译原生入口并生成 Loon 文件，再执行 35 个压缩脚本 VM 场景与 15 个表达式／路由／jq 检查；这些检查不等于 Loon 真实配置解析器或设备耗电测量。
 
 执行逻辑相同的发行代码曾在 macOS 27.3、Loon for Mac 0.5.0(1011) 核对七种算法和六项污染物，最终轮次无解码错误、无效天气或 CloudKit 回退，11 类产品进入原生缓存；另有用户反馈 iPhone 使用成功。该事实与当前分支的静态、构建和 VM 验证分别报告，不扩展为所有算法、预警、手表、地区或长期 VPN 的原生验收。没有设备内存或电量下降比例。

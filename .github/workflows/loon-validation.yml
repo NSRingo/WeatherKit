@@ -39,4 +39,5 @@ jobs:
           path: |
             dist/iRingo.WeatherKit.lpx
             dist/*.loon.bundle.js
+            dist/LICENSE.txt
           if-no-files-found: error
