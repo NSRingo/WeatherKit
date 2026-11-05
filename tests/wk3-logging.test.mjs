@@ -95,7 +95,7 @@ for (const platform of ["egern", "surge", "loon", "stash", "quantumultx"]) {
             assert.equal(visible.logs.at(-1)[1], `✅ ${stage}`);
             assert.ok(!text.includes(secret), text);
             assert.ok(!text.includes("private-host-unique"), text);
-            assert.ok(!visible.logs.some(([method]) => method === "debug"));
+            assert.ok(visible.logs.every(([method, message, ...rest]) => method === "log" && typeof message === "string" && rest.length === 0), `${platform} must write one string per console.log call`);
             if (stage === "response") {
                 assert.match(text, /provider summary intact/);
                 assert.match(text, /parseWeatherKitURL/);
