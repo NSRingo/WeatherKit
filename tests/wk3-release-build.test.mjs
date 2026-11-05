@@ -20,13 +20,16 @@ test("tagged WK3 build publishes all platform scripts and matching modules", asy
             assert.ok(files.includes(file), file);
             assert.ok((await stat(path.join(dir, file))).size > 1000, file);
         }
-        for (const extension of extensions) {
+        for (const [index, extension] of extensions.entries()) {
             const file = `iRingo.WeatherKit.WK3.${extension}`;
             const text = await readFile(path.join(dir, file), "utf8");
             assert.ok(text.length > 500, file);
-            for (const [, asset] of text.matchAll(/(?:script_url:|script-path=|url:\s*(?:script-\w+|https:\/\/github\.com\/patrickyanxxxxx\/WeatherKit-WK3\/releases\/download\/v3\.3\.2\/))[^\n]*?\b(wk3-[a-z]+-(?:request|response)\.bundle\.js)/g)) {
-                assert.ok(files.includes(asset), `${file} references missing ${asset}`);
-            }
+            const references = [...text.matchAll(/https:\/\/github\.com\/patrickyanxxxxx\/WeatherKit-WK3\/releases\/download\/v3\.3\.2\/(wk3-[a-z]+-(?:request|response)\.bundle\.js)/g)].map(match => match[1]);
+            assert.deepEqual(references.sort(), [
+                ...Array(3).fill(`wk3-${platforms[index]}-request.bundle.js`),
+                ...Array(2).fill(`wk3-${platforms[index]}-response.bundle.js`),
+            ].sort(), `${file} must reference exactly its own five versioned scripts`);
+            for (const asset of references) assert.ok(files.includes(asset), `${file} references missing ${asset}`);
         }
         const egern = await readFile(path.join(dir, "iRingo.WeatherKit.WK3.yaml"), "utf8");
         assert.equal(egern, renderLocalModule({ version: "3.3.2" }));

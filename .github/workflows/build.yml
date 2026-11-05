@@ -42,6 +42,8 @@ jobs:
           version: ${{ github.ref_name }}
           keep-v: "false" # If set to "true", will not remove any 'v' prefix from the version number.
           ignore-semver-check: "false" # If set to "true", will not check if the version number is a valid semver version.
+      - name: Run WK3 regressions
+        run: npm run test:wk3
       - name: Build scripts
         run: npm run build
       - name: Generate modules
