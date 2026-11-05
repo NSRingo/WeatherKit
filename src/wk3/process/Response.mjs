@@ -130,7 +130,7 @@ export async function Response($request, $response, context = {}) {
                             colorfulClouds: new ColorfulClouds({ ...parameters, country: "HK" }, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
                             parameters, country: "HK",
                         };
-                        rawBody = await PatchWK3HongKongMissingAirQuality(rawBody, Settings, enviroments, preFetched);
+                        rawBody = await PatchWK3MissingAirQuality(rawBody, Settings, enviroments, preFetched);
                         break;
                     }
                     if (!shouldReplace) {
@@ -265,7 +265,10 @@ function validIndex(candidate) {
 async function PatchWK3AirQuality(rawBody, Settings, enviroments, preFetched = {}) {
     try {
         const original = decodeWK3DataSet(rawBody);
-        if (!original) return rawBody;
+        if (!original) {
+            if (!Settings?.AirQuality?.Current?.Index?.Replace?.length) return rawBody;
+            return await PatchWK3MissingAirQuality(rawBody, Settings, enviroments, preFetched, true);
+        }
         const scaleName = AirQuality.GetNameFromScale(original.scale);
         const replace = Settings?.AirQuality?.Current?.Index?.Replace || [];
         if (!replace.includes(scaleName) || !canInjectIndex(Settings)) return rawBody;
@@ -328,8 +331,10 @@ async function PatchWK3AirQuality(rawBody, Settings, enviroments, preFetched = {
     }
 }
 
-async function PatchWK3HongKongMissingAirQuality(rawBody, Settings, enviroments, preFetched = {}) {
+async function PatchWK3MissingAirQuality(rawBody, Settings, enviroments, preFetched = {}, mainland = false) {
     if (Settings?.AirQuality?.Current?.Index?.Provider !== "ColorfulCloudsUS") return rawBody;
+    const label = mainland ? "WK3 missing AQ patch" : "WK3 HK AQ patch";
+    const region = mainland ? "大陆缺失" : "香港";
     try {
         const injected = preFetched.index ? await preFetched.index : await enviroments.colorfulClouds.CurrentAirQuality(true, Settings?.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants);
         const replacement = await injectWK3Comparison(providerToWK3USAirQuality(injected), {
@@ -340,10 +345,10 @@ async function PatchWK3HongKongMissingAirQuality(rawBody, Settings, enviroments,
         const builder = new flatbuffers.Builder();
         builder.finish(encodeWK3AirQuality(builder, replacement));
         const patched = rebuildWeatherRootWithAddedTable(rawBody, 0, builder.asUint8Array());
-        Console.info("WK3 HK AQ patch", `补入香港美标 AQI ${replacement.index}; 昨日对比=${replacement.previousDayComparison}，其他天气原样保留。`);
+        Console.info(label, `补入${region}美标 AQI ${replacement.index}; 昨日对比=${replacement.previousDayComparison}，其他天气原样保留。`);
         return patched;
     } catch (error) {
-        Console.warn("WK3 HK AQ patch", "数据源不可用，保持原响应。", error?.message ?? error);
+        Console.warn(label, "数据源不可用，保持原响应。", error?.message ?? error);
         return rawBody;
     }
 }
