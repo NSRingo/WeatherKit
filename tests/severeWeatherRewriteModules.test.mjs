@@ -1,3 +1,4 @@
+// Modified by hhhoratioxu, 2026-10-19: retain existing argument ordering and include the cache setting.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
@@ -90,8 +91,8 @@ test("script module templates hook Apple weatherAlerts without QWeather page red
     const templates = ["surge.handlebars", "loon.handlebars", "quantumultx.handlebars", "stash.handlebars"];
     for (const filename of templates) {
         const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
-        assert.ok(content.includes(weatherAlertsPageHandlerPattern), filename);
-        assert.ok(content.includes(weatherAlertsCoordinateHandlerPattern), filename);
+        assert.ok(content.includes(filename === "loon.handlebars" ? weatherAlertsPageHandlerPattern.replace("[^#]*&ids=", "(?:[^#]*&)?ids=") : weatherAlertsPageHandlerPattern), filename);
+        assert.ok(content.includes(filename === "loon.handlebars" ? weatherAlertsCoordinateHandlerPattern.replace("[^#]*&ids=", "(?:[^#]*&)?ids=") : weatherAlertsCoordinateHandlerPattern), filename);
         assert.ok(!content.includes(mergedWeatherAlertsIdentifierPattern), filename);
         assert.match(content, /api\\\/v1\\\/weatherAlerts\\\?/);
         assert.ok(!content.includes(unsafeOpenEndedQuantifier), filename);
@@ -111,8 +112,8 @@ test("script module templates hook Apple weatherAlerts without QWeather page red
     assert.ok(surge.includes(`pattern="${weatherAlertsCoordinateHandlerPattern}"`));
     assert.doesNotMatch(surge, /weatherAlerts\.(?:html|api)\.request[^\n]+pattern=\^https/);
     assert.doesNotMatch(surge, /weatherAlerts\.(?:html|api)\.request[^\n]+requires-body/);
-    assert.match(loon, /http-request [^\n]+weatherAlerts[^\n]+request\.bundle\.js[^\n]+weatherAlerts\.html\.request/);
-    assert.match(loon, /http-request [^\n]+weatherAlerts[^\n]+request\.bundle\.js[^\n]+weatherAlerts\.api\.request/);
+    assert.match(loon, /http-request [^\n]+weatherAlerts[^\n]+request\.loon\.bundle\.js[^\n]+weatherAlerts\.html\.request/);
+    assert.match(loon, /http-request [^\n]+weatherAlerts[^\n]+request\.loon\.bundle\.js[^\n]+weatherAlerts\.api\.request/);
     assert.match(quantumultX, /weatherAlerts[^\n]+url script-echo-response[^\n]+request\.bundle\.js/);
     assert.doesNotMatch(quantumultX, /weatherAlerts[^\n]+script-request-header/);
     assert.match(stash, /match: [^\n]+weatherAlerts[\s\S]*?name: WeatherKit\.api\.v1\.weatherAlerts\.request[\s\S]*?type: request/);
@@ -207,7 +208,7 @@ test("Dev builds use dev templates, bundles, and output names", async () => {
         ...devTemplates.map(filename => readFile(new URL(`../template/${filename}`, import.meta.url), "utf8")),
     ]);
 
-    for (const output of ["sgmodule", "plugin", "snippet", "stoverride", "boxjs.json"]) {
+    for (const output of ["sgmodule", "lpx", "snippet", "stoverride", "boxjs.json"]) {
         assert.ok(config.includes(`iRingo.WeatherKit.dev.${output}`), output);
     }
     for (const template of devTemplates) {
@@ -221,7 +222,7 @@ test("Dev builds use dev templates, bundles, and output names", async () => {
     assert.doesNotMatch(rollup, /\.\/dist\/(?:request|response)\.bundle\.js/);
     assert.match(sgmoduleTools, /\.\/dist\/response\.dev\.bundle\.js/);
 
-    for (const output of ["request.dev.bundle.js", "response.dev.bundle.js", "iRingo.WeatherKit.dev.sgmodule", "iRingo.WeatherKit.dev.plugin", "iRingo.WeatherKit.dev.snippet", "iRingo.WeatherKit.dev.stoverride"]) {
+    for (const output of ["request.dev.bundle.js", "response.dev.bundle.js", "iRingo.WeatherKit.dev.sgmodule", "iRingo.WeatherKit.dev.lpx", "iRingo.WeatherKit.dev.snippet", "iRingo.WeatherKit.dev.stoverride"]) {
         assert.ok(deployWorkflow.includes(`dist/${output}`), output);
     }
     for (const [index, template] of templates.entries()) {
@@ -293,7 +294,7 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
     assert.match(release, /import \{[^}]*airQuality[^}]*\} from "\.\/arguments-builder\.full\.config"/);
     assert.match(release, /args: \[\.\.\.dataSets,[^\]]*\.\.\.weatherAlerts,[^\]]*\.\.\.airQuality/);
     assert.match(dev, /import \{[^}]*airQualityFull[^}]*dataSetsFull[^}]*weatherFull[^}]*\} from "\.\/arguments-builder\.full\.config"/);
-    assert.match(dev, /args: \[\.\.\.dataSetsFull, \.\.\.weatherFull, \.\.\.weatherAlerts, \.\.\.nextHourFull, \.\.\.airQualityFull, \.\.\.calculateFull, \.\.\.api, \.\.\.storage, \.\.\.logLevel\]/);
+    assert.match(dev, /args: \[\.\.\.dataSetsFull, \.\.\.weatherFull, \.\.\.weatherAlerts, \.\.\.nextHourFull, \.\.\.airQualityFull, \.\.\.calculateFull, \.\.\.api, \.\.\.storage, \.\.\.logLevel, \.\.\.requestCache\]/);
     assert.match(database, /WeatherAlerts: \{ Provider: "QWeatherWeb" \}/);
     assert.match(types, /WeatherAlerts\?: \{[\s\S]*Provider\?: "WeatherKit" \| "QWeatherWeb" \| "QWeather" \| "ColorfulClouds"/);
     assert.match(boxjs, /@iRingo\.WeatherKit\.Settings\.WeatherAlerts\.Provider[\s\S]*"val":\s*"QWeatherWeb"[\s\S]*"key":\s*"WeatherKit"/);
