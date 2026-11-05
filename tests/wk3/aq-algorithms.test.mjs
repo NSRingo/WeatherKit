@@ -35,7 +35,7 @@ test("WK3 exposes all twelve upstream AQ algorithms without silent UBA fallback"
 test("AQHI algorithms use their distinct upstream risk/index calculation", () => {
     const expected = {
         HK_AQHI: ["HK.AQHI", 5],
-        CA_AQHI: ["CA.AQHI", 9],
+        CA_AQHI: ["CA.AQHI", 5],
         CN_DEATH_AQHI: ["CN.AQHI", 4],
         CN_DEATH_HK_AQHI: ["CN.AQHI", 5],
         AQHI_Multi_CN: ["CA.AQHI", 4],
@@ -49,10 +49,9 @@ test("AQHI algorithms use their distinct upstream risk/index calculation", () =>
     }
 });
 
-test("unknown algorithm behavior remains the existing UBA fallback", () => {
-    const expected = AirQuality.Pollutants2AQI(input, {}, { algorithm: "UBA" });
+test("unknown algorithm fails closed rather than pretending to be UBA", () => {
     const actual = AirQuality.Pollutants2AQI(input, {}, { algorithm: "not-a-supported-algorithm" });
-    assert.equal(actual.index, expected.index);
-    assert.equal(actual.categoryIndex, expected.categoryIndex);
-    assert.equal(actual.scale, expected.scale);
+    assert.equal(actual.metadata?.temporarilyUnavailable, true);
+    assert.deepEqual(actual.pollutants, pollutants);
+    assert.notEqual(actual.scale, AirQuality.ToWeatherKitScale(AirQuality.Config.Scales.UBA.weatherKitScale));
 });
