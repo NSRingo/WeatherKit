@@ -42,7 +42,7 @@ export async function runPlatform(handler, stage, globals = globalThis, platform
                     if (match) {
                         const key = decodeURIComponent(match[1]).trim();
                         const raw = match[2] ?? match[3] ?? match[4] ?? "";
-                        argumentValues[key] = raw.startsWith("[") && raw.endsWith("]") ? raw.slice(1, -1).split(",").map(v => v.trim().replace(/^['\"]|['\"]$/g, "")) : raw === "true" ? true : raw === "false" ? false : decodeURIComponent(raw);
+                        argumentValues[key] = raw.startsWith("[") && raw.endsWith("]") ? raw.slice(1, -1).split(",").map(v => v.trim().replace(/^['\"]|['\"]$/g, "")).filter(Boolean) : raw === "true" ? true : raw === "false" ? false : decodeURIComponent(raw);
                     }
                 }
             } else {
@@ -111,5 +111,6 @@ export async function runPlatform(handler, stage, globals = globalThis, platform
         delete response.statusText;
         return done(response);
     }
-    return done({ response });
+    // Request scripts synthesize a response; response scripts return modifications directly.
+    return done(stage === "request" ? { response } : response);
 }

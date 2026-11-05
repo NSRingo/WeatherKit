@@ -36,8 +36,8 @@ for (const platform of platforms) {
             assert.equal(returned, undefined, "Quantumult X raw binary response is passed through");
         } else {
             assert.ok(observed);
-            const result = returned.response;
-            assert.equal(result.status, platform === "quantumultx" ? "HTTP/1.1 201 OK" : 201);
+            const result = returned;
+            assert.equal(result.status, 201);
             assert.equal(result.headers["X-Patched"], "yes");
             assert.ok(!Object.keys(result.headers).some(k => ["content-length", "content-encoding", "transfer-encoding"].includes(k.toLowerCase())));
             if (platform === "quantumultx") assert.equal(result.body, "{\"ok\":true}");
@@ -62,7 +62,7 @@ test("binary bodyBytes takes precedence over an empty text body", async () => {
         assert.deepEqual(Array.from(new Uint8Array(await ctx.response.arrayBuffer())), bytes);
         return { status: 200, headers: {}, body: new Uint8Array(bytes) };
     }, "response", globals, "surge");
-    assert.deepEqual(Array.from(returned.response.body, c => c.charCodeAt(0)), bytes);
+    assert.deepEqual(Array.from(returned.body, c => c.charCodeAt(0)), bytes);
 });
 
 test("all verified platforms produce executable request and response bundles", async () => {
@@ -108,7 +108,7 @@ test("Surge bundle patches WK3 AQ using platform HTTP callbacks", async () => {
     await new Promise(resolve => setTimeout(resolve, 300));
     assert.equal(calls.length, 1);
     assert.ok(requests.some(url => url.includes("/realtime")), `No provider request: ${JSON.stringify(requests)}`);
-    const result = calls[0].response;
+    const result = calls[0];
     assert.equal(decodeWK3DataSet(Uint8Array.from(result.body, char => char.charCodeAt(0))).index, 87);
 });
 
