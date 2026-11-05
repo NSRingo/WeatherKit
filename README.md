@@ -1,6 +1,6 @@
 #  iRingo: 🌤 WeatherKit
 
-此 Fork 的 `wk3/ios27-wk3-review` 分支以 NSRingo/WeatherKit **v3.3.2** 为基点，保留原版 WK2 入口，并在 `src/egern/` 隔离增加本机 WK3 处理。审查完成前不要将该分支当作正式发行版；`main` 仍是未经这些改动的上游版本。
+此 Fork 的 `wk3/ios27-wk3-review` 分支以 NSRingo/WeatherKit **v3.3.2** 为基点，保留原版 WK2 入口；本机 WK3 业务统一放在平台无关的 `src/wk3/`，Egern 与其他代理共用处理逻辑。审查完成前不要将该分支当作正式发行版；`main` 仍是未经这些改动的上游版本。
 
 ## 本分支更新
 
@@ -21,6 +21,13 @@
 | Shadowrocket | 无 WK3 本机模块 | 上游仅提供服务端 Rewrite 模板；本分支没有经过验证的本机二进制适配，故不提供伪装可用的模块。 |
 
 五平台统一构建入口为 `npm run build:wk3`：调用 Egern `scripts/build-egern.mjs` 和其他平台 `scripts/build-wk3-platform.mjs`，生成 10 份平台专用 JS。打标签时添加 `-- --version <版本号>`，同时生成 5 份模块至 `dist/` 根目录；Egern 模块改为指向同版本的发行附件，与其他平台一同进入现有构建/Release 工作流。仓库中的 `modules/iRingo.WeatherKit.WK3.yaml` 仍指向既有 Gist，不影响现用订阅；五平台脚本不能互换。
+
+## 代码组织
+
+- `src/wk3/class`、`function`、`process`、`proto`、`utils`：五平台共用的编解码、算法、来源处理与业务逻辑，按上游分类保留；不再嵌套在 Egern 目录。
+- `src/wk3/entry`：共用的配置归一化与请求／响应处理；`runtime.mjs`、`parameters.mjs`、`routes.mjs` 分别维护共享 HTTP 封装、参数和五类路由。
+- `src/platform/wk3-adapter.mjs`：Surge/Loon/Stash/Quantumult X 的客户端对象适配；Egern 原生上下文直接调用同一组共享入口。客户端网络 API 和输出格式由各自 Rollup 构建器绑定，不混入业务算法。
+- `tests/wk3/`：共享协议及业务测试；根目录 `tests/wk3-*.test.mjs`：跨平台代理和发行构建测试。
 
 ## 默认配置
 
@@ -44,4 +51,4 @@
 - Fork **尚无 Release**。`releases/latest/download/...` 或生成模块内的 `releases/download/v<version>/...` 只有在审查、合并、实际构建并上传对应附件后才能用于订阅；目前不要导入这些尚不存在的链接。生成模块不会自动发布附件。
 - 上游的私有 GitHub Packages 依赖在无权限环境会使干净 `npm install` 返回 401。本分支使用已有依赖及上游已声明的 Rollup 工具完成验证，没有新增依赖。
 
-验证命令：`node --test tests/egern-wk3/*.test.mjs tests/wk3-modules.test.mjs tests/wk3-platform-adapter.test.mjs tests/wk3-release-build.test.mjs`。普通分支运行 `npm run build:wk3` 仅生成五平台脚本；打标签时 CI 使用实际标签版本运行 `npm run build:wk3 -- --version <版本号>`，将十份脚本与五份模块一起写入 `dist/` 并进入现有附件上传步骤。指定版本构建本身不创建标签或 Release；发版后仍须核对客户端能访问每个附件 URL。
+验证命令：`node --test tests/wk3/*.test.mjs tests/wk3-modules.test.mjs tests/wk3-platform-adapter.test.mjs tests/wk3-release-build.test.mjs`。普通分支运行 `npm run build:wk3` 仅生成五平台脚本；打标签时 CI 使用实际标签版本运行 `npm run build:wk3 -- --version <版本号>`，将十份脚本与五份模块一起写入 `dist/` 并进入现有附件上传步骤。指定版本构建本身不创建标签或 Release；发版后仍须核对客户端能访问每个附件 URL。

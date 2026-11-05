@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Builder,ByteBuffer } from 'flatbuffers';
-import { Response as processResponse } from '../../src/egern/wk3/process/Response.mjs';
-import { encodeAirQuality,decodeWK3DataSet } from '../../src/egern/wk3/class/WeatherKit3.mjs';
-import { encodeNextHour,providerToWK3NextHour,decodeWK3NextHour } from '../../src/egern/wk3/class/WK3NextHour.mjs';
-import database from '../../src/egern/wk3/function/database.mjs';
-import buildSettings from '../../src/egern/wk3/function/buildSettings.mjs';
+import { Response as processResponse } from '../../src/wk3/process/Response.mjs';
+import { encodeAirQuality,decodeWK3DataSet } from '../../src/wk3/class/WeatherKit3.mjs';
+import { encodeNextHour,providerToWK3NextHour,decodeWK3NextHour } from '../../src/wk3/class/WK3NextHour.mjs';
+import database from '../../src/wk3/function/database.mjs';
+import buildSettings from '../../src/wk3/function/buildSettings.mjs';
 const start=2000000040;
 function rain(){return {metadata:{sourceType:'MODELED',providerName:'Synthetic',latitude:0,longitude:0},forecastStart:start,forecastEnd:start+180,minutes:[0,1,2].map(i=>({startTime:start+i*60,precipitationChance:70,precipitationIntensity:1.5,perceivedPrecipitationIntensity:1.2})),summary:[{startTime:start,endTime:0,condition:'RAIN',precipitationChance:70,precipitationIntensity:1.5}],condition:[{startTime:start,endTime:0,forecastToken:'CONSTANT',beginCondition:'RAIN',endCondition:'RAIN',parameters:[]}]};}
 const aq={metadata:{sourceType:3,providerName:'Synthetic Apple'},scale:'HJ6332012.2604',index:60,categoryIndex:2,isSignificant:true,primaryPollutant:11,pollutants:[],previousDayComparison:2};

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-const { default: AirQuality } = await import("../../src/egern/wk3/class/AirQuality.mjs");
+const { default: AirQuality } = await import("../../src/wk3/class/AirQuality.mjs");
 
 const pollutants = [
     { pollutantType: "PM2_5", amount: 25, units: "MICROGRAMS_PER_CUBIC_METER" },

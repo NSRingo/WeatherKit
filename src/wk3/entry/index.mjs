@@ -1,6 +1,6 @@
-import database from "../wk3/function/database.mjs";
-import buildSettings from "../wk3/function/buildSettings.mjs";
-import { get, set, merge } from "../wk3/utils/object.mjs";
+import database from "../function/database.mjs";
+import buildSettings from "../function/buildSettings.mjs";
+import { get, set, merge } from "../utils/object.mjs";
 
 export function configuration(ctx) {
     // SETTINGS is the same nested Settings object accepted by buildSettings.

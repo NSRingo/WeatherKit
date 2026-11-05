@@ -5,8 +5,9 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { localParameters } from '../src/egern/entry/parameters.mjs';
+import { localParameters } from '../src/wk3/parameters.mjs';
 import { buildWK3Modules, groups, platforms, release, renderWK3Module } from '../scripts/build-wk3-modules.mjs';
+import { localScriptGroups } from '../scripts/build-egern-module.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const base = release('3.3.2');
@@ -38,6 +39,18 @@ test('five disjoint WK3 routing groups cover the supported API versions', () => 
     }
     for (const url of ['https://weatherkit.apple.com/api/v1/weather/en_US/', 'https://weatherkit.apple.com/api/v3/availability/', 'https://example.com/api/v3/weather/', 'https://weatherkit.apple.com/api/v1/weatherAlerts?ids=garbage']) {
         assert.equal(groups.some(({ pattern }) => new RegExp(pattern).test(url)), false, url);
+    }
+});
+
+test('Egern shares all five route groups without overlapping native alert IDs', () => {
+    assert.equal(localScriptGroups.length, groups.length);
+    for (const [url, expected] of examples) {
+        assert.deepEqual(localScriptGroups.flatMap(({ match }, i) => new RegExp(match).test(url) ? [i] : []), [expected], url);
+    }
+    for (const [i, group] of groups.entries()) {
+        assert.equal(localScriptGroups[i].file, group.stage);
+        assert.equal(localScriptGroups[i].body, Boolean(group.body));
+        assert.equal(localScriptGroups[i].binary, Boolean(group.binary));
     }
 });
 

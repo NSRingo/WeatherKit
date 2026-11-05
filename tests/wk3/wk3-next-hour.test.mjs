@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Builder, ByteBuffer } from 'flatbuffers';
-import { WK3NextHourTable, WK3_NEXT_HOUR_ENUMS, decodeNextHour, decodeWK3NextHour, encodeNextHour, providerToWK3NextHour, nextHourCodec } from '../../src/egern/wk3/class/WK3NextHour.mjs';
+import { WK3NextHourTable, WK3_NEXT_HOUR_ENUMS, decodeNextHour, decodeWK3NextHour, encodeNextHour, providerToWK3NextHour, nextHourCodec } from '../../src/wk3/class/WK3NextHour.mjs';
 
 const units = { intensityUnit: 'mm/h', chanceUnit: 'percent' };
 // Fixed public London coordinate; synthetic values, not a captured user request.

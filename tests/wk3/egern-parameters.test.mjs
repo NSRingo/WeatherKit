@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';
-import {configuration}from '../../src/egern/entry/index.mjs';import {localParameters}from '../../src/egern/entry/parameters.mjs';import {renderLocalModule,localScriptGroups}from '../../scripts/build-egern-module.mjs';import {buildEgern}from '../../scripts/build-egern.mjs';
+import {configuration}from '../../src/wk3/entry/index.mjs';import {localParameters}from '../../src/wk3/parameters.mjs';import {renderLocalModule,localScriptGroups}from '../../scripts/build-egern-module.mjs';import {buildEgern}from '../../scripts/build-egern.mjs';
 const defaults=()=>Object.fromEntries(localParameters.map(p=>[p.key,p.value]));
 const value=(o,path)=>path.split('.').reduce((a,k)=>a?.[k],o);
 test('all original restored keys reach Settings with current US/minute/yesterday defaults',()=>{

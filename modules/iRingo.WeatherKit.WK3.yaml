@@ -181,7 +181,7 @@ scriptings:
       API.QWeather.Token: '{{{API.QWeather.Token}}}'
       LogLevel: '{{{LogLevel}}}'
       HTTP_TIMEOUT_MS: '{{{HTTP_TIMEOUT_MS}}}'
-    match: '^https://weatherkit\.apple\.com/api/v[12]/weatherAlerts\?(?:[^#]*&)?ids=[a-zA-Z0-9][a-zA-Z0-9_-]*-[0-9]{9}(?:&|$)'
+    match: '^https://weatherkit\.apple\.com/api/v[12]/weatherAlerts\?(?:[^#]*&)?ids=(?!wk3_)[a-zA-Z0-9][a-zA-Z0-9_-]*-[0-9]{9}(?:&|$)'
     script_url: https://gist.githubusercontent.com/patrickyanxxxxx/9125b747b26480a0c9c37ae1c446c39f/raw/weatherkit-local-request.js?v=upstream-groups-1
     timeout: 30
     body_required: false

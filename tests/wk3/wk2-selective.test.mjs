@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { Builder, ByteBuffer } from "flatbuffers";
-import WeatherKit2, { decodeAirQuality, encodeAirQuality, decodeForecastNextHour, encodeForecastNextHour } from "../../src/egern/wk3/class/WeatherKit2.mjs";
-import * as WK2 from "../../src/egern/wk3/proto/apple/wk2.js";
+import WeatherKit2, { decodeAirQuality, encodeAirQuality, decodeForecastNextHour, encodeForecastNextHour } from "../../src/wk3/class/WeatherKit2.mjs";
+import * as WK2 from "../../src/wk3/proto/apple/wk2.js";
 
 // All fixtures are synthetic FlatBuffers, with no HAR or user response data.
 const airQuality = {

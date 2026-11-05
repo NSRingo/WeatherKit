@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import vm from "node:vm";
 import { Builder } from "flatbuffers";
-import { encodeAirQuality, decodeWK3DataSet } from "../src/egern/wk3/class/WeatherKit3.mjs";
+import { encodeAirQuality, decodeWK3DataSet } from "../src/wk3/class/WeatherKit3.mjs";
 import { runPlatform } from "../src/platform/wk3-adapter.mjs";
 import { buildPlatform } from "../scripts/build-wk3-platform.mjs";
 import { renderWK3Module } from "../scripts/build-wk3-modules.mjs";

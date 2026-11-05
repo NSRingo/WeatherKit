@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Builder, ByteBuffer } from "flatbuffers";
-import { decodeWK3Alerts, patchWK3Alerts, enrichWK3Alerts, patchWK3QWeatherAlerts, WK3_ALERT_ENUMS, WK3AlertsTable, wk3AlertsCodec } from "../../src/egern/wk3/class/WK3Alerts.mjs";
-import WeatherAlerts from "../../src/egern/wk3/class/WeatherAlerts.mjs";
+import { decodeWK3Alerts, patchWK3Alerts, enrichWK3Alerts, patchWK3QWeatherAlerts, WK3_ALERT_ENUMS, WK3AlertsTable, wk3AlertsCodec } from "../../src/wk3/class/WK3Alerts.mjs";
+import WeatherAlerts from "../../src/wk3/class/WeatherAlerts.mjs";
 
 // All fixtures synthetic. No HAR, Apple response bytes, credentials or real location.
 const html = `<h1 class="c-submenu__location">测试区</h1><div class="c-city-warning-events warning--blue"><h3>测试区气象台发布大风蓝色预警</h3><p>发布日期：2030-01-01T08:00+08:00</p><p class="warning-events__txt">注意防范大风。</p><div class="warning-defense__txt"><p>1. 停止高空作业。</p></div></div>`;
@@ -106,9 +106,9 @@ test("HTML fetch sends no Apple authorization and fails on status/content type",
 });
 
 test('production Response routes to Apple native details while preserving summary UUID', async()=>{
- const {Response:processResponse}=await import('../../src/egern/wk3/process/Response.mjs');
- const {default:database}=await import('../../src/egern/wk3/function/database.mjs');
- const {default:buildSettings}=await import('../../src/egern/wk3/function/buildSettings.mjs');
+ const {Response:processResponse}=await import('../../src/wk3/process/Response.mjs');
+ const {default:database}=await import('../../src/wk3/function/database.mjs');
+ const {default:buildSettings}=await import('../../src/wk3/function/buildSettings.mjs');
  const saved=globalThis.fetch;globalThis.fetch=fetchPage;
- try{const bytes=fixture(),before=decodeWK3Alerts(bytes);const out=await processResponse({url:'https://weatherkit.apple.com/api/v3/weather/zh-CN/31/121?country=CN&dataSets=weatherAlerts',headers:{}},{status:200,headers:{'content-type':'application/vnd.apple.flatbuffer;messageType=WK3.Weather'},body:bytes},{Settings:buildSettings(database).Settings,Configs:{}});const after=decodeWK3Alerts(out.body);assert.equal(after.alerts[0].description,'大风蓝色预警');assert.equal(new URL(after.detailsUrl).origin,'https://weatherkit.apple.com');assert.equal(new URL(after.detailsUrl).pathname,'/alertDetails/index.html');assert.equal(after.alerts[0].detailsUrl,after.detailsUrl);assert.deepEqual(after.alerts[0].id,before.alerts[0].id);const u=new URL(after.detailsUrl);const {resolveNativeAlertDetails}=await import('../../src/egern/wk3/class/NativeAlertDetails.mjs');const details=await resolveNativeAlertDetails(u.searchParams.get('ids'),u.searchParams.get('lang'),fetchPage);assert.equal(details.length,1);assert.equal(details[0].id,'00010203-0405-0607-0809-0a0b0c0d0e0f');assert.equal(details[0].detailsUrl,'#'+details[0].id);assert.match(details[0].messages[0].text,/注意防范/);}finally{globalThis.fetch=saved;}
+ try{const bytes=fixture(),before=decodeWK3Alerts(bytes);const out=await processResponse({url:'https://weatherkit.apple.com/api/v3/weather/zh-CN/31/121?country=CN&dataSets=weatherAlerts',headers:{}},{status:200,headers:{'content-type':'application/vnd.apple.flatbuffer;messageType=WK3.Weather'},body:bytes},{Settings:buildSettings(database).Settings,Configs:{}});const after=decodeWK3Alerts(out.body);assert.equal(after.alerts[0].description,'大风蓝色预警');assert.equal(new URL(after.detailsUrl).origin,'https://weatherkit.apple.com');assert.equal(new URL(after.detailsUrl).pathname,'/alertDetails/index.html');assert.equal(after.alerts[0].detailsUrl,after.detailsUrl);assert.deepEqual(after.alerts[0].id,before.alerts[0].id);const u=new URL(after.detailsUrl);const {resolveNativeAlertDetails}=await import('../../src/wk3/class/NativeAlertDetails.mjs');const details=await resolveNativeAlertDetails(u.searchParams.get('ids'),u.searchParams.get('lang'),fetchPage);assert.equal(details.length,1);assert.equal(details[0].id,'00010203-0405-0607-0809-0a0b0c0d0e0f');assert.equal(details[0].detailsUrl,'#'+details[0].id);assert.match(details[0].messages[0].text,/注意防范/);}finally{globalThis.fetch=saved;}
 });

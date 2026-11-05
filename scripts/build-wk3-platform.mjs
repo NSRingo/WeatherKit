@@ -11,14 +11,14 @@ const logModule = 'const levels={OFF:0,ERROR:1,WARN:2,INFO:3,DEBUG:4,ALL:5};let 
 function runtimePlugin() {
     const virtual = new Map([
         ["wk3:runtime", 'let runtime; export const setRuntime=value=>{runtime=value}; export const webFetch=(...args)=>runtime.webFetch(...args); export const runtimeFetch=(...args)=>runtime.fetch(...args);'],
-        [path.join(root, "src/egern/wk3/utils/context.mjs"), "export const requestContext=undefined;"],
-        [path.join(root, "src/egern/wk3/utils/fetch.mjs"), 'export { runtimeFetch as fetch } from "wk3:runtime";'],
-        [path.join(root, "src/egern/wk3/utils/Console.mjs"), logModule],
+        [path.join(root, "src/wk3/utils/context.mjs"), "export const requestContext=undefined;"],
+        [path.join(root, "src/wk3/utils/fetch.mjs"), 'export { runtimeFetch as fetch } from "wk3:runtime";'],
+        [path.join(root, "src/wk3/utils/Console.mjs"), logModule],
     ]);
     return {
         name: "wk3-platform-runtime",
         resolveId(source, importer) {
-            if (source === "egern:runtime" || source === "wk3:runtime") return "wk3:runtime";
+            if (source === "wk3:runtime") return "wk3:runtime";
             if (!importer || !/(?:^|\/)(?:Console|context|fetch)\.mjs$/.test(source)) return null;
             const resolved = path.resolve(path.dirname(importer), source);
             return virtual.has(resolved) ? resolved : null;
@@ -41,7 +41,7 @@ export async function buildPlatform(platform, { outdir, minify = true } = {}) {
             resolveId(id) { return id === entry ? id : null; },
             load(id) {
                 if (id !== entry) return null;
-                return `import { setRuntime } from "wk3:runtime";\nimport { runPlatform } from ${JSON.stringify(path.join(root, "src/platform/wk3-adapter.mjs"))};\nimport { ${handlerName} } from ${JSON.stringify(path.join(root, `src/egern/entry/${name}.mjs`))};\nimport { createRuntime } from ${JSON.stringify(path.join(root, "src/egern/entry/runtime.mjs"))};\nconst __bytes=v=>typeof v===\"string\"?Uint8Array.from(v,c=>c.charCodeAt(0)&255).buffer:v instanceof ArrayBuffer?v:ArrayBuffer.isView(v)?v.buffer.slice(v.byteOffset,v.byteOffset+v.byteLength):new Uint8Array(v).buffer;const __wk3Runtime=createRuntime({env:globalThis.$environment??globalThis.$env??{},http:globalThis.$httpClient?{get:(u,o)=>new Promise((r,j)=>$httpClient.get({url:u,...o},(e,x,b)=>e?j(e):r({status:x.status,headers:x.headers,text:async()=>b,arrayBuffer:async()=>__bytes(b)}))),post:(u,o)=>new Promise((r,j)=>$httpClient.post({url:u,...o},(e,x,b)=>e?j(e):r({status:x.status,headers:x.headers,text:async()=>b,arrayBuffer:async()=>__bytes(b)})))}:{get:async(u,o)=>{const x=await $task.fetch({url:u,...o});return {status:x.statusCode,headers:x.headers,text:async()=>x.body,arrayBuffer:async()=>__bytes(x.body)}},post:async(u,o)=>{const x=await $task.fetch({url:u,...o});return {status:x.statusCode,headers:x.headers,text:async()=>x.body,arrayBuffer:async()=>new TextEncoder().encode(x.body).buffer}}}});\nsetRuntime(__wk3Runtime);runPlatform(async ctx=>${handlerName}(ctx),"${name}",globalThis,"${platform === "quantumultx" ? "Quantumult X" : platform}");`;
+                return `import { setRuntime } from "wk3:runtime";\nimport { runPlatform } from ${JSON.stringify(path.join(root, "src/platform/wk3-adapter.mjs"))};\nimport { ${handlerName} } from ${JSON.stringify(path.join(root, `src/wk3/entry/${name}.mjs`))};\nimport { createRuntime } from ${JSON.stringify(path.join(root, "src/wk3/runtime.mjs"))};\nconst __bytes=v=>typeof v===\"string\"?Uint8Array.from(v,c=>c.charCodeAt(0)&255).buffer:v instanceof ArrayBuffer?v:ArrayBuffer.isView(v)?v.buffer.slice(v.byteOffset,v.byteOffset+v.byteLength):new Uint8Array(v).buffer;const __wk3Runtime=createRuntime({env:globalThis.$environment??globalThis.$env??{},http:globalThis.$httpClient?{get:(u,o)=>new Promise((r,j)=>$httpClient.get({url:u,...o},(e,x,b)=>e?j(e):r({status:x.status,headers:x.headers,text:async()=>b,arrayBuffer:async()=>__bytes(b)}))),post:(u,o)=>new Promise((r,j)=>$httpClient.post({url:u,...o},(e,x,b)=>e?j(e):r({status:x.status,headers:x.headers,text:async()=>b,arrayBuffer:async()=>__bytes(b)})))}:{get:async(u,o)=>{const x=await $task.fetch({url:u,...o});return {status:x.statusCode,headers:x.headers,text:async()=>x.body,arrayBuffer:async()=>__bytes(x.body)}},post:async(u,o)=>{const x=await $task.fetch({url:u,...o});return {status:x.statusCode,headers:x.headers,text:async()=>x.body,arrayBuffer:async()=>new TextEncoder().encode(x.body).buffer}}}});\nsetRuntime(__wk3Runtime);runPlatform(async ctx=>${handlerName}(ctx),"${name}",globalThis,"${platform === "quantumultx" ? "Quantumult X" : platform}");`;
             },
         };
         const plugins = [plugin, runtimePlugin(), nodeResolve({ browser: true, preferBuiltins: false })];

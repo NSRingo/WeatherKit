@@ -1,10 +1,10 @@
 import { configuration } from "./index.mjs";
-import { headerObject, responseHeaders } from "./runtime.mjs";
-import { Response as processResponse } from "../wk3/process/Response.mjs";
-import parseWeatherKitURL from "../wk3/function/parseWeatherKitURL.mjs";
-import shouldReplaceWeatherKit from "../wk3/function/shouldReplaceWeatherKit.mjs";
-import ColorfulClouds from "../wk3/class/ColorfulClouds.mjs";
-import QWeather from "../wk3/class/QWeather.mjs";
+import { headerObject, responseHeaders } from "../runtime.mjs";
+import { Response as processResponse } from "../process/Response.mjs";
+import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
+import shouldReplaceWeatherKit from "../function/shouldReplaceWeatherKit.mjs";
+import ColorfulClouds from "../class/ColorfulClouds.mjs";
+import QWeather from "../class/QWeather.mjs";
 
 async function processingContext(ctx, url, Settings, Configs) {
     const parsed = parseWeatherKitURL(url);

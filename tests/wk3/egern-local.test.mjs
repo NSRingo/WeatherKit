@@ -2,12 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { Builder, ByteBuffer } from "flatbuffers";
 import { buildEgern } from "../../scripts/build-egern.mjs";
-import { createRuntime } from "../../src/egern/entry/runtime.mjs";
-import { encodeAirQuality, decodeWK3DataSet } from "../../src/egern/wk3/class/WeatherKit3.mjs";
-import { decodeWK3NextHour } from "../../src/egern/wk3/class/WK3NextHour.mjs";
-import { decodeWK3Alerts } from "../../src/egern/wk3/class/WK3Alerts.mjs";
+import { createRuntime } from "../../src/wk3/runtime.mjs";
+import { encodeAirQuality, decodeWK3DataSet } from "../../src/wk3/class/WeatherKit3.mjs";
+import { decodeWK3NextHour } from "../../src/wk3/class/WK3NextHour.mjs";
+import { decodeWK3Alerts } from "../../src/wk3/class/WK3Alerts.mjs";
 import vm from "node:vm";
-import WeatherKit2 from "../../src/egern/wk3/class/WeatherKit2.mjs";
+import WeatherKit2 from "../../src/wk3/class/WeatherKit2.mjs";
 
 const bundles = await buildEgern();
 const load = async code => (await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`)).default;

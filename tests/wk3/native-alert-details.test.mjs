@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import WeatherAlerts from "../../src/egern/wk3/class/WeatherAlerts.mjs";
-import { buildNativeAlertDetailsURL, resolveNativeAlertDetails, isNativeAlertDetailsID } from "../../src/egern/wk3/class/NativeAlertDetails.mjs";
+import WeatherAlerts from "../../src/wk3/class/WeatherAlerts.mjs";
+import { buildNativeAlertDetailsURL, resolveNativeAlertDetails, isNativeAlertDetailsID } from "../../src/wk3/class/NativeAlertDetails.mjs";
 
 // Synthetic public HTML and UUID bytes only; no Apple sessions or coordinates.
 const identifier = "synthetic-101010100";

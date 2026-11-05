@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Builder, ByteBuffer } from "flatbuffers";
-import { WK3AirQualityTable, encodeAirQuality, decodeAirQuality } from "../../src/egern/wk3/class/WeatherKit3.mjs";
-import { WK3_COMPARISON, computeWK3Comparison, injectWK3Comparison } from "../../src/egern/wk3/class/WK3Comparison.mjs";
+import { WK3AirQualityTable, encodeAirQuality, decodeAirQuality } from "../../src/wk3/class/WeatherKit3.mjs";
+import { WK3_COMPARISON, computeWK3Comparison, injectWK3Comparison } from "../../src/wk3/class/WK3Comparison.mjs";
 
 const aq = (categoryIndex = 2, scale = "EPA_NowCast.2604") => ({
     metadata: { providerName: "Synthetic", temporarilyUnavailable: false },

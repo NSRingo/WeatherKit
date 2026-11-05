@@ -1,4 +1,5 @@
-// Egern native API only. A fresh runtime is bound to each bundled invocation.
+// Shared HTTP/header adapter for normalized platform contexts.
+// Each bundled invocation owns its runtime; client APIs are supplied by the platform entry.
 export function headerObject(headers = {}) {
     const result = {};
     const add = (name, value) => {
@@ -47,7 +48,7 @@ export function createRuntime(ctx) {
             const body = request.bodyBytes ?? request.body;
             if (body !== undefined && body !== null) nativeOptions.body = body instanceof ArrayBuffer ? new Uint8Array(body) : body;
         }
-        if (typeof ctx.http?.[method] !== "function") throw new TypeError(`Unsupported Egern HTTP method: ${method}`);
+        if (typeof ctx.http?.[method] !== "function") throw new TypeError(`Unsupported HTTP method: ${method}`);
         return ctx.http[method](request.url, nativeOptions);
     }
     return {

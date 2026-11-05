@@ -1,16 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {localParameters} from '../src/egern/entry/parameters.mjs';
+import {localParameters} from '../src/wk3/parameters.mjs';
+import {groups} from '../src/wk3/routes.mjs';
 import {release} from './build-wk3-modules.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-export const localScriptGroups = [
- { type:'http_response', name:'WeatherKit.api.availability.response', match:'^https://weatherkit\\.apple\\.com/api/v[12]/availability/', body:true, binary:false, file:'response' },
- { type:'http_request', name:'WeatherKit.api.airQualityScale.request', match:'^https://weatherkit\\.apple\\.com/api/v[12]/airQualityScale/', body:false, binary:false, file:'request' },
- { type:'http_request', name:'WeatherKit.api.weatherAlerts.html.request', match:'^https://weatherkit\\.apple\\.com/api/v[12]/weatherAlerts\\?(?:[^#]*&)?ids=[a-zA-Z0-9][a-zA-Z0-9_-]*-[0-9]{9}(?:&|$)', body:false, binary:false, file:'request' },
- { type:'http_request', name:'WeatherKit.api.weatherAlerts.api.request', match:'^https://weatherkit\\.apple\\.com/api/v[12]/weatherAlerts\\?(?:[^#]*&)?ids=(?:wk3_[^&#]*|-?[0-9]+(?:\\.[0-9]+)?,-?[0-9]+(?:\\.[0-9]+)?)(?:&|$)', body:false, binary:false, file:'request' },
- { type:'http_response', name:'WeatherKit.api.weather.response', match:'^https://weatherkit\\.apple\\.com/api/v[23]/weather/', body:true, binary:true, file:'response' },
-];
+export const localScriptGroups = groups.map(g=>({
+ type: `http_${g.stage}`, name: `WeatherKit.api.${g.name}`,
+ match: g.pattern.replace('^https?:','^https:').replaceAll('\\/', '/'),
+ body: Boolean(g.body), binary: Boolean(g.binary), file: g.stage,
+}));
 export function renderLocalModule({version} = {}){
  const template=fs.readFileSync(path.join(root,'template/egern.wk3.handlebars'),'utf8');
  const q=JSON.stringify;

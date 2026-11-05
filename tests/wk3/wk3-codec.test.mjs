@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Builder, ByteBuffer } from "flatbuffers";
-import { WK3_CODECS, WK3_ROOT_SLOTS, decodeWK3DataSet, encodeAirQuality, decodeAirQuality, WK3AirQualityTable } from "../../src/egern/wk3/class/WeatherKit3.mjs";
+import { WK3_CODECS, WK3_ROOT_SLOTS, decodeWK3DataSet, encodeAirQuality, decodeAirQuality, WK3AirQualityTable } from "../../src/wk3/class/WeatherKit3.mjs";
 
 // Synthetic only. No HAR bytes, provider URLs, coordinates or authorization.
 function finish(builder, offset) { builder.finish(offset); return builder.asUint8Array(); }

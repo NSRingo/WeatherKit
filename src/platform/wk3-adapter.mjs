@@ -1,4 +1,4 @@
-import { localParameters } from "../egern/entry/parameters.mjs";
+import { localParameters } from "../wk3/parameters.mjs";
 
 export async function runPlatform(handler, stage, globals = globalThis, platformOverride) {
     const platform = platformOverride ?? (typeof globals.$platform === "string" ? globals.$platform : "generic");

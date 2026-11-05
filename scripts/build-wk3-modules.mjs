@@ -1,19 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { localParameters } from '../src/egern/entry/parameters.mjs';
+import { localParameters } from '../src/wk3/parameters.mjs';
+import { groups } from '../src/wk3/routes.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const parameters = localParameters;
 export const platforms = { surge: 'sgmodule', loon: 'lpx', stash: 'stoverride', quantumultx: 'snippet' };
 export const release = version => `https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v${version}`;
-export const groups = [
-    { name: 'availability.response', pattern: String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/availability\/`, stage: 'response', body: true },
-    { name: 'airQualityScale.request', pattern: String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/airQualityScale\/`, stage: 'request' },
-    { name: 'weatherAlerts.html.request', pattern: String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/weatherAlerts\?(?:[^#]*&)?ids=(?!wk3_)[a-zA-Z0-9][a-zA-Z0-9_-]*-[0-9]{9}(?:&|$)`, stage: 'request', echo: true },
-    { name: 'weatherAlerts.api.request', pattern: String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/weatherAlerts\?(?:[^#]*&)?ids=(?:wk3_[^&#]*|-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?)(?:&|$)`, stage: 'request', echo: true },
-    { name: 'weather.response', pattern: String.raw`^https?:\/\/weatherkit\.apple\.com\/api\/v[23]\/weather\/`, stage: 'response', body: true, binary: true },
-];
+export { groups } from '../src/wk3/routes.mjs';
 const label = group => `WeatherKit.api.${group.name}`;
 const script = (group, platform) => `wk3-${platform}-${group.stage}.bundle.js`;
 const url = (group, version, platform) => `${release(version)}/${script(group, platform)}`;

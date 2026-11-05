@@ -1,9 +1,9 @@
 import { configuration } from "./index.mjs";
-import { webFetch } from "egern:runtime";
-import WeatherAlerts from "../wk3/class/WeatherAlerts.mjs";
-import AirQualityScale from "../wk3/class/AirQualityScale.mjs";
-import { headerObject, responseHeaders } from "./runtime.mjs";
-import { isNativeAlertDetailsID, resolveNativeAlertDetails } from "../wk3/class/NativeAlertDetails.mjs";
+import { webFetch } from "wk3:runtime";
+import WeatherAlerts from "../class/WeatherAlerts.mjs";
+import AirQualityScale from "../class/AirQualityScale.mjs";
+import { headerObject, responseHeaders } from "../runtime.mjs";
+import { isNativeAlertDetailsID, resolveNativeAlertDetails } from "../class/NativeAlertDetails.mjs";
 
 export async function handleRequest(ctx) {
     const url = new URL(ctx.request.url);
