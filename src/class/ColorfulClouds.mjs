@@ -1,14 +1,18 @@
-import { Console, fetch, Lodash as _ } from "@nsnanocat/util";
-import Weather from "./Weather.mjs";
+// Modified by hhhoratioxu, 2026-10-19: bounded request coalescing and short-lived response caching.
+import { Console } from "@nsnanocat/util";
+import fetch from "../function/fetchProvider.mjs";
+import providerNameToLogo from "../function/providerNameToLogo.mjs";
 import AirQuality from "./AirQuality.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
-import providerNameToLogo from "../function/providerNameToLogo.mjs";
+import ProviderRequestCache, { providerErrorCode, readProviderJSON } from "./ProviderRequestCache.mjs";
+import Weather from "./Weather.mjs";
 
 export default class ColorfulClouds {
-    constructor(parameters, token) {
+    constructor(parameters, token, requestCache = new ProviderRequestCache()) {
+        this.#requests = requestCache;
         this.Name = "ColorfulClouds";
         this.Version = "4.3.0";
-        Console.log(`🟧 ${this.Name} v${this.Version}`);
+        Console.info(`🟧 ${this.Name} v${this.Version}`);
         this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
         this.headers = { Referer: "https://caiyunapp.com/" };
         this.token = token;
@@ -27,8 +31,26 @@ export default class ColorfulClouds {
 
     #cache = {
         alert: {},
-        realtime: {},
     };
+    #requests;
+
+    #Fetch(request, kind) {
+        const product = new URL(request.url).pathname.split("/").at(-1);
+        return this.#requests.fetch(typeof $loon === "string" ? { ...request, timeout: request.timeout ?? 5000 } : request, {
+            fetcher: fetch,
+            includeJSON: true,
+            partition: [this.Name, this.version, this.language, this.country],
+            product,
+            group: [this.latitude, this.longitude, this.country],
+            kind: kind ?? (product === "minutely" ? "minutely" : /hourly|daily/.test(product) ? "forecast" : product === "location" ? "alerts" : "current"),
+            maximumTTLSeconds: product === "minutely" ? 30 : 300,
+            validate: body => {
+                if (product === "location") return !body?.error && Array.isArray(body?.alerts);
+                const result = body?.result;
+                return body?.status === "ok" && result?.[product]?.status === "ok" && (product !== "realtime" || kind !== "alerts" || (result.alert?.status === "ok" && Array.isArray(result.alert.content)));
+            },
+        });
+    }
 
     #Config = {
         Language: {
@@ -206,25 +228,20 @@ export default class ColorfulClouds {
         },
     };
 
-    async #RealTime() {
+    async #RealTime(kind = "current") {
         Console.info("☑️ RealTime");
-
-        if (this.#cache.realtime?.result?.realtime?.status === "ok") {
-            Console.info("✅ RealTime", "Using cache");
-            return this.#cache.realtime;
-        }
+        this.#cache.alert = {};
 
         const request = {
             url: `${this.endpoint}/realtime?lang=${this.language}&alert=true`,
             headers: this.headers,
         };
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request, kind).then(response => readProviderJSON(response));
             switch (body?.status) {
                 case "ok": {
                     switch (body?.result?.realtime?.status) {
                         case "ok": {
-                            this.#cache.realtime = body;
                             break;
                         }
                         case "error":
@@ -248,7 +265,7 @@ export default class ColorfulClouds {
                     throw Error(JSON.stringify(body ?? {}));
             }
         } catch (error) {
-            Console.error(`RealTime: ${error}`);
+            Console.error(`RealTime: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
             Console.info("✅ RealTime");
@@ -270,7 +287,7 @@ export default class ColorfulClouds {
         };
         let forecastNextHour;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (body?.status) {
                 case "ok":
                     switch (body?.result?.minutely?.status) {
@@ -331,7 +348,7 @@ export default class ColorfulClouds {
                     throw Error(JSON.stringify(body ?? {}));
             }
         } catch (error) {
-            Console.error(`Minutely: ${error}`);
+            Console.error(`Minutely: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
             Console.info("✅ Minutely");
@@ -349,6 +366,7 @@ export default class ColorfulClouds {
         Console.info("☑️ WeatherAlert");
         const failedWeatherAlerts = {
             metadata: {
+                temporarilyUnavailable: true,
                 attributionUrl: "https://www.caiyunapp.com/h5",
             },
             detailsUrl: `https://weatherkit.apple.com/alertDetails/index.html?ids=${this.latitude},${this.longitude}&lang=${encodeURIComponent(this.weatherKitLanguage)}&party=ColorfulClouds`,
@@ -358,11 +376,12 @@ export default class ColorfulClouds {
         };
         let weatherAlerts = failedWeatherAlerts;
         try {
-            await this.#RealTime();
+            await this.#RealTime("alerts");
             if (!Array.isArray(this.#cache.alert?.content)) throw Error(JSON.stringify(this.#cache.alert));
             weatherAlerts = { ...failedWeatherAlerts, ...this.#CreateWeatherAlerts(this.#cache.alert) };
+            if (!weatherAlerts.metadata?.temporarilyUnavailable || weatherAlerts !== failedWeatherAlerts) weatherAlerts.metadata = { ...weatherAlerts.metadata, temporarilyUnavailable: false };
         } catch (error) {
-            Console.error(`WeatherAlert: ${error}`);
+            Console.error(`WeatherAlert: ${providerErrorCode(error)}`);
         } finally {
             Console.info("✅ WeatherAlert");
         }
@@ -378,6 +397,7 @@ export default class ColorfulClouds {
         Console.info("☑️ WeatherAlertV3CAP");
         const failedWeatherAlerts = {
             metadata: {
+                temporarilyUnavailable: true,
                 attributionUrl: "https://www.caiyunapp.com/h5",
             },
             detailsUrl: `https://weatherkit.apple.com/alertDetails/index.html?ids=${this.latitude},${this.longitude}&lang=${encodeURIComponent(this.weatherKitLanguage)}&party=ColorfulClouds`,
@@ -396,16 +416,16 @@ export default class ColorfulClouds {
         };
         let weatherAlerts = failedWeatherAlerts;
         try {
-            const response = await fetch(request);
-            const body = JSON.parse(response?.body ?? "{}");
+            const response = await this.#Fetch(request);
+            const body = readProviderJSON(response);
             if (response?.ok === false) {
                 Console.warn("WeatherAlertV3CAP", `upstreamStatus: ${response.statusCode ?? response.status}`);
                 return failedWeatherAlerts;
             }
             if (!Array.isArray(body?.alerts)) throw Error(JSON.stringify(body?.error ?? body?.reason ?? body?.code ?? body));
-            weatherAlerts = { ...failedWeatherAlerts, ...this.#CreateWeatherAlertsV3CAP(body) };
+            weatherAlerts = { ...failedWeatherAlerts, ...this.#CreateWeatherAlertsV3CAP(body), metadata: { ...failedWeatherAlerts.metadata, temporarilyUnavailable: false } };
         } catch (error) {
-            Console.error(`WeatherAlertV3CAP: ${error}`);
+            Console.error(`WeatherAlertV3CAP: ${providerErrorCode(error)}`);
         } finally {
             Console.info("✅ WeatherAlertV3CAP");
         }
@@ -420,7 +440,7 @@ export default class ColorfulClouds {
         };
         if (begin) request.url += `&begin=${begin}`;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (body?.status) {
                 case "ok":
                     switch (body?.result?.hourly?.status) {
@@ -439,7 +459,7 @@ export default class ColorfulClouds {
                     throw Error(JSON.stringify(body ?? {}));
             }
         } catch (error) {
-            Console.error(`Hourly: ${error}`);
+            Console.error(`Hourly: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`airQuality: ${JSON.stringify(this.airQuality, null, 2)}`);
             Console.info("✅ Hourly");
@@ -456,7 +476,7 @@ export default class ColorfulClouds {
         if (begin) request.url += `&begin=${begin}`;
         let forecastDaily;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (body?.status) {
                 case "ok":
                     switch (body?.result?.daily?.status) {
@@ -519,7 +539,7 @@ export default class ColorfulClouds {
                                     daytimeForecast: {
                                         forecastStart: timeStamp + 8 * 3600, // 8 hours
                                         forecastEnd: timeStamp + 8 * 3600 + 12 * 3600, // 8 + 12 hours
-                                        cloudCover: body?.result?.daily?.cloudrate?.[i]?.avg,
+                                        cloudCover: Math.round(body?.result?.daily?.cloudrate?.[i]?.avg * 100),
                                         // cloudCoverHighAltPct: 0, // Not given
                                         // cloudCoverLowAltPct: 0, // Not given
                                         // cloudCoverMidAltPct: 0, // Not given
@@ -543,7 +563,7 @@ export default class ColorfulClouds {
                                     overnightForecast: {
                                         forecastStart: timeStamp + 20 * 3600, // 20 hours
                                         forecastEnd: timeStamp + 20 * 3600 + 12 * 3600, // 20 + 12 hours
-                                        cloudCover: body?.result?.daily?.cloudrate?.[i]?.avg,
+                                        cloudCover: Math.round(body?.result?.daily?.cloudrate?.[i]?.avg * 100),
                                         // cloudCoverHighAltPct: 0, // Not given
                                         // cloudCoverLowAltPct: 0, // Not given
                                         // cloudCoverMidAltPct: 0, // Not given
@@ -579,7 +599,7 @@ export default class ColorfulClouds {
                     throw Error(JSON.stringify(body ?? {}));
             }
         } catch (error) {
-            Console.error(`Daily: ${error}`);
+            Console.error(`Daily: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`Daily: ${JSON.stringify(Daily, null, 2)}`);
             Console.info("✅ Daily");
@@ -787,7 +807,7 @@ export default class ColorfulClouds {
     async YesterdayAirQuality(useUsa = true) {
         Console.info("☑️ YesterdayAirQuality");
 
-        const yesterdayHourly = await this.#Hourly(1, Math.trunc((Date.now() - 864e5) / 1000));
+        const yesterdayHourly = await this.#Hourly(1, Math.floor(Date.now() / 3600000) * 3600 - 86400);
         const scale = useUsa ? AirQuality.Config.Scales.EPA_NowCast : AirQuality.Config.Scales.HJ6332012;
         const particularAirQuality = {
             previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
@@ -839,7 +859,7 @@ export default class ColorfulClouds {
         return {
             metadata: this.#Metadata(hourly.result.server_time, hourly.location),
             hours: Array.from({ length: hourly.result.hourly.skycon.length }, (_, i) => ({
-                cloudCover: hourly.result.hourly.cloudrate[i].value,
+                cloudCover: Math.round(hourly.result.hourly.cloudrate[i].value * 100),
                 // cloudCoverHighAltPct: 0, // Not given
                 // cloudCoverLowAltPct: 0, // Not given
                 // cloudCoverMidAltPct: 0, // Not given

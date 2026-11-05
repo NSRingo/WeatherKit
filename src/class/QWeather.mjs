@@ -1,16 +1,21 @@
-import { Lodash as _, Console, fetch, time } from "@nsnanocat/util";
+// Modified by hhhoratioxu, 2026-10-19: bounded request coalescing and short-lived response caching.
+import { Lodash as _, Console, time } from "@nsnanocat/util";
 import AirQuality from "../class/AirQuality.mjs";
+import fetch from "../function/fetchProvider.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
+import utf8Length from "../function/utf8Length.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
+import ProviderRequestCache, { providerErrorCode, readProviderJSON } from "./ProviderRequestCache.mjs";
 import Weather from "./Weather.mjs";
 
 export default class QWeather {
     static #MaximumWeatherAlertPageSize = 2 * 1024 * 1024;
 
-    constructor(parameters, token, host = "devapi.qweather.com") {
+    constructor(parameters, token, host = "devapi.qweather.com", requestCache = new ProviderRequestCache()) {
+        this.#requests = requestCache;
         this.Name = "QWeather";
         this.Version = "5.3.1";
-        Console.log(`🟧 ${this.Name} v${this.Version}`);
+        Console.info(`🟧 ${this.Name} v${this.Version}`);
         this.endpoint = `https://${host}`;
         this.headers = { "X-QW-Api-Key": token };
         this.version = parameters.version;
@@ -26,9 +31,34 @@ export default class QWeather {
         this.weatherKitLanguage = String(parameters.weatherKitLanguage ?? parameters.language ?? "").trim() || "zh-CN";
     }
 
-    #cache = {
-        airQualityCurrent: {},
-    };
+    #requests;
+
+    #Fetch(request) {
+        const path = new URL(request.url).pathname;
+        return this.#requests.fetch(typeof $loon === "string" ? { ...request, timeout: request.timeout ?? 5000 } : request, {
+            fetcher: fetch,
+            includeJSON: true,
+            partition: [this.Name, this.version, this.language, this.country],
+            product: path,
+            group: [this.latitude, this.longitude, this.country],
+            kind: /weatheralert/.test(path) ? "alerts" : /minutely/.test(path) ? "minutely" : /\/weather\/\d+[hd]$/.test(path) ? "forecast" : "current",
+            maximumTTLSeconds: path.includes("/minutely/") ? 30 : 300,
+            validate: body => {
+                if (body?.error) return false;
+                if (path.startsWith("/weatheralert/")) return Boolean(body?.metadata) && Array.isArray(body?.alerts);
+                if (path.startsWith("/airquality/")) return Array.isArray(body?.pollutants) && Array.isArray(body?.indexes) && body.indexes.some(index => typeof index?.code === "string" && index.aqi !== null && String(index.aqi).trim() !== "" && Number.isFinite(Number(index.aqi)));
+                if (body?.code !== "200") return false;
+                if (path.startsWith("/geo/")) return Array.isArray(body.location) && body.location.length > 0;
+                if (path.includes("/minutely/")) return Array.isArray(body.minutely) && body.minutely.length > 0;
+                if (path.endsWith("/historical/air")) return Array.isArray(body.airHourly) && body.airHourly.length > 0;
+                if (path.endsWith("/weather/now")) return body.now?.temp !== undefined && body.now.temp !== null && String(body.now.temp).trim() !== "" && Number.isFinite(Number(body.now.temp));
+                if (path.endsWith("/now")) return Boolean(body.now && typeof body.now === "object");
+                if (/\/weather\/\d+h$/.test(path)) return Array.isArray(body.hourly) && body.hourly.length > 0;
+                if (/\/weather\/\d+d$/.test(path)) return Array.isArray(body.daily) && body.daily.length > 0;
+                return false;
+            },
+        });
+    }
 
     #Config = {
         Language: {
@@ -77,20 +107,173 @@ export default class QWeather {
             // QWeather 没有提供 CAP category，本表按官方事件名称映射；具体类别必须先于 Met 匹配。
             // QWeather does not provide CAP category; this table maps official event names, with specific categories matched before Met.
             EventCategories: [
-                { category: "Geo", codes: [[1013, 1013], [1037, 1037], [1241, 1251], [1603, 1603], [2032, 2032], [2159, 2159], [2163, 2163], [2320, 2323], [2348, 2348], [2363, 2363], [2373, 2373], [2378, 2378], [2399, 2400], [3140, 3140], [3144, 3144]] },
-                { category: "Safety", codes: [[1044, 1045], [1218, 1218], [2419, 2420], [2713, 2713]] },
+                {
+                    category: "Geo",
+                    codes: [
+                        [1013, 1013],
+                        [1037, 1037],
+                        [1241, 1251],
+                        [1603, 1603],
+                        [2032, 2032],
+                        [2159, 2159],
+                        [2163, 2163],
+                        [2320, 2323],
+                        [2348, 2348],
+                        [2363, 2363],
+                        [2373, 2373],
+                        [2378, 2378],
+                        [2399, 2400],
+                        [3140, 3140],
+                        [3144, 3144],
+                    ],
+                },
+                {
+                    category: "Safety",
+                    codes: [
+                        [1044, 1045],
+                        [1218, 1218],
+                        [2419, 2420],
+                        [2713, 2713],
+                    ],
+                },
                 { category: "Security", codes: [] },
                 { category: "Rescue", codes: [] },
-                { category: "Fire", codes: [[1025, 1026], [1041, 1041], [1077, 1077], [1084, 1084], [1605, 1605], [2005, 2005], [2132, 2132], [2158, 2158], [2192, 2192], [2207, 2207], [2302, 2302], [2349, 2349], [2414, 2414], [2743, 2743], [3139, 3139]] },
-                { category: "Health", codes: [[1024, 1024], [1042, 1042], [1066, 1066], [1068, 1069], [1071, 1072], [1082, 1082], [1210, 1210], [2851, 2851]] },
-                { category: "Env", codes: [[1029, 1029], [1032, 1032], [1067, 1067], [1074, 1074], [1217, 1217], [1271, 1274], [2202, 2202], [2374, 2374], [2389, 2389], [2413, 2413], [2527, 2527]] },
-                { category: "Transport", codes: [[1021, 1021], [1046, 1046], [1057, 1057], [2077, 2078], [2300, 2301], [2328, 2328], [2360, 2360], [2375, 2376], [2385, 2388], [2415, 2415], [2554, 2554], [2722, 2723], [2791, 2797]] },
-                { category: "Infra", codes: [[1081, 1081], [1203, 1204], [1216, 1216], [1221, 1221]] },
+                {
+                    category: "Fire",
+                    codes: [
+                        [1025, 1026],
+                        [1041, 1041],
+                        [1077, 1077],
+                        [1084, 1084],
+                        [1605, 1605],
+                        [2005, 2005],
+                        [2132, 2132],
+                        [2158, 2158],
+                        [2192, 2192],
+                        [2207, 2207],
+                        [2302, 2302],
+                        [2349, 2349],
+                        [2414, 2414],
+                        [2743, 2743],
+                        [3139, 3139],
+                    ],
+                },
+                {
+                    category: "Health",
+                    codes: [
+                        [1024, 1024],
+                        [1042, 1042],
+                        [1066, 1066],
+                        [1068, 1069],
+                        [1071, 1072],
+                        [1082, 1082],
+                        [1210, 1210],
+                        [2851, 2851],
+                    ],
+                },
+                {
+                    category: "Env",
+                    codes: [
+                        [1029, 1029],
+                        [1032, 1032],
+                        [1067, 1067],
+                        [1074, 1074],
+                        [1217, 1217],
+                        [1271, 1274],
+                        [2202, 2202],
+                        [2374, 2374],
+                        [2389, 2389],
+                        [2413, 2413],
+                        [2527, 2527],
+                    ],
+                },
+                {
+                    category: "Transport",
+                    codes: [
+                        [1021, 1021],
+                        [1046, 1046],
+                        [1057, 1057],
+                        [2077, 2078],
+                        [2300, 2301],
+                        [2328, 2328],
+                        [2360, 2360],
+                        [2375, 2376],
+                        [2385, 2388],
+                        [2415, 2415],
+                        [2554, 2554],
+                        [2722, 2723],
+                        [2791, 2797],
+                    ],
+                },
+                {
+                    category: "Infra",
+                    codes: [
+                        [1081, 1081],
+                        [1203, 1204],
+                        [1216, 1216],
+                        [1221, 1221],
+                    ],
+                },
                 { category: "CBRNE", codes: [] },
-                { category: "Other", codes: [[2166, 2166], [3106, 3106], [3147, 3147], [9999, 9999]] },
+                {
+                    category: "Other",
+                    codes: [
+                        [2166, 2166],
+                        [3106, 3106],
+                        [3147, 3147],
+                        [9999, 9999],
+                    ],
+                },
                 {
                     category: "Met",
-                    codes: [[1001, 1089], [1201, 1221], [1241, 1251], [1271, 1274], [1601, 1610], [1701, 1710], [1801, 1805], [2001, 2007], [2029, 2033], [2050, 2054], [2070, 2085], [2100, 2109], [2111, 2111], [2120, 2135], [2150, 2150], [2152, 2168], [2190, 2193], [2200, 2205], [2207, 2221], [2300, 2309], [2311, 2328], [2330, 2333], [2341, 2341], [2343, 2343], [2345, 2346], [2348, 2400], [2409, 2409], [2411, 2426], [2501, 2502], [2521, 2532], [2550, 2554], [2581, 2581], [2601, 2620], [2641, 2641], [2713, 2713], [2722, 2723], [2743, 2743], [2749, 2749], [2751, 2753], [2755, 2756], [2791, 2797], [2801, 2804], [2839, 2853], [2873, 2874], [3101, 3107], [3131, 3148]],
+                    codes: [
+                        [1001, 1089],
+                        [1201, 1221],
+                        [1241, 1251],
+                        [1271, 1274],
+                        [1601, 1610],
+                        [1701, 1710],
+                        [1801, 1805],
+                        [2001, 2007],
+                        [2029, 2033],
+                        [2050, 2054],
+                        [2070, 2085],
+                        [2100, 2109],
+                        [2111, 2111],
+                        [2120, 2135],
+                        [2150, 2150],
+                        [2152, 2168],
+                        [2190, 2193],
+                        [2200, 2205],
+                        [2207, 2221],
+                        [2300, 2309],
+                        [2311, 2328],
+                        [2330, 2333],
+                        [2341, 2341],
+                        [2343, 2343],
+                        [2345, 2346],
+                        [2348, 2400],
+                        [2409, 2409],
+                        [2411, 2426],
+                        [2501, 2502],
+                        [2521, 2532],
+                        [2550, 2554],
+                        [2581, 2581],
+                        [2601, 2620],
+                        [2641, 2641],
+                        [2713, 2713],
+                        [2722, 2723],
+                        [2743, 2743],
+                        [2749, 2749],
+                        [2751, 2753],
+                        [2755, 2756],
+                        [2791, 2797],
+                        [2801, 2804],
+                        [2839, 2853],
+                        [2873, 2874],
+                        [3101, 3107],
+                        [3131, 3148],
+                    ],
                 },
             ],
         },
@@ -100,7 +283,7 @@ export default class QWeather {
         },
     };
 
-    static async GetLocationsGrid(qweatherCache, setCache) {
+    static async GetLocationsGrid(qweatherCache, setCache, runtime = new ProviderRequestCache()) {
         Console.info("☑️ GetLocationsGrid");
         const locationsGrid = qweatherCache?.locationsGrid;
         // cache within 30 days
@@ -109,10 +292,13 @@ export default class QWeather {
             return locationsGrid.data;
         } else {
             Console.info("⚠️ GetLocationsGrid", "Cache not found or stale, fetching...");
-            const response = await fetch({
-                headers: locationsGrid?.etag ? { "If-None-Match": locationsGrid?.etag } : undefined,
-                url: "https://raw.githubusercontent.com/NSRingo/QWeather-Location-Grid/refs/heads/main/data/qweather-china-city-list-grid.json",
-            });
+            const response = await runtime.fetch(
+                {
+                    headers: locationsGrid?.etag ? { "If-None-Match": locationsGrid?.etag } : undefined,
+                    url: "https://raw.githubusercontent.com/NSRingo/QWeather-Location-Grid/refs/heads/main/data/qweather-china-city-list-grid.json",
+                },
+                { fetcher: fetch, cacheable: false, format: "text", allowNotModified: true, validate: () => true, maximumResponseCharacters: 2 * 1024 * 1024 },
+            );
 
             if (response.status === 304) {
                 Console.info("✅ GetLocationsGrid", "Cache not modified");
@@ -120,7 +306,7 @@ export default class QWeather {
                 return locationsGrid.data;
             }
 
-            const newLocationsGrid = JSON.parse(response.body);
+            const newLocationsGrid = readProviderJSON(response);
             setCache({
                 ...qweatherCache,
                 locationsGrid: { etag: response.headers.ETag, lastUpdated: Date.now(), data: newLocationsGrid },
@@ -323,48 +509,43 @@ export default class QWeather {
      * @param {Record<string, string | string[] | undefined>} requestHeaders 原请求头 / Original request headers.
      * @returns {Promise<{alerts: Array<object>, areaName: string, source: string}>} 来源集合 / Source collection.
      */
-    static async FetchWeatherAlertPage(identifier, language = "zh-CN", requestHeaders = {}) {
+    static async FetchWeatherAlertPage(identifier, language = "zh-CN", requestHeaders = {}, runtime = new ProviderRequestCache()) {
         const sourceUrl = QWeather.BuildWeatherAlertPageURL(identifier, language);
         const normalizedHeaders = Object.fromEntries(Object.entries(requestHeaders).map(([key, value]) => [key.toLowerCase(), value]));
-        const sourceHeaders = {
-            Accept: "text/html,application/xhtml+xml",
-            "Accept-Language": normalizedHeaders["accept-language"] ?? language,
-            Referer: "https://www.qweather.com/",
-        };
+        const sourceHeaders = { Accept: "text/html,application/xhtml+xml", "Accept-Language": normalizedHeaders["accept-language"] ?? language, Referer: "https://www.qweather.com/" };
         if (normalizedHeaders["user-agent"]) sourceHeaders["User-Agent"] = normalizedHeaders["user-agent"];
-
-        Console.info("☑️ QWeather.FetchWeatherAlertPage", `url: ${sourceUrl}`, `language: ${language}`);
-        const sourceResponse = await fetch({
-            url: sourceUrl.toString(),
-            headers: sourceHeaders,
-            "auto-cookie": false,
-        });
-        const contentType = sourceResponse.headers?.["Content-Type"] ?? sourceResponse.headers?.["content-type"] ?? "";
-        Console.info("QWeather.FetchWeatherAlertPage", `status: ${sourceResponse.statusCode ?? sourceResponse.status}`, `contentType: ${contentType || "undefined"}`);
-        if (!sourceResponse.ok) {
-            Console.warn("QWeather.FetchWeatherAlertPage", `upstreamStatus: ${sourceResponse.statusCode ?? sourceResponse.status}`);
-            return { alerts: [], areaName: "", source: "QWeather" };
+        const unavailable = { alerts: [], areaName: "", source: "QWeather", pageValid: false };
+        let response;
+        try {
+            response = await runtime.fetch(
+                { url: sourceUrl.toString(), headers: sourceHeaders, "auto-cookie": false },
+                {
+                    partition: ["QWeatherWeb", language],
+                    includeJSON: true,
+                    product: "weather-alert-page.v1",
+                    kind: "alerts",
+                    maximumTTLSeconds: 30,
+                    group: [identifier],
+                    validate: body => body?.pageValid === true && Array.isArray(body.alerts) && typeof body.areaName === "string",
+                    fetcher: async request => {
+                        const source = await fetch(request);
+                        const type = String(source.headers?.["Content-Type"] ?? source.headers?.["content-type"] ?? "").toLowerCase();
+                        const html = typeof source.body === "string" ? source.body : "";
+                        if (html.length > QWeather.#MaximumWeatherAlertPageSize || utf8Length(html, QWeather.#MaximumWeatherAlertPageSize) > QWeather.#MaximumWeatherAlertPageSize) throw new RangeError("QWeather alert page is too large");
+                        const recognized = /\bc-submenu__location\b/.test(html) && /c-city-warning|暂无预警|无生效预警|No(?: active)? (?:weather )?warnings/i.test(html);
+                        const page = source.ok && type.includes("text/html") && recognized ? { ...QWeather.ExtractWeatherAlertPage(html), pageValid: true } : unavailable;
+                        // Persist only parsed alert records, not an entire HTML document.
+                        return { ...source, body: JSON.stringify(page) };
+                    },
+                },
+            );
+        } catch {
+            return { ...unavailable, unavailable: true, metadata: { temporarilyUnavailable: true } };
         }
-        if (!contentType.toLowerCase().includes("text/html")) {
-            Console.warn("QWeather.FetchWeatherAlertPage", `unexpectedContentType: ${contentType || "undefined"}`);
-            return { alerts: [], areaName: "", source: "QWeather" };
-        }
-        const html = String(sourceResponse.body ?? "");
-        const sourceSize = new TextEncoder().encode(html).byteLength;
-        Console.debug("QWeather.FetchWeatherAlertPage", `bodyBytes: ${sourceSize}`);
-        if (sourceSize > QWeather.#MaximumWeatherAlertPageSize) throw new RangeError("QWeather alert page is too large");
-
-        const extracted = QWeather.ExtractWeatherAlertPage(html);
-        Console.info("✅ QWeather.FetchWeatherAlertPage", `alerts: ${extracted.alerts.length}`, `source: ${extracted.source}`);
+        const parsed = readProviderJSON(response);
+        if (!response.ok || parsed.pageValid !== true) return { ...unavailable, unavailable: true, metadata: { temporarilyUnavailable: true } };
         const areaId = identifier.match(/-(\d+)$/)?.[1];
-        return {
-            ...extracted,
-            alerts: extracted.alerts.map(alert => ({
-                ...alert,
-                ...(areaId && !alert.areaId ? { areaId } : {}),
-                ...(extracted.areaName && !alert.areaName ? { areaName: extracted.areaName } : {}),
-            })),
-        };
+        return { alerts: parsed.alerts.map(alert => ({ ...alert, ...(areaId && !alert.areaId ? { areaId } : {}), ...(parsed.areaName && !alert.areaName ? { areaName: parsed.areaName } : {}) })), areaName: parsed.areaName, source: parsed.source, metadata: { temporarilyUnavailable: false } };
     }
 
     async GeoAPI(path = "city/lookup") {
@@ -375,7 +556,7 @@ export default class QWeather {
         };
         let metadata;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (body?.code) {
                 case "200":
                     metadata = {
@@ -390,9 +571,9 @@ export default class QWeather {
                     throw Error(body?.code);
             }
         } catch (error) {
-            Console.error(`GeoAPI: ${error}`);
+            Console.error(`GeoAPI: ${providerErrorCode(error)}`);
         } finally {
-            Console.debug(`metadata: ${JSON.stringify(metadata, null, 2)}`);
+            if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug(`metadata: ${JSON.stringify(metadata, null, 2)}`);
             Console.info("✅ GeoAPI");
         }
         return metadata;
@@ -407,6 +588,7 @@ export default class QWeather {
         Console.info("☑️ WeatherAlert");
         const failedWeatherAlerts = {
             metadata: {
+                temporarilyUnavailable: true,
                 attributionUrl: "https://developer.qweather.com/attribution.html",
             },
             detailsUrl: `https://weatherkit.apple.com/alertDetails/index.html?ids=${this.latitude},${this.longitude}&lang=${encodeURIComponent(this.weatherKitLanguage)}&party=QWeather`,
@@ -423,16 +605,17 @@ export default class QWeather {
         };
         let weatherAlerts = failedWeatherAlerts;
         try {
-            const response = await fetch(request);
-            const body = JSON.parse(response?.body ?? "{}");
+            const response = await this.#Fetch(request);
+            const body = readProviderJSON(response);
             if (response?.ok === false) {
                 Console.warn("WeatherAlert", `upstreamStatus: ${response.statusCode ?? response.status}`);
                 return failedWeatherAlerts;
             }
             if (!body?.metadata || !Array.isArray(body?.alerts)) throw Error(JSON.stringify(body?.error ?? body?.code ?? body));
             weatherAlerts = { ...failedWeatherAlerts, ...this.#CreateWeatherAlerts(body) };
+            if (!weatherAlerts.metadata?.temporarilyUnavailable || weatherAlerts !== failedWeatherAlerts) weatherAlerts.metadata = { ...weatherAlerts.metadata, temporarilyUnavailable: false };
         } catch (error) {
-            Console.error(`WeatherAlert: ${error}`);
+            Console.error(`WeatherAlert: ${providerErrorCode(error)}`);
         } finally {
             Console.info("✅ WeatherAlert");
         }
@@ -454,6 +637,7 @@ export default class QWeather {
         }
         const failedWeatherAlerts = {
             metadata: {
+                temporarilyUnavailable: true,
                 attributionUrl: String(url),
             },
             detailsUrl: QWeather.BuildAppleAlertDetailsURL(identifier, this.weatherKitLanguage),
@@ -463,9 +647,11 @@ export default class QWeather {
         };
         let weatherAlerts = failedWeatherAlerts;
         try {
-            weatherAlerts = { ...failedWeatherAlerts, ...(await QWeather.FetchWeatherAlertPage(identifier, this.weatherKitLanguage)) };
+            const source = await QWeather.FetchWeatherAlertPage(identifier, this.weatherKitLanguage, {}, this.#requests);
+            weatherAlerts = { ...failedWeatherAlerts, ...source, metadata: { ...failedWeatherAlerts.metadata, ...source.metadata } };
+            if (weatherAlerts !== failedWeatherAlerts && !weatherAlerts.unavailable) weatherAlerts.metadata = { ...weatherAlerts.metadata, temporarilyUnavailable: false };
         } catch (error) {
-            Console.error(`WeatherAlertWeb: ${error}`);
+            Console.error(`WeatherAlertWeb: ${providerErrorCode(error)}`);
         } finally {
             Console.info("✅ WeatherAlertWeb");
         }
@@ -480,7 +666,7 @@ export default class QWeather {
         };
         let currentWeather;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (body?.code) {
                 case "200": {
                     const timeStamp = (Date.now() / 1000) | 0;
@@ -524,7 +710,7 @@ export default class QWeather {
                     throw Error(body?.code);
             }
         } catch (error) {
-            Console.error(`WeatherNow: ${error}`);
+            Console.error(`WeatherNow: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`currentWeather: ${JSON.stringify(currentWeather, null, 2)}`);
             Console.info("✅ WeatherNow");
@@ -540,7 +726,7 @@ export default class QWeather {
         };
         let airQuality;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (body?.code) {
                 case "200": {
                     const timeStamp = (Date.now() / 1000) | 0;
@@ -581,7 +767,7 @@ export default class QWeather {
                     throw Error(body?.code);
             }
         } catch (error) {
-            Console.error(`AirNow: ${error}`);
+            Console.error(`AirNow: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
             Console.info("✅ AirNow");
@@ -592,27 +778,21 @@ export default class QWeather {
     async #AirQualityCurrent() {
         Console.info("☑️ AirQualityCurrent");
 
-        if (this.#cache.airQualityCurrent?.metadata?.tag && !this.#cache.airQualityCurrent?.error) {
-            Console.info("✅ AirQualityCurrent", "Using cache");
-            return this.#cache.airQualityCurrent;
-        }
-
         const request = {
             url: `${this.endpoint}/airquality/v1/current/${this.latitude}/${this.longitude}`,
             headers: this.headers,
         };
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (body?.error) {
                 case undefined: {
-                    this.#cache.airQualityCurrent = body;
                     return body;
                 }
                 default:
                     throw Error(JSON.stringify(body?.error, null, 2));
             }
         } catch (error) {
-            Console.error(`AirQualityCurrent: ${error}`);
+            Console.error(`AirQualityCurrent: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
             Console.info("✅ AirQualityCurrent");
@@ -634,7 +814,7 @@ export default class QWeather {
         };
         let forecastNextHour;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (body?.code) {
                 case "200": {
                     const timeStamp = (Date.now() / 1000) | 0;
@@ -659,7 +839,7 @@ export default class QWeather {
                         forecastEnd: 0,
                         forecastStart: minuteStemp,
                         minutes: body?.minutely
-                            ?.map((minutely, index) => {
+                            ?.map(minutely => {
                                 const minute = {
                                     perceivedPrecipitationIntensity: 0,
                                     precipitationChance: 0,
@@ -695,7 +875,7 @@ export default class QWeather {
                     throw Error(body?.code);
             }
         } catch (error) {
-            Console.error(`Minutely: ${error}`);
+            Console.error(`Minutely: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
             Console.info("✅ Minutely");
@@ -711,7 +891,7 @@ export default class QWeather {
         };
         let forecastHourly;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (body?.code) {
                 case "200": {
                     const timeStamp = (Date.now() / 1000) | 0;
@@ -774,7 +954,7 @@ export default class QWeather {
                     throw Error(body?.code);
             }
         } catch (error) {
-            Console.error(`Hourly: ${error}`);
+            Console.error(`Hourly: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`airQuality: ${JSON.stringify(forecastHourly, null, 2)}`);
             Console.info("✅ Hourly");
@@ -790,7 +970,7 @@ export default class QWeather {
         };
         let forecastDaily;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (body?.code) {
                 case "200": {
                     const timeStamp = (Date.now() / 1000) | 0;
@@ -919,7 +1099,7 @@ export default class QWeather {
                     throw Error(body?.code);
             }
         } catch (error) {
-            Console.error(`Daily: ${error}`);
+            Console.error(`Daily: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`airQuality: ${JSON.stringify(forecastDaily, null, 2)}`);
             Console.info("✅ Daily");
@@ -934,7 +1114,7 @@ export default class QWeather {
             headers: this.headers,
         };
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (body?.code) {
                 case "200": {
                     return body;
@@ -951,7 +1131,7 @@ export default class QWeather {
                     throw Error(body?.code);
             }
         } catch (error) {
-            Console.error(`HistoricalAir: ${error}`);
+            Console.error(`HistoricalAir: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
             Console.info("✅ HistoricalAir");
@@ -1051,7 +1231,7 @@ export default class QWeather {
      */
     #CreatePollutants(pollutantsObj, scaleCode) {
         Console.info("☑️ CreatePollutants");
-        Console.debug(`pollutantsObj: ${JSON.stringify(pollutantsObj)}`);
+        if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug(`pollutantsObj: ${JSON.stringify(pollutantsObj)}`);
 
         // TODO: what is ppmC? https://dev.qweather.com/docs/resource/air-info/#pollutants
         const pollutants = pollutantsObj
@@ -1086,7 +1266,7 @@ export default class QWeather {
      */
     #CreatePollutantsV7(pollutantsObj) {
         Console.info("☑️ CreatePollutantsV7");
-        Console.debug(`pollutantsObj: ${JSON.stringify(pollutantsObj)}`);
+        if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug(`pollutantsObj: ${JSON.stringify(pollutantsObj)}`);
 
         const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
         const pollutants = Object.entries(pollutantsObj)
@@ -1247,7 +1427,7 @@ export default class QWeather {
     }
 
     async YesterdayAirQuality(locationInfo) {
-        Console.info("☑️ YesterdayAirQuality", `locationInfo ${JSON.stringify(locationInfo)}`);
+        if (Console.logLevel === "INFO" || Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.info("☑️ YesterdayAirQuality", `locationInfo ${JSON.stringify(locationInfo)}`);
         const failedAirQuality = {
             metadata: this.#Metadata(undefined, undefined, true),
             categoryIndex: -1,
@@ -1278,7 +1458,7 @@ export default class QWeather {
         const pollutants = this.#CreatePollutantsV7(historicalAir.airHourly[hour]);
         Console.debug(`hour: ${hour}`, `index: ${index}`);
 
-        Console.info("✅ YesterdayAirQuality", `pollutants: ${JSON.stringify(pollutants)}`, `categoryIndex: ${categoryIndex}`);
+        if (Console.logLevel === "INFO" || Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.info("✅ YesterdayAirQuality", `pollutants: ${JSON.stringify(pollutants)}`, `categoryIndex: ${categoryIndex}`);
         return {
             metadata: this.#Metadata(historicalAir.fxLink),
             categoryIndex,

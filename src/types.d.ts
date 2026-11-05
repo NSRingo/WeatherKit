@@ -1,4 +1,16 @@
+// Modified by hhhoratioxu, 2026-10-19: provider response cache settings.
 export interface Settings {
+    RequestCache?: {
+        /** Successful provider JSON cache lifetime in seconds, 0 disables completed-response caching; maximum 300. */
+        TTL?: number | string;
+        ForecastTTL?: number | string;
+        MinutelyTTL?: number | string;
+        AlertsTTL?: number | string;
+        BudgetMs?: number | string;
+        CooldownSeconds?: number | string;
+        Diagnostics?: boolean | string;
+    };
+    Region?: { Fallback?: "Auto" | "Locale" | "CN" | "HK" | "MO" | "TW" };
     DataSets?: {
         /**
          * [数据集] 替换地区

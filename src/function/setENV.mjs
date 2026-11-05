@@ -1,3 +1,4 @@
+import { cloneWeatherProduct } from "./providerRecovery.mjs";
 import getStorage from "@nsnanocat/util/getStorage.mjs";
 import { Console, Lodash as _ } from "@nsnanocat/util";
 
@@ -11,9 +12,9 @@ import { Console, Lodash as _ } from "@nsnanocat/util";
  */
 export default function setENV(name, platforms, database) {
     Console.info("☑️ Set Environment Variables");
-    const { Settings, Caches, Configs } = getStorage(name, platforms, database);
+    const { Settings, Caches, Configs } = getStorage(name, platforms, cloneWeatherProduct(database));
     /***************** Settings *****************/
-    Console.info(`typeof Settings: ${typeof Settings}`, `Settings: ${JSON.stringify(Settings, null, 2)}`);
+    Console.info("WeatherKit settings loaded");
     string2array("DataSets");
     string2array("Weather.Replace");
     string2array("AirQuality.Current.Index.Replace");
