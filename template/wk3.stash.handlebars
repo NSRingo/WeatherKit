@@ -8,6 +8,8 @@ rules:
   - DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
   - DOMAIN,tether.edge.apple,REJECT-DROP
   - AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),REJECT-DROP
+# Stash 无插件参数选择面板；编辑首个 argument 的 JSON，YAML 锚点会将设置共享到全部五组脚本。
+__WK3_ARGUMENT_COMMENTS__
 http:
   mitm:
     - weatherkit.apple.com

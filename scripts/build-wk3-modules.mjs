@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { localParameters } from '../src/wk3/parameters.mjs';
+import { localParameters, parameterDescription } from '../src/wk3/parameters.mjs';
 import { groups } from '../src/wk3/routes.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -20,10 +20,12 @@ const expand = (text, replacements) => {
     return text;
 };
 const defaults = parameters.map(({ key, value }) => `${key}:${JSON.stringify(value)}`).join(',');
-const description = parameters.map(({ key, name, description: desc }) => `${key}: ${name}；${desc}`.replaceAll('\n', ' ')).join('\\n');
-const loonArguments = parameters.map(({ key, value, boolean, options, name, description: desc }) => {
+const descriptions = parameters.map(parameter => `${parameter.key}: ${parameter.name}；${parameterDescription(parameter)}`.replaceAll('\n', ' '));
+const description = descriptions.join('\\n');
+const loonArguments = parameters.map(parameter => {
+    const { key, value, boolean, options, name } = parameter;
     const kind = boolean ? `switch,${value}` : options ? `select,${[value, ...options.filter(v => v !== value)].map(v => JSON.stringify(v)).join(',')}` : `input,${JSON.stringify(value)}`;
-    return `${key} = ${kind},tag=${name},desc=${desc.replaceAll(/[\r\n,]/g, '，')}`;
+    return `${key} = ${kind},tag=${name},desc=${parameterDescription(parameter).replaceAll(/[\r\n,]/g, '，')}`;
 }).join('\n');
 const quoteYaml = text => `'${text.replaceAll("'", "''")}'`;
 const stashArgument = quoteYaml(JSON.stringify(Object.fromEntries(parameters.map(({ key, value }) => [key, value]))));
@@ -32,16 +34,16 @@ export function renderWK3Module(platform, version) {
     if (!Object.hasOwn(platforms, platform)) throw new Error(`Unsupported platform: ${platform}`);
     if (!/^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/.test(version)) throw new Error('Specify an explicit release version, e.g. 3.3.2');
     const template = fs.readFileSync(path.join(root, `template/wk3.${platform}.handlebars`), 'utf8');
-    const rows = groups.map(group => {
+    const rows = groups.map((group, index) => {
         const tag = label(group), target = url(group, version, platform);
         if (platform === 'surge') return `${tag} = type=http-${group.stage}, pattern=${group.pattern.includes('(?:') ? `"${group.pattern}"` : group.pattern}${group.body ? ', requires-body=1' : ''}${group.binary ? ', binary-body-mode=1' : ''}, engine=webview, script-path=${target}, argument=${surgeArgument}`;
         if (platform === 'loon') return `http-${group.stage} ${group.pattern}${group.body ? ' requires-body=1,' : ''}${group.binary ? ' binary-body-mode=1,' : ''} script-path=${target}, tag=${tag}, argument=${loonArgument}`;
-        if (platform === 'stash') return `    - match: ${quoteYaml(group.pattern)}\n      name: ${tag}\n      type: ${group.stage}${group.body ? '\n      require-body: true' : ''}${group.binary ? '\n      binary-mode: true' : ''}\n      argument: ${stashArgument}`;
+        if (platform === 'stash') return `    - match: ${quoteYaml(group.pattern)}\n      name: ${tag}\n      type: ${group.stage}${group.body ? '\n      require-body: true' : ''}${group.binary ? '\n      binary-mode: true' : ''}\n      argument: ${index === 0 ? `&wk3-arguments ${stashArgument}` : '*wk3-arguments'}`;
         const action = group.echo ? 'script-echo-response' : group.stage === 'request' ? 'script-request-header' : 'script-response-body';
         return `# ${tag}${group.binary ? ' (binary response requires device validation)' : ''}\n${group.pattern} url ${action} ${target}`;
     }).join('\n');
     const providers = groups.map(group => `  ${label(group)}:\n    url: ${url(group, version, platform)}\n    interval: 86400`).join('\n');
-    return expand(template, { VERSION: version, SCRIPTS: rows, PROVIDERS: providers, ARGUMENTS: platform === 'loon' ? loonArguments : defaults, ARGUMENT_DESC: description });
+    return expand(template, { VERSION: version, SCRIPTS: rows, PROVIDERS: providers, ARGUMENTS: platform === 'loon' ? loonArguments : defaults, ARGUMENT_DESC: description, ARGUMENT_COMMENTS: descriptions.map(line => `# ${line}`).join('\n') });
 }
 
 export function buildWK3Modules({ outdir, version } = {}) {

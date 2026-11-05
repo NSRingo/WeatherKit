@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {localParameters} from '../src/wk3/parameters.mjs';
+import {localParameters,parameterDescription} from '../src/wk3/parameters.mjs';
 import {groups} from '../src/wk3/routes.mjs';
 import {release} from './build-wk3-modules.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -14,8 +14,8 @@ export function renderLocalModule({version} = {}){
  const template=fs.readFileSync(path.join(root,'template/egern.wk3.handlebars'),'utf8');
  const q=JSON.stringify;
  const compat=Object.fromEntries(localParameters.map(p=>[p.key,p.value]));
- const schema=Object.fromEntries(localParameters.map(p=>[p.key,{name:p.name,description:p.description,default_value:p.value,...(p.boolean?{options:['true','false']}:p.options?{options:p.options}:{})}]));
- const description=localParameters.map(p=>`${p.key}: ${p.name}\n  ${p.description}`).join('\n');
+ const schema=Object.fromEntries(localParameters.map(p=>[p.key,{name:p.name,description:parameterDescription(p),default_value:p.value,...(p.boolean?{options:['true','false']}:p.options?{options:p.options}:{})}]));
+ const description=localParameters.map(p=>`${p.key}: ${p.name}\n  ${parameterDescription(p)}`).join('\n');
  // JSON objects are valid YAML. Quote individual substitution values using
  // YAML single quotes: literal double quotes in array syntax remain safe.
  let env='    env:\n';for(const p of localParameters)env+=`      ${p.key}: '{{{${p.key}}}}'\n`;

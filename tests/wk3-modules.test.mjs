@@ -106,8 +106,10 @@ for (const platform of Object.keys(platforms)) test(`${platform}: structure, fiv
         assert.equal((scripts.match(/^      type: response$/gm) ?? []).length, 2);
         assert.equal((scripts.match(/^      require-body: true$/gm) ?? []).length, 2);
         assert.equal((scripts.match(/^      binary-mode: true$/gm) ?? []).length, 1);
-        const argumentsJSON = [...scripts.matchAll(/^      argument: '([^']+)'$/gm)].map(([, value]) => JSON.parse(value));
-        assert.equal(argumentsJSON.length, 5);
+        const sharedArgument = scripts.match(/^      argument: &wk3-arguments '([^']+)'$/m);
+        assert.ok(sharedArgument, 'one editable parameter object shared by all routes');
+        assert.equal((scripts.match(/^      argument: \*wk3-arguments$/gm) ?? []).length, 4);
+        const argumentsJSON = [JSON.parse(sharedArgument[1])];
         for (const values of argumentsJSON) {
             assert.equal(Object.keys(values).length, 23);
             assert.equal(values['AirQuality.Calculate.Algorithm'], 'WAQI_InstantCast_US');
