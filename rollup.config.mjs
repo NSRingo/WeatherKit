@@ -45,4 +45,13 @@ export default [
             terser(),
         ],
     },
+    ...["request", "response", "scale"].map(name => ({
+        input: `./src/loon/${name}.js`,
+        output: { file: `./dist/${name}.loon.bundle.js`, format: "es" },
+        plugins: [
+            alias({ entries: [{ find: "@nsringo/weatherkit", replacement: path.resolve(import.meta.dirname, "node_modules/@nsringo/weatherkit/dist/index.js") }] }),
+            nodeResolve(),
+            terser(),
+        ],
+    })),
 ];
