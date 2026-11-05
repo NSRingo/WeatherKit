@@ -1,6 +1,6 @@
 #  iRingo: 🌤 WeatherKit
 
-此 Fork 的 `wk3/ios27-wk3-review` 分支以 NSRingo/WeatherKit **v3.3.2** 为基点，保留原版 WK2 入口；本机 WK3 业务统一放在平台无关的 `src/wk3/`，Egern 与其他代理共用处理逻辑。审查完成前不要将该分支当作正式发行版；`main` 仍是未经这些改动的上游版本。
+此 Fork 以 NSRingo/WeatherKit **v3.3.2** 为基点，v3.3.3 增加本机 WK3 处理，保留原版 WK2 入口；业务统一放在平台无关的 `src/wk3/`，Egern 与其他代理共用处理逻辑。中文独立提交历史已保留。
 
 ## 本分支更新
 
@@ -48,7 +48,7 @@
 
 - WK3 `currentWeather`、`forecastDaily`、`forecastHourly` 缺少经真实样本验证的编解码映射；不可把上游 WK2 codec 直接用于 WK3。现阶段这三类数据原样透传，即使在设置中选择了天气数据源。
 - Quantumult X 二进制天气不可转换；其他平台代理仅通过脚本模拟，没有客户端实机结论。原生预警补全也依赖可严格匹配到的原事件，失配时原样返回。
-- Fork **尚无 Release**。`releases/latest/download/...` 或生成模块内的 `releases/download/v<version>/...` 只有在审查、合并、实际构建并上传对应附件后才能用于订阅；目前不要导入这些尚不存在的链接。生成模块不会自动发布附件。
+- 本 Fork 的 v3.3.3 WK3 模块在 [Releases](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases) 获取，文件名含 `.WK3.`。发行附件中的 Egern YAML 引用同版本 JS；仓库内 `modules/` 的旧 Gist 模块仅保留兼容，不自动更新用户已安装配置。
 - 上游的私有 GitHub Packages 依赖在无权限环境会使干净 `npm install` 返回 401。本分支使用已有依赖及上游已声明的 Rollup 工具完成验证，没有新增依赖。
 
 验证命令：`node --test tests/wk3/*.test.mjs tests/wk3-modules.test.mjs tests/wk3-platform-adapter.test.mjs tests/wk3-release-build.test.mjs`。普通分支运行 `npm run build:wk3` 仅生成五平台脚本；打标签时 CI 使用实际标签版本运行 `npm run build:wk3 -- --version <版本号>`，将十份脚本与五份模块一起写入 `dist/` 并进入现有附件上传步骤。指定版本构建本身不创建标签或 Release；发版后仍须核对客户端能访问每个附件 URL。
