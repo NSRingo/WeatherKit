@@ -42,8 +42,8 @@ function format(messages) {
 export const Console = Object.fromEntries(
     [["debug", 4], ["info", 3], ["warn", 2], ["error", 1], ["log", 1], ["exception", 1]].map(([method, threshold]) => [method, (...messages) => {
         if (level < threshold) return;
-        const output = console[method === "exception" ? "error" : method] ?? console.log;
-        if (typeof output === "function") output.apply(console, format(messages));
+        const output = console.log ?? console[method === "exception" ? "error" : method];
+        if (typeof output === "function") output.call(console, format(messages).join(" "));
     }]),
 );
 

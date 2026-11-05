@@ -111,6 +111,27 @@ for (const platform of ["egern", "surge", "loon", "stash", "quantumultx"]) {
     });
 }
 
+test("Egern INFO reaches console.log even when console.info exists", async () => {
+    const bundle = await files("egern");
+    for (const stage of ["request", "response"]) {
+        const visible = await execute("egern", bundle[stage].code, stage);
+        const logMessages = visible.logs.filter(([method]) => method === "log").map(([, message]) => message);
+        assert.equal(logMessages[0], `☑️ ${stage}`);
+        assert.equal(logMessages.at(-1), `✅ ${stage}`);
+    }
+});
+
+test("Loon INFO reaches console.log even when console.info exists", async () => {
+    const bundle = await files("loon");
+    for (const stage of ["request", "response"]) {
+        const visible = await execute("loon", bundle[stage].code, stage);
+        const logMessages = visible.logs.filter(([method]) => method === "log").map(([, message]) => message);
+        assert.equal(logMessages[0], `☑️ ${stage}`);
+        assert.equal(logMessages.at(-1), `✅ ${stage}`);
+        assert.ok(logMessages.every(message => typeof message === "string"));
+    }
+});
+
 test("Egern overlapping invocations keep their own ctx log level", async () => {
     const bundle = await files("egern");
     const first = await execute("egern", bundle.request.code, "request");
