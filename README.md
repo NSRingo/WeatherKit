@@ -2,7 +2,16 @@
 
 此 Fork 以 NSRingo/WeatherKit **v3.3.2** 为基点，v3.3.3 增加本机 WK3 处理，保留原版 WK2 入口；业务统一放在平台无关的 `src/wk3/`，Egern 与其他代理共用处理逻辑。中文独立提交历史已保留。
 
-## 本分支更新
+## v3.3.4 修复
+
+- 校正美标浓度截断与超量程连续性、加拿大 AQHI 单位与四舍五入、国标草案零浓度；CO 单位修复幂等，不改变输入；无有效分项或必要污染物时不输出伪有效指数。
+- 空替换目标、算法 `None`、Apple 来源和昨日来源按用户选择执行；成功且实际改变指数后才按开关重算已知比较，失败保留 Apple 数据，移除无必要 AQ 预取。
+- 修正 Surge/Loon/Stash 响应阶段 `$done` 结构及 Surge `[]` 参数解析；超时与日志使用实际解析后的模块参数。
+- 模块名称、选项标签与帮助对齐上游；保留 23 项参数及现有默认。Stash 在第一条脚本 `argument` 编辑参数，其余四条共用该值。未实现的上游功能明确标注，不提供空壳选项。
+- 五平台共用日志实现；默认 INFO 显示 `☑️ request/response`、处理摘要和 `✅ request/response`，DEBUG/ALL 展示更多处理步骤，WARN/ERROR 显示回退或异常，OFF 静默。令牌和完整配置不在日志中明文输出。
+- `npm run test:wk3` 串行执行旧入口与 WK3 全部回归，正式 CI 先测试再构建；修复分支 CI **338/338 通过、0 跳过**。无新增依赖、hash 或缓存层。
+
+## WK3 基础能力
 
 - WK3 FlatBuffer 有界读写：在已验证结构内替换空气质量，保留其他数据槽与未知字段；国标 AQI 可转换为同源美标 AQI。香港在 Apple WK3 缺少 AQ 数据时，可按现有条件补入彩云美标 AQ。
 - WK3 已实现分钟降水、同源同标准的昨日空气等级比较，以及严格匹配原事件 ID 的天气预警补全；失败或未验证结构保持 Apple 原始数据。
@@ -13,7 +22,7 @@
 
 | 软件 | 模块格式 | 当前验证范围 |
 | --- | --- | --- |
-| Egern | `modules/iRingo.WeatherKit.WK3.yaml` | 本机 `ctx` 入口、参数与 WK3 处理通过合成回放；既有 Gist 版的美标 AQI、分钟降水与昨日对比曾经设备确认，本分支新 Rollup 产物尚未设备验证。仓库模块仍指向既有 Gist JS。 |
+| Egern | `.yaml` | 用户已反馈 v3.3.3 正式版实机正常；v3.3.4 为自动测试及脚本回放验证，仍需设备复验。发行模块引用同版本附件，仓库 `modules/` 保留旧 Gist 兼容模块。 |
 | Surge | `.sgmodule` | 独立 JS 构建、参数传递与合成 WK3 AQ 响应端到端回放通过（AQI 60→87）；未设备验证。 |
 | Loon | `.lpx` | 独立 JS、位置参数与二进制响应模拟通过；未设备验证。 |
 | Stash | `.stoverride` | 独立 JS、配置解析、参数与二进制响应模拟通过；未设备验证。 |
@@ -35,7 +44,7 @@
 | --- | --- | --- |
 | 今日空气指数来源 | `ColorfulCloudsUS` | 彩云美标；仅匹配原始标准 `HJ6332012` 后才尝试替换。 |
 | 昨日空气指数来源 | `ColorfulCloudsUS` | 与今日同来源、同标准才比较；否则保持未知。 |
-| 内置 AQ 计算算法 | `WAQI_InstantCast_US` | **只有来源设为 `Calculate` 才执行**；其余 11 种上游算法可选，WK3 目标标准不兼容时透传。 |
+| 内置 AQ 计算算法 | `WAQI_InstantCast_US` | **只有来源设为 `Calculate` 才执行**；共 12 个选项含 `None`（11 种计算），WK3 目标标准不兼容时透传。 |
 | 分钟降水 | `ColorfulClouds` | 已验证的分钟雨结构；未知条件透传。 |
 | 天气预警 | `QWeatherWeb` | 严格匹配后补全原生详情；`WeatherKit` 为原样透传。 |
 | 天气来源 | `ColorfulClouds` | WK2 可用；WK3 当前/逐日/逐小时天气仍透传 Apple。 |
@@ -48,7 +57,7 @@
 
 - WK3 `currentWeather`、`forecastDaily`、`forecastHourly` 缺少经真实样本验证的编解码映射；不可把上游 WK2 codec 直接用于 WK3。现阶段这三类数据原样透传，即使在设置中选择了天气数据源。
 - Quantumult X 二进制天气不可转换；其他平台代理仅通过脚本模拟，没有客户端实机结论。原生预警补全也依赖可严格匹配到的原事件，失配时原样返回。
-- 本 Fork 的 v3.3.3 WK3 模块在 [Releases](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases) 获取，文件名含 `.WK3.`。发行附件中的 Egern YAML 引用同版本 JS；仓库内 `modules/` 的旧 Gist 模块仅保留兼容，不自动更新用户已安装配置。
+- 本 Fork 的 v3.3.4 WK3 模块在 [Releases](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases) 获取，文件名含 `.WK3.`。发行附件中的 Egern YAML 引用同版本 JS；仓库内 `modules/` 的旧 Gist 模块仅保留兼容，不自动更新用户已安装配置。
 - 上游的私有 GitHub Packages 依赖在无权限环境会使干净 `npm install` 返回 401。本分支使用已有依赖及上游已声明的 Rollup 工具完成验证，没有新增依赖。
 
-验证命令：`node --test tests/wk3/*.test.mjs tests/wk3-modules.test.mjs tests/wk3-platform-adapter.test.mjs tests/wk3-release-build.test.mjs`。普通分支运行 `npm run build:wk3` 仅生成五平台脚本；打标签时 CI 使用实际标签版本运行 `npm run build:wk3 -- --version <版本号>`，将十份脚本与五份模块一起写入 `dist/` 并进入现有附件上传步骤。指定版本构建本身不创建标签或 Release；发版后仍须核对客户端能访问每个附件 URL。
+验证命令：`npm run test:wk3`（包含旧入口、算法边界、配置、模块、五平台日志与发行构建回归，串行避免本机并发打包争用）。普通分支运行 `npm run build:wk3` 仅生成五平台脚本；打标签时 CI 使用实际标签版本运行 `npm run build:wk3 -- --version <版本号>`，将十份脚本与五份模块一起写入 `dist/` 并进入现有附件上传步骤。指定版本构建本身不创建标签或 Release；发版后仍须核对客户端能访问每个附件 URL。
