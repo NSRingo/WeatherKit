@@ -28,18 +28,15 @@ async function processingContext(ctx, url, Settings, Configs) {
 export async function handleResponse(ctx) {
     const url = new URL(ctx.request.url);
     if (url.hostname !== "weatherkit.apple.com") return;
-    if (/^\/api\/v[12]\/availability\//.test(url.pathname)) {
-        const { Configs } = configuration(ctx);
-        return { status: 200, headers: responseHeaders(ctx.response.headers, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }), body: JSON.stringify(Configs?.Availability?.v2 ?? []) };
-    }
-    if (!/^\/api\/(?:v[23]\/weather\/|v[12]\/airQualityScale\/)/.test(url.pathname)) return;
+    const availability = /^\/api\/v[12]\/availability\//.test(url.pathname);
+    if (!availability && !/^\/api\/(?:v[23]\/weather\/|v[12]\/airQualityScale\/)/.test(url.pathname)) return;
     const headers = headerObject(ctx.response.headers);
     const binary = /flatbuffer|protobuf|octet-stream/i.test(headers["content-type"] ?? "");
     const originalBody = binary ? new Uint8Array(await ctx.response.arrayBuffer()) : await ctx.response.text();
     const originalStatus = ctx.response.status;
     try {
         const { Settings, Configs } = configuration(ctx);
-        const context = await processingContext(ctx, url, Settings, Configs);
+        const context = availability ? { Settings, Configs } : await processingContext(ctx, url, Settings, Configs);
         const request = { url: url.toString(), method: ctx.request.method, headers: headerObject(ctx.request.headers) };
         // Binary is kept in body, not bodyBytes: Response writes its patch to body.
         const response = { status: originalStatus, headers, body: originalBody };

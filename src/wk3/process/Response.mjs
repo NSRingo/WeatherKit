@@ -11,6 +11,7 @@ import { patchWK3QWeatherAlerts } from "../class/WK3Alerts.mjs";
 import { decodeWK3NextHour, encodeNextHour as encodeWK3NextHour, providerToWK3NextHour } from "../class/WK3NextHour.mjs";
 import * as WK2 from "../proto/apple/wk2.js";
 import database from "../function/database.mjs";
+import mergeWeatherKitAvailability from "../../function/mergeWeatherKitAvailability.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
 import buildSettings from "../function/buildSettings.mjs";
 import shouldReplaceWeatherKit, { isHongKong } from "../function/shouldReplaceWeatherKit.mjs";
@@ -69,6 +70,17 @@ export async function Response($request, $response, context = {}) {
             return $response;
         }
     }
+    // Preserve Apple's capability list and errors; only extend a recognized array.
+    if (url.hostname === "weatherkit.apple.com" && /^\/api\/v[12]\/availability\//.test(url.pathname)) {
+        if ($response.status !== 200 || !["application/json", "text/json"].includes(FORMAT)) return $response;
+        try {
+            const original = JSON.parse($response.body);
+            if (!Array.isArray(original) || !original.every(item => typeof item === "string")) return $response;
+            const merged = mergeWeatherKitAvailability(original, Configs?.Availability?.v2);
+            if (JSON.stringify(merged) !== JSON.stringify(original)) $response.body = JSON.stringify(merged);
+        } catch { /* Unknown payloads remain unchanged. */ }
+        return $response;
+    }
     // 格式判断
     switch (FORMAT) {
         case undefined: // 视为无body
@@ -96,14 +108,6 @@ export async function Response($request, $response, context = {}) {
         case "application/json":
             body = JSON.parse($response.body);
             Console.debug(`[Apple Response] ${url.pathname}`, body);
-            switch (url.hostname) {
-                case "weatherkit.apple.com":
-                    // 路径判断
-                    if (url.pathname.startsWith("/api/v1/availability/") || url.pathname.startsWith("/api/v2/availability/")) {
-                        body = Configs?.Availability?.v2;
-                    }
-                    break;
-            }
             $response.body = JSON.stringify(body);
             break;
         case "application/vnd.apple.flatbuffer":
