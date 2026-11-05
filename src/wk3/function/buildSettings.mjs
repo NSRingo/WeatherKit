@@ -48,7 +48,7 @@ function traverseObject(o, c) {
  */
 function string2array(Settings, path) {
     const setting = get(Settings, path);
-    if (!Array.isArray(setting)) set(Settings, path, setting ? [setting] : []);
+    if (!Array.isArray(setting)) set(Settings, path, setting === "[]" ? [] : setting ? [setting] : []);
 }
 
 /**
@@ -72,6 +72,10 @@ export default function buildSettings(database, queryArguments = {}) {
     // 2. 合并请求级参数（请求参数优先级最高）
     if (queryArguments && typeof queryArguments === "object") {
         merge(Settings, queryArguments);
+        if (Array.isArray(queryArguments.AirQuality?.Current?.Index?.Replace)
+            && queryArguments.AirQuality.Current.Index.Replace.length === 0) {
+            Settings.AirQuality.Current.Index.Replace = [];
+        }
     }
 
     // 3. 规范化需要为数组的字段
@@ -96,21 +100,6 @@ export default function buildSettings(database, queryArguments = {}) {
                 return value;
         }
     });
-
-    const indexProvider = Settings?.AirQuality?.Current?.Index?.Provider;
-    const calculateAlgorithm = Settings?.AirQuality?.Calculate?.Algorithm;
-    const indexReplace = Settings?.AirQuality?.Current?.Index?.Replace;
-    const yesterday = Settings?.AirQuality?.Comparison?.Yesterday;
-    const shouldReplaceChinaScaleForNonCNIndex = indexProvider === "ColorfulCloudsUS"
-        || (indexProvider === "Calculate" && ["WAQI_InstantCast_US", "EU_EAQI", "UBA"].includes(calculateAlgorithm));
-    if (shouldReplaceChinaScaleForNonCNIndex && Array.isArray(indexReplace) && !indexReplace.includes("HJ6332012")) {
-        indexReplace.unshift("HJ6332012");
-    }
-    if (yesterday && indexProvider === "ColorfulCloudsUS" && yesterday.IndexProvider === "ColorfulCloudsCN") {
-        yesterday.IndexProvider = "ColorfulCloudsUS";
-    } else if (yesterday && indexProvider === "Calculate" && shouldReplaceChinaScaleForNonCNIndex && yesterday.IndexProvider === "ColorfulCloudsCN") {
-        yesterday.IndexProvider = "Calculate";
-    }
 
     // 5. 构建 Configs（深拷贝合并，并将 Locale/i18n 转为 Map）
     const Configs = merge(

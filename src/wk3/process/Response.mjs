@@ -239,6 +239,23 @@ export async function Response($request, $response, context = {}) {
     return $response;
 }
 
+// Only explicitly supported providers may supply an index; None is not an algorithm.
+function canInjectIndex(Settings) {
+    const aq = Settings?.AirQuality;
+    const provider = aq?.Current?.Index?.Provider;
+    if (["QWeather", "ColorfulCloudsUS", "ColorfulCloudsCN"].includes(provider)) return true;
+    return provider === "Calculate" && aq?.Calculate?.Algorithm !== "None"
+        && Object.hasOwn(AirQuality.Config.Scales, aq?.Calculate?.Algorithm ?? "")
+        && ["WeatherKit", "QWeather", "ColorfulClouds"].includes(aq?.Current?.Pollutants?.Provider);
+}
+
+function validIndex(candidate) {
+    return !!candidate?.metadata && !candidate.metadata.temporarilyUnavailable
+        && Number.isInteger(candidate.index) && candidate.index >= 0 && candidate.index <= 32767
+        && Number.isInteger(candidate.categoryIndex) && candidate.categoryIndex >= 1 && candidate.categoryIndex <= 127
+        && typeof candidate.scale === "string" && candidate.scale.length > 0;
+}
+
 // WK3 enums differ from WK2. Same-scale updates retain the original narrow patch;
 // CN -> US uses independently observed mappings and a complete provider AQ child.
 async function PatchWK3AirQuality(rawBody, Settings, enviroments, preFetched = {}) {
@@ -247,19 +264,19 @@ async function PatchWK3AirQuality(rawBody, Settings, enviroments, preFetched = {
         if (!original) return rawBody;
         const scaleName = AirQuality.GetNameFromScale(original.scale);
         const replace = Settings?.AirQuality?.Current?.Index?.Replace || [];
-        if (!replace.includes(scaleName)) return rawBody;
+        if (!replace.includes(scaleName) || !canInjectIndex(Settings)) return rawBody;
         let injected;
         if (preFetched.index) {
             injected = await preFetched.index;
         } else if (Settings?.AirQuality?.Current?.Index?.Provider === "Calculate") {
-            const pollutants = preFetched.pollutants ? await preFetched.pollutants : await InjectPollutants(Settings, enviroments);
+            const pollutants = preFetched.pollutants ? await preFetched.pollutants : Settings?.AirQuality?.Current?.Pollutants?.Provider === "WeatherKit" ? original : await InjectPollutants(Settings, enviroments);
             if (!pollutants?.metadata || pollutants.metadata.temporarilyUnavailable) return rawBody;
             injected = await InjectIndex(pollutants, Settings, enviroments);
             if (injected?.metadata) injected = { ...injected, metadata: { ...pollutants.metadata, ...injected.metadata } };
         } else {
             injected = await InjectIndex(undefined, Settings, enviroments);
         }
-        if (!injected?.metadata || injected.metadata.temporarilyUnavailable) return rawBody;
+        if (!validIndex(injected)) return rawBody;
         const targetScale = AirQuality.GetNameFromScale(injected.scale);
         if (!scaleName || targetScale !== scaleName) {
             // CN -> US only. Replace the entire AQ child with one provider's
@@ -271,12 +288,17 @@ async function PatchWK3AirQuality(rawBody, Settings, enviroments, preFetched = {
             const vtable = table - readInt32LE(rawBody, table);
             // Do not discard future AQ fields when replacing the known child.
             if (readUint16LE(rawBody, vtable) > 20) return rawBody;
-            const replacement = await injectWK3Comparison(providerToWK3USAirQuality(injected), {
-                currentProvider: Settings?.AirQuality?.Current?.Index?.Provider,
-                yesterdayProvider: Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider,
-                sources: enviroments,
-                yesterday: preFetched.yesterdayAirQuality,
-            });
+            const replacement = providerToWK3USAirQuality(injected);
+            if (Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange === true || ![2, 3, 4].includes(original.previousDayComparison)) {
+                Object.assign(replacement, await injectWK3Comparison(replacement, {
+                    currentProvider: Settings?.AirQuality?.Current?.Index?.Provider,
+                    yesterdayProvider: Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider,
+                    sources: enviroments,
+                    yesterday: preFetched.yesterdayAirQuality,
+                }));
+            } else {
+                replacement.previousDayComparison = original.previousDayComparison;
+            }
             const builder = new flatbuffers.Builder();
             builder.finish(encodeWK3AirQuality(builder, replacement));
             const patched = appendFlatBufferTableToWeatherRoot(rawBody, 0, builder.asUint8Array());
@@ -866,39 +888,42 @@ async function InjectAirQuality(airQuality, Settings, enviroments, preFetched = 
     // Step1. 修复污染物单位
     airQuality = AirQuality.FixPollutantsUnits(airQuality);
 
-    // Step2. 判断原始污染物是否为空，并在需要时注入污染物数据
-    const isPollutantEmpty = !Array.isArray(airQuality?.pollutants) || airQuality.pollutants.length === 0;
-    const needReplacePollutants = Settings?.AirQuality?.Current?.Pollutants?.Provider && Settings.AirQuality.Current.Pollutants.Provider !== "WeatherKit";
-    const shouldInjectPollutants = isPollutantEmpty || needReplacePollutants;
+    // Step2. 仅按显式污染物来源配置注入污染物数据
+    const needReplacePollutants = ["QWeather", "ColorfulClouds"].includes(Settings?.AirQuality?.Current?.Pollutants?.Provider);
+    const shouldInjectPollutants = needReplacePollutants;
     const injectedPollutants = shouldInjectPollutants ? (preFetched.pollutants ? await preFetched.pollutants : await InjectPollutants(Settings, enviroments)) : airQuality;
     if (shouldInjectPollutants && preFetched.pollutants) Console.info("InjectAirQuality", "污染物使用预取数据");
     const needPollutants = shouldInjectPollutants && !!(injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable);
 
     // Step3. 根据污染物补齐情况与替换配置，决定是否注入 AQI 指数
-    const needInjectIndex = needPollutants || Settings?.AirQuality?.Current?.Index?.Replace?.includes(AirQuality.GetNameFromScale(airQuality?.scale));
-    let injectedIndex = injectedPollutants;
-    if (needInjectIndex) {
-        if (preFetched.index) {
-            injectedIndex = await preFetched.index;
-            Console.info("InjectAirQuality", "指数使用预取数据");
-        } else {
-            injectedIndex = await InjectIndex(injectedPollutants, Settings, enviroments);
+    const indexProvider = Settings?.AirQuality?.Current?.Index?.Provider;
+    const mayInjectIndex = canInjectIndex(Settings)
+        && Settings?.AirQuality?.Current?.Index?.Replace?.includes(AirQuality.GetNameFromScale(airQuality?.scale));
+    let candidate;
+    if (mayInjectIndex) {
+        try {
+            candidate = preFetched.index ? await preFetched.index : await InjectIndex(injectedPollutants, Settings, enviroments);
+        } catch {
+            // A failed candidate must not invalidate Apple's current AQ or comparison.
         }
     }
+    const needInjectIndex = mayInjectIndex && validIndex(candidate)
+        && ["index", "scale", "categoryIndex"].some(key => candidate[key] !== airQuality?.[key]);
+    const injectedIndex = needInjectIndex ? candidate : airQuality;
 
-    // Step4. 计算昨日对比是否需要重算；若未知则注入昨日对比结果
+    // Known comparisons are recalculated only after a successful, actual change.
     const weatherKitComparison = airQuality?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
-    const forceInjectComparison = needInjectIndex || Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange;
-    const previousDayComparison = forceInjectComparison ? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : weatherKitComparison;
-    const needInjectComparison = forceInjectComparison || previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
-    const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
-    let injectedComparison = { ...injectedIndex, previousDayComparison: weatherKitComparison };
+    const forceInjectComparison = Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange === true && needInjectIndex;
+    const needInjectComparison = forceInjectComparison || weatherKitComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
+    const currentIndexProvider = needInjectIndex ? indexProvider : "WeatherKit";
+    let injectedComparison = { previousDayComparison: weatherKitComparison };
     if (needInjectComparison) {
         try {
-            injectedComparison = await InjectComparison(injectedIndex, currentIndexProvider, Settings, enviroments, preFetched);
+            injectedComparison = await InjectComparison(injectedIndex, currentIndexProvider, Settings, enviroments, preFetched)
+                ?? { previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN };
         } catch (error) {
             Console.warn("InjectAirQuality", "昨日对比获取失败，使用 UNKNOWN 继续返回当前空气质量。", error?.message ?? error);
-            injectedComparison = { ...injectedIndex, previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN };
+            injectedComparison = { previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN };
         }
     }
 
@@ -931,7 +956,7 @@ async function InjectAirQuality(airQuality, Settings, enviroments, preFetched = 
     // Step7. 合并输出：优先使用可用注入结果，并统一 metadata / pollutants / previousDayComparison
     airQuality = {
         ...airQuality,
-        ...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
+        ...(needInjectIndex ? injectedIndex : {}),
         metadata: {
             ...(airQuality?.metadata ? airQuality.metadata : injectedPollutants?.metadata),
             providerName,
@@ -963,12 +988,12 @@ async function InjectPollutants(Settings, enviroments) {
             Console.debug("✅ InjectPollutants");
             return currentAirQuality;
         }
-        case "ColorfulClouds":
-        default: {
+        case "ColorfulClouds": {
             const currentAirQuality = await enviroments.colorfulClouds.CurrentAirQuality();
             Console.debug("✅ InjectPollutants");
             return currentAirQuality;
         }
+        default: return undefined;
     }
 }
 
@@ -994,12 +1019,12 @@ async function InjectIndex(airQuality, Settings, enviroments) {
             Console.debug("✅ InjectIndex");
             return currentAirQuality;
         }
-        case "Calculate":
-        default: {
+        case "Calculate": {
             const currentAirQuality = AirQuality.Pollutants2AQI(airQuality, Settings);
             Console.debug("✅ InjectIndex");
             return currentAirQuality;
         }
+        default: return undefined;
     }
 }
 
@@ -1180,7 +1205,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, envi
             const PollutantsProvider = Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider;
             Console.debug(`Settings?.AirQuality?.Comparison?.Yesterday?.PollutantsProvider: ${PollutantsProvider}`);
 
-            if (algorithm !== "") {
+            if (algorithm && algorithm !== "None") {
                 switch (PollutantsProvider) {
                     case "ColorfulCloudsCN": {
                         if (algorithm === "WAQI_InstantCast_US") {
@@ -1192,8 +1217,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, envi
                         Console.debug("✅ InjectComparison");
                         return comparisonAirQuality;
                     }
-                    case "QWeather":
-                    default: {
+                    case "QWeather": {
                         const pollutantsToAirQuality = airQuality => AirQuality.Pollutants2AQI(airQuality, Settings, { algorithm });
                         const comparisonAirQuality = await qweatherComparison(airQuality?.categoryIndex, pollutantsToAirQuality);
                         Console.debug("✅ InjectComparison");
@@ -1216,8 +1240,7 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, envi
             Console.debug("✅ InjectComparison");
             return comparisonAirQuality;
         }
-        case "ColorfulCloudsUS":
-        default: {
+        case "ColorfulCloudsUS": {
             const comparisonAirQuality = colorfulCloudsComparison(true, isEPA454_B18007(currentIndexProvider, airQuality?.scale) ? airQuality?.categoryIndex : undefined);
             Console.debug("✅ InjectComparison");
             return comparisonAirQuality;

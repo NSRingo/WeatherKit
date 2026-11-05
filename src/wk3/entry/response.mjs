@@ -20,22 +20,7 @@ async function processingContext(ctx, url, Settings, Configs) {
         if (parameters.dataSets.includes("forecastNextHour") && Settings.NextHour.Provider !== "WeatherKit") {
             preFetched.forecastNextHour = attempt(Settings.NextHour.Provider === "QWeather" ? enviroments.qWeather.Minutely() : enviroments.colorfulClouds.Minutely());
         }
-        if (parameters.dataSets.includes("airQuality")) {
-            const indexProvider = Settings.AirQuality.Current.Index.Provider;
-            if (indexProvider === "QWeather") preFetched.index = attempt(enviroments.qWeather.CurrentAirQuality(Settings.AirQuality.Current.Index.ForceCNPrimaryPollutants));
-            else if (indexProvider === "ColorfulCloudsUS" || indexProvider === "ColorfulCloudsCN") preFetched.index = attempt(enviroments.colorfulClouds.CurrentAirQuality(indexProvider === "ColorfulCloudsUS", Settings.AirQuality.Current.Index.ForceCNPrimaryPollutants));
-            const yesterdayProvider = Settings.AirQuality.Comparison.Yesterday.IndexProvider;
-            if (yesterdayProvider === "QWeather") {
-                const cacheKey = "weatherkit-local.qweather-grid";
-                const cache = ctx.storage?.getJSON(cacheKey);
-                const grid = await QWeather.GetLocationsGrid(cache, value => ctx.storage?.setJSON(cacheKey, value));
-                preFetched.locationsGrid = grid;
-                const locationInfo = QWeather.GetLocationInfo(grid, parameters.latitude, parameters.longitude);
-                preFetched.yesterdayAirQuality = attempt(enviroments.qWeather.prefetchYesterdayAirQuality(locationInfo).then(() => enviroments.qWeather.YesterdayAirQuality(locationInfo)));
-            } else if (yesterdayProvider === "ColorfulCloudsUS" || yesterdayProvider === "ColorfulCloudsCN") {
-                preFetched.yesterdayAirQuality = attempt(enviroments.colorfulClouds.prefetchYesterdayHourly().then(() => enviroments.colorfulClouds.YesterdayAirQuality(yesterdayProvider === "ColorfulCloudsUS")));
-            }
-        }
+        // AQ acquisition is deferred until the decoded response proves it is needed.
     }
     return { Settings, Configs, parameters, enviroments, preFetched };
 }
