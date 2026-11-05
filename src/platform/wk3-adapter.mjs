@@ -98,9 +98,11 @@ export async function runPlatform(handler, stage, globals = globalThis, platform
     if (typeof done !== "function") return result;
     if (result === undefined || result === null) return done();
     const bodyToPlatform = body => {
-        if (body instanceof ArrayBuffer) return binaryStringFromBytes(new Uint8Array(body));
-        if (ArrayBuffer.isView(body)) return binaryStringFromBytes(new Uint8Array(body.buffer, body.byteOffset, body.byteLength));
-        return body;
+        const bytes = body instanceof ArrayBuffer ? new Uint8Array(body)
+            : ArrayBuffer.isView(body) ? new Uint8Array(body.buffer, body.byteOffset, body.byteLength) : null;
+        if (!bytes) return body;
+        // Loon binary-body-mode consumes Uint8Array; a string is treated as text.
+        return platform === "loon" ? bytes : binaryStringFromBytes(bytes);
     };
     const response = {
         status: platform === "Quantumult X" ? `HTTP/1.1 ${result.status ?? 200} ${result.statusText ?? "OK"}` : result.status ?? 200,

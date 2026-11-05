@@ -40,8 +40,10 @@ for (const platform of platforms) {
             assert.equal(result.status, 201);
             assert.equal(result.headers["X-Patched"], "yes");
             assert.ok(!Object.keys(result.headers).some(k => ["content-length", "content-encoding", "transfer-encoding"].includes(k.toLowerCase())));
-            if (platform === "quantumultx") assert.equal(result.body, "{\"ok\":true}");
-            else assert.deepEqual(Array.from(result.body, c => c.charCodeAt(0)), bytes);
+            if (platform === "loon") {
+                assert.ok(result.body instanceof Uint8Array);
+                assert.deepEqual(Array.from(result.body), bytes);
+            } else assert.deepEqual(Array.from(result.body, c => c.charCodeAt(0)), bytes);
         }
 
         doneCalls = 0;
