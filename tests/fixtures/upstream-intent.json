@@ -1,0 +1,52 @@
+{
+  "upstreamCommit": "c40e8f8a13c8304a7ef500cb74acc5948af14b3f",
+  "releaseURL": "https://github.com/NSRingo/WeatherKit/releases/tag/v3.3.2",
+  "pluginSHA256": "e994f11d8eb987b81bda0c682e95287d4ee166cabf8a5563d2fa8aa4bdfe3e24",
+  "originalArgumentDefaults": {
+    "DataSets": "airQuality,currentWeather,forecastDaily,forecastHourly,forecastNextHour,weatherAlerts",
+    "Weather.Provider": "ColorfulClouds",
+    "WeatherAlerts.Provider": "QWeatherWeb",
+    "NextHour.Provider": "ColorfulClouds",
+    "AirQuality.Current.Pollutants.Provider": "ColorfulClouds",
+    "AirQuality.Calculate.Algorithm": "EU_EAQI",
+    "API.ColorfulClouds.Token": "",
+    "API.QWeather.Host": "devapi.qweather.com",
+    "API.QWeather.Token": "",
+    "API.WAQI.Token": "",
+    "Storage": "Argument",
+    "LogLevel": "WARN"
+  },
+  "weather": {
+    "Replace": [
+      "CN"
+    ],
+    "Provider": "ColorfulClouds"
+  },
+  "airQualityIndex": {
+    "Replace": [
+      "HJ6332012"
+    ],
+    "Provider": "Calculate",
+    "ForceCNPrimaryPollutants": true
+  },
+  "airQualityComparison": {
+    "ReplaceWhenCurrentChange": false,
+    "Yesterday": {
+      "PollutantsProvider": "QWeather",
+      "IndexProvider": "ColorfulCloudsUS"
+    }
+  },
+  "capabilities": [
+    "airQuality",
+    "currentWeather",
+    "forecastDaily",
+    "forecastHourly",
+    "forecastPeriodic",
+    "historicalComparisons",
+    "weatherChanges",
+    "forecastNextHour",
+    "weatherAlerts",
+    "weatherAlertNotifications",
+    "news"
+  ]
+}
