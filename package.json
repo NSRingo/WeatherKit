@@ -52,7 +52,7 @@
         "submodule": "git submodule update --remote",
         "update": "npm update --save",
         "test": "node --test --test-concurrency=1 tests/*.test.mjs",
-        "build:loon": "rollup -c && arguments-builder loon -c arguments-builder.release.config.ts && node scripts/verify-loon-build.mjs"
+        "build:loon": "rollup -c && arguments-builder loon -c arguments-builder.release.config.ts && node scripts/prepare-loon-plugin.mjs && node scripts/verify-loon-build.mjs"
     },
     "browserslist": [
         "iOS >= 18"

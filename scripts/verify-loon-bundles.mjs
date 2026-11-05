@@ -11,6 +11,9 @@ export default async function verifyLoonBundles(root) {
         responseCode = await readFile(path.join(directory, "response.loon.bundle.js"), "utf8"),
         scaleCode = await readFile(path.join(directory, "scale.loon.bundle.js"), "utf8");
     const plugin = await readFile(path.join(directory, "iRingo.WeatherKit.lpx"), "utf8");
+    const upstreamDefaults = JSON.parse(await readFile(path.join(root, "tests/fixtures/upstream-intent.json"), "utf8")).originalArgumentDefaults;
+    const emittedDefaults = new Map([...plugin.matchAll(/^([^=\n]+?)\s*=\s*(?:input|select),("(?:\\.|[^"\\])*")/gm)].map(([, key, value]) => [key.trim(), JSON.parse(value)]));
+    for (const [key, value] of Object.entries(upstreamDefaults)) assert.equal(emittedDefaults.get(key), value, `Original argument default: ${key}`);
     const nativeRewrites = verifyLoonRewrites(plugin);
     const storage = new Map(),
         scenarios = [];
@@ -126,14 +129,14 @@ export default async function verifyLoonBundles(root) {
     assert.equal(nativeCompatible.nativeRequests, 0);
     scenarios.push("Apple v3 JSON is adapted to the native Weather reader, including unselected periodic forecasts");
     const appleCO = { airQuality: { metadata: { temporarilyUnavailable: false, providerName: "QWeather" }, scale: "HJ6332012", index: 42, categoryIndex: 1, primaryPollutant: "PM2_5", previousDayComparison: "SIMILAR", pollutants: [["PM2_5", 35], ["PM10", 60], ["OZONE", 90], ["NO2", 35], ["SO2", 15], ["CO", 0.7]].map(([pollutantType, amount]) => ({ pollutantType, amount, units: "MICROGRAMS_PER_CUBIC_METER" })) } };
-    const appleCOResult = await run(responseCode, { ...v3Request, url: v3Request.url.replace("dataSets=currentWeather", "dataSets=airQuality") }, { status: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify(appleCO) }, noNetwork, { DataSets: "airQuality", "AirQuality.Calculate.Algorithm": "WAQI_InstantCast_US" });
+    const appleCOResult = await run(responseCode, { ...v3Request, url: v3Request.url.replace("dataSets=currentWeather", "dataSets=airQuality") }, { status: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify(appleCO) }, noNetwork, { DataSets: "airQuality", "AirQuality.Calculate.Algorithm": "WAQI_InstantCast_US", "AirQuality.Current.Index.Replace": "EPA_NowCast" });
     assert.equal(JSON.parse(appleCOResult.output.body).airQuality.pollutants.find(p => p.pollutantType === "CO").amount, 700);
     assert.equal(appleCOResult.nativeRequests, 0);
     scenarios.push("native Apple QWeather CO is repaired at ingress with no duplicate provider lookup");
     for (const algorithm of ["UBA", "EU_EAQI", "WAQI_InstantCast_US", "WAQI_InstantCast_CN", "WAQI_InstantCast_CN_25_DRAFT", "CA_AQHI", "HK_AQHI", "AQHI_Multi_CN", "AQHI_Multi_CN_HK", "CN_DEATH_AQHI", "CN_DEATH_HK_AQHI", "None"]) {
         const pollutants = [["PM2_5", 35], ["PM10", 60], ["OZONE", 90], ["NO2", 35], ["SO2", 15], ["CO", 700]].map(([pollutantType, amount]) => ({ pollutantType, amount, units: "MICROGRAMS_PER_CUBIC_METER" }));
         const body = { airQuality: { metadata: { temporarilyUnavailable: false, providerName: "Apple fixture" }, scale: "EPA_NowCast", index: 42, categoryIndex: 1, primaryPollutant: "PM2_5", previousDayComparison: "SIMILAR", pollutants } };
-        const computed = await run(responseCode, { ...v3Request, url: v3Request.url.replace("dataSets=currentWeather", "dataSets=airQuality") }, { status: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, noNetwork, { DataSets: "airQuality", "AirQuality.Calculate.Algorithm": algorithm });
+        const computed = await run(responseCode, { ...v3Request, url: v3Request.url.replace("dataSets=currentWeather", "dataSets=airQuality") }, { status: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, noNetwork, { DataSets: "airQuality", "AirQuality.Calculate.Algorithm": algorithm, "AirQuality.Current.Index.Replace": "EPA_NowCast" });
         const actual = JSON.parse(computed.output.body).airQuality;
         assert.equal(computed.nativeRequests, 0);
         assert.equal(actual.pollutants.length, 6);
@@ -144,6 +147,14 @@ export default async function verifyLoonBundles(root) {
         scenarios.push(`v3 ${algorithm} retains all six measurements with no provider request`);
     }
     storage.clear();
+    const preservedIndex = await run(responseCode, { ...v3Request, url: v3Request.url.replace("dataSets=currentWeather", "dataSets=airQuality") }, { status: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ airQuality: { ...appleCO.airQuality, metadata: { providerName: "Apple fixture", temporarilyUnavailable: false }, scale: "EPA_NowCast", pollutants: appleCO.airQuality.pollutants.map(p => ({ ...p, amount: p.pollutantType === "CO" ? 700 : p.amount })) } }) }, noNetwork, { DataSets: "airQuality", "AirQuality.Calculate.Algorithm": "CA_AQHI" });
+    assert.equal(JSON.parse(preservedIndex.output.body).airQuality.index, 42);
+    assert.equal(JSON.parse(preservedIndex.output.body).airQuality.scale, "EPA_NowCast");
+    scenarios.push("the original nonmatching target list preserves Apple AQI despite a selected algorithm");
+    const retainedComparison = await run(responseCode, { ...v3Request, url: v3Request.url.replace("dataSets=currentWeather", "dataSets=airQuality") }, { status: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify(appleCO) }, noNetwork, { DataSets: "airQuality", "AirQuality.Calculate.Algorithm": "CA_AQHI" });
+    assert.equal(JSON.parse(retainedComparison.output.body).airQuality.scale, "CA.AQHI");
+    assert.equal(JSON.parse(retainedComparison.output.body).airQuality.previousDayComparison, "SIMILAR");
+    scenarios.push("the original disabled comparison-replacement switch keeps an existing Apple trend");
     const v3Failed = await run(responseCode, v3Request, v3Response, (_, callback) => setImmediate(() => callback("timeout", {}, "")), { DataSets: "currentWeather", "Weather.Provider": "QWeather" }, true);
     assert.equal(v3Failed.output.body, v3Original);
     assert.equal(v3Failed.output.headers.ETag, "fixture");
@@ -240,6 +251,17 @@ export default async function verifyLoonBundles(root) {
     assert.equal(hours[1].temperature, 21);
     assert.equal(WeatherKit2.decode(new ByteBuffer(hourlyRaw), ["forecastHourly"]).forecastHourly.hours[0].temperature, 20);
     scenarios.push("partial hourly replacement changes only a matching row and leaves source binary intact");
+    const noBackup = await run(
+        responseCode,
+        { url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-CN/32.390/119.499?country=CN&dataSets=forecastNextHour", method: "GET", headers: {} },
+        { status: 200, headers: { "Content-Type": "application/vnd.apple.flatbuffer" }, body: empty },
+        (request, callback) => { assert.ok(request.url.includes("caiyunapp.com"));callback("timeout", {}, ""); },
+        { LogLevel: "ERROR", DataSets: "forecastNextHour", "NextHour.Provider": "ColorfulClouds", "API.QWeather.Token": "configured-for-another-product" },
+        true,
+    );
+    assert.equal(noBackup.nativeRequests, 1);
+    assert.deepEqual(noBackup.output.body, empty);
+    scenarios.push("a dedicated token alone never switches away from the explicitly selected provider");
     const backup = await run(
         responseCode,
         { url: "https://weatherkit.apple.com/api/v2/weather/zh-Hans-US/32.390/119.499?dataSets=forecastNextHour", method: "GET", headers: {} },
@@ -251,7 +273,7 @@ export default async function verifyLoonBundles(root) {
                 callback(null, { status: 200, headers: { "Content-Type": "application/json" } }, JSON.stringify({ code: "200", updateTime: "2026-10-19T08:00:00+08:00", summary: "Fixture rain", minutely: [{ fxTime: "2026-10-19T08:05:00+08:00", precip: "0.1" }] }));
             }
         },
-        { LogLevel: "ERROR", DataSets: "forecastNextHour", "NextHour.Provider": "ColorfulClouds", "API.QWeather.Token": "fixture-account", "Region.Fallback": "Auto", "RequestCache.Diagnostics": true },
+        { LogLevel: "ERROR", DataSets: "forecastNextHour", "NextHour.Provider": "ColorfulClouds", "API.QWeather.Token": "fixture-account", "ProviderFallback.Enabled": true, "Region.Fallback": "Auto", "RequestCache.Diagnostics": true },
         true,
     );
     assert.equal(backup.nativeRequests, 2);
@@ -336,5 +358,5 @@ export default async function verifyLoonBundles(root) {
     assert.equal(failedAlerts.nativeRequests, 1);
     assert.strictEqual(failedAlerts.output.body, alertsRaw);
     scenarios.push("failed alert replacement retains the complete original binary response");
-    return { pass: scenarios.length, fail: 0, scenarios, nativeRewrites, withoutNodeWebCryptoHostTextEncoder: true, providedWebAPIs: ["URL", "URLSearchParams", "TextDecoder"], doneExactlyOnce: true, liveWeatherRequests: false, deviceVPNValidation: false };
+    return { pass: scenarios.length, fail: 0, scenarios, nativeRewrites, upstreamArgumentDefaultsVerified: Object.keys(upstreamDefaults).length, withoutNodeWebCryptoHostTextEncoder: true, providedWebAPIs: ["URL", "URLSearchParams", "TextDecoder"], doneExactlyOnce: true, liveWeatherRequests: false, deviceVPNValidation: false };
 }

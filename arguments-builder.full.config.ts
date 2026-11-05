@@ -73,6 +73,7 @@ export const requestCache: Arg[] = [
         ],
         description: "明确的 country 参数始终优先；自动模式使用同坐标确认记录与离线多边形，边界不确定时沿用语言区域。",
     },
+    { key: "ProviderFallback.Enabled", name: "[数据源] 允许备用查询", defaultValue: false, type: "boolean", description: "默认仅使用选定来源，失败保留 Apple 数据。开启后，原数据也不可用且已配置另一来源专用凭据时，才尝试一次备用查询。" },
 ];
 
 export const dataSets: Arg[] = [

@@ -348,7 +348,9 @@ test("backup queries require a configured dedicated credential and never replace
     assert.equal(calls, 0);
     assert.equal(await recover("currentWeather", failed, { metadata: { providerName: "Apple" } }, "ColorfulClouds", loaders, { API: { QWeather: { Token: "configured-account" } } }, runtime), failed);
     assert.equal(calls, 0);
-    assert.equal(await recover("currentWeather", failed, undefined, "ColorfulClouds", loaders, { API: { QWeather: { Token: "configured-account" } } }, runtime), value);
+    assert.equal(await recover("currentWeather", failed, undefined, "ColorfulClouds", loaders, { API: { QWeather: { Token: "configured-account" } } }, runtime), failed);
+    assert.equal(calls, 0, "A credential for another product does not enable a provider switch");
+    assert.equal(await recover("currentWeather", failed, undefined, "ColorfulClouds", loaders, { ProviderFallback: { Enabled: true }, API: { QWeather: { Token: "configured-account" } } }, runtime), value);
     assert.equal(calls, 1);
     assert.equal(runtime.stats.backupSuccesses, 1);
     assert.equal(await recover("currentWeather", undefined, undefined, "WeatherKit", loaders, { API: { QWeather: { Token: "configured-account" } } }, runtime), undefined);

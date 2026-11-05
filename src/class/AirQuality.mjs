@@ -46,6 +46,10 @@ export default class AirQuality {
         return AirQuality.ValidPollutants([...(Array.isArray(current) ? current : []), ...(Array.isArray(supplement) ? supplement : [])]);
     }
 
+    static HasUsableIndex(airQuality) {
+        return Boolean(airQuality?.metadata && airQuality.metadata.temporarilyUnavailable !== true && typeof airQuality.scale === "string" && airQuality.scale.length && Number.isFinite(airQuality.index) && airQuality.index >= 0 && airQuality.index <= 65535 && Number.isInteger(airQuality.categoryIndex) && airQuality.categoryIndex >= 1 && airQuality.categoryIndex <= 255);
+    }
+
     static #Unavailable(pollutants = []) {
         return { metadata: { providerName: "iRingo", temporarilyUnavailable: true }, pollutants };
     }

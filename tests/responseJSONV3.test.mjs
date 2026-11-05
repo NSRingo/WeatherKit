@@ -14,6 +14,7 @@ const current = () => ({ metadata: metadata(), temperature: 18, conditionCode: "
 const request = (products = "currentWeather") => globalThis.$request = { url: `https://weatherkit.apple.com/api/v3/weather/zh-Hans-CN/31.2/121.5?country=CN&dataSets=${products}`, method: "GET" };
 const response = body => ({ status: 200, headers: { "Content-Type": "application/json; charset=utf-8", ETag: "apple", "cOnTeNt-LeNgTh": "1", "cache-control": "max-age=60", "X-Apple": "retain" }, body: typeof body === "string" ? body : JSON.stringify(body) });
 const settings = overrides => globalThis.$argument = qs.parse({ Storage: "Argument", LogLevel: "OFF", DataSets: "currentWeather,forecastHourly,forecastDaily,forecastNextHour,weatherAlerts", "Weather.Provider": "QWeather", "WeatherAlerts.Provider": "WeatherKit", ...overrides });
+const airQualitySettings = overrides => settings({ "AirQuality.Current.Index.Replace": "EPA_NowCast", ...overrides });
 const allPollutants = () => [["PM2_5", 35], ["PM10", 60], ["OZONE", 90], ["NO2", 35], ["SO2", 15], ["CO", 700]].map(([pollutantType, amount]) => ({ pollutantType, amount, units: "MICROGRAMS_PER_CUBIC_METER" }));
 const airQualityProduct = pollutants => ({ metadata: { ...metadata(), providerName: "Apple fixture" }, scale: "EPA_NowCast", index: 42, categoryIndex: 1, primaryPollutant: "PM2_5", previousDayComparison: "SIMILAR", pollutants });
 
@@ -63,7 +64,7 @@ test("native JSON adaptation never invents a total from missing or invalid preci
 
 for (const [name, processResponse] of [["release", Response], ["development", ResponseDev]]) {
     test(`${name}: native Apple QWeather CO is correctly displayed in ug after ingress normalization`, async t => {
-        settings({ DataSets: "airQuality", "AirQuality.Calculate.Algorithm": "WAQI_InstantCast_US" });
+        airQualitySettings({ DataSets: "airQuality", "AirQuality.Calculate.Algorithm": "WAQI_InstantCast_US" });
         t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", () => { throw new Error("Complete Apple concentrations require no extra query"); });
         const product = airQualityProduct(allPollutants());
         product.metadata.providerName = "QWeather";
@@ -75,8 +76,8 @@ for (const [name, processResponse] of [["release", Response], ["development", Re
         assert.equal(actual.index, 99);
     });
     for (const algorithm of ["UBA", "EU_EAQI", "WAQI_InstantCast_US", "WAQI_InstantCast_CN", "WAQI_InstantCast_CN_25_DRAFT", "CA_AQHI", "HK_AQHI", "AQHI_Multi_CN", "AQHI_Multi_CN_HK", "CN_DEATH_AQHI", "CN_DEATH_HK_AQHI", "None"]) {
-        test(`${name}: v3 ${algorithm} selects the requested algorithm on a complete non-CN Apple product`, async t => {
-            settings({ DataSets: "airQuality", "AirQuality.Calculate.Algorithm": algorithm });
+        test(`${name}: v3 ${algorithm} selects the requested algorithm on an explicitly targeted Apple standard`, async t => {
+            airQualitySettings({ DataSets: "airQuality", "AirQuality.Calculate.Algorithm": algorithm });
             t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", () => { throw new Error("Complete concentrations must not start provider requests"); });
             t.mock.method(QWeather.prototype, "CurrentAirQuality", () => { throw new Error("Complete concentrations must not start provider requests"); });
             const body = { airQuality: airQualityProduct(allPollutants()), futureProduct: { retained: true } };
@@ -90,14 +91,14 @@ for (const [name, processResponse] of [["release", Response], ["development", Re
                 assert.equal(actual.previousDayComparison, "SIMILAR");
             } else {
                 assert.match(actual.metadata.providerName, /iRingo/);
-                assert.equal(actual.previousDayComparison, "UNKNOWN", "Do not reuse a different algorithm's historical trend");
+                assert.equal(actual.previousDayComparison, "SIMILAR", "Keep the original comparison when ReplaceWhenCurrentChange is off");
                 assert.equal(result.headers["Cache-Control"], "no-store");
             }
             assert.deepEqual(JSON.parse(result.body).futureProduct, body.futureProduct);
         });
     }
     test(`${name}: a partial pollutant array is supplemented without replacing valid Apple concentrations`, async t => {
-        settings({ DataSets: "airQuality", "AirQuality.Calculate.Algorithm": "CA_AQHI" });
+        airQualitySettings({ DataSets: "airQuality", "AirQuality.Calculate.Algorithm": "CA_AQHI" });
         let calls = 0;
         t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", async () => { calls++; return { metadata: { providerName: "fixture", temporarilyUnavailable: false }, pollutants: allPollutants() }; });
         const body = { airQuality: airQualityProduct([{ ...allPollutants()[0], amount: 0 }, { ...allPollutants()[3], amount: null }]) };
@@ -109,7 +110,7 @@ for (const [name, processResponse] of [["release", Response], ["development", Re
         assert.equal(result.scale, "CA.AQHI");
     });
     test(`${name}: a failed supplement and incomplete risk inputs retain the available Apple index`, async t => {
-        settings({ DataSets: "airQuality", "AirQuality.Calculate.Algorithm": "HK_AQHI" });
+        airQualitySettings({ DataSets: "airQuality", "AirQuality.Calculate.Algorithm": "HK_AQHI" });
         t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", async () => { throw new Error("fixture provider unavailable"); });
         const body = { airQuality: airQualityProduct([allPollutants()[0]]) };
         const result = JSON.parse((await processResponse(request("airQuality"), response(body))).body).airQuality;
@@ -192,7 +193,7 @@ test("a failed hourly product preserves its exact fields while a healthy current
 });
 
 test("v3 air-quality calculation uses symbolic enums and leaves unrelated Apple products intact", async () => {
-    settings({ DataSets: "airQuality", "AirQuality.Calculate.Algorithm": "UBA", "AirQuality.Current.Index.Replace": "HJ6332012" });
+    airQualitySettings({ DataSets: "airQuality", "AirQuality.Calculate.Algorithm": "UBA", "AirQuality.Current.Index.Replace": "HJ6332012" });
     const body = { airQuality: { metadata: metadata(), scale: "HJ6332012", index: 50, categoryIndex: 1, primaryPollutant: "PM2_5", previousDayComparison: "SIMILAR", pollutants: [{ pollutantType: "PM2_5", amount: 30, units: "MICROGRAMS_PER_CUBIC_METER" }, { pollutantType: "PM10", amount: 40, units: "MICROGRAMS_PER_CUBIC_METER" }] }, currentWeather: current(), futureProduct: { version: 3 } };
     const updated = JSON.parse((await Response(request("airQuality"), response(body))).body);
     assert.notEqual(updated.airQuality.scale, "HJ6332012");

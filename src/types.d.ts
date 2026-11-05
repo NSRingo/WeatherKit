@@ -1,5 +1,6 @@
 // Modified by hhhoratioxu, 2026-10-19: provider response cache settings.
 export interface Settings {
+    ProviderFallback?: { Enabled?: boolean | string };
     RequestCache?: {
         /** Successful provider JSON cache lifetime in seconds, 0 disables completed-response caching; maximum 300. */
         TTL?: number | string;

@@ -502,17 +502,30 @@ async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
         }
     }
 
-    // 用户选定的计算算法也适用于完整的 Apple 数据，不受原始地区标准限制。
-    const calculate = Settings?.AirQuality?.Current?.Index?.Provider === "Calculate" && Settings?.AirQuality?.Calculate?.Algorithm !== "None" && Settings?.AirQuality?.Current?.Index?.Replace?.length > 0;
-    const needInjectIndex = calculate || needPollutants || Settings?.AirQuality?.Current?.Index?.Replace?.some(scaleName => AirQuality.ScaleMatches(airQuality?.scale, scaleName));
-    const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
-    const indexAvailable = needInjectIndex && providerProductAvailable(injectedIndex);
+    // The algorithm chooses how to convert; the target list decides whether.
+    const targets = Settings?.AirQuality?.Current?.Index?.Replace ?? [];
+    const indexProvider = Settings?.AirQuality?.Current?.Index?.Provider ?? "Calculate";
+    const calculateDisabled = indexProvider === "Calculate" && Settings?.AirQuality?.Calculate?.Algorithm === "None";
+    const originalIndexAvailable = AirQuality.HasUsableIndex(airQuality);
+    const targetMatches = targets.some(scaleName => AirQuality.ScaleMatches(airQuality?.scale, scaleName));
+    const needInjectIndex = targets.length > 0 && !calculateDisabled && (targetMatches || !originalIndexAvailable && needPollutants);
+    let injectedIndex = airQuality, indexAvailable = false;
+    if (needInjectIndex) {
+        try {
+            const candidate = await InjectIndex(injectedPollutants, Settings, enviroments);
+            if (AirQuality.HasUsableIndex(candidate)) { injectedIndex = candidate; indexAvailable = true; }
+            else enviroments.requestCache?.noteFallback("airQuality", "invalid");
+        } catch (error) {
+            enviroments.requestCache?.noteFallback("airQuality", providerErrorCode(error));
+        }
+    }
 
-    // 不沿用另一算法的昨日趋势；仅在配置了同算法历史计算时重算。
+    // Follow the original comparison switch and independently selected source.
+    const indexChanged = indexAvailable && ["index", "scale", "categoryIndex"].some(key => airQuality?.[key] !== injectedIndex[key]);
     const weatherKitComparison = airQuality?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
-    const previousDayComparison = indexAvailable && (calculate || Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange) ? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : weatherKitComparison;
-    const needInjectComparison = previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN && (!calculate || Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider === "Calculate");
-    const currentIndexProvider = indexAvailable ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
+    const previousDayComparison = indexChanged && Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange ? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : weatherKitComparison;
+    const needInjectComparison = previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
+    const currentIndexProvider = indexAvailable ? indexProvider : "WeatherKit";
     let injectedComparison = { ...injectedIndex, previousDayComparison };
     if (needInjectComparison) {
         try {
@@ -530,7 +543,7 @@ async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
     const providers = [
         ...(weatherKitMetadata?.providerName && !weatherKitMetadata.temporarilyUnavailable ? [weatherKitMetadata.providerName] : []),
         ...(needPollutants && pollutantMetadata?.providerName && !pollutantMetadata.temporarilyUnavailable ? [`污染物：${pollutantMetadata.providerName}`] : []),
-        ...(needInjectIndex && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${AirQuality.appendScaleToProviderName(injectedIndex, Settings)}`] : []),
+        ...(indexAvailable && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${AirQuality.appendScaleToProviderName(injectedIndex, Settings)}`] : []),
         ...(needInjectComparison && comparisonMetadata?.providerName && !comparisonMetadata.temporarilyUnavailable ? [`对比昨日：\n${comparisonMetadata.providerName}`] : []),
     ];
 
@@ -540,14 +553,14 @@ async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
     // Step7. 合并输出：优先使用可用注入结果，并统一 metadata / pollutants / previousDayComparison
     airQuality = {
         ...airQuality,
-        ...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
+        ...(indexAvailable ? injectedIndex : {}),
         metadata: {
             ...(airQuality?.metadata ? airQuality.metadata : injectedPollutants?.metadata),
-            ...(indexAvailable ? { temporarilyUnavailable: false } : {}),
+            ...(indexAvailable ? { temporarilyUnavailable: false } : !originalIndexAvailable ? { temporarilyUnavailable: true } : {}),
             providerName: providers.join("\n"),
             ...(providerLogo ? { providerLogo } : {}),
         },
-        pollutants: AirQuality.ValidPollutants(AirQuality.ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings)),
+        pollutants: AirQuality.ValidPollutants(AirQuality.ConvertPollutants(airQuality, injectedPollutants, indexAvailable, injectedIndex, Settings)),
         previousDayComparison: injectedComparison?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
     };
     if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
