@@ -49,9 +49,25 @@ export function boundedWeatherJSON(value) {
 
 // Work only on a parsed, owned product. Unknown top-level products are untouched.
 // Preserve by-type totals while adding the scalar required by the native reader.
-export function adaptV3ClientProduct(product) {
+export function adaptV3ClientProduct(product, name) {
     boundedWeatherJSON(product);
     let changed = false;
+    // WK3 UUID tables contain sixteen octets. Weather's JSON reader expects
+    // the same identifier as a UUID string, including for retained Apple alerts.
+    if (name === "weatherAlerts" && Array.isArray(product?.alerts)) {
+        const hex = "0123456789abcdef";
+        for (const alert of product.alerts) {
+            const bytes = alert?.id?.bytes;
+            if (!Array.isArray(bytes) || bytes.length !== 16 || !bytes.every(byte => Number.isInteger(byte) && byte >= 0 && byte <= 255)) continue;
+            let uuid = "";
+            for (let i = 0; i < 16; i++) {
+                if (i === 4 || i === 6 || i === 8 || i === 10) uuid += "-";
+                uuid += hex[bytes[i] >> 4] + hex[bytes[i] & 15];
+            }
+            alert.id = uuid;
+            changed = true;
+        }
+    }
     function visit(value) {
         if (!value || typeof value !== "object") return;
         if (Array.isArray(value)) { for (const item of value) visit(item); return; }
@@ -81,7 +97,7 @@ export function adaptV3ClientProduct(product) {
 }
 
 // Provider graphs are owned by their consumer. Apple input graphs stay read-only.
-export function adaptV3ProviderProduct(product) {
+export function adaptV3ProviderProduct(product, name) {
     if (!object(product)) return product;
     boundedWeatherJSON(product);
     function visit(value) {
@@ -115,7 +131,7 @@ export function adaptV3ProviderProduct(product) {
         }
     }
     visit(product);
-    adaptV3ClientProduct(product);
+    adaptV3ClientProduct(product, name);
     return product;
 }
 
@@ -125,6 +141,7 @@ export function validateWeatherJSONV3(product, name) {
     if (!object(product)) throw new TypeError("Missing weather JSON product");
     boundedWeatherJSON(product);
     if (name === "airQuality" && product?.metadata?.temporarilyUnavailable !== true && (!Number.isInteger(product?.index) || product.index < 0 || product.index > 65535 || !Number.isInteger(product?.categoryIndex) || product.categoryIndex < 1 || product.categoryIndex > 255)) throw new TypeError("Invalid WK3 air quality index");
+    if (name === "weatherAlerts" && Array.isArray(product.alerts) && product.alerts.some(alert => object(alert) && alert.id !== undefined && typeof alert.id !== "string")) throw new TypeError("Invalid native weather alert identifier");
     function visit(value) {
         const kind = typeof value;
         if (kind === "bigint" || kind === "symbol" || kind === "function") throw new TypeError("Unsupported weather JSON value");
@@ -167,7 +184,7 @@ function v3Environment(environment) {
             get(target, key) {
                 const value = Reflect.get(target, key, target);
                 if (typeof value !== "function") return value;
-                if (providerMethods.has(key)) return async (...args) => adaptV3ProviderProduct(await value.apply(target, args));
+                if (providerMethods.has(key)) return async (...args) => adaptV3ProviderProduct(await value.apply(target, args), key === "WeatherAlert" || key === "WeatherAlertWeb" ? "weatherAlerts" : undefined);
                 return value.bind(target);
             },
         });
@@ -196,7 +213,7 @@ export default async function ResponseJSONV3(request, response, injectors) {
     let modified = false;
     for (const name of [...productNames, "forecastPeriodic", "weatherChanges"]) {
         if (!object(body[name])) continue;
-        try { modified = adaptV3ClientProduct(body[name]) || modified; } catch { /* Keep products beyond processing bounds. */ }
+        try { modified = adaptV3ClientProduct(body[name], name) || modified; } catch { /* Keep products beyond processing bounds. */ }
     }
     const { Settings, Caches } = setENV("iRingo", "WeatherKit", database);
     Console.logLevel = Settings.LogLevel;
@@ -223,7 +240,7 @@ export default async function ResponseJSONV3(request, response, injectors) {
                 if (!weatherProductsEqual(value, original)) {
                     validating = true;
                     // AQI and warning injectors can also add numeric metadata fields.
-                    body[name] = validateWeatherJSONV3(adaptV3ProviderProduct(value), name);
+                    body[name] = validateWeatherJSONV3(adaptV3ProviderProduct(value, name), name);
                     modified = true;
                 }
             } catch (error) {
