@@ -358,9 +358,9 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
  * @returns {Promise<any>} 合并后的空气质量对象
  */
 async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
-    // Step1. 修复污染物单位
+    // Step1. 修复污染物单位（Apple 原始产品入口，CO 误标场景按 PR #107 幂等处理）
     // Step 1. Fix pollutant units.
-    airQuality = AirQuality.FixPollutantsUnits(airQuality);
+    airQuality = AirQuality.FixPollutantsUnits(airQuality, { appleProduct: true });
 
     // Step2. 判断原始污染物是否为空，并在需要时注入污染物数据
     const isPollutantEmpty = !Array.isArray(airQuality?.pollutants) || airQuality.pollutants.length === 0;

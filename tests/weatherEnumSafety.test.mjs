@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import * as WK2 from "@nsringo/weatherkit";
+import { WK2 } from "@nsringo/weatherkit";
 import { ByteBuffer } from "flatbuffers";
 import ForecastNextHour from "../src/class/ForecastNextHour.mjs";
 import Weather from "../src/class/Weather.mjs";

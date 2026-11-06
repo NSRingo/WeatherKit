@@ -6,7 +6,7 @@ globalThis.$environment = { "surge-version": "test" };
 globalThis.$persistentStore = { read: () => null, write: () => true };
 globalThis.$argument = { LogLevel: "OFF", Storage: "database" };
 
-const [{ default: WeatherKit2 }, { FlatBufferRootProcessor }, { News, Weather }, { Response }, { Response: ResponseDev }, { Console }, { default: database }] = await Promise.all([
+const [{ default: WeatherKit2 }, { FlatBufferRootProcessor }, { WK2 }, { Response }, { Response: ResponseDev }, { Console }, { default: database }] = await Promise.all([
     import("../src/class/WeatherKit2.mjs"),
     import("@nsnanocat/flatbuffer-root"),
     import("@nsringo/weatherkit"),
@@ -16,7 +16,7 @@ const [{ default: WeatherKit2 }, { FlatBufferRootProcessor }, { News, Weather },
     import("../src/function/database.mjs"),
 ]);
 
-const supportedRootDataSets = Object.getOwnPropertyNames(Weather.prototype).filter(dataSet => !["constructor", "__init"].includes(dataSet));
+const supportedRootDataSets = Object.getOwnPropertyNames(WK2.Weather.prototype).filter(dataSet => !["constructor", "__init"].includes(dataSet));
 const qWeatherAlertHtml = `<!doctype html>
 <html>
     <head><title>建邺天气预警</title></head>
@@ -132,7 +132,7 @@ test("encode replaces patch keys while preserving untouched and future root slot
     assert.deepEqual(untouched, sourceBytes);
 
     const patched = WeatherKit2.encode(new ByteBuffer(sourceBytes), { news: { placements: [] } });
-    const weather = Weather.getRootAsWeather(new ByteBuffer(patched));
+    const weather = WK2.Weather.getRootAsWeather(new ByteBuffer(patched));
     assert.ok(weather.forecastNextHour());
     assert.ok(weather.news());
     assert.notEqual(Buffer.from(patched).indexOf(sourceBytes), -1);
@@ -148,7 +148,7 @@ test("encode isolates failed and unknown patch keys while compiling valid slots"
             news: { placements: [] },
         }),
     );
-    const weather = Weather.getRootAsWeather(new ByteBuffer(logs.result));
+    const weather = WK2.Weather.getRootAsWeather(new ByteBuffer(logs.result));
 
     assert.ok(weather.airQuality());
     assert.ok(weather.forecastNextHour());
@@ -162,15 +162,15 @@ test("encode isolates failed and unknown patch keys while compiling valid slots"
 
 test("decode isolates one malformed selected product and keeps other selected slots", () => {
     const sourceBytes = createWeatherRoot([4, 5]);
-    const originalPlacementsLength = News.prototype.placementsLength;
+    const originalPlacementsLength = WK2.News.prototype.placementsLength;
     let logs;
-    News.prototype.placementsLength = () => {
+    WK2.News.prototype.placementsLength = () => {
         throw new Error("malformed placements vector");
     };
     try {
         logs = captureConsole(() => WeatherKit2.decode(new ByteBuffer(sourceBytes), ["news", "forecastNextHour"]));
     } finally {
-        News.prototype.placementsLength = originalPlacementsLength;
+        WK2.News.prototype.placementsLength = originalPlacementsLength;
     }
 
     assert.deepEqual(Object.keys(logs.result), ["forecastNextHour"]);
@@ -212,7 +212,7 @@ test("slot dictionary logs debug on success, warn on opaque slots, and error on 
 
 test("encode without a source creates a complete root containing only patch keys", () => {
     const rawBody = WeatherKit2.encode(undefined, { news: { placements: [] } });
-    const weather = Weather.getRootAsWeather(new ByteBuffer(rawBody));
+    const weather = WK2.Weather.getRootAsWeather(new ByteBuffer(rawBody));
 
     assert.ok(weather.news());
     assert.equal(weather.forecastNextHour(), null);

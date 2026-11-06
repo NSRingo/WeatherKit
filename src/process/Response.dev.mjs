@@ -8,6 +8,7 @@ import WAQI from "../class/WAQI.mjs";
 import Weather from "../class/Weather.mjs";
 import WeatherAlerts from "../class/WeatherAlerts.mjs";
 import WeatherKit2 from "../class/WeatherKit2.mjs";
+import WeatherKit3 from "../class/WeatherKit3.mjs";
 import database from "../function/database.mjs";
 import mergeWeatherKitAvailability from "../function/mergeWeatherKitAvailability.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
@@ -101,13 +102,26 @@ export async function Response($request, $response) {
                     switch (url.hostname) {
                         case "weatherkit.apple.com":
                             // 路径判断
-                            if (url.pathname.startsWith("/api/v2/weather/")) {
+                            if (/^\/api\/v[23]\/weather\//.test(url.pathname)) {
                                 const parameters = parseWeatherKitURL(url);
-                                const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet));
+                                let WeatherKit;
+                                switch (parameters.version) {
+                                    case "v2":
+                                        WeatherKit = WeatherKit2;
+                                        break;
+                                    case "v3":
+                                        WeatherKit = WeatherKit3;
+                                        break;
+                                }
+                                const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet) && (parameters.version !== "v3" || dataSet === "airQuality"));
+                                if (parameters.version === "v3" && dataSets.length === 0) break;
                                 const rootNames = dataSets.map(dataSet => Configs.DataSets[dataSet] ?? dataSet);
-                                body = WeatherKit2.decode(ByteBuffer, rootNames);
+                                body = WeatherKit.decode(ByteBuffer, rootNames);
+                                // 解码失败不等于 Apple 缺少 AQ，不能用注入结果覆盖未知字段或枚举。
+                                // A rejected AQ child is not a missing product; retain its original fields and enums.
+                                if (body === null) break;
                                 const providerParameters = { ...parameters, weatherKitLanguage: body.weatherAlerts?.metadata?.language };
-                                const matchEnum = new MatchEnum(body);
+                                const matchEnum = new MatchEnum(body, parameters.version);
                                 if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
                                     await matchEnum.init();
                                 }
@@ -182,7 +196,7 @@ export async function Response($request, $response) {
                                         }
                                     }),
                                 );
-                                rawBody = WeatherKit2.encode(ByteBuffer, body);
+                                rawBody = WeatherKit.encode(ByteBuffer, body);
                                 break;
                             }
                             break;
@@ -414,9 +428,9 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
  * @returns {Promise<any>} 合并后的空气质量对象
  */
 async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
-    // Step1. 修复污染物单位
+    // Step1. 修复污染物单位（Apple 原始产品入口，CO 误标场景按 PR #107 幂等处理）
     // Step 1. Fix pollutant units.
-    airQuality = AirQuality.FixPollutantsUnits(airQuality);
+    airQuality = AirQuality.FixPollutantsUnits(airQuality, { appleProduct: true });
 
     // Step2. 判断原始污染物是否为空，并在需要时注入污染物数据
     const isPollutantEmpty = !Array.isArray(airQuality?.pollutants) || airQuality.pollutants.length === 0;

@@ -246,7 +246,8 @@ test("Dev builds use dev templates, bundles, and output names", async () => {
         assert.match(template, /airQualityScale[^\n]+request\.dev\.bundle\.js/);
     }
     assert.match(stash, /WeatherKit\.api\.v1\.airQualityScale\.request:[\s\S]*?url: [^\n]+request\.dev\.bundle\.js/);
-    assert.match(loon, /api\.v1\.weather\.request/);
+    assert.match(loon, /api\.v2\.weather\.request/);
+    assert.match(loon, /api\.v3\.weather\.request/);
     for (const template of [surge, loon, quantumultX, stash]) {
         assert.doesNotMatch(template, /releases\/download/);
     }
@@ -290,6 +291,7 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
     assert.match(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "news", "weatherAlerts", "weatherChange", "trendComparison", "locationInfo"\][\s\S]*key: "weatherChange", label: "天气变化"[\s\S]*key: "trendComparison", label: "历史对比"/);
     assert.doesNotMatch(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*\.\.\.dataSets\[0\]/);
     assert.match(full, /key: "Weather\.Replace"[\s\S]*defaultValue: "CN"[\s\S]*type: "string"/);
+    assert.match(full, /key: "Storage"[\s\S]*defaultValue: "PersistentStore"[\s\S]*exclude: \["boxjs"\]/);
     assert.match(full, /args: \[\.\.\.dataSetsFull/);
     assert.match(release, /import \{[^}]*dataSets[^}]*weatherAlerts[^}]*\} from "\.\/arguments-builder\.full\.config"/);
     assert.match(release, /import \{[^}]*airQuality[^}]*\} from "\.\/arguments-builder\.full\.config"/);

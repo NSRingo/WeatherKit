@@ -1,5 +1,5 @@
 import { Console, fetch } from "@nsnanocat/util";
-import * as WK2 from "@nsringo/weatherkit";
+import { WK2, WK3 } from "@nsringo/weatherkit";
 
 /**
  * MatchEnum - 用于比对 JSON 接口和 Flatbuffer 接口的枚举值是否一致
@@ -7,19 +7,28 @@ import * as WK2 from "@nsringo/weatherkit";
  * 变量命名约定：
  * - jsonValue: JSON 接口返回的枚举字符串值，如 "RAIN", "MINOR"
  * - protoValue: Flatbuffer 接口返回的枚举字符串值，如 "RAIN", "MINOR"
- * - protoEnumIndex: 枚举的数字索引，如 WK2.Severity["MINOR"] = 4
+ * - protoEnumIndex: 枚举的数字索引，如 Severity["MINOR"] = 4
  *
  * 比较逻辑：jsonValue 与 protoValue 进行字符串比较
  * 通知格式：json: {jsonValue} / proto: {protoEnumIndex}-{protoValue}
  */
 export default class MatchEnum {
-    constructor(proto) {
+    constructor(proto, version) {
         this.Name = "MatchEnum";
-        this.Version = "0.0.3";
+        this.Version = "0.0.4";
         Console.log(`🟧 ${this.Name} v${this.Version}`);
         this.request = $request;
         this.json = {};
         this.proto = proto;
+        switch (version) {
+            case "v3":
+                this.enumTypes = WK3;
+                break;
+            case "v2":
+            default:
+                this.enumTypes = WK2;
+                break;
+        }
     }
 
     async init() {
@@ -38,22 +47,22 @@ export default class MatchEnum {
         const protoTime = this.proto?.airQuality?.metadata?.reportedTime;
         const jsonValue = this.json?.airQuality?.previousDayComparison;
         const protoValue = this.proto?.airQuality?.previousDayComparison;
-        const protoEnumIndex = WK2.ComparisonTrend[protoValue];
+        const protoEnumIndex = this.enumTypes.ComparisonTrend[protoValue];
         if (jsonValue !== protoValue) {
             $notification.post("ComparisonTrend", "", `reportedTime: ${jsonTime}-${protoTime}\njson: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
         }
         this.json?.airQuality?.pollutants?.forEach(pollutant => {
             const jsonValue = pollutant?.pollutantType;
-            const protoEnumIndex = WK2.PollutantType[pollutant?.pollutantType];
-            const protoValue = WK2.PollutantType[protoEnumIndex];
+            const protoEnumIndex = this.enumTypes.PollutantType[pollutant?.pollutantType];
+            const protoValue = this.enumTypes.PollutantType[protoEnumIndex];
             if (jsonValue !== protoValue) {
                 $notification.post("PollutantType", "", `json: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
             }
         });
         this.json?.airQuality?.pollutants?.forEach(pollutant => {
             const jsonValue = pollutant?.units;
-            const protoEnumIndex = WK2.UnitType[pollutant?.units];
-            const protoValue = WK2.UnitType[protoEnumIndex];
+            const protoEnumIndex = this.enumTypes.UnitType[pollutant?.units];
+            const protoValue = this.enumTypes.UnitType[protoEnumIndex];
             if (jsonValue !== protoValue) {
                 $notification.post("UnitType", "", `json: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
             }
@@ -65,7 +74,7 @@ export default class MatchEnum {
         const protoTime = this.proto?.currentWeather?.metadata?.reportedTime;
         const jsonValue = this.json?.currentWeather?.conditionCode;
         const protoValue = this.proto?.currentWeather?.conditionCode;
-        const protoEnumIndex = WK2.WeatherCondition[protoValue];
+        const protoEnumIndex = this.enumTypes.WeatherCondition[protoValue];
         if (jsonValue !== protoValue) {
             $notification.post("WeatherCondition", "", `reportedTime: ${jsonTime}-${protoTime}\njson: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
         }
@@ -76,7 +85,7 @@ export default class MatchEnum {
         const protoTime = this.proto?.currentWeather?.metadata?.reportedTime;
         const jsonValue = this.json?.currentWeather?.pressureTrend;
         const protoValue = this.proto?.currentWeather?.pressureTrend;
-        const protoEnumIndex = WK2.PressureTrend[protoValue];
+        const protoEnumIndex = this.enumTypes.PressureTrend[protoValue];
         if (jsonValue !== protoValue) {
             $notification.post("PressureTrend", "", `reportedTime: ${jsonTime}-${protoTime}\njson: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
         }
@@ -88,7 +97,7 @@ export default class MatchEnum {
             const jsonStartTime = condition?.startTime;
             const protoCondition = this.proto?.forecastNextHour?.condition?.find(c => c?.startTime === jsonStartTime);
             const protoValue = protoCondition?.beginCondition;
-            const protoEnumIndex = WK2.ConditionType[protoValue];
+            const protoEnumIndex = this.enumTypes.ConditionType[protoValue];
             if (jsonValue !== protoValue) {
                 $notification.post("ConditionType", "", `startTime: ${jsonStartTime}\njson: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
             }
@@ -101,7 +110,7 @@ export default class MatchEnum {
             const jsonStartTime = condition?.startTime;
             const protoCondition = this.proto?.forecastNextHour?.condition?.find(c => c?.startTime === jsonStartTime);
             const protoValue = protoCondition?.forecastToken;
-            const protoEnumIndex = WK2.ForecastToken[protoValue];
+            const protoEnumIndex = this.enumTypes.ForecastToken[protoValue];
             if (jsonValue !== protoValue) {
                 $notification.post("ForecastToken", "", `startTime: ${jsonStartTime}\njson: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
             }
@@ -112,7 +121,7 @@ export default class MatchEnum {
         this.json?.weatherAlerts?.alerts?.forEach((alert, i) => {
             const jsonValue = alert?.severity;
             const protoValue = this.proto?.weatherAlerts?.alerts?.[i]?.severity;
-            const protoEnumIndex = WK2.Severity[protoValue];
+            const protoEnumIndex = this.enumTypes.Severity[protoValue];
             if (jsonValue !== protoValue) {
                 $notification.post("Severity", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
             }
@@ -123,7 +132,7 @@ export default class MatchEnum {
         this.json?.weatherAlerts?.alerts?.forEach((alert, i) => {
             const jsonValue = alert?.significance;
             const protoValue = this.proto?.weatherAlerts?.alerts?.[i]?.significance;
-            const protoEnumIndex = WK2.SignificanceType[protoValue];
+            const protoEnumIndex = this.enumTypes.SignificanceType[protoValue];
             if (jsonValue !== protoValue) {
                 $notification.post("SignificanceType", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
             }
@@ -134,7 +143,7 @@ export default class MatchEnum {
         this.json?.weatherAlerts?.alerts?.forEach((alert, i) => {
             const jsonValue = alert?.urgency;
             const protoValue = this.proto?.weatherAlerts?.alerts?.[i]?.urgency;
-            const protoEnumIndex = WK2.Urgency[protoValue];
+            const protoEnumIndex = this.enumTypes.Urgency[protoValue];
             if (jsonValue !== protoValue) {
                 $notification.post("Urgency", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
             }
@@ -145,7 +154,7 @@ export default class MatchEnum {
         this.json?.weatherAlerts?.alerts?.forEach((alert, i) => {
             const jsonValue = alert?.certainty;
             const protoValue = this.proto?.weatherAlerts?.alerts?.[i]?.certainty;
-            const protoEnumIndex = WK2.Certainty[protoValue];
+            const protoEnumIndex = this.enumTypes.Certainty[protoValue];
             if (jsonValue !== protoValue) {
                 $notification.post("Certainty", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
             }
@@ -156,7 +165,7 @@ export default class MatchEnum {
         this.json?.weatherAlerts?.alerts?.forEach((alert, i) => {
             const jsonValue = alert?.importance;
             const protoValue = this.proto?.weatherAlerts?.alerts?.[i]?.importance;
-            const protoEnumIndex = WK2.ImportanceType[protoValue];
+            const protoEnumIndex = this.enumTypes.ImportanceType[protoValue];
             if (jsonValue !== protoValue) {
                 $notification.post("ImportanceType", "", `json[${i}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
             }
@@ -168,7 +177,7 @@ export default class MatchEnum {
             alert?.responses?.forEach((response, j) => {
                 const jsonValue = response;
                 const protoValue = this.proto?.weatherAlerts?.alerts?.[i]?.responses?.[j];
-                const protoEnumIndex = WK2.ResponseType[protoValue];
+                const protoEnumIndex = this.enumTypes.ResponseType[protoValue];
                 if (jsonValue !== protoValue) {
                     $notification.post("ResponseType", "", `json[${i}][${j}]: ${jsonValue}\nproto: ${protoEnumIndex}-${protoValue}`);
                 }
@@ -193,7 +202,7 @@ export default class MatchEnum {
             if (protoPlacement) {
                 const jsonValue = jsonPlacement?.placement;
                 const protoValue = protoPlacement?.placement;
-                const protoEnumIndex = WK2.PlacementType[protoValue];
+                const protoEnumIndex = this.enumTypes.PlacementType[protoValue];
                 if (jsonValue !== protoValue) {
                     const headline = jsonHeadlines[0] ?? jsonArticleIds[0] ?? "";
                     $notification.post("PlacementType", "", `article: ${headline}\njson[${i}]: ${jsonValue}\nproto[${protoIndex}]: ${protoEnumIndex}-${protoValue}`);
