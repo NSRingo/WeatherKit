@@ -1150,7 +1150,7 @@ function uuidBytesObjectToString(uuid) {
  * @param {*} uuid - UUID 输入 / UUID input.
  * @returns {number} 子表偏移 / Table offset.
  */
-function createUuidOffset(builder, uuid) {
+export function createUuidOffset(builder, uuid) {
     const bytes = toUuidBytes(uuid);
     if (!bytes || bytes.length === 0) return 0;
     const idBytesOffset = WK2.Common.UUID.createBytesVector(builder, bytes);
@@ -1162,6 +1162,6 @@ function createUuidOffset(builder, uuid) {
  * @param {object} uuid - UUID 输入 / UUID input.
  * @returns {string|null} UUID 字符串 / UUID string.
  */
-function decodeUuid(uuid) {
+export function decodeUuid(uuid) {
     return uuidBytesObjectToString(uuid);
 }

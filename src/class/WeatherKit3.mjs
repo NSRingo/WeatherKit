@@ -1,32 +1,20 @@
 import { FlatBufferRootProcessor, inspectTable } from "@nsnanocat/flatbuffer-root";
 import { WK3 } from "@nsringo/weatherkit";
-
-/**
- * 在通用处理器之外补充 WK3 AQ 失败边界：请求的 AQ 产品读取或解码失败时返回 null，
- * 由主脚本保留原包；AQ 物理缺失不算失败，返回不含 AQ 的对象，允许补齐。
- * Decode boundary for WK3 AQ: return null when a requested AQ product fails to read
- * or decode so the caller keeps the original package; a physically missing AQ is not
- * a failure and yields an object without airQuality so the caller may backfill it.
- */
-class WeatherKit3Processor extends FlatBufferRootProcessor {
-    decode(byteBuffer, rootNames = []) {
-        const { json, failures } = this.decodeWithReport(byteBuffer, rootNames);
-        if (failures.some(failure => failure.name === "airQuality")) return null;
-        return json;
-    }
-}
+import { createUuidOffset, decodeUuid } from "./WeatherKit2.mjs";
 
 /**
  * 使用 Weather 根模型和产品 codec 配置通用根表处理器。
- * 首轮只注册根槽 0；其余 WK3 产品保持原始 arena，不按访问器顺序推断稀疏槽位。
+ * WK3 根槽位稀疏（0/5/9），各 codec 以显式 slot 对齐线槽位；其余产品保持原始 arena。
  * Configure the generic root-table processor with the Weather model and product codecs.
- * Register root slot 0 only; preserve other products without inferring sparse slot IDs from accessor order.
+ * WK3 root slots are sparse (0/5/9); each codec aligns to its wire slot explicitly, other products keep their original arenas.
  */
-const WeatherKit3 = new WeatherKit3Processor({
+const WeatherKit3 = new FlatBufferRootProcessor({
     codecs: {
         airQuality: { decode: decodeAirQuality, encode: encodeAirQuality, tableClass: WK3.AirQuality },
+        forecastNextHour: { decode: decodeForecastNextHour, encode: encodeForecastNextHour, tableClass: WK3.NextHourForecastData },
+        weatherAlerts: { decode: decodeWeatherAlerts, encode: encodeWeatherAlerts, tableClass: WK3.WeatherAlertCollectionData },
     },
-    configurableRootNames: ["airQuality"],
+    configurableRootNames: ["airQuality", "forecastNextHour", "weatherAlerts"],
     name: "WeatherKit3",
     rootClass: WK3.Weather,
 });
@@ -87,6 +75,204 @@ function decodeAirQuality(data) {
 }
 
 /**
+ * 编码下一小时降水产品表；仅供注入缺失产品使用，不重编码 Apple 原始数据。
+ * Encode the next-hour precipitation product table; only used to inject a missing product, never to re-encode Apple's own data.
+ * @param {import("flatbuffers").Builder} builder - FlatBuffer 构建器 / FlatBuffer builder.
+ * @param {object} data - 业务下一小时降水对象 / Next-hour precipitation payload.
+ * @returns {number} 产品表偏移 / Table offset.
+ */
+function encodeForecastNextHour(builder, data) {
+    const metadataOffset = encodeMetadata(builder, data.metadata);
+    // 防御第三方数据：未知枚举传给 FlatBuffer 会静默编码为 UNKNOWN0。
+    // Defend against third-party data: unknown enums would otherwise be silently encoded as UNKNOWN0.
+    const conditionOffsets = data.condition
+        .filter(condition => typeof WK3.ForecastToken[condition.forecastToken] === "number" && [condition.beginCondition, condition.endCondition].every(value => typeof WK3.ConditionType[value] === "number"))
+        .map(condition => {
+            const parametersOffset = WK3.Condition.createParametersVector(
+                builder,
+                condition.parameters.map(parameter => WK3.Parameter.createParameter(builder, enumValue(WK3.ParameterType, parameter.type), parameter.date)),
+            );
+            return WK3.Condition.createCondition(builder, condition.startTime, condition.endTime, enumValue(WK3.ForecastToken, condition.forecastToken), enumValue(WK3.ConditionType, condition.beginCondition), enumValue(WK3.ConditionType, condition.endCondition), parametersOffset);
+        });
+    const conditionOffset = WK3.NextHourForecastData.createConditionVector(builder, conditionOffsets);
+    // 摘要槽位 2 的 condition 枚举向量元素宽度未验证，不写入。
+    // Slot 2 of summaries (condition enum vector) is unverified and not written.
+    const summaryOffset = WK3.NextHourForecastData.createSummaryVector(
+        builder,
+        data.summary.map(summary => WK3.ForecastPeriodSummary.createForecastPeriodSummary(builder, summary.startTime, summary.endTime, summary.precipitationChance, summary.precipitationIntensity)),
+    );
+    const minutesOffset = WK3.NextHourForecastData.createMinutesVector(
+        builder,
+        data.minutes.map(minute => WK3.Common.ForecastMinute.createForecastMinute(builder, minute.startTime, minute.precipitationChance, minute.precipitationIntensity, minute.perceivedPrecipitationIntensity)),
+    );
+    return WK3.NextHourForecastData.createNextHourForecastData(builder, metadataOffset, conditionOffset, summaryOffset, data.forecastStart, data.forecastEnd, minutesOffset);
+}
+
+/**
+ * 解码下一小时降水产品表；未验证字段或未知枚举值抛 RangeError。
+ * Decode the next-hour precipitation product table; unverified fields or unknown enums throw.
+ * @param {WK3.NextHourForecastData} data - 生成的下一小时降水表实例 / Generated next-hour table instance.
+ * @returns {object} 业务下一小时降水对象 / Next-hour precipitation payload.
+ */
+function decodeForecastNextHour(data) {
+    checkFields(data, 6);
+    const NextHourForecastData = data;
+    const condition = [];
+    for (let i = 0; i < NextHourForecastData.conditionLength(); i++) {
+        const conditionData = NextHourForecastData.condition(i);
+        checkFields(conditionData, 6);
+        const entry = {
+            beginCondition: enumName(WK3.ConditionType, conditionData.beginCondition()),
+            endCondition: enumName(WK3.ConditionType, conditionData.endCondition()),
+            endTime: conditionData.endTime(),
+            forecastToken: enumName(WK3.ForecastToken, conditionData.forecastToken()),
+            parameters: [],
+            startTime: conditionData.startTime(),
+        };
+        for (let j = 0; j < conditionData.parametersLength(); j++) {
+            const parameter = conditionData.parameters(j);
+            checkFields(parameter, 2);
+            entry.parameters.push({ date: parameter.date(), type: enumName(WK3.ParameterType, parameter.type()) });
+        }
+        condition.push(entry);
+    }
+    const minutes = [];
+    for (let i = 0; i < NextHourForecastData.minutesLength(); i++) {
+        const minute = NextHourForecastData.minutes(i);
+        checkFields(minute, 4);
+        minutes.push({
+            perceivedPrecipitationIntensity: minute.perceivedPrecipitationIntensity(),
+            precipitationChance: minute.precipitationChance(),
+            precipitationIntensity: minute.precipitationIntensity(),
+            startTime: minute.startTime(),
+        });
+    }
+    const summary = [];
+    for (let i = 0; i < NextHourForecastData.summaryLength(); i++) {
+        const summaryData = NextHourForecastData.summary(i);
+        checkFields(summaryData, 5);
+        // 摘要槽位 2 的 condition 枚举向量元素宽度未验证，不解码。
+        // Slot 2 of summaries (condition enum vector) is unverified and not decoded.
+        summary.push({
+            endTime: summaryData.endTime(),
+            precipitationChance: summaryData.precipitationChance(),
+            precipitationIntensity: summaryData.precipitationIntensity(),
+            startTime: summaryData.startTime(),
+        });
+    }
+    return {
+        metadata: decodeMetadata(NextHourForecastData.metadata()),
+        condition,
+        forecastEnd: NextHourForecastData.forecastEnd(),
+        forecastStart: NextHourForecastData.forecastStart(),
+        minutes,
+        summary,
+    };
+}
+
+/**
+ * 编码气象预警集合产品表。
+ * Encode the weather alert collection product table.
+ * @param {import("flatbuffers").Builder} builder - FlatBuffer 构建器 / FlatBuffer builder.
+ * @param {object} data - 业务气象预警集合对象 / Weather alert collection payload.
+ * @returns {number} 产品表偏移 / Table offset.
+ */
+function encodeWeatherAlerts(builder, data) {
+    // 缺省字符串不写入（0 偏移），保留 Apple 原始字段缺席状态。
+    // Absent strings are not written (0 offset), preserving Apple's original field absence.
+    const stringOffset = value => (value ? builder.createString(value) : 0);
+    const metadataOffset = encodeMetadata(builder, data.metadata);
+    const alertsOffsets = data.alerts.map(alert => {
+        const responsesOffset = WK3.WeatherAlertSummary.createResponsesVector(
+            builder,
+            alert.responses.map(response => enumValue(WK3.ResponseType, response)),
+        );
+        return WK3.WeatherAlertSummary.createWeatherAlertSummary(
+            builder,
+            createUuidOffset(builder, alert.id),
+            stringOffset(alert.areaId),
+            stringOffset(alert.areaName),
+            stringOffset(alert.attributionUrl),
+            stringOffset(alert.countryCode),
+            stringOffset(alert.description),
+            stringOffset(alert.token),
+            alert.effectiveTime,
+            alert.expireTime,
+            alert.issuedTime,
+            alert.eventOnsetTime,
+            alert.eventEndTime,
+            stringOffset(alert.detailsUrl),
+            stringOffset(alert.phenomenon),
+            enumValue(WK3.Severity, alert.severity),
+            enumValue(WK3.SignificanceType, alert.significance),
+            stringOffset(alert.source),
+            stringOffset(alert.eventSource),
+            enumValue(WK3.Urgency, alert.urgency),
+            enumValue(WK3.Certainty, alert.certainty),
+            enumValue(WK3.ImportanceType, alert.importance),
+            responsesOffset,
+            alert.unknown23,
+            alert.unknown24,
+            alert.unknown25,
+            alert.unknown26,
+        );
+    });
+    const alertsOffset = WK3.WeatherAlertCollectionData.createAlertsVector(builder, alertsOffsets);
+    return WK3.WeatherAlertCollectionData.createWeatherAlertCollectionData(builder, metadataOffset, stringOffset(data.detailsUrl), alertsOffset);
+}
+
+/**
+ * 解码气象预警集合产品表；未验证字段或未知枚举值抛 RangeError。
+ * Decode the weather alert collection product table; unverified fields or unknown enums throw.
+ * @param {WK3.WeatherAlertCollectionData} data - 生成的预警集合表实例 / Generated alert collection table instance.
+ * @returns {object} 业务气象预警集合对象 / Weather alert collection payload.
+ */
+function decodeWeatherAlerts(data) {
+    checkFields(data, 3);
+    const WeatherAlertCollectionData = data;
+    const alerts = [];
+    for (let i = 0; i < WeatherAlertCollectionData.alertsLength(); i++) {
+        const alert = WeatherAlertCollectionData.alerts(i);
+        checkFields(alert, 27);
+        const summary = {
+            areaId: alert.areaId(),
+            areaName: alert.areaName(),
+            attributionUrl: alert.attributionUrl(),
+            certainty: enumName(WK3.Certainty, alert.certainty()),
+            countryCode: alert.countryCode(),
+            description: alert.description(),
+            detailsUrl: alert.detailsUrl(),
+            effectiveTime: alert.effectiveTime(),
+            eventEndTime: alert.eventEndTime(),
+            eventOnsetTime: alert.eventOnsetTime(),
+            eventSource: alert.eventSource(),
+            expireTime: alert.expireTime(),
+            id: decodeUuid(alert.id()),
+            importance: enumName(WK3.ImportanceType, alert.importance()),
+            issuedTime: alert.issuedTime(),
+            phenomenon: alert.phenomenon(),
+            responses: [],
+            severity: enumName(WK3.Severity, alert.severity()),
+            significance: enumName(WK3.SignificanceType, alert.significance()),
+            source: alert.source(),
+            token: alert.token(),
+            unknown23: alert.unknown23(),
+            unknown24: alert.unknown24(),
+            unknown25: alert.unknown25(),
+            unknown26: alert.unknown26(),
+            urgency: enumName(WK3.Urgency, alert.urgency()),
+        };
+        for (let j = 0; j < alert.responsesLength(); j++) summary.responses.push(enumName(WK3.ResponseType, alert.responses(j)));
+        alerts.push(summary);
+    }
+    return {
+        metadata: decodeMetadata(WeatherAlertCollectionData.metadata()),
+        alerts,
+        detailsUrl: WeatherAlertCollectionData.detailsUrl(),
+    };
+}
+
+/**
  * 编码产品元数据子表；缺失时返回 0（不写入）。
  * Encode the metadata child table; returns 0 when absent.
  * @param {import("flatbuffers").Builder} builder - FlatBuffer 构建器 / FlatBuffer builder.
@@ -95,15 +281,18 @@ function decodeAirQuality(data) {
  */
 function encodeMetadata(builder, data) {
     if (!data) return 0;
+    // 缺省字符串不写入（0 偏移），保留 Apple 原始字段缺席状态。
+    // Absent strings are not written (0 offset), preserving Apple's original field absence.
+    const stringOffset = value => (value ? builder.createString(value) : 0);
     return WK3.Metadata.createMetadata(
         builder,
-        builder.createString(data.attributionUrl),
+        stringOffset(data.attributionUrl),
         data.expireTime,
-        builder.createString(data.language),
+        stringOffset(data.language),
         data.latitude,
         data.longitude,
-        builder.createString(data.providerLogo),
-        builder.createString(data.providerName),
+        stringOffset(data.providerLogo),
+        stringOffset(data.providerName),
         data.readTime,
         data.reportedTime,
         data.temporarilyUnavailable,
@@ -138,7 +327,7 @@ function decodeMetadata(data) {
 /**
  * 校验表的字段数不超过已验证范围；超出时抛 RangeError，由处理器隔离为单 slot 失败。
  * Validate that a table declares no more than the verified field count; excess throws.
- * @param {WK3.AirQuality|WK3.Metadata|WK3.Pollutant} table - 生成的表实例 / Generated table instance.
+ * @param {object} table - 生成的表实例 / Generated table instance.
  * @param {number} count - 已验证的字段数 / Verified field count.
  * @returns {void}
  */
@@ -157,7 +346,7 @@ function checkFields(table, count) {
  */
 function enumName(values, value) {
     const name = values[value];
-    if (typeof name !== "string" || /^UNKNOWN\d+$/.test(name)) throw new RangeError(`Unverified WK3 AQ enum: ${value}`);
+    if (typeof name !== "string" || /^UNKNOWN\d+$/.test(name)) throw new RangeError(`Unverified WK3 enum: ${value}`);
     return name;
 }
 
@@ -170,6 +359,6 @@ function enumName(values, value) {
  */
 function enumValue(values, name) {
     const value = values[name];
-    if (typeof value !== "number" || /^UNKNOWN\d+$/.test(name)) throw new RangeError(`Unverified WK3 AQ enum: ${name}`);
+    if (typeof value !== "number" || /^UNKNOWN\d+$/.test(name)) throw new RangeError(`Unverified WK3 enum: ${name}`);
     return value;
 }
