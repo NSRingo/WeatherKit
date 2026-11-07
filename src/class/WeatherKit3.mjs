@@ -181,7 +181,6 @@ function encodeWeatherAlerts(builder, data) {
     // 缺省字符串不写入（0 偏移），保留 Apple 原始字段缺席状态。
     // Absent strings are not written (0 offset), preserving Apple's original field absence.
     const stringOffset = value => (value ? builder.createString(value) : 0);
-    const metadataOffset = encodeMetadata(builder, data.metadata);
     const alertsOffsets = data.alerts.map(alert => {
         const responsesOffset = WK3.WeatherAlertSummary.createResponsesVector(
             builder,
@@ -191,7 +190,6 @@ function encodeWeatherAlerts(builder, data) {
             builder,
             createUuidOffset(builder, alert.id),
             stringOffset(alert.areaId),
-            stringOffset(alert.areaName),
             stringOffset(alert.attributionUrl),
             stringOffset(alert.countryCode),
             stringOffset(alert.description),
@@ -211,14 +209,10 @@ function encodeWeatherAlerts(builder, data) {
             enumValue(WK3.Certainty, alert.certainty),
             enumValue(WK3.ImportanceType, alert.importance),
             responsesOffset,
-            alert.unknown23,
-            alert.unknown24,
-            alert.unknown25,
-            alert.unknown26,
         );
     });
     const alertsOffset = WK3.WeatherAlertCollectionData.createAlertsVector(builder, alertsOffsets);
-    return WK3.WeatherAlertCollectionData.createWeatherAlertCollectionData(builder, metadataOffset, stringOffset(data.detailsUrl), alertsOffset);
+    return WK3.WeatherAlertCollectionData.createWeatherAlertCollectionData(builder, stringOffset(data.detailsUrl), alertsOffset);
 }
 
 /**
@@ -233,10 +227,9 @@ function decodeWeatherAlerts(data) {
     const alerts = [];
     for (let i = 0; i < WeatherAlertCollectionData.alertsLength(); i++) {
         const alert = WeatherAlertCollectionData.alerts(i);
-        checkFields(alert, 27);
+        checkFields(alert, 22);
         const summary = {
             areaId: alert.areaId(),
-            areaName: alert.areaName(),
             attributionUrl: alert.attributionUrl(),
             certainty: enumName(WK3.Certainty, alert.certainty()),
             countryCode: alert.countryCode(),
@@ -256,17 +249,12 @@ function decodeWeatherAlerts(data) {
             significance: enumName(WK3.SignificanceType, alert.significance()),
             source: alert.source(),
             token: alert.token(),
-            unknown23: alert.unknown23(),
-            unknown24: alert.unknown24(),
-            unknown25: alert.unknown25(),
-            unknown26: alert.unknown26(),
             urgency: enumName(WK3.Urgency, alert.urgency()),
         };
         for (let j = 0; j < alert.responsesLength(); j++) summary.responses.push(enumName(WK3.ResponseType, alert.responses(j)));
         alerts.push(summary);
     }
     return {
-        metadata: decodeMetadata(WeatherAlertCollectionData.metadata()),
         alerts,
         detailsUrl: WeatherAlertCollectionData.detailsUrl(),
     };

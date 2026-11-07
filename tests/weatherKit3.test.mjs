@@ -59,7 +59,8 @@ function mockProvider(t) {
     t.mock.method(ColorfulClouds.prototype, "YesterdayAirQuality", async () => ({ ...structuredClone(replacement), index: 25, categoryIndex: 1, isSignificant: false }));
     t.mock.method(ColorfulClouds.prototype, "Minutely", async () => assert.fail("WK3 nextHour must remain opaque"));
     t.mock.method(ColorfulClouds.prototype, "CurrentWeather", async () => assert.fail("WK3 currentWeather must remain opaque"));
-    t.mock.method(QWeather.prototype, "WeatherAlertWeb", async () => assert.fail("WK3 alerts must remain opaque"));
+    // 空 detailsUrl 是空操作：返回 undefined，不发起抓取 / Empty detailsUrl is a no-op returning undefined.
+    t.mock.method(QWeather.prototype, "WeatherAlertWeb", async () => undefined);
 }
 
 async function response(bytes = fixture, handler = ResponseDev) {
@@ -68,7 +69,8 @@ async function response(bytes = fixture, handler = ResponseDev) {
 
 test("AQ codec reads independently encoded numeric values into existing business names", () => {
     const decoded = WeatherKit3.decode(new ByteBuffer(fixture), ["forecastNextHour", "weatherAlerts", "airQuality"]);
-    assert.deepEqual(Object.keys(decoded), ["airQuality"]);
+    // 槽 9 占位表是合法的空集合（0 字段），槽 5 占位表结构非法被隔离 / The slot-9 placeholder is a valid empty collection; the slot-5 one is structurally invalid and isolated.
+    assert.deepEqual(Object.keys(decoded), ["airQuality", "weatherAlerts"]);
     assert.equal(decoded.airQuality.index, 60);
     assert.equal(decoded.airQuality.metadata.sourceType, "STATION");
     assert.equal(decoded.airQuality.primaryPollutant, "PM2_5");
@@ -242,7 +244,6 @@ function buildWK3AirQuality(builder) {
 }
 
 function buildWK3Alerts(builder, detailsUrl = "https://www.qweather.com/severe-weather/101010100.html?from=AppleWeatherService") {
-    const metadata = WK3.Metadata.createMetadata(builder, 0, 2000000100, builder.createString("zh-CN"), 31.25, 121.5, 0, builder.createString("National Early Warning Center"), 2000000000, 2000000000, false, 3);
     const id = WK3.Common.UUID.createUUID(
         builder,
         WK3.Common.UUID.createBytesVector(
@@ -251,9 +252,9 @@ function buildWK3Alerts(builder, detailsUrl = "https://www.qweather.com/severe-w
         ),
     );
     const responses = WK3.WeatherAlertSummary.createResponsesVector(builder, [7]);
-    const alert = WK3.WeatherAlertSummary.createWeatherAlertSummary(builder, id, builder.createString("101010100"), 0, 0, builder.createString("CN"), builder.createString("大风蓝色预警"), 0, 2000000000, 2000003600, 2000000000, 2000000000, 2000003600, 0, 0, 4, 10, 0, 0, 2, 2, 2, responses, 0, 0, 0, 0);
+    const alert = WK3.WeatherAlertSummary.createWeatherAlertSummary(builder, id, builder.createString("101010100"), 0, builder.createString("CN"), builder.createString("大风蓝色预警"), 0, 2000000000, 2000003600, 2000000000, 2000000000, 2000003600, 0, 0, 4, 10, 0, 0, 2, 2, 2, responses);
     const alerts = WK3.WeatherAlertCollectionData.createAlertsVector(builder, [alert]);
-    return WK3.WeatherAlertCollectionData.createWeatherAlertCollectionData(builder, metadata, builder.createString(detailsUrl), alerts);
+    return WK3.WeatherAlertCollectionData.createWeatherAlertCollectionData(builder, builder.createString(detailsUrl), alerts);
 }
 
 const nextHourReplacement = {
