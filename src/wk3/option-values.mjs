@@ -1,5 +1,5 @@
-// Egern string pickers display their stored values. Keep readable labels at
-// that UI boundary; existing canonical values remain accepted by scripts.
+// Module string controls display their stored values. Reuse readable labels
+// across clients; existing canonical values remain accepted by scripts.
 const indexSources = {
     Calculate: "iRingo内置算法",
     ColorfulCloudsUS: "彩云天气（美标）",

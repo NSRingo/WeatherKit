@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { displayModuleOption } from '../src/wk3/option-values.mjs';
+import { displayModuleOption, normalizeModuleOption } from '../src/wk3/option-values.mjs';
 import { localParameters, parameterDescription } from '../src/wk3/parameters.mjs';
 import { renderLocalModule } from '../scripts/build-egern-module.mjs';
 import { renderWK3Module } from '../scripts/build-wk3-modules.mjs';
@@ -52,7 +52,7 @@ for (const platform of ['surge', 'loon', 'stash']) test(`${platform}: actual mod
     const text = renderWK3Module(platform, version);
     for (const parameter of localParameters) {
         assert.ok(text.includes(parameter.name), parameter.key);
-        if (platform === 'loon') for (const option of parameter.options ?? []) assert.ok(text.includes(option), `${parameter.key}: ${option}`);
+        if (platform === 'loon') for (const option of parameter.options ?? []) assert.ok(text.includes(displayModuleOption(parameter.key, option)), `${parameter.key}: ${option}`);
     }
     for (const parameter of localParameters) assert.ok(parameter.description.length <= 80, parameter.key);
     assert.doesNotMatch(text, /确保包含国内原标准|十二种算法|始终仅做同源/);
@@ -94,11 +94,11 @@ async function consume(platform, changes) {
 for (const platform of ['egern', 'surge', 'loon', 'stash']) {
     test(`${platform}: generated module edits retain types and all scalar choices reach Settings`, async () => {
         for (const parameter of localParameters) {
-            const edits = parameter.boolean ? ['true', 'false'] : parameter.options;
+            const edits = parameter.boolean ? ['true', 'false'] : parameter.options?.flatMap(value => [value, displayModuleOption(parameter.key, value)]);
             if (!edits) continue;
             for (const edit of edits) {
                 const { settings } = await consume(platform, { [parameter.key]: edit });
-                assert.equal(get(settings, parameter.key), parameter.boolean ? edit === 'true' : edit, `${parameter.key}=${edit}`);
+                assert.equal(get(settings, parameter.key), parameter.boolean ? edit === 'true' : normalizeModuleOption(parameter.key, edit), `${parameter.key}=${edit}`);
             }
         }
         const { settings, env } = await consume(platform, {
@@ -122,3 +122,30 @@ for (const platform of ['egern', 'surge', 'loon', 'stash']) {
         assert.deepEqual(settings.Weather.Replace, []);
     });
 }
+
+for (const platform of ['egern', 'surge', 'loon', 'stash']) test(`${platform}: generated defaults and native EAQI request match Egern`, async () => {
+    const { settings } = await consume(platform, {});
+    assert.equal(settings.AirQuality.Current.Index.Provider, 'Calculate');
+    assert.equal(settings.AirQuality.Calculate.Algorithm, 'EU_EAQI');
+    assert.equal(settings.AirQuality.Comparison.Yesterday.IndexProvider, 'ColorfulCloudsUS');
+    assert.equal(settings.AirQuality.Comparison.ReplaceWhenCurrentChange, false);
+    if (platform !== 'egern') {
+        const argument = moduleArguments(platform);
+        let returned;
+        await runPlatform(async ctx => {
+            assert.equal(configuration(ctx).Settings.AirQuality.Calculate.Algorithm, 'EU_EAQI');
+            return { url: 'https://weatherkit.apple.com/api/v2/airQualityScale/zh-Hans/EU.EAQI', headers: { authorization: 'synthetic' } };
+        }, 'request', { $argument: argument, $request: { url: 'https://weatherkit.apple.com/api/v2/airQualityScale/zh-Hans/EU.EAQI.2414' }, $done(value) { returned = value; } }, platform);
+        assert.equal(returned.url, 'https://weatherkit.apple.com/api/v2/airQualityScale/zh-Hans/EU.EAQI');
+        assert.equal(returned.response, undefined);
+    }
+});
+test('Quantumult X without module argument uses the same defaults and retains explicit overrides', async () => {
+    let settings;
+    await runPlatform(ctx => { settings = configuration(ctx).Settings; }, 'request', { $request: { url: 'https://example.invalid/' }, $done() {} }, 'Quantumult X');
+    assert.equal(settings.AirQuality.Current.Index.Provider, 'Calculate');
+    assert.equal(settings.AirQuality.Calculate.Algorithm, 'EU_EAQI');
+    assert.equal(settings.AirQuality.Comparison.ReplaceWhenCurrentChange, false);
+    await runPlatform(ctx => { settings = configuration(ctx).Settings; }, 'request', { $argument: { 'AirQuality.Calculate.Algorithm': '德国LQI' }, $request: { url: 'https://example.invalid/' }, $done() {} }, 'Quantumult X');
+    assert.equal(settings.AirQuality.Calculate.Algorithm, 'UBA');
+});

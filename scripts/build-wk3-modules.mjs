@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { localParameters, parameterDescription } from '../src/wk3/parameters.mjs';
 import { groups } from '../src/wk3/routes.mjs';
+import { displayModuleOption } from '../src/wk3/option-values.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const parameters = localParameters;
@@ -19,16 +20,16 @@ const expand = (text, replacements) => {
     if (/__WK3_[A-Z_]+__/.test(text)) throw new Error('Unrendered WK3 template placeholder');
     return text;
 };
-const defaults = parameters.map(({ key, value }) => `${key}:${JSON.stringify(value)}`).join(',');
+const defaults = parameters.map(({ key, value }) => `${key}:${JSON.stringify(displayModuleOption(key, value))}`).join(',');
 const descriptions = parameters.map(parameter => `${parameter.key}: ${parameter.name}；${parameterDescription(parameter)}`.replaceAll('\n', ' '));
 const description = descriptions.join('\\n');
 const loonArguments = parameters.map(parameter => {
     const { key, value, boolean, options, name } = parameter;
-    const kind = boolean ? `switch,${value}` : options ? `select,${[value, ...options.filter(v => v !== value)].map(v => JSON.stringify(v)).join(',')}` : `input,${JSON.stringify(value)}`;
+    const kind = boolean ? `switch,${value}` : options ? `select,${[value, ...options.filter(v => v !== value)].map(v => JSON.stringify(displayModuleOption(key, v))).join(',')}` : `input,${JSON.stringify(value)}`;
     return `${key} = ${kind},tag=${name},desc=${parameterDescription(parameter).replaceAll(/[\r\n,]/g, '，')}`;
 }).join('\n');
 const quoteYaml = text => `'${text.replaceAll("'", "''")}'`;
-const stashArgument = quoteYaml(JSON.stringify(Object.fromEntries(parameters.map(({ key, value }) => [key, value]))));
+const stashArgument = quoteYaml(JSON.stringify(Object.fromEntries(parameters.map(({ key, value }) => [key, displayModuleOption(key, value)]))));
 
 export function renderWK3Module(platform, version) {
     if (!Object.hasOwn(platforms, platform)) throw new Error(`Unsupported platform: ${platform}`);

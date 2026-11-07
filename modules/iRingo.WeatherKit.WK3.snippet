@@ -1,0 +1,26 @@
+#!name = WeatherKit-Local-WK3
+#!desc = WK3 请求与文本处理；二进制天气透传。安装与参数说明见仓库 modules/README.md。
+#!homepage = https://github.com/patrickyanxxxxx/WeatherKit-WK3
+#!icon = https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
+#!version = 3.3.8
+# QuantumultX 本地脚本不传模块参数；使用与其他 WK3 模块相同的默认值，二进制响应仍透传。
+
+#[filter_local]
+host, weather-analytics-events.apple.com, reject
+host-suffix, tthr.apple.com, reject
+host, tether.edge.apple, reject
+
+#[rewrite_local]
+# WeatherKit.api.availability.response
+^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/availability\/ url script-response-body https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-quantumultx-response.bundle.js
+# WeatherKit.api.airQualityScale.request
+^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/airQualityScale\/ url script-request-header https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-quantumultx-request.bundle.js
+# WeatherKit.api.weatherAlerts.html.request
+^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/weatherAlerts\?(?:[^#]*&)?ids=(?!wk3_)[a-zA-Z0-9][a-zA-Z0-9_-]*-[0-9]{9}(?:&|$) url script-echo-response https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-quantumultx-request.bundle.js
+# WeatherKit.api.weatherAlerts.api.request
+^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/weatherAlerts\?(?:[^#]*&)?ids=(?:wk3_[^&#]*|-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?)(?:&|$) url script-echo-response https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-quantumultx-request.bundle.js
+# WeatherKit.api.weather.response (binary response requires device validation)
+^https?:\/\/weatherkit\.apple\.com\/api\/v[23]\/weather\/ url script-response-body https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-quantumultx-response.bundle.js
+
+#[mitm]
+hostname = weatherkit.apple.com

@@ -5,6 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { displayModuleOption } from '../src/wk3/option-values.mjs';
 import { localParameters } from '../src/wk3/parameters.mjs';
 import { buildWK3Modules, groups, platforms, release, renderWK3Module } from '../scripts/build-wk3-modules.mjs';
 import { localScriptGroups } from '../scripts/build-egern-module.mjs';
@@ -76,7 +77,7 @@ for (const platform of Object.keys(platforms)) test(`${platform}: structure, fiv
     assert.equal(text.split(`wk3-${platform}-response.bundle.js`).length - 1, 2);
     assert.equal((text.match(/v3\.3\.2\//g) ?? []).length, 5);
     if (platform === 'surge') {
-        assert.match(text, /^#!arguments = .*AirQuality\.Calculate\.Algorithm:"EU_EAQI"/m);
+        assert.match(text, /^#!arguments = .*AirQuality\.Calculate\.Algorithm:"欧盟EAQI"/m);
         assert.match(rules[4], /requires-body=1, binary-body-mode=1/);
         assert.match(rules[0], /requires-body=1/);
         assert.ok(rules.slice(1, 4).every(line => !line.includes('binary-body-mode=1')));
@@ -91,9 +92,9 @@ for (const platform of Object.keys(platforms)) test(`${platform}: structure, fiv
         assert.match(args.find(line => line.startsWith('Weather.Provider =')), /select,"ColorfulClouds","WeatherKit","QWeather"/);
         const algorithms = args.find(line => line.startsWith('AirQuality.Calculate.Algorithm ='));
         const officialOrder = ['None', 'UBA', 'EU_EAQI', 'WAQI_InstantCast_US', 'WAQI_InstantCast_CN', 'WAQI_InstantCast_CN_25_DRAFT', 'CA_AQHI', 'HK_AQHI', 'AQHI_Multi_CN', 'AQHI_Multi_CN_HK', 'CN_DEATH_AQHI', 'CN_DEATH_HK_AQHI'];
-        assert.match(algorithms, /^AirQuality\.Calculate\.Algorithm = select,"EU_EAQI",/);
+        assert.match(algorithms, /^AirQuality\.Calculate\.Algorithm = select,"欧盟EAQI",/);
         assert.deepEqual(algorithms.split(',tag=')[0].match(/"[^"]+"/g).map(value => JSON.parse(value)),
-            ['EU_EAQI', ...officialOrder.filter(value => value !== 'EU_EAQI')]);
+            ['EU_EAQI', ...officialOrder.filter(value => value !== 'EU_EAQI')].map(value => displayModuleOption('AirQuality.Calculate.Algorithm', value)));
         assert.match(rules[4], /requires-body=1, binary-body-mode=1/);
         assert.match(rules[0], /requires-body=1/);
         assert.match(rules[0], /argument=\[\{DataSets\},/);
@@ -112,8 +113,8 @@ for (const platform of Object.keys(platforms)) test(`${platform}: structure, fiv
         const argumentsJSON = [JSON.parse(sharedArgument[1])];
         for (const values of argumentsJSON) {
             assert.equal(Object.keys(values).length, 23);
-            assert.equal(values['AirQuality.Calculate.Algorithm'], 'EU_EAQI');
-            assert.equal(values['AirQuality.Current.Index.Provider'], 'Calculate');
+            assert.equal(values['AirQuality.Calculate.Algorithm'], '欧盟EAQI');
+            assert.equal(values['AirQuality.Current.Index.Provider'], 'iRingo内置算法');
         }
         for (const group of groups) assert.match(providers, new RegExp(`^  WeatherKit\\.api\\.${group.name.replaceAll('.', '\\.')}:[\\s\\S]*?    interval: 86400`, 'm'));
     }

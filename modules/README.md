@@ -9,8 +9,8 @@
 | 客户端 | 正式模块 | 参数入口 |
 | --- | --- | --- |
 | Egern | [iRingo.WeatherKit.WK3.yaml](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.yaml) | 模块设置面板；空气指数来源及算法显示中文，旧内部值仍兼容。 |
-| Surge | [iRingo.WeatherKit.WK3.sgmodule](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.sgmodule) | 模块参数。 |
-| Loon | [iRingo.WeatherKit.WK3.lpx](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.lpx) | 插件参数面板。 |
+| Surge | [iRingo.WeatherKit.WK3.sgmodule](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.sgmodule) | 模块参数；指数来源与算法和 Egern 共用中文值。 |
+| Loon | [iRingo.WeatherKit.WK3.lpx](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.lpx) | 插件参数面板；指数来源与算法和 Egern 共用中文选项。 |
 | Stash | [iRingo.WeatherKit.WK3.stoverride](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.stoverride) | 编辑首条脚本 `argument` 中的 JSON，其余四条共享。 |
 | Quantumult X | [iRingo.WeatherKit.WK3.snippet](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.snippet) | 无交互参数面板；请求／文本路径可用，WK3 二进制天气始终透传。 |
 
@@ -20,7 +20,7 @@
 
 ## 23 项参数
 
-下表列出模块生成默认值，内部键名保留以便 Surge／Stash 配置及问题定位。Egern 的中文显示值会在脚本入口还原为对应内部值。
+下表列出模块生成默认值，内部键名保留以便 Surge／Stash 配置及问题定位。Egern／Surge／Loon／Stash 共用中文指数来源与算法选项，脚本入口还原为对应内部值，旧内部值仍可使用。Quantumult X 无参数面板，脚本使用同一套默认值。
 
 | 参数 | 默认值 | 用途 |
 | --- | --- | --- |
@@ -65,7 +65,7 @@
 | `CN_DEATH_AQHI` | 中国健康风险 AQHI |
 | `CN_DEATH_HK_AQHI` | 中国＋香港健康风险 AQHI |
 
-只有今日来源选择 `Calculate` 才执行上表算法；Egern 面板显示“iRingo内置算法”。已有 Apple 污染物优先保留，缺失时才取所选来源。
+只有今日来源选择 `Calculate` 才执行上表算法；四平台配置均显示“iRingo内置算法”。已有 Apple 污染物优先保留，缺失时才取所选来源。
 
 ### 替换目标和地区
 

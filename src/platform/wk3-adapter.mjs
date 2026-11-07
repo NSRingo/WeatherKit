@@ -72,7 +72,7 @@ export async function runPlatform(handler, stage, globals = globalThis, platform
         }
     }
     const ctx = {
-        env: { ...(globals.$environment ?? globals.$env ?? {}), ...argumentValues },
+        env: { ...(platform === "Quantumult X" ? Object.fromEntries(localParameters.map(p => [p.key, p.value])) : {}), ...(globals.$environment ?? globals.$env ?? {}), ...argumentValues },
         request: { ...request, headers: headers(request.headers) },
         respond(value) { return value; },
     };
