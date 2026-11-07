@@ -22,10 +22,19 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: artifact
+      - name: Extract current release notes
+        shell: python
+        run: |
+          import pathlib, re
+          text = pathlib.Path("CHANGELOG.md").read_text()
+          section = re.split(r"(?m)^# v(?=\d)", text, maxsplit=2)
+          notes = "# v" + section[1] if len(section) > 1 else text
+          notes = re.sub(r"\n---\s*\Z", "", notes).strip() + "\n"
+          pathlib.Path("RELEASE-NOTES.md").write_text(notes)
       - name: Publish Draft
         uses: softprops/action-gh-release@v2
         with:
-          body_path: CHANGELOG.md
+          body_path: RELEASE-NOTES.md
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
             rulesets/*
