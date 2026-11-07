@@ -1,0 +1,17 @@
+#!name = WeatherKit-Local-WK3
+#!desc = WK3 请求与文本处理、原生预警详情兼容；二进制天气直通，不改写 AQ、分钟雨或预警摘要；当前/逐日/逐小时天气保持苹果原始数据；无参数面板，部分城市 UV 防晒建议英文问题保留
+#!homepage = https://github.com/patrickyanxxxxx/WeatherKit-WK3
+#!icon = https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
+#!version = __WK3_VERSION__
+# QuantumultX 本地脚本不传模块参数；使用运行时默认值。
+
+#[filter_local]
+host, weather-analytics-events.apple.com, reject
+host-suffix, tthr.apple.com, reject
+host, tether.edge.apple, reject
+
+#[rewrite_local]
+__WK3_SCRIPTS__
+
+#[mitm]
+hostname = weatherkit.apple.com

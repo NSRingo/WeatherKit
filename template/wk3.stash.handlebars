@@ -1,0 +1,19 @@
+name: WeatherKit-Local-WK3
+desc: 本机 WK3：大陆缺失美标 AQ 补入、分钟雨、昨日对比与苹果原生预警；当前/逐日/逐小时天气保持苹果原始数据，部分城市 UV 防晒建议仍可能英文
+homepage: https://github.com/patrickyanxxxxx/WeatherKit-WK3
+icon: https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
+version: "__WK3_VERSION__"
+rules:
+  - DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
+  - DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
+  - DOMAIN,tether.edge.apple,REJECT-DROP
+  - AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),REJECT-DROP
+# Stash 无插件参数选择面板；编辑首个 argument 的 JSON，YAML 锚点会将设置共享到全部五组脚本。
+__WK3_ARGUMENT_COMMENTS__
+http:
+  mitm:
+    - weatherkit.apple.com
+  script:
+__WK3_SCRIPTS__
+script-providers:
+__WK3_PROVIDERS__

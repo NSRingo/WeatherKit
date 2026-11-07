@@ -6,6 +6,7 @@ on:
 permissions:
   actions: read
   contents: read
+  packages: read
 
 jobs:
   build:
@@ -15,11 +16,10 @@ jobs:
         uses: actions/checkout@main
         with:
           submodules: recursive
-          token: ${{ secrets.SUBMODULE_TOKEN }}
       - name: Set up Node.js
         uses: actions/setup-node@main
         with:
-          node-version: 'latest'
+          node-version: '22'
           cache: 'npm'
       # https://github.com/puppeteer/puppeteer/issues/13595#issuecomment-2640309385
       # https://github.com/puppeteer/puppeteer/blob/cdfbde6247fbe286c31a91ac62ffed6f2f801ee4/.github/workflows/ci.yml#L140
@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: npm install
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGE_TOKEN || github.token }}
       - name: Install Puppeteer Chrome
         run: |
           node node_modules/puppeteer/install.mjs
@@ -42,14 +42,32 @@ jobs:
           version: ${{ github.ref_name }}
           keep-v: "false" # If set to "true", will not remove any 'v' prefix from the version number.
           ignore-semver-check: "false" # If set to "true", will not check if the version number is a valid semver version.
+      - name: Run WK3 regressions
+        run: npm run test:wk3
       - name: Build scripts
         run: npm run build
       - name: Generate modules
         run: npm run build:args
         env:
           PUPPETEER_CACHE_DIR: ${{ runner.temp }}/puppeteer
-      - name: Verify Egern module
-        run: test -s dist/iRingo.WeatherKit.yaml
+      - name: Build WK3 scripts and tagged modules
+        run: |
+          if [ "${{ github.ref_type }}" = tag ]; then
+            npm run build:wk3 -- --version "${GITHUB_REF_NAME#v}"
+          else
+            npm run build:wk3
+          fi
+      - name: Verify Egern and WK3 artifacts
+        run: |
+          test -s dist/iRingo.WeatherKit.yaml
+          for platform in egern surge loon stash quantumultx; do
+            for stage in request response; do test -s "dist/wk3-$platform-$stage.bundle.js"; done
+          done
+          if [ "${{ github.ref_type }}" = tag ]; then
+            for extension in yaml sgmodule lpx stoverride snippet; do
+              test -s "dist/iRingo.WeatherKit.WK3.$extension"
+            done
+          fi
       - name: Upload artifact
         uses: actions/upload-artifact@master
         with:
