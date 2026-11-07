@@ -286,9 +286,13 @@ test("WK3 injects a physically missing nextHour product into slot 5", async t =>
     assert.equal(nextHour.condition(0).forecastToken(), 6); // CONSTANT
     assert.equal(nextHour.condition(0).beginCondition(), 7); // RAIN
     assert.equal(nextHour.summary(0).precipitationChance(), 80);
-    // 摘要槽位 2（condition 枚举向量）未验证，不写入 / Summary slot 2 (condition vector) stays unwritten
+    // 摘要槽 2 写入单元素 u8 向量（RAIN=2）/ Summary slot 2 written as a singleton u8 vector (RAIN=2)
     const summaryTable = nextHour.summary(0);
-    assert.equal(summaryTable.bb.__offset(summaryTable.bb_pos, 8), 0);
+    const vectorField = summaryTable.bb.__offset(summaryTable.bb_pos, 8);
+    assert.ok(vectorField);
+    const vectorStart = summaryTable.bb.__indirect(summaryTable.bb_pos + vectorField);
+    assert.equal(summaryTable.bb.readUint32(vectorStart), 1);
+    assert.equal(summaryTable.bb.readUint8(vectorStart + 4), 2);
     assert.equal(weather.airQuality().index(), 175);
 });
 

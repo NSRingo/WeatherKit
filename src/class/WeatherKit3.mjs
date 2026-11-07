@@ -95,12 +95,22 @@ function encodeForecastNextHour(builder, data) {
             return WK3.Condition.createCondition(builder, condition.startTime, condition.endTime, enumValue(WK3.ForecastToken, condition.forecastToken), enumValue(WK3.ConditionType, condition.beginCondition), enumValue(WK3.ConditionType, condition.endCondition), parametersOffset);
         });
     const conditionOffset = WK3.NextHourForecastData.createConditionVector(builder, conditionOffsets);
-    // 摘要槽位 2 的 condition 枚举向量元素宽度未验证，不写入。
-    // Slot 2 of summaries (condition enum vector) is unverified and not written.
-    const summaryOffset = WK3.NextHourForecastData.createSummaryVector(
-        builder,
-        data.summary.map(summary => WK3.ForecastPeriodSummary.createForecastPeriodSummary(builder, summary.startTime, summary.endTime, summary.precipitationChance, summary.precipitationIntensity)),
-    );
+    // 摘要槽位 2 的 condition 枚举向量：业务摘要恒为单条件分段，单元素 u8 向量与 u16 向量
+    // 字节一致，可安全写入（PR #108 实机验证）；未知降水类型抛错由处理器隔离。
+    // Summary slot 2 (condition enum vector): business summaries are always single-condition
+    // segments, and a singleton u8 vector is byte-identical to u16, so writing is safe
+    // (device-verified in PR #108); unknown precipitation types throw and are isolated by the processor.
+    const summaryOffsets = data.summary.map(summary => {
+        const conditionVectorOffset = builder.createByteVector([enumValue(WK3.PrecipitationType, summary.condition)]);
+        WK3.ForecastPeriodSummary.startForecastPeriodSummary(builder);
+        WK3.ForecastPeriodSummary.addStartTime(builder, summary.startTime);
+        WK3.ForecastPeriodSummary.addEndTime(builder, summary.endTime);
+        builder.addFieldOffset(2, conditionVectorOffset, 0);
+        WK3.ForecastPeriodSummary.addPrecipitationChance(builder, summary.precipitationChance);
+        WK3.ForecastPeriodSummary.addPrecipitationIntensity(builder, summary.precipitationIntensity);
+        return WK3.ForecastPeriodSummary.endForecastPeriodSummary(builder);
+    });
+    const summaryOffset = WK3.NextHourForecastData.createSummaryVector(builder, summaryOffsets);
     const minutesOffset = WK3.NextHourForecastData.createMinutesVector(
         builder,
         data.minutes.map(minute => WK3.Common.ForecastMinute.createForecastMinute(builder, minute.startTime, minute.precipitationChance, minute.precipitationIntensity, minute.perceivedPrecipitationIntensity)),
