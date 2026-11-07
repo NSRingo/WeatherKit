@@ -1,3 +1,44 @@
+# v3.3.7 — 修复 Surge WK3 二进制回传与天气增强无效果
+
+修复 Surge 普通模块在已有脚本执行记录时仍无法正常显示天气增强数据的问题。用户已确认 `3.3.6-test-surge-binary.1` 测试版通过，本版纳入同一项原生字节回传修复。
+
+## 修复内容
+
+- **Surge 使用原生二进制回传：**启用 `binary-body-mode` 时，将 ArrayBuffer、Uint8Array 及其他 TypedArray 的准确字节范围作为 `Uint8Array` 返回给 Surge。避免原先转换成字符串后，被宿主按 UTF-8 再编码而损坏 WK3 FlatBuffer。
+- **保留原天气数据：**修复覆盖需要改写的 AQ、分钟雨与预警响应，也覆盖海外等应保留原数据的响应。文本结果继续使用字符串；Loon、Stash、Egern、Quantumult X 的现有输出方式保持不变。
+- **补充宿主接口回归：**检查高位字节、请求／响应输出、子数组边界和文本透传；纠正旧测试先将字符串按字符码恢复再解码、因而未覆盖宿主 UTF-8 编码行为的问题。
+- 23 项模块参数、默认来源、空气质量算法及原有回退处理保持不变。
+
+## 实机验证
+
+用户确认 Surge 测试版通过。真实抓包中五份完整 WK3 响应均可直接正常解码，不再出现二进制转字符串后的 UTF-8 二次编码；四份国内／香港响应的彩云美标 AQI 与同批数据源一致，三份大陆响应已写入彩云分钟雨；另有匹配预警的标题、发布机构及 Apple 原生详情入口。海外响应保留原来源。
+
+本轮分钟雨样本均为零降水，预警详情正文未在抓包中点击验证；这些具体边界不扩展为逐项界面验收。抓包及个人信息不纳入发行附件。
+
+## 下载与升级
+
+| 客户端 | 正式模块 |
+| --- | --- |
+| Surge | [iRingo.WeatherKit.WK3.sgmodule](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.7/iRingo.WeatherKit.WK3.sgmodule) |
+| Egern | [iRingo.WeatherKit.WK3.yaml](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.7/iRingo.WeatherKit.WK3.yaml) |
+| Loon | [iRingo.WeatherKit.WK3.lpx](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.7/iRingo.WeatherKit.WK3.lpx) |
+| Stash | [iRingo.WeatherKit.WK3.stoverride](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.7/iRingo.WeatherKit.WK3.stoverride) |
+| Quantumult X | [iRingo.WeatherKit.WK3.snippet](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.7/iRingo.WeatherKit.WK3.snippet) |
+
+Surge 用户先停用 `3.3.6-test-surge-binary.1` 或旧普通模块，安装／更新整个正式模块，确认五类脚本均引用 v3.3.7，再核对已保存的个人参数。MITM 需启用 `weatherkit.apple.com` 并信任证书。独立雷达模块可继续启用；请勿同时启用两个普通天气模块。
+
+本次沿用五平台发行构建，模块自动加载各自同版本的 JS，无需手动导入脚本，也不能跨平台交换脚本。
+
+## 保留的限制
+
+- WK3 当前、逐日及逐小时天气继续保留 Apple 数据。
+- Quantumult X 的 WK3 二进制天气响应继续直通，Shadowrocket 暂无本机 WK3 模块。
+- 预警仅补全可严格匹配的 Apple 原事件；第三方数据源失败或结构不兼容时保留原数据。
+- 部分城市 UV 防晒时段建议可能显示英文，既有问题本次未修改。
+- 本次发行只包含普通天气模块的 Surge 修复，实验雷达继续在独立分支维护。
+
+---
+
 # v3.3.6 — 大陆缺失空气质量补入与 Loon、预警兼容修复
 
 合入 `wk3/ios27-wk3-review` 的已验收修复，保留中文独立提交。用户已确认 Loon 测试版 2 可用，并确认 Egern 测试版的大陆缺 AQ 补入生效；Surge、Stash 本轮通过实际压缩脚本及抓包回放，尚无对应设备反馈。
