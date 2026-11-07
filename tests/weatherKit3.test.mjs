@@ -265,7 +265,7 @@ const nextHourReplacement = {
     forecastStart: 2000000000,
     forecastEnd: 2000000180,
     minutes: [0, 1, 2].map(i => ({ startTime: 2000000000 + i * 60, precipitationChance: 80, precipitationIntensity: 1.5, perceivedPrecipitationIntensity: 1.5 })),
-    summary: [{ startTime: 2000000000, endTime: 2000000180, precipitationChance: 80, precipitationIntensity: 1.5, condition: "RAIN" }],
+    summary: [{ startTime: 2000000000, endTime: 2000000180, precipitationChance: 80, precipitationIntensity: 1.5, condition: ["RAIN"] }],
     condition: [{ startTime: 2000000000, endTime: 2000000180, forecastToken: "CONSTANT", beginCondition: "RAIN", endCondition: "RAIN", parameters: [] }],
 };
 
@@ -363,7 +363,17 @@ test("WK3 drops condition entries with unverified enums when injecting nextHour"
     t.mock.method(ColorfulClouds.prototype, "Minutely", async () => ({
         ...structuredClone(nextHourReplacement),
         condition: [
-            { startTime: 2000000000, endTime: 2000000060, forecastToken: "STOP_START", beginCondition: "RAIN", endCondition: "RAIN", parameters: [{ type: "FIRST_AT", date: 2000000060 }, { type: "SECOND_AT", date: 2000000180 }] },
+            {
+                startTime: 2000000000,
+                endTime: 2000000060,
+                forecastToken: "STOP_START",
+                beginCondition: "RAIN",
+                endCondition: "RAIN",
+                parameters: [
+                    { type: "FIRST_AT", date: 2000000060 },
+                    { type: "SECOND_AT", date: 2000000180 },
+                ],
+            },
             { startTime: 2000000060, endTime: 2000000180, forecastToken: "NOT_A_TOKEN", beginCondition: "RAIN", endCondition: "RAIN", parameters: [] },
         ],
     }));
@@ -374,4 +384,30 @@ test("WK3 drops condition entries with unverified enums when injecting nextHour"
     assert.equal(nextHour.conditionLength(), 1);
     assert.equal(nextHour.condition(0).forecastToken(), 5); // STOP_START
     assert.equal(nextHour.condition(0).parameters(1).type(), 2); // SECOND_AT
+});
+
+test("Summary generates condition shape by target version at creation", async () => {
+    const { default: ForecastNextHour } = await import("../src/class/ForecastNextHour.mjs");
+    const minutes = [
+        { startTime: 2000000000, summaryCondition: "RAIN", condition: "RAIN", precipitationChance: 80, precipitationIntensity: 1.5, clear: false },
+        { startTime: 2000000060, summaryCondition: "RAIN", condition: "RAIN", precipitationChance: 80, precipitationIntensity: 1.5, clear: false },
+    ];
+    // 公共逻辑一致，仅 condition 形态随 version 分流 / Shared logic, only the condition shape switches by version
+    assert.equal(ForecastNextHour.Summary(minutes)[0].condition, "RAIN");
+    assert.equal(ForecastNextHour.Summary(minutes, "v2")[0].condition, "RAIN");
+    assert.deepEqual(ForecastNextHour.Summary(minutes, "v3")[0].condition, ["RAIN"]);
+});
+
+test("WK3 rejects multi-element summary condition arrays on injection", async t => {
+    t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", async () => structuredClone(replacement));
+    t.mock.method(ColorfulClouds.prototype, "YesterdayAirQuality", async () => ({ ...structuredClone(replacement), index: 25, categoryIndex: 1 }));
+    t.mock.method(ColorfulClouds.prototype, "Minutely", async () => ({
+        ...structuredClone(nextHourReplacement),
+        summary: [{ startTime: 2000000000, endTime: 2000000180, precipitationChance: 80, precipitationIntensity: 1.5, condition: ["RAIN", "SNOW"] }],
+    }));
+    const output = (await response(buildWK3([[0, buildWK3AirQuality]]))).body;
+    const weather = WK3.Weather.getRootAsWeather(new ByteBuffer(output));
+    // 多元素向量的元素宽度未验证：注入被隔离，其余产品不受影响 / Multi-element vectors are unverified: injection is isolated while other products proceed
+    assert.equal(weather.forecastNextHour(), null);
+    assert.equal(weather.airQuality().index(), 175);
 });
