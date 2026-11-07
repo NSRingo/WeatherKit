@@ -181,6 +181,7 @@ function encodeWeatherAlerts(builder, data) {
     // 缺省字符串不写入（0 偏移），保留 Apple 原始字段缺席状态。
     // Absent strings are not written (0 offset), preserving Apple's original field absence.
     const stringOffset = value => (value ? builder.createString(value) : 0);
+    const metadataOffset = encodeMetadata(builder, data.metadata);
     const alertsOffsets = data.alerts.map(alert => {
         const responsesOffset = WK3.WeatherAlertSummary.createResponsesVector(
             builder,
@@ -212,7 +213,7 @@ function encodeWeatherAlerts(builder, data) {
         );
     });
     const alertsOffset = WK3.WeatherAlertCollectionData.createAlertsVector(builder, alertsOffsets);
-    return WK3.WeatherAlertCollectionData.createWeatherAlertCollectionData(builder, stringOffset(data.detailsUrl), alertsOffset);
+    return WK3.WeatherAlertCollectionData.createWeatherAlertCollectionData(builder, metadataOffset, stringOffset(data.detailsUrl), alertsOffset);
 }
 
 /**
@@ -255,6 +256,7 @@ function decodeWeatherAlerts(data) {
         alerts.push(summary);
     }
     return {
+        metadata: decodeMetadata(WeatherAlertCollectionData.metadata()),
         alerts,
         detailsUrl: WeatherAlertCollectionData.detailsUrl(),
     };
