@@ -40,7 +40,7 @@ for (const platform of platforms) {
             assert.equal(result.status, 201);
             assert.equal(result.headers["X-Patched"], "yes");
             assert.ok(!Object.keys(result.headers).some(k => ["content-length", "content-encoding", "transfer-encoding"].includes(k.toLowerCase())));
-            if (platform === "loon") {
+            if (platform === "surge" || platform === "loon") {
                 assert.ok(result.body instanceof Uint8Array);
                 assert.deepEqual(Array.from(result.body), bytes);
             } else assert.deepEqual(Array.from(result.body, c => c.charCodeAt(0)), bytes);
@@ -64,7 +64,8 @@ test("binary bodyBytes takes precedence over an empty text body", async () => {
         assert.deepEqual(Array.from(new Uint8Array(await ctx.response.arrayBuffer())), bytes);
         return { status: 200, headers: {}, body: new Uint8Array(bytes) };
     }, "response", globals, "surge");
-    assert.deepEqual(Array.from(returned.body, c => c.charCodeAt(0)), bytes);
+    assert.ok(returned.body instanceof Uint8Array);
+    assert.deepEqual(Array.from(returned.body), bytes);
 });
 
 test("all verified platforms produce executable request and response bundles", async () => {
@@ -93,7 +94,7 @@ test("Surge bundle patches WK3 AQ using platform HTTP callbacks", async () => {
     builder.startObject(15); builder.addFieldOffset(0, aq, 0); builder.finish(builder.endObject());
     const original = builder.asUint8Array();
     const bundles = await buildPlatform("surge", { minify: false });
-    const calls = [], requests = [], payload = String.fromCharCode(...original);
+    const calls = [], requests = [], payload = original;
     const globals = {
         URL, TextEncoder, TextDecoder, Uint8Array, ArrayBuffer, Response, Headers, console,
         $argument: 'AirQuality.Current.Index.Provider="ColorfulCloudsUS"&AirQuality.Current.Index.Replace="HJ6332012"&AirQuality.Comparison.Yesterday.IndexProvider="WeatherKit"&DataSets="airQuality"',
@@ -111,7 +112,8 @@ test("Surge bundle patches WK3 AQ using platform HTTP callbacks", async () => {
     assert.equal(calls.length, 1);
     assert.ok(requests.some(url => url.includes("/realtime")), `No provider request: ${JSON.stringify(requests)}`);
     const result = calls[0];
-    assert.equal(decodeWK3DataSet(Uint8Array.from(result.body, char => char.charCodeAt(0))).index, 87);
+    assert.ok(result.body instanceof Uint8Array);
+    assert.equal(decodeWK3DataSet(result.body).index, 87);
 });
 
 test("unknown platform is refused instead of advertised as supported", async () => {

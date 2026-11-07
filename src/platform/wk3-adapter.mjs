@@ -101,8 +101,8 @@ export async function runPlatform(handler, stage, globals = globalThis, platform
         const bytes = body instanceof ArrayBuffer ? new Uint8Array(body)
             : ArrayBuffer.isView(body) ? new Uint8Array(body.buffer, body.byteOffset, body.byteLength) : null;
         if (!bytes) return body;
-        // Loon binary-body-mode consumes Uint8Array; a string is treated as text.
-        return platform === "loon" ? bytes : binaryStringFromBytes(bytes);
+        // Surge and Loon binary-body-mode consume Uint8Array; strings are text.
+        return platform === "surge" || platform === "loon" ? bytes : binaryStringFromBytes(bytes);
     };
     const response = {
         status: platform === "Quantumult X" ? `HTTP/1.1 ${result.status ?? 200} ${result.statusText ?? "OK"}` : result.status ?? 200,
