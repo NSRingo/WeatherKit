@@ -1,87 +1,101 @@
-#  iRingo: 🌤 WeatherKit
+# WeatherKit-WK3
 
-此 Fork 以 NSRingo/WeatherKit **v3.3.2** 为基点，v3.3.3 增加本机 WK3 处理，保留原版 WK2 入口；业务统一放在平台无关的 `src/wk3/`，Egern 与其他代理共用处理逻辑。中文独立提交历史已保留。
+让代理在设备本机处理 Apple 天气的 WK3 数据：空气质量、雨雪分钟预报、昨日对比和原生预警详情。**当前、逐日和逐小时天气继续使用 Apple 原始数据。**
 
-## v3.3.7 — Surge 二进制响应修复
+[模块安装与参数说明](modules/README.md) · [发行记录](CHANGELOG.md) · [上游项目](https://github.com/NSRingo/WeatherKit) · [实验雷达地图](#一小时降水雷达地图开发中)
 
-修复 Surge 普通 WK3 模块“有脚本执行记录但天气增强无效果”的二进制回传缺陷：启用 `binary-body-mode` 后，天气响应使用原生 `Uint8Array` 回传，避免字符串被再次按 UTF-8 编码而损坏 FlatBuffer。此问题也会影响原本应保留的海外天气数据。
+## 相比上游正式版
 
-用户已确认 `3.3.6-test-surge-binary.1` 测试版通过。真实 Surge 抓包中，五份完整天气响应均可正常解码，国内／香港彩云美标 AQ、大陆分钟雨与预警改写有实际响应证据。文本响应及 Loon／Stash／Egern／Quantumult X 的现有输出方式保持不变，23 项参数与默认设置不变。
+对比基线为 [NSRingo/WeatherKit v3.3.2](https://github.com/NSRingo/WeatherKit/releases/tag/v3.3.2)（截至 2026-11-08 的最新非预发行版）。本 Fork 以该版本为基础；部分 WK3 模型和处理方式参考上游 **dev**，不把上游测试版已有能力宣称为本项目独创。
 
-升级时停用 Surge 二进制修复测试模块，再安装对应正式模块并核对个人参数；独立雷达模块可保留。完整说明见 [CHANGELOG](CHANGELOG.md)。
+| 项目 | 本 Fork 的差异与支持范围 |
+| --- | --- |
+| WK3 本机处理 | 提供 Egern、Surge、Loon、Stash 的 WK3 专用构建；共用业务核心，保留未处理的数据槽。Quantumult X 二进制天气仍透传。 |
+| 空气质量 | 按上游 dev 的独立 AQ 入口处理，不套用普通天气的大陆范围；优先使用 Apple 已有污染物，缺失时查询所选来源。支持完整 AQ 转换、缺失补入和单位转换。 |
+| 内置算法 | 11 种计算算法及 `None`；包括欧盟 EAQI、UBA、美标／国标 InstantCast、加拿大／香港 AQHI 和风险算法。保留本 Fork 对加拿大单位、指数取整及超量程连续性的修正。 |
+| 欧盟标尺 | 与上游 dev 一样使用无版本 `EU.EAQI`，请求 Apple 原生标尺；不再用本地色带覆盖名称与渐变。 |
+| 雨雪分钟预报 | WK3 分钟数据编码与缺失补入，参考上游 dev 的雨雪枚举；修复和风坐标、预报起点及有效期处理。轻雪未命名文字条件可省略，分钟强度和雪摘要保留。 |
+| 预警详情 | 补全 Apple 已有事件，保留原 UUID，匹配后进入 Apple 原生详情页面；支持上游定义的红橙黄蓝等级。泛称“恶劣天气”在同地区页面、同等级、同发布时间且候选唯一时推断具体事件。 |
+| 客户端兼容 | Egern 原生 `ctx`，Surge／Loon 原生字节回传，其他平台独立适配；错误或未知结构保留原数据。 |
+| 参数与日志 | Egern 使用中文选项、简短说明，兼容旧内部值；分别记录预警摘要、详情转换和回退原因，敏感配置不明文输出。 |
 
-## v3.3.6 更新
+上游 dev 与本 Fork 的实现并非完全相同。已有 AQ 的完整替换、事件 UUID 关联、宿主二进制返回等应以本仓库实现及平台说明为准。
 
-合入 `wk3/ios27-wk3-review` 的 Loon 原生 `Uint8Array` 回传、Apple availability 保留、大陆缺 AQ 补入及非 Egern 预警兼容修复。Loon 测试版 2 已获用户实机确认可用；Egern 测试版的大陆缺 AQ 补入也已确认生效。
+## 安装
 
-大陆缺 AQ 补入由 Egern、Surge、Loon、Stash 共用：请求和设置启用 AQ、替换范围命中大陆、今日来源为 `ColorfulCloudsUS` 且替换目标非空时，补入完整美标 AQ 子表；失败保留原响应。普通响应头大小写和局部 Base64 预警兼容仅接入其他四平台代理构建，Egern 预警实现保持原样。Quantumult X 保留二进制直通限制，详情请求路径包含兼容修复。
+使用文件名包含 **`.WK3.`** 的发行附件，不要与旧 Rewrite 模块或测试模块重复启用。模块会自动加载同一版本、同一客户端的脚本，无需单独导入 JS。
 
-**保留已知问题：**部分城市 UV 面板的防晒时段建议仍可能显示英文，标题和等级正常；根因尚未证实，本次不修改语言设置或建议文案。完整更新、安装方法与默认参数见 [CHANGELOG](CHANGELOG.md)。
-
-## v3.3.5 日志兼容修复
-
-针对用户在 Egern、Loon 反馈的“有执行记录但日志为空”，五平台统一通过 `console.log` 输出脱敏后的单字符串，不再因 `console.info` 方法存在就假定客户端会收集。日志等级与业务处理不变。更新模块后确认 `LogLevel` 为 INFO/DEBUG/ALL，刷新天气查看**新执行记录**；旧记录不会补写。正式压缩脚本已复现修复前后输出差异，仍待设备复验。
-
-## v3.3.4 修复
-
-- 校正美标浓度截断与超量程连续性、加拿大 AQHI 单位与四舍五入、国标草案零浓度；CO 单位修复幂等，不改变输入；无有效分项或必要污染物时不输出伪有效指数。
-- 空替换目标、算法 `None`、Apple 来源和昨日来源按用户选择执行；成功且实际改变指数后才按开关重算已知比较，失败保留 Apple 数据，移除无必要 AQ 预取。
-- 修正 Surge/Loon/Stash 响应阶段 `$done` 结构及 Surge `[]` 参数解析；超时与日志使用实际解析后的模块参数。
-- 模块名称、选项标签与帮助对齐上游；保留 23 项参数及现有默认。Stash 在第一条脚本 `argument` 编辑参数，其余四条共用该值。未实现的上游功能明确标注，不提供空壳选项。
-- 五平台共用日志实现；默认 INFO 显示 `☑️ request/response`、处理摘要和 `✅ request/response`，DEBUG/ALL 展示更多处理步骤，WARN/ERROR 显示回退或异常，OFF 静默。令牌和完整配置不在日志中明文输出。
-- `npm run test:wk3` 串行执行旧入口与 WK3 全部回归，正式 CI 先测试再构建；修复分支 CI **338/338 通过、0 跳过**。无新增依赖、hash 或缓存层。
-
-## WK3 基础能力
-
-- WK3 FlatBuffer 有界读写：在已验证结构内替换空气质量，保留其他数据槽与未知字段；国标 AQI 可转换为同源美标 AQI。大陆和香港在 WK3 缺少 AQ 数据时，可按各自条件补入彩云美标 AQ。
-- WK3 已实现分钟降水、同源同标准的昨日空气等级比较，以及严格匹配原事件 ID 的天气预警补全；失败或未验证结构保持 Apple 原始数据。
-- 保留 WK2 的天气来源选择与天气处理；内置空气质量算法提供上游的 12 种选择，包含 InstantCast、EAQI、UBA 和 AQHI 系列。**默认 `WAQI_InstantCast_US`**，但仅在今日空气指数来源选择 `Calculate` 时用于本地计算。
-- Egern 模块保留五类脚本、七条分流规则与 23 个可调参数；另外提供 Surge、Loon、Stash 和 Quantumult X 的独立模板及构建脚本。新增内容按功能分为独立提交，不压缩历史。
-
-## 模块适配状态
-
-| 软件 | 模块格式 | 当前验证范围 |
+| 客户端 | 下载 | 说明 |
 | --- | --- | --- |
-| Egern | `.yaml` | 用户已确认 Egern 测试版大陆缺 AQ 补入生效；正式模块引用同版本附件，预警实现保持原样。 |
-| Surge | `.sgmodule` | 用户已确认二进制修复测试版通过；真实抓包验证 AQ、分钟雨及预警改写，v3.3.7 纳入原生字节回传修复。 |
-| Loon | `.lpx` | 用户已确认测试版 2（`3.3.5-test-loon-binary.2-aq.1`）实机可用；对应修复已纳入 v3.3.6。 |
-| Stash | `.stoverride` | 独立 JS、配置解析、参数与二进制响应模拟通过；未设备验证。 |
-| Quantumult X | `.snippet` | 请求/文本路径及脚本模拟通过；**WK3 二进制天气响应只透传，不作转换**；模块无可交互的参数选择界面。 |
-| Shadowrocket | 无 WK3 本机模块 | 上游仅提供服务端 Rewrite 模板；本分支没有经过验证的本机二进制适配，故不提供伪装可用的模块。 |
+| Egern | [WK3.yaml](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.yaml) | 参数面板；本轮原生欧盟标尺测试版已获用户实机确认。 |
+| Surge | [WK3.sgmodule](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.sgmodule) | 模块参数；原生二进制回传已有实机验证。 |
+| Loon | [WK3.lpx](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.lpx) | 插件参数；二进制及缺 AQ 补入已有测试版实机验证。 |
+| Stash | [WK3.stoverride](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.stoverride) | 编辑首条脚本的 `argument`，其他四条共享；当前以脚本回放验证为主。 |
+| Quantumult X | [WK3.snippet](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.snippet) | 请求／文本路径可用；**WK3 二进制天气不转换**，无模块参数面板。 |
 
-正式模块：[Egern](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.yaml) · [Surge](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.sgmodule) · [Loon](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.lpx) · [Stash](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.stoverride) · [Quantumult X](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/latest/download/iRingo.WeatherKit.WK3.snippet)。
+启用 MITM 并信任证书。普通模块处理 `weatherkit.apple.com`；独立雷达模块另行安装。Shadowrocket 暂无经过验证的本机 WK3 模块。
 
-升级时停用测试版及其他冲突天气模块，更新整个正式模块，使五条脚本都引用 v3.3.7；保留并核对个人参数。MITM 需启用 `weatherkit.apple.com` 并信任证书。成功补入 AQ 的日志位于 `WeatherKit.api.weather.response`，包含 `WK3 missing AQ patch`。
+## 默认参数与使用要点
 
-五平台统一构建入口为 `npm run build:wk3`：调用 Egern `scripts/build-egern.mjs` 和其他平台 `scripts/build-wk3-platform.mjs`，生成 10 份平台专用 JS。打标签时添加 `-- --version <版本号>`，同时生成 5 份模块至 `dist/` 根目录；Egern 模块改为指向同版本的发行附件，与其他平台一同进入现有构建/Release 工作流。请使用发行附件中的模块；五平台脚本不能互换。
+以下为可配置 WK3 模块的默认值，**更新不一定覆盖设备上已保存的选项**。Egern 显示中文，括号内为内部值。
 
-## 代码组织
-
-- `src/wk3/class`、`function`、`process`、`proto`、`utils`：五平台共用的编解码、算法、来源处理与业务逻辑，按上游分类保留；不再嵌套在 Egern 目录。
-- `src/wk3/entry`：共用的配置归一化与请求／响应处理；`runtime.mjs`、`parameters.mjs`、`routes.mjs` 分别维护共享 HTTP 封装、参数和五类路由。
-- `src/platform/wk3-adapter.mjs`：Surge/Loon/Stash/Quantumult X 的客户端对象适配；Egern 原生上下文直接调用同一组共享入口。客户端网络 API 和输出格式由各自 Rollup 构建器绑定，不混入业务算法。
-- `tests/wk3/`：共享协议及业务测试；根目录 `tests/wk3-*.test.mjs`：跨平台代理和发行构建测试。
-
-## 默认配置
-
-| 设置 | 默认值 | 生效范围 |
+| 设置 | 默认值 | 作用 |
 | --- | --- | --- |
-| 今日空气指数来源 | `ColorfulCloudsUS` | 彩云美标；已有 AQ 仅匹配 `HJ6332012` 后替换，大陆缺 AQ 时按上述条件补入。 |
-| 昨日空气指数来源 | `ColorfulCloudsUS` | 与今日同来源、同标准才比较；否则保持未知。 |
-| 内置 AQ 计算算法 | `WAQI_InstantCast_US` | **只有来源设为 `Calculate` 才执行**；共 12 个选项含 `None`（11 种计算），WK3 目标标准不兼容时透传。 |
-| 分钟降水 | `ColorfulClouds` | 已验证的分钟雨结构；未知条件透传。 |
-| 天气预警 | `QWeatherWeb` | 严格匹配后补全原生详情；`WeatherKit` 为原样透传。 |
-| 天气来源 | `ColorfulClouds` | WK2 可用；WK3 当前/逐日/逐小时天气仍透传 Apple。 |
-| 逐日/逐小时替换 | `false` / `false` | WK2 开关，WK3 不生效。 |
-| 天气替换范围 / 请求超时 / 日志 | `CN` / `8000` 毫秒 / `INFO` | 香港缺 AQ 补入另有专用条件；第三方令牌按需在设备上配置。 |
+| 今日空气指数来源 | iRingo内置算法（`Calculate`） | 使用污染物本地计算；也可选彩云美标、彩云国标或和风。 |
+| 内置算法 | 欧盟 EAQI（`EU_EAQI`） | 11 种算法加 `None`；仅选择内置算法来源时使用。 |
+| 指数替换目标 | `HJ6332012` | **原始标准**，不是目标标准；空值或 `[]` 停用指数替换。 |
+| 今日污染物来源 | 彩云（`ColorfulClouds`） | 已有 Apple 污染物优先保留，缺失时才取此来源。 |
+| 污染物单位 | 目标 `[]`、模式 `Scale` | 默认不额外转换；配置目标后按标准或指定单位处理。 |
+| 昨日指数来源 | 彩云美标（`ColorfulCloudsUS`） | 直接同源比较；今日显示标准不同时，按上游流程比较该来源自己的今日／昨日趋势，并标注来源。 |
+| 昨日污染物来源 | 和风（`QWeather`） | 内置算法计算昨日值所需的来源；须有真实历史浓度。 |
+| 指数改变时重算已有趋势 | `false` | 保留有效原比较；未知趋势在转换时尝试补齐。 |
+| 国标强制显示主要污染物 | `true` | 不超过 50 时也显示主要污染物。 |
+| 允许内置指数超标 | `true` | 不取消输入与线格式范围检查；超出可编码范围时保留原响应。 |
+| 下一小时雨雪来源 | 彩云（`ColorfulClouds`） | 单点分钟预报，不是二维雷达地图。 |
+| 预警来源 | 和风网页（`QWeatherWeb`） | 严格匹配 Apple 已有事件，不凭空增加预警。 |
+| 普通天气范围／逐日逐小时替换 | `CN`／`false`、`false` | WK3 当前、逐日、逐小时数据仍透传。 |
+| 网络超时／日志 | 8000 毫秒／`INFO` | 单次来源请求超时；`OFF` 关闭日志。 |
 
-上述为生成模块的默认参数，不覆盖已安装模块或设备上的个性化参数。改变内置算法默认值也**不会**自动将今日指数来源改为 `Calculate`。
+**算法切换：**先选“iRingo内置算法”，再选算法。已有 AQ 的原始标准须命中替换目标；如果 Apple 已返回美标，只有 `HJ6332012` 不会替换它，可按需加入 `EPA_NowCast`。不要把修改算法选项误认为无条件覆盖所有地区和标准。
 
-## 已知限制与发布
+**地区与来源：**AQ 不要求改国家码。台北／澳门有 Apple 污染物时可直接计算；缺数据时必须选真正支持该地区的来源。上游彩云 AQ 列表为 CN／HK／MO，TW 缺数据应选和风并配置有效 API；不承诺默认彩云对所有台北响应补入。来源失败不伪造有效数据。当前预警和分钟增强的普通地区范围仍有大陆限制。
 
-- WK3 `currentWeather`、`forecastDaily`、`forecastHourly` 缺少经真实样本验证的编解码映射；不可把上游 WK2 codec 直接用于 WK3。现阶段这三类数据原样透传，即使在设置中选择了天气数据源。
-- Quantumult X 二进制天气不可转换；Surge 二进制修复测试版、Loon 测试版 2 已有用户实机确认，Stash 目前通过压缩脚本和抓包回放。原生预警补全也依赖可严格匹配到的原事件，失配时原样返回。
-- 本 Fork 的 v3.3.7 WK3 模块在 [Releases](https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases) 获取，文件名含 `.WK3.`。发行附件中的 Egern YAML 引用同版本 JS；更新模块后请核对已保存的个人参数。
-- 上游的私有 GitHub Packages 依赖在无权限环境会使干净 `npm install` 返回 401。本分支使用已有依赖及上游已声明的 Rollup 工具完成验证，没有新增依赖。
+**昨日比较：**有历史浓度才可重算算法。彩云历史接口给出的类别不能反推 UBA／EAQI／AQHI 的昨日浓度；无数据则趋势未知，今日指数仍可用。不同标准绝不直接比较数值。Quantumult X 无参数注入时沿用运行时内置配置，但其 WK3 二进制响应始终不转换。
 
-验证命令：`npm run test:wk3`（包含旧入口、算法边界、配置、模块、五平台日志与发行构建回归，串行避免本机并发打包争用）。普通分支运行 `npm run build:wk3` 仅生成五平台脚本；打标签时 CI 使用实际标签版本运行 `npm run build:wk3 -- --version <版本号>`，将十份脚本与五份模块一起写入 `dist/` 并进入现有附件上传步骤。指定版本构建本身不创建标签或 Release；发版后仍须核对客户端能访问每个附件 URL。
+完整 23 项参数见 [模块 README](modules/README.md)。
+
+## 一小时降水雷达地图（开发中）
+
+![一小时雷达外推实验预览与实现路径](images/radar-preview.png)
+
+**这是独立实验功能，不包含在普通 WK3 模块中，也不是本次正式发行的新能力。** 当前阶段目标为中国大陆。上图使用离线沙箱的合成平移回波，展示时间序列和架构，非实时天气、非雨强预测，也不是 Apple 天气实机截图。
+
+实现路径：
+
+1. 读取 RainViewer 公开历史雷达与覆盖信息；免费历史源不直接提供未来预测。
+2. 在用户自己的 VPS 上解码调色板、拼接邻域，用最近多帧估计运动并平流外推，计算未来约一小时的瓦片。
+3. 编码成 Apple 地图可读取的 KTX／ASTC 纹理，经用户自己的 Cloudflare Worker 提供受校验的接口。
+4. 独立代理模块仅替换匹配的雷达帧；普通 AQ、预警、分钟雨仍在代理本机处理，不绕行 VPS。
+
+| 阶段 | 当前进度 |
+| --- | --- |
+| 数据解码、拼图、运动估计、外推、纹理编码 | 已实现；离线沙箱可以复跑真实计算链路。 |
+| 历史／未来帧交付、缓存复用、排队状态及错误回退 | 已实现并做网关／Worker／代理回放测试。 |
+| Apple 地图原生交付 | 历史和未来实验纹理已有手机接收证据；已显示实验回波，但**不等于覆盖与预测质量验收**。 |
+| 无数据斜线与局部未知区域 | 尚未解决最终显示闭环；不伪造覆盖，不把缺测当无雨。 |
+| 多色与物理雨强 | 当前交付仍为二值回波，不能解释为 mm/h；标定和显示待完成。 |
+| 中国大陆真实预测技巧与多客户端体验 | 尚未完成多独立天气过程验收；已有诊断中仍有退化，不宣称一小时准确预报。 |
+
+实验源码位于 [`feat/cloudflare-radar`](https://github.com/patrickyanxxxxx/WeatherKit-WK3/tree/feat/cloudflare-radar)。目标是**用户自部署 Worker＋自有 VPS**，没有公共默认后端；不把任何个人演示服务当产品默认。当前离线沙箱主要验证 Surge 宿主，其他客户端仍需对应设备验收。
+
+## 限制、安全与开发
+
+- 预警失配、候选歧义、缺失原发布时间或未知结构时保留原链接；泛称匹配是受约束推断，不是单靠标题精确识别。
+- 未命名轻雪文字条件省略时可能连带省略其他文字段；分钟数值和雪摘要保留。编码通过不等于每种天气都已获手机显示验收。
+- 部分城市 UV 防晒时段建议可能仍为英文；不改语言或伪造当前天气。
+- 来源令牌只在设备参数配置；不提交抓包、位置日志、Apple 认证或个人后端凭据。
+- `src/wk3/` 为共享业务，`src/platform/` 为宿主适配；参数见 `src/wk3/parameters.mjs`，平台模块由模板统一生成。
+- `npm run test:wk3` 运行回归；`npm run build:wk3 -- --outdir dist` 生成脚本；带 `--version 3.3.8` 生成同版本五模块。构建不会自动创建标签或发行版。
+- 保留上游及 Horatio／PR #107 等来源与 Apache-2.0 署名。上游私有包需要相应 GitHub Packages 读取权限；依赖安装失败不能当作测试通过。
+
+发行差异统一放在 [CHANGELOG](CHANGELOG.md) 和每次 Release 正文，首页不再堆叠逐版更新记录。
