@@ -359,14 +359,15 @@ test("WK3 drops condition entries with unverified enums when injecting nextHour"
     t.mock.method(ColorfulClouds.prototype, "Minutely", async () => ({
         ...structuredClone(nextHourReplacement),
         condition: [
-            { startTime: 2000000000, endTime: 2000000060, forecastToken: "STOP_START", beginCondition: "RAIN", endCondition: "RAIN", parameters: [] },
-            { startTime: 2000000060, endTime: 2000000180, forecastToken: "START", beginCondition: "CLEAR", endCondition: "RAIN", parameters: [{ type: "FIRST_AT", date: 2000000060 }] },
+            { startTime: 2000000000, endTime: 2000000060, forecastToken: "STOP_START", beginCondition: "RAIN", endCondition: "RAIN", parameters: [{ type: "FIRST_AT", date: 2000000060 }, { type: "SECOND_AT", date: 2000000180 }] },
+            { startTime: 2000000060, endTime: 2000000180, forecastToken: "CONSTANT", beginCondition: "SNOW", endCondition: "SNOW", parameters: [] },
         ],
     }));
     const output = (await response(buildWK3([[0, buildWK3AirQuality]]))).body;
     const nextHour = WK3.Weather.getRootAsWeather(new ByteBuffer(output)).forecastNextHour();
-    // WK3 ForecastToken 无 STOP_START，该条目整条跳过 / STOP_START has no WK3 token, so the entry is dropped
+    // STOP_START=5 已按 +1 偏移确认可写；未验证的 SNOW（ConditionType）整条跳过。
+    // STOP_START=5 is writable per the verified +1 shift; unverified SNOW (ConditionType) is dropped.
     assert.equal(nextHour.conditionLength(), 1);
-    assert.equal(nextHour.condition(0).forecastToken(), 2); // START
-    assert.equal(nextHour.condition(0).parameters(0).type(), 1); // FIRST_AT
+    assert.equal(nextHour.condition(0).forecastToken(), 5); // STOP_START
+    assert.equal(nextHour.condition(0).parameters(1).type(), 2); // SECOND_AT
 });
