@@ -6,8 +6,9 @@
  * 支持的标尺：
  * - HJ6332012.* — 中国国标 AQI
  * - EPA_NowCast.* — 美国 EPA AQI
- * - HK.AQHI.* — 香港 AQHI
- * - CN.AQHI.* — 中国 AQHI
+ * - HK.AQHI — 香港 AQHI（可带数字版本）
+ * - CA.AQHI — 加拿大 AQHI（可带数字版本）
+ * - CN.AQHI — 中国 AQHI（可带数字版本）
  * - EU.EAQI.* — 欧洲 EAQI
  * - UBA.* — 德国 LQI
  *
@@ -284,12 +285,12 @@ const EPA_NOWCAST = {
     },
 };
 
-// ─── EU EAQI 欧洲 ──────────────────────────────────────────────────────────────
+// ─── EU EAQI 欧盟 ──────────────────────────────────────────────────────────────
 
 const EU_EAQI = {
     displayName: {
-        "zh-Hans-CN": "欧洲空气质量指数",
-        "zh-Hant-HK": "歐洲空氣質量指數",
+        "zh-Hans-CN": "欧盟空气质量指数",
+        "zh-Hant-HK": "歐盟空氣質量指數",
         "en-US": "European Air Quality Index",
     },
     shortDisplayName: {
@@ -298,30 +299,17 @@ const EU_EAQI = {
         "en-US": "EAQI",
     },
     longDisplayName: {
-        "zh-Hans-CN": "欧洲 (EAQI)",
-        "zh-Hant-HK": "歐洲 (EAQI)",
-        "en-US": "Europe (EAQI)",
+        "zh-Hans-CN": "欧盟 (EAQI)",
+        "zh-Hant-HK": "歐盟 (EAQI)",
+        "en-US": "European Union (EAQI)",
     },
+    // Display indexes match AirQuality.Config.Scales.EU_EAQI (2024/17),
+    // including the sixth category. They are not a generic 0..100 scale.
     categories: [
         {
-            range: [0, 20],
+            range: [0, 9],
             glyph: "aqi.low",
             colors: ["#1E88E5"],
-            categoryName: {
-                "zh-Hans-CN": "非常好",
-                "zh-Hant-HK": "非常好",
-                "en-US": "Very Good",
-            },
-            recommendation: {
-                "zh-Hans-CN": "享受户外活动。",
-                "zh-Hant-HK": "享受戶外活動。",
-                "en-US": "Enjoy your usual outdoor activities.",
-            },
-        },
-        {
-            range: [21, 40],
-            glyph: "aqi.low",
-            colors: ["#00C853"],
             categoryName: {
                 "zh-Hans-CN": "好",
                 "zh-Hant-HK": "好",
@@ -334,7 +322,22 @@ const EU_EAQI = {
             },
         },
         {
-            range: [41, 60],
+            range: [10, 19],
+            glyph: "aqi.low",
+            colors: ["#00C853"],
+            categoryName: {
+                "zh-Hans-CN": "尚可",
+                "zh-Hant-HK": "尚可",
+                "en-US": "Fair",
+            },
+            recommendation: {
+                "zh-Hans-CN": "享受户外活动。",
+                "zh-Hant-HK": "享受戶外活動。",
+                "en-US": "Enjoy your usual outdoor activities.",
+            },
+        },
+        {
+            range: [20, 29],
             glyph: "aqi.medium",
             colors: ["#FFEB3B"],
             categoryName: {
@@ -349,7 +352,7 @@ const EU_EAQI = {
             },
         },
         {
-            range: [61, 80],
+            range: [30, 39],
             glyph: "aqi.high",
             colors: ["#FF9800"],
             categoryName: {
@@ -364,7 +367,7 @@ const EU_EAQI = {
             },
         },
         {
-            range: [81, 100],
+            range: [40, 49],
             glyph: "aqi.high",
             colors: ["#F44336"],
             categoryName: {
@@ -378,19 +381,35 @@ const EU_EAQI = {
                 "en-US": "Everyone should reduce outdoor exertion.",
             },
         },
+        {
+            range: [50, 60],
+            glyph: "aqi.high",
+            colors: ["#7E0023"],
+            categoryName: {
+                "zh-Hans-CN": "极差",
+                "zh-Hant-HK": "極差",
+                "en-US": "Extremely Poor",
+            },
+            recommendation: {
+                "zh-Hans-CN": "所有人应减少户外体力消耗，敏感人群应避免户外体力消耗。",
+                "zh-Hant-HK": "所有人應減少戶外體力消耗，敏感人群應避免戶外體力消耗。",
+                "en-US": "Everyone should reduce outdoor physical exertion. Sensitive groups should avoid outdoor physical exertion.",
+            },
+        },
     ],
     gradient: {
-        stops: [
-            { location: 0, color: "#1E88E5" },
-            { location: 20, color: "#1E88E5" },
-            { location: 21, color: "#00C853" },
-            { location: 40, color: "#00C853" },
-            { location: 41, color: "#FFEB3B" },
-            { location: 60, color: "#FFEB3B" },
-            { location: 61, color: "#FF9800" },
-            { location: 80, color: "#FF9800" },
-            { location: 81, color: "#F44336" },
-        ],
+        // Dense interpolated stops avoid category-wide plateaus even when a
+        // renderer draws the supplied colors as short discrete segments.
+        stops: Array.from({ length: 121 }, (_, i) => {
+            const colors = ["1E88E5", "00C853", "FFEB3B", "FF9800", "F44336", "7E0023"];
+            const position = i / 24, band = Math.min(4, Math.floor(position)), fraction = position - band;
+            const channels = [0, 2, 4].map(offset => {
+                const a = Number.parseInt(colors[band].slice(offset, offset + 2), 16);
+                const b = Number.parseInt(colors[band + 1].slice(offset, offset + 2), 16);
+                return Math.round(a + (b - a) * fraction).toString(16).padStart(2, "0");
+            });
+            return { location: i / 2, color: `#${channels.join("")}`.toUpperCase() };
+        }),
     },
 };
 
@@ -491,11 +510,11 @@ const UBA = {
     ],
     gradient: {
         stops: [
-            { location: 0, color: "#00C853" },
-            { location: 1, color: "#64DD17" },
-            { location: 2, color: "#FFEB3B" },
-            { location: 3, color: "#FF9800" },
-            { location: 4, color: "#F44336" },
+            { location: 1, color: "#00C853" },
+            { location: 2, color: "#64DD17" },
+            { location: 3, color: "#FFEB3B" },
+            { location: 4, color: "#FF9800" },
+            { location: 5, color: "#F44336" },
         ],
     },
 };
@@ -613,6 +632,100 @@ const HK_AQHI = {
     },
 };
 
+// ─── CA AQHI ───────────────────────────────────────────────────────────────────
+
+/** Canada AQHI health-risk bands: 1–3 low, 4–6 moderate, 7–10 high, 10+ very high.
+ * Source: Health Canada, Air Quality Health Index categories and health messages:
+ * https://www.canada.ca/en/environment-climate-change/services/air-quality-health-index/understanding-messages.html
+ * AirQuality.Config.Scales.CA_AQHI encodes 10+ as category/index 11. The two
+ * AQHI_Multi_CN algorithms also emit CA.AQHI upstream, sharing this display
+ * scale; the index provider's metadata continues to identify their algorithm.
+ * These are display-index ranges, not the internal excess-risk calculation.
+ */
+const CA_AQHI = {
+    displayName: {
+        "zh-Hans-CN": "空气质量健康指数",
+        "zh-Hant-HK": "空氣質素健康指數",
+        "en-US": "Air Quality Health Index",
+    },
+    shortDisplayName: {
+        "zh-Hans-CN": "AQHI",
+        "zh-Hant-HK": "AQHI",
+        "en-US": "AQHI",
+    },
+    longDisplayName: {
+        "zh-Hans-CN": "加拿大 (AQHI)",
+        "zh-Hant-HK": "加拿大 (AQHI)",
+        "en-US": "Canada (AQHI)",
+    },
+    categories: [
+        {
+            range: [1, 3],
+            glyph: "aqi.low",
+            colors: ["#00CCFF", "#0099CC", "#006699"],
+            categoryName: {
+                "zh-Hans-CN": "低健康风险",
+                "zh-Hant-HK": "低健康風險",
+                "en-US": "Low Health Risk",
+            },
+            recommendation: {
+                "zh-Hans-CN": "适宜进行户外活动。",
+                "zh-Hant-HK": "適宜進行戶外活動。",
+                "en-US": "Enjoy your usual outdoor activities.",
+            },
+        },
+        {
+            range: [4, 6],
+            glyph: "aqi.medium",
+            colors: ["#FFFF00", "#FFCC00", "#FF9900"],
+            categoryName: {
+                "zh-Hans-CN": "中等健康风险",
+                "zh-Hant-HK": "中等健康風險",
+                "en-US": "Moderate Health Risk",
+            },
+            recommendation: {
+                "zh-Hans-CN": "敏感人群如出现症状，应考虑减少或调整剧烈户外活动。一般人群如无症状，可如常活动。",
+                "zh-Hant-HK": "敏感人群如出現症狀，應考慮減少或調整劇烈戶外活動。一般人群如無症狀，可如常活動。",
+                "en-US": "At-risk people should consider reducing or rescheduling strenuous outdoor activities if experiencing symptoms. Others may continue usual activities unless experiencing symptoms.",
+            },
+        },
+        {
+            range: [7, 10],
+            glyph: "aqi.high",
+            colors: ["#FF6666", "#FF0000", "#CC0000", "#990000"],
+            categoryName: {
+                "zh-Hans-CN": "高健康风险",
+                "zh-Hant-HK": "高健康風險",
+                "en-US": "High Health Risk",
+            },
+            recommendation: {
+                "zh-Hans-CN": "敏感人群应减少或调整剧烈户外活动，儿童及长者也应适当减少活动。一般人群如出现症状，应考虑减少剧烈户外活动。",
+                "zh-Hant-HK": "敏感人群應減少或調整劇烈戶外活動，兒童及長者也應適當減少活動。一般人群如出現症狀，應考慮減少劇烈戶外活動。",
+                "en-US": "At-risk people should reduce or reschedule strenuous outdoor activities; children and seniors should also take it easy. Others should consider reducing strenuous outdoor activities if experiencing symptoms.",
+            },
+        },
+        {
+            range: [11, 11],
+            glyph: "aqi.high",
+            colors: ["#660000"],
+            categoryName: {
+                "zh-Hans-CN": "极高健康风险",
+                "zh-Hant-HK": "極高健康風險",
+                "en-US": "Very High Health Risk",
+            },
+            recommendation: {
+                "zh-Hans-CN": "敏感人群应避免剧烈户外活动，儿童及长者也应避免户外体力消耗。一般人群应减少或调整剧烈户外活动。",
+                "zh-Hant-HK": "敏感人群應避免劇烈戶外活動，兒童及長者也應避免戶外體力消耗。一般人群應減少或調整劇烈戶外活動。",
+                "en-US": "At-risk people should avoid strenuous outdoor activities; children and seniors should also avoid outdoor physical exertion. Others should reduce or reschedule strenuous outdoor activities.",
+            },
+        },
+    ],
+    gradient: {
+        stops: ["#00CCFF", "#0099CC", "#006699", "#FFFF00", "#FFCC00", "#FF9900", "#FF6666", "#FF0000", "#CC0000", "#990000", "#660000"]
+            .map((color, index) => ({ location: index + 1, color })),
+    },
+};
+
 // ─── CN AQHI ───────────────────────────────────────────────────────────────────
 
 const CN_AQHI = {
@@ -684,7 +797,7 @@ const CN_AQHI = {
  * @returns {string}
  */
 function i18n(map, lang) {
-    return map[lang] ?? map["en-US"] ?? "";
+    return map[lang] ?? (lang === "zh-Hant-TW" ? map["zh-Hant-HK"] : undefined) ?? map["en-US"] ?? "";
 }
 
 /**
@@ -700,12 +813,11 @@ function normalizeScaleLanguage(language) {
 }
 
 function parseScaleIdentity(scaleName) {
-    const [name, version] = `${scaleName || ""}`.split(".");
-    const parsedVersion = Number.parseInt(version, 10);
-    return {
-        name: name || scaleName,
-        version: Number.isFinite(parsedVersion) ? parsedVersion : 1,
-    };
+    // Only a trailing numeric component is a version. AQHI and EAQI are part
+    // of the standard's name, including when the algorithm emits no version.
+    const value = `${scaleName || ""}`;
+    const match = /^(.*)\.(\d+)$/.exec(value);
+    return { name: match ? match[1] : value, version: match ? Number(match[2]) : 1 };
 }
 
 // ─── AirQualityScale 类 ────────────────────────────────────────────────────────
@@ -732,7 +844,7 @@ export default class AirQualityScale {
     static buildScale(language, scaleName) {
         Console.debug("☑️ AirQualityScale.buildScale", `language: ${language}`, `scaleName: ${scaleName}`);
 
-        const scaleBaseName = scaleName?.split(".")?.[0];
+        const scaleBaseName = parseScaleIdentity(scaleName).name;
         Console.debug(`scaleBaseName: ${scaleBaseName}`);
 
         let result = null;
@@ -744,17 +856,20 @@ export default class AirQualityScale {
             case "EPA_NowCast":
                 result = AirQualityScale.#buildGenericScale(language, scaleName, EPA_NOWCAST);
                 break;
-            case "EU":
+            case "EU.EAQI":
             case "EAQI":
                 result = AirQualityScale.#buildGenericScale(language, scaleName, EU_EAQI);
                 break;
             case "UBA":
                 result = AirQualityScale.#buildGenericScale(language, scaleName, UBA);
                 break;
-            case "HK":
+            case "HK.AQHI":
                 result = AirQualityScale.#buildAQHIScale(language, scaleName, HK_AQHI);
                 break;
-            case "CN":
+            case "CA.AQHI":
+                result = AirQualityScale.#buildAQHIScale(language, scaleName, CA_AQHI);
+                break;
+            case "CN.AQHI":
                 result = AirQualityScale.#buildAQHIScale(language, scaleName, CN_AQHI);
                 break;
             default:
@@ -785,7 +900,10 @@ export default class AirQualityScale {
             // 对于小数范围（UBA 0-0.99, 1-1.99 等），也每个 category 一个条目
             categories.push({
                 categoryNumber: categories.length + 1,
-                range: [min, max === Number.POSITIVE_INFINITY ? 9999 : max],
+                // UBA's public index is the category (1..5), while its
+                // pollutant interpolation uses the internal 0..4 ranges.
+                range: scaleDef === UBA ? [categories.length + 1, categories.length + 1]
+                    : [min, max === Number.POSITIVE_INFINITY ? 9999 : max],
                 color: band.colors[0],
                 categoryName: i18n(band.categoryName, normalizeLang),
                 recommendation: i18n(band.recommendation, normalizeLang),
@@ -802,9 +920,9 @@ export default class AirQualityScale {
             language: normalizeScaleLanguage(language),
             version: scaleIdentity.version,
             aqi: {
-                numerical: true,
+                numerical: scaleDef !== EU_EAQI,
                 ascending: true,
-                range: scaleDef === UBA ? [0, 4] : scaleDef === EU_EAQI ? [0, 100] : [0, 500],
+                range: scaleDef === UBA ? [1, 5] : scaleDef === EU_EAQI ? [0, 60] : [0, 500],
                 categories,
                 gradient: scaleDef.gradient,
             },
@@ -821,7 +939,7 @@ export default class AirQualityScale {
     }
 
     /**
-     * 构建 AQHI 标尺（HK、CN）。
+     * 构建 AQHI 标尺（HK、CA、CN）。
      * @param {string} language
      * @param {string} scaleName
      * @param {object} scaleDef - AQHI 标尺定义常量

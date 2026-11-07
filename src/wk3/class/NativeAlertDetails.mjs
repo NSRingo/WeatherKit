@@ -79,11 +79,17 @@ function titleParts(value) {
     if (typeof value !== "string") return null;
     const text = value.normalize("NFKC").trim().toLowerCase().replace(/\s+/g, "").replace(/[。.]+$/, "");
     const match = text.match(/^(.+?)(?:(蓝|黄|橙|红)色)?预警(?:信号)?$/);
-    return match ? { text: match[1], color: match[2] } : { text, color: undefined };
+    // Some official event names already end in “预警”, before the colored
+    // warning suffix (e.g. 高速公路灾害性天气预警红色预警信号).
+    return match ? { text: match[1].replace(/(?:预警(?:信号)?)+$/, ""), color: match[2] } : { text, color: undefined };
 }
-function sameTitle(original, source) {
+/** Only the generic Apple title observed in the device diagnostic. */
+export function isGenericAlertTitle(value) {
+    return typeof value === "string" && value.normalize("NFKC").replace(/\s+/g, "").replace(/[。.]+$/, "") === "恶劣天气";
+}
+export function sameAlertTitle(original, source) {
     const a = titleParts(original), b = titleParts(source);
-    return a && b && a.text === b.text && (!a.color || !b.color || a.color === b.color);
+    return Boolean(a?.text && b?.text && a.text === b.text && (!a.color || !b.color || a.color === b.color));
 }
 
 /** Returns only the requested original events, in their original order. Source
@@ -94,15 +100,15 @@ function sameTitle(original, source) {
 export async function resolveNativeAlertDetails(ids, language = "zh-CN", fetchImpl = globalThis.fetch) {
     const payload = parseIDs(ids);
     languageTag(language);
-    // Paired Apple JSON / WK3: Shanghai MINOR=4; Benxi/Shenyang MODERATE=3.
-    // Other integers still have no verified mapping and are not guessed.
-    const severities = { 3: "moderate", 4: "minor" };
+    // MINOR/MODERATE are paired locally; EXTREME/SEVERE are explicitly
+    // defined by upstream @nsringo/weatherkit 2.0.5 (dev b4a75db).
+    const severities = { 1: "extreme", 2: "severe", 3: "moderate", 4: "minor" };
     if (payload.alerts.some(alert => !Object.hasOwn(severities, alert.severity))) throw new TypeError("Unverified WK3 severity");
     const sources = await WeatherAlerts.DetailsForQWeather(payload.region, language, fetchImpl);
     if (!Array.isArray(sources)) throw new TypeError("Invalid QWeather details");
     const matches = payload.alerts.map(alert => {
         const candidates = sources.filter(source => source && source.severity === severities[alert.severity]
-            && sameTitle(alert.description, source.description)
+            && sameAlertTitle(alert.description, source.description)
             && typeof source.issuedTime === "string" && Date.parse(source.issuedTime) === alert.issuedTime * 1000);
         if (candidates.length !== 1) throw new Error("Missing or ambiguous native alert match");
         return candidates[0];

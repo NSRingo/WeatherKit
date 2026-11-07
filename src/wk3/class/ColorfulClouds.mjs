@@ -159,7 +159,7 @@ export default class ColorfulClouds {
                             const timeStamp = (Date.now() / 1000) | 0;
                             const metadata = {
                                 attributionUrl: "https://www.caiyunapp.com/h5",
-                                expireTime: timeStamp + 60 * 60,
+                                expireTime: timeStamp + ForecastNextHour.ExpirationInterval,
                                 language: "zh-CN", // `${this.language}-${this.country}`, // body?.lang,
                                 latitude: body?.location?.[0],
                                 longitude: body?.location?.[1],

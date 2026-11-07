@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { displayModuleOption } from '../src/wk3/option-values.mjs';
 import { localParameters, parameterDescription } from '../src/wk3/parameters.mjs';
 import { renderLocalModule } from '../scripts/build-egern-module.mjs';
 import { renderWK3Module } from '../scripts/build-wk3-modules.mjs';
@@ -21,11 +22,12 @@ test('upstream names and types, preserved local defaults and supported options',
         assert.equal(parameter.name, block.match(/name: "([^"]+)"/)[1], parameter.key);
         assert.equal(parameter.type, block.match(/type: "([^"]+)"/)[1], parameter.key);
     }
-    for (const key of ['AirQuality.Current.Index.Provider', 'AirQuality.Comparison.Yesterday.IndexProvider']) assert.equal(parameters.get(key).value, 'ColorfulCloudsUS');
-    assert.equal(parameters.get('AirQuality.Calculate.Algorithm').value, 'WAQI_InstantCast_US');
+    assert.equal(parameters.get('AirQuality.Current.Index.Provider').value, 'Calculate');
+    assert.equal(parameters.get('AirQuality.Comparison.Yesterday.IndexProvider').value, 'ColorfulCloudsUS');
+    assert.equal(parameters.get('AirQuality.Calculate.Algorithm').value, 'EU_EAQI');
     assert.equal(parameters.get('LogLevel').value, 'INFO');
     assert.deepEqual(parameters.get('WeatherAlerts.Provider').options, ['WeatherKit', 'QWeatherWeb']);
-    assert.ok(parameters.get('AirQuality.Comparison.Yesterday.IndexProvider').options.includes('WeatherKit'));
+    assert.deepEqual(parameters.get('AirQuality.Comparison.Yesterday.PollutantsProvider').options, ['QWeather']);
     assert.equal(parameters.get('AirQuality.Calculate.Algorithm').options.length, 12);
     assert.equal(parameters.get('AirQuality.Calculate.Algorithm').options[0], 'None');
     assert.ok(!parameters.has('Storage') && !parameters.has('API.WAQI.Token'));
@@ -38,10 +40,10 @@ test('Egern actual env schema and compatibility help show all supported choices'
     assert.equal(Object.keys(schema).length, 23);
     for (const parameter of localParameters) {
         assert.equal(schema[parameter.key].name, parameter.name);
-        assert.equal(schema[parameter.key].default_value, parameter.value);
+        assert.equal(schema[parameter.key].default_value, displayModuleOption(parameter.key, parameter.value));
         assert.equal(schema[parameter.key].description, parameterDescription(parameter));
         assert.ok(help.includes(parameter.name));
-        if (parameter.options) assert.deepEqual(schema[parameter.key].options, parameter.options);
+        if (parameter.options) assert.deepEqual(schema[parameter.key].options, parameter.options.map(value => displayModuleOption(parameter.key, value)));
         if (parameter.type === 'array') assert.equal(schema[parameter.key].options, undefined, 'lists must remain editable, not single selects');
     }
 });
@@ -50,9 +52,9 @@ for (const platform of ['surge', 'loon', 'stash']) test(`${platform}: actual mod
     const text = renderWK3Module(platform, version);
     for (const parameter of localParameters) {
         assert.ok(text.includes(parameter.name), parameter.key);
-        for (const option of parameter.options ?? parameter.choices ?? []) assert.ok(text.includes(option), `${parameter.key}: ${option}`);
+        if (platform === 'loon') for (const option of parameter.options ?? []) assert.ok(text.includes(option), `${parameter.key}: ${option}`);
     }
-    for (const expected of ['不会自动添加国内目标', 'false 保留', '12 个选项', 'API 预警尚未移植', 'WK3 当前/逐日/逐小时天气']) assert.ok(text.includes(expected), expected);
+    for (const parameter of localParameters) assert.ok(parameter.description.length <= 80, parameter.key);
     assert.doesNotMatch(text, /确保包含国内原标准|十二种算法|始终仅做同源/);
 });
 

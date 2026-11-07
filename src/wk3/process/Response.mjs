@@ -5,7 +5,7 @@ import ColorfulClouds from "../class/ColorfulClouds.mjs";
 import QWeather from "../class/QWeather.mjs";
 import Weather from "../class/Weather.mjs";
 import WeatherKit2, { decodeAirQuality, encodeAirQuality, decodeForecastNextHour, encodeForecastNextHour } from "../class/WeatherKit2.mjs";
-import { decodeWK3DataSet, encodeAirQuality as encodeWK3AirQuality, providerToWK3USAirQuality } from "../class/WeatherKit3.mjs";
+import { decodeWK3DataSet, encodeAirQuality as encodeWK3AirQuality, providerToWK3AirQuality, wk3AirQualityToProvider, assertWK3AirQualityReplaceable } from "../class/WeatherKit3.mjs";
 import { injectWK3Comparison } from "../class/WK3Comparison.mjs";
 import { patchWK3QWeatherAlerts } from "../class/WK3Alerts.mjs";
 import { decodeWK3NextHour, encodeNextHour as encodeWK3NextHour, providerToWK3NextHour } from "../class/WK3NextHour.mjs";
@@ -14,7 +14,7 @@ import database from "../function/database.mjs";
 import mergeWeatherKitAvailability from "../../function/mergeWeatherKitAvailability.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
 import buildSettings from "../function/buildSettings.mjs";
-import shouldReplaceWeatherKit, { isHongKong } from "../function/shouldReplaceWeatherKit.mjs";
+import shouldReplaceWeatherKit from "../function/shouldReplaceWeatherKit.mjs";
 import { Console } from "../utils/index.mjs";
 /***************** Processing *****************/
 export async function Response($request, $response, context = {}) {
@@ -124,16 +124,7 @@ export async function Response($request, $response, context = {}) {
                     const parsedParameters = preParameters || parseWeatherKitURL(url);
                     const parameters = { ...parsedParameters, dataSets: parsedParameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet)) };
                     const shouldReplace = shouldReplaceWeatherKit(parameters, Settings);
-                    if (!shouldReplace && url.pathname.startsWith("/api/v3/weather/") && isHongKong(parameters)
-                        && parameters.dataSets.includes("airQuality") && !decodeWK3DataSet(rawBody)) {
-                        const enviroments = preEnviroments || {
-                            colorfulClouds: new ColorfulClouds({ ...parameters, country: "HK" }, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
-                            parameters, country: "HK",
-                        };
-                        rawBody = await PatchWK3MissingAirQuality(rawBody, Settings, enviroments, preFetched);
-                        break;
-                    }
-                    if (!shouldReplace) {
+                    if (!shouldReplace && !url.pathname.startsWith("/api/v3/weather/")) {
                         Console.log(`[proxy] ${parameters.country}/${parameters.latitude},${parameters.longitude} 无需替换，直接跳过 FlatBuffer 编解码。`);
                         break;
                     }
@@ -145,10 +136,13 @@ export async function Response($request, $response, context = {}) {
                             country: parameters.country,
                         };
                         if (parameters.dataSets.includes("airQuality")) rawBody = await PatchWK3AirQuality(rawBody, Settings, enviroments, preFetched);
-                        if (parameters.dataSets.includes("forecastNextHour")) rawBody = await PatchWK3NextHour(rawBody, Settings, enviroments, preFetched);
-                        if (parameters.dataSets.includes("weatherAlerts")) {
-                            const patched = await patchWK3QWeatherAlerts(rawBody, { language: parameters.language, timezone: url.searchParams.get("timezone") || undefined, rewriteDetails: true });
-                            Console.info("WK3 alerts patch", patched === rawBody ? "无可补全的匹配预警，保留原始信息。" : "已补全国内预警；苹果原生详情页保留原事件 ID。");
+                        if (shouldReplace && parameters.dataSets.includes("forecastNextHour")) rawBody = await PatchWK3NextHour(rawBody, Settings, enviroments, preFetched);
+                        if (shouldReplace && parameters.dataSets.includes("weatherAlerts")) {
+                            const report = {};
+                            const patched = await patchWK3QWeatherAlerts(rawBody, { language: parameters.language, timezone: url.searchParams.get("timezone") || undefined, rewriteDetails: true, report });
+                            Console.info("WK3 alerts summary", `摘要补全：${report.summariesUpdated}/${report.total} 条；事件匹配：${report.matched}/${report.total} 条。`);
+                            Console.info("WK3 alerts details", report.detailsConverted ? "详情转换：已切换苹果原生详情，保留原事件 ID。" : `详情转换：未转换，保留原链接；reason=${report.reason}`, report.detailsConverted ? "" : report.unmatched);
+                            if (report.titleMismatches.length) Console.info("WK3 alerts titles", report.titleMismatches);
                             rawBody = patched;
                         }
                         break;
@@ -260,95 +254,156 @@ function validIndex(candidate) {
         && typeof candidate.scale === "string" && candidate.scale.length > 0;
 }
 
-// WK3 enums differ from WK2. Same-scale updates retain the original narrow patch;
-// CN -> US uses independently observed mappings and a complete provider AQ child.
+// Complete WK3 AQ products use the explicit upstream enum mappings. Existing
+// unknown AQ fields remain protected; all other weather arenas stay untouched.
+async function wk3AQCandidate(original, Settings, enviroments, preFetched) {
+    const provider = Settings?.AirQuality?.Current?.Index?.Provider;
+    const pollutantProvider = Settings?.AirQuality?.Current?.Pollutants?.Provider;
+    let pollutants;
+    if (provider === "Calculate" && !preFetched.index) {
+        // Upstream keeps Apple's available pollutants; fetch the selected
+        // source only when the original pollutant product is missing.
+        pollutants = original?.pollutants?.length ? wk3AirQualityToProvider(original)
+            : preFetched.pollutants ? await preFetched.pollutants
+            : pollutantProvider === "WeatherKit" ? undefined
+            : await InjectPollutants(Settings, enviroments);
+        if (!pollutants?.metadata || pollutants.metadata.temporarilyUnavailable) return;
+    }
+    let candidate = preFetched.index ? await preFetched.index : await InjectIndex(pollutants, Settings, enviroments);
+    if (!validIndex(candidate)) return;
+    candidate = { ...candidate, metadata: { ...pollutants?.metadata, ...candidate.metadata } };
+    if (provider !== "Calculate") {
+        const sameSource = pollutantProvider === "ColorfulClouds" && /^ColorfulClouds(?:US|CN)$/.test(provider)
+            || pollutantProvider === "QWeather" && provider === "QWeather";
+        pollutants = original?.pollutants?.length ? wk3AirQualityToProvider(original)
+            : preFetched.pollutants ? await preFetched.pollutants
+            : sameSource ? candidate
+            : pollutantProvider === "WeatherKit" ? candidate
+            : await InjectPollutants(Settings, enviroments);
+        if (!pollutants?.metadata || pollutants.metadata.temporarilyUnavailable) return;
+    }
+    // Calculators already normalize the concentrations used by their index.
+    // Unit selection operates on that result, rather than reverting to raw units.
+    const unitInput = provider === "Calculate" && Settings.AirQuality.Current.Pollutants.Units?.Mode !== "None" ? candidate : (pollutants ?? candidate);
+    if (provider === "Calculate") candidate.metadata.providerName = AirQuality.appendScaleToProviderName(candidate, Settings);
+    candidate.pollutants = AirQuality.ConvertPollutants(candidate, unitInput, true, candidate, Settings);
+    return candidate;
+}
+
+async function wk3AQComparison(current, original, Settings, enviroments, preFetched) {
+    if (original && Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange !== true
+        && [2, 3, 4].includes(original.previousDayComparison)) {
+        return { ...current, previousDayComparison: original.previousDayComparison };
+    }
+    const aq = Settings.AirQuality;
+    const algorithm = aq.Calculate?.Algorithm;
+    const calculated = aq.Current?.Index?.Provider === "Calculate";
+    const currentSource = original?.pollutants?.length ? "WeatherKit" : aq.Current?.Pollutants?.Provider;
+    const yesterdaySource = aq.Comparison?.Yesterday?.PollutantsProvider === "ColorfulCloudsCN"
+        ? "ColorfulClouds" : aq.Comparison?.Yesterday?.PollutantsProvider;
+    const currentProvider = calculated ? `Calculate:${currentSource}:${algorithm}` : aq.Current?.Index?.Provider;
+    const yesterdayProvider = aq.Comparison?.Yesterday?.IndexProvider === "Calculate"
+        ? `Calculate:${yesterdaySource}:${algorithm}` : aq.Comparison?.Yesterday?.IndexProvider;
+    try {
+        if (calculated && preFetched.index && !preFetched.pollutants) return { ...current, previousDayComparison: 0 };
+        let yesterday = preFetched.yesterdayAirQuality, locationInfo;
+        if (currentProvider !== yesterdayProvider) {
+            // Upstream compares the selected source's own current/yesterday
+            // pair when its standard differs from the displayed index.
+            if (["ColorfulCloudsUS", "ColorfulCloudsCN"].includes(yesterdayProvider)) {
+                const useUsa = yesterdayProvider === "ColorfulCloudsUS";
+                const today = await enviroments.colorfulClouds.CurrentAirQuality(useUsa, aq.Current.Index.ForceCNPrimaryPollutants);
+                const comparison = await injectWK3Comparison(today, {
+                    currentProvider: yesterdayProvider, yesterdayProvider, sources: enviroments,
+                    yesterday: preFetched.yesterdayAirQuality,
+                });
+                const previousDayComparison = comparison.previousDayComparison;
+                const source = `彩云天气（${useUsa ? "美标" : "国标"}）`;
+                Console.info("WK3 AQ comparison", `对比来源：${source}今日与昨日；结果=${previousDayComparison}。`);
+                return { ...current, previousDayComparison, metadata: { ...current.metadata,
+                    providerName: previousDayComparison ? `${current.metadata.providerName}\n对比昨日：${source}` : current.metadata.providerName } };
+            }
+            return { ...current, previousDayComparison: 0 };
+        }
+        if (yesterday === undefined && (yesterdayProvider === "QWeather" || calculated && yesterdaySource === "QWeather")) {
+            const grid = preFetched.locationsGrid ?? await QWeather.GetLocationsGrid(undefined, () => {});
+            locationInfo = QWeather.GetLocationInfo(grid, enviroments.qWeather.latitude, enviroments.qWeather.longitude);
+        }
+        if (yesterday === undefined && calculated) {
+            // The ColorfulClouds historical endpoint contains categories, not
+            // historical concentrations; it cannot stand in for calculated AQ.
+            if (yesterdaySource !== "QWeather") return { ...current, previousDayComparison: 0 };
+            const source = await enviroments.qWeather.YesterdayAirQuality(locationInfo);
+            if (!source?.metadata || source.metadata.temporarilyUnavailable || !source.pollutants?.length) return { ...current, previousDayComparison: 0 };
+            const result = AirQuality.Pollutants2AQI(source, Settings, { algorithm });
+            yesterday = { ...result, metadata: { ...source.metadata, ...result?.metadata } };
+        }
+        return await injectWK3Comparison(current, { currentProvider, yesterdayProvider, sources: enviroments, yesterday, locationInfo });
+    } catch {
+        return { ...current, previousDayComparison: 0 };
+    }
+}
+
 async function PatchWK3AirQuality(rawBody, Settings, enviroments, preFetched = {}) {
     try {
         const original = decodeWK3DataSet(rawBody);
-        if (!original) {
-            if (!Settings?.AirQuality?.Current?.Index?.Replace?.length) return rawBody;
-            return await PatchWK3MissingAirQuality(rawBody, Settings, enviroments, preFetched, true);
-        }
-        const scaleName = AirQuality.GetNameFromScale(original.scale);
-        const replace = Settings?.AirQuality?.Current?.Index?.Replace || [];
-        if (!replace.includes(scaleName) || !canInjectIndex(Settings)) return rawBody;
-        let injected;
-        if (preFetched.index) {
-            injected = await preFetched.index;
-        } else if (Settings?.AirQuality?.Current?.Index?.Provider === "Calculate") {
-            const pollutants = preFetched.pollutants ? await preFetched.pollutants : Settings?.AirQuality?.Current?.Pollutants?.Provider === "WeatherKit" ? original : await InjectPollutants(Settings, enviroments);
-            if (!pollutants?.metadata || pollutants.metadata.temporarilyUnavailable) return rawBody;
-            injected = await InjectIndex(pollutants, Settings, enviroments);
-            if (injected?.metadata) injected = { ...injected, metadata: { ...pollutants.metadata, ...injected.metadata } };
-        } else {
-            injected = await InjectIndex(undefined, Settings, enviroments);
-        }
-        if (!validIndex(injected)) return rawBody;
-        const targetScale = AirQuality.GetNameFromScale(injected.scale);
-        if (!scaleName || targetScale !== scaleName) {
-            // CN -> US only. Replace the entire AQ child with one provider's
-            // consistent units/primary/source, leaving all other root arenas intact.
-            if (scaleName !== "HJ6332012" || targetScale !== "EPA_NowCast") return rawBody;
+        if (!original) return await PatchWK3MissingAirQuality(rawBody, Settings, enviroments, preFetched, true);
+        // Upstream EAQI is versionless. Update only the display resource string
+        // for an existing EAQI product; retain its values and all unknown fields.
+        if (/^EU\.EAQI\.\d+$/.test(original.scale)) {
             const root = readUint32LE(rawBody, 0);
             const field = getTableFieldOffset(rawBody, root, 0);
             const table = root + field + readUint32LE(rawBody, root + field);
-            const vtable = table - readInt32LE(rawBody, table);
-            // Do not discard future AQ fields when replacing the known child.
-            if (readUint16LE(rawBody, vtable) > 20) return rawBody;
-            const replacement = providerToWK3USAirQuality(injected);
-            if (Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange === true || ![2, 3, 4].includes(original.previousDayComparison)) {
-                Object.assign(replacement, await injectWK3Comparison(replacement, {
-                    currentProvider: Settings?.AirQuality?.Current?.Index?.Provider,
-                    yesterdayProvider: Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider,
-                    sources: enviroments,
-                    yesterday: preFetched.yesterdayAirQuality,
-                }));
-            } else {
-                replacement.previousDayComparison = original.previousDayComparison;
-            }
-            const builder = new flatbuffers.Builder();
-            builder.finish(encodeWK3AirQuality(builder, replacement));
-            const patched = appendFlatBufferTableToWeatherRoot(rawBody, 0, builder.asUint8Array());
-            Console.info("WK3 AQ patch", `国标转美标: ${original.index} -> ${replacement.index} (${replacement.scale}); 同步污染物、单位、首要污染物及来源，昨日对比=${replacement.previousDayComparison}。`);
-            return patched;
+            rawBody = appendFlatBufferObjectToTableField(rawBody, table, 7, createStringBuffer("EU.EAQI"));
+            original.scale = "EU.EAQI";
         }
-        if (!Number.isInteger(injected.index) || injected.index < 0 || injected.index > 32767
-            || !Number.isInteger(injected.categoryIndex) || injected.categoryIndex < 0 || injected.categoryIndex > 127) return rawBody;
-        const root = readUint32LE(rawBody, 0);
-        const field = getTableFieldOffset(rawBody, root, 0);
-        const table = root + field + readUint32LE(rawBody, root + field);
-        // Omitted scalar slots cannot be written in place. Preserve the original
-        // rather than rebuilding a schema with unverified fields or enum defaults.
-        if (!getTableFieldOffset(rawBody, table, 1) || !getTableFieldOffset(rawBody, table, 2)) return rawBody;
-        const patched = new Uint8Array(rawBody);
-        writeTableInt8IfPresent(patched, table, 1, injected.categoryIndex);
-        writeTableInt16IfPresent(patched, table, 2, injected.index);
-        Console.info("WK3 AQ patch", `同标准 AQI: ${original.index} -> ${injected.index} (${scaleName}); 保留原始污染物、昨日对比与全部预报槽。`);
+        const scaleName = AirQuality.GetNameFromScale(original.scale);
+        const replace = Settings?.AirQuality?.Current?.Index?.Replace || [];
+        const replaceIndex = replace.includes(scaleName) && canInjectIndex(Settings);
+        const replaceUnits = Settings?.AirQuality?.Current?.Pollutants?.Units?.Replace?.includes(scaleName);
+        if (!replaceIndex && !replaceUnits) return rawBody;
+        assertWK3AirQualityReplaceable(rawBody);
+        let replacement;
+        if (replaceIndex) {
+            const candidate = await wk3AQCandidate(original, Settings, enviroments, preFetched);
+            if (!candidate) return rawBody;
+            replacement = providerToWK3AirQuality(candidate);
+            const changedIndex = ["index", "categoryIndex", "scale"].some(key => replacement[key] !== original[key]);
+            if (!changedIndex && !replaceUnits && Settings.AirQuality.Current.Index.Provider !== "Calculate") return rawBody;
+            replacement = changedIndex ? await wk3AQComparison(replacement, original, Settings, enviroments, preFetched)
+                : { ...replacement, previousDayComparison: original.previousDayComparison };
+        } else {
+            const provider = wk3AirQualityToProvider(original);
+            const pollutants = AirQuality.ConvertPollutants(provider, provider, false, provider, Settings);
+            replacement = providerToWK3AirQuality({ ...provider, pollutants });
+            replacement.previousDayComparison = original.previousDayComparison;
+        }
+        const builder = new flatbuffers.Builder();
+        builder.finish(encodeWK3AirQuality(builder, replacement));
+        const patched = appendFlatBufferTableToWeatherRoot(rawBody, 0, builder.asUint8Array());
+        Console.info("WK3 AQ patch", `${original.scale} -> ${replacement.scale}; AQI: ${original.index} -> ${replacement.index}; 算法=${Settings.AirQuality.Current.Index.Provider === "Calculate" ? Settings.AirQuality.Calculate.Algorithm : "数据源直取"}; 污染物=${replacement.pollutants.length}; 昨日对比=${replacement.previousDayComparison}。`);
         return patched;
     } catch (error) {
-        Console.warn("WK3 AQ patch", "指数替换失败，保留 Apple 原始二进制响应。", error?.message ?? error);
+        Console.warn("WK3 AQ patch", "指数或单位转换失败，保留 Apple 原始二进制响应。", error?.message ?? error);
         return rawBody;
     }
 }
 
 async function PatchWK3MissingAirQuality(rawBody, Settings, enviroments, preFetched = {}, mainland = false) {
-    if (Settings?.AirQuality?.Current?.Index?.Provider !== "ColorfulCloudsUS") return rawBody;
+    if (!Settings?.AirQuality?.Current?.Index?.Replace?.length || !canInjectIndex(Settings)) return rawBody;
     const label = mainland ? "WK3 missing AQ patch" : "WK3 HK AQ patch";
-    const region = mainland ? "大陆缺失" : "香港";
+    const region = { TW: "台湾地区", MO: "澳门" }[enviroments.country] || (mainland ? "大陆" : "香港");
     try {
-        const injected = preFetched.index ? await preFetched.index : await enviroments.colorfulClouds.CurrentAirQuality(true, Settings?.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants);
-        const replacement = await injectWK3Comparison(providerToWK3USAirQuality(injected), {
-            currentProvider: "ColorfulCloudsUS",
-            yesterdayProvider: Settings?.AirQuality?.Comparison?.Yesterday?.IndexProvider,
-            sources: enviroments, yesterday: preFetched.yesterdayAirQuality,
-        });
+        const candidate = await wk3AQCandidate(null, Settings, enviroments, preFetched);
+        if (!candidate) return rawBody;
+        const replacement = await wk3AQComparison(providerToWK3AirQuality(candidate), null, Settings, enviroments, preFetched);
         const builder = new flatbuffers.Builder();
         builder.finish(encodeWK3AirQuality(builder, replacement));
         const patched = rebuildWeatherRootWithAddedTable(rawBody, 0, builder.asUint8Array());
-        Console.info(label, `补入${region}美标 AQI ${replacement.index}; 昨日对比=${replacement.previousDayComparison}，其他天气原样保留。`);
+        Console.info(label, `补入${region} AQI ${replacement.index} (${replacement.scale}); 算法=${Settings.AirQuality.Current.Index.Provider === "Calculate" ? Settings.AirQuality.Calculate.Algorithm : "数据源直取"}; 昨日对比=${replacement.previousDayComparison}，其他天气原样保留。`);
         return patched;
     } catch (error) {
-        Console.warn(label, "数据源不可用，保持原响应。", error?.message ?? error);
+        Console.warn(label, "数据源或转换不可用，保持原响应。", error?.message ?? error);
         return rawBody;
     }
 }
@@ -359,14 +414,15 @@ async function PatchWK3NextHour(rawBody, Settings, enviroments, preFetched = {})
         // Inspect before replacing: unknown future fields retain their arena.
         decodeWK3NextHour(rawBody);
         const data = await InjectForecastNextHour(undefined, Settings, enviroments, preFetched.forecastNextHour);
-        const nextHour = providerToWK3NextHour(data, { intensityUnit: "mm/h", chanceUnit: "percent" });
+        const report = {};
+        const nextHour = providerToWK3NextHour(data, { intensityUnit: "mm/h", chanceUnit: "percent", report });
         const builder = new flatbuffers.Builder();
         builder.finish(encodeWK3NextHour(builder, nextHour));
         const root = readUint32LE(rawBody, 0);
         const patched = getTableFieldOffset(rawBody, root, 5)
             ? appendFlatBufferTableToWeatherRoot(rawBody, 5, builder.asUint8Array())
             : rebuildWeatherRootWithAddedTable(rawBody, 5, builder.asUint8Array());
-        Console.info("WK3 nextHour patch", ...formatNextHourSummary(data));
+        Console.info("WK3 nextHour patch", ...formatNextHourSummary({ ...data, condition: nextHour.condition }), `precipitationTypes: ${[...new Set(data.summary.flatMap(item => Array.isArray(item.condition) ? item.condition : [item.condition]))].join(",")}`, `omittedSnowDescriptions: ${report.omittedSnowConditions}`);
         return patched;
     } catch (error) {
         Console.warn("WK3 nextHour patch", "分钟降水替换失败，保留原响应。", error?.message ?? error);

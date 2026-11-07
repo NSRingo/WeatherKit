@@ -1,6 +1,7 @@
 import database from "../function/database.mjs";
 import buildSettings from "../function/buildSettings.mjs";
 import { get, set, merge } from "../utils/object.mjs";
+import { moduleOptionLabels, normalizeModuleOption } from "../option-values.mjs";
 
 export function configuration(ctx) {
     // SETTINGS is the same nested Settings object accepted by buildSettings.
@@ -10,6 +11,10 @@ export function configuration(ctx) {
         if (key.includes(".") || key === "DataSets" || key === "LogLevel") set(dotted, key, value);
     }
     merge(overrides, dotted);
+    for (const key of Object.keys(moduleOptionLabels)) {
+        const value = get(overrides, key);
+        if (value !== undefined) set(overrides, key, normalizeModuleOption(key, value));
+    }
     // The existing merge deliberately preserves defaults for an empty array.
     // Its string "[]" convention clears them during buildSettings normalization.
     function emptyArrays(value) {

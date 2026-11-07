@@ -97,6 +97,8 @@ export async function runPlatform(handler, stage, globals = globalThis, platform
     catch (error) { (globals.console ?? console).error(error); result = undefined; }
     if (typeof done !== "function") return result;
     if (result === undefined || result === null) return done();
+    // Request URL rewrites are not synthetic HTTP responses.
+    if (stage === "request" && typeof result.url === "string") return done(result);
     const bodyToPlatform = body => {
         const bytes = body instanceof ArrayBuffer ? new Uint8Array(body)
             : ArrayBuffer.isView(body) ? new Uint8Array(body.buffer, body.byteOffset, body.byteLength) : null;

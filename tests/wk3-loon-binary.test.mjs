@@ -75,7 +75,7 @@ test("actual minified Loon bundle returns decodable WK3 US AQ after source reque
     const aq = encodeAirQuality(b, { metadata: { sourceType: 3, providerName: "Apple" }, scale: "HJ6332012.2604", index: 60, categoryIndex: 2, pollutants: [], primaryPollutant: 11 });
     b.startObject(15); b.addFieldOffset(0, aq, 0); b.finish(b.endObject());
     const { response } = await bundle();
-    const { result, logs, requests } = await execute(response.code, b.asUint8Array(), { "AirQuality.Comparison.Yesterday.IndexProvider": "WeatherKit" });
+    const { result, logs, requests } = await execute(response.code, b.asUint8Array(), { "AirQuality.Current.Index.Provider": "ColorfulCloudsUS", "AirQuality.Comparison.Yesterday.IndexProvider": "WeatherKit" });
     assert.ok(result.body instanceof Uint8Array, "returned WK3 must stay binary for Loon");
     const decoded = decodeWK3DataSet(result.body);
     assert.equal(decoded.index, 87);

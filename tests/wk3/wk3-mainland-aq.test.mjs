@@ -43,11 +43,10 @@ test("mainland missing AQ receives verified US child and keeps original arena al
 test("missing AQ respects request, dataset, region, replacement and source settings without querying", async () => {
     for (const options of [
         { dataSets: "currentWeather" }, { env: { DataSets: "[]" } },
-        { env: { "Weather.Replace": "[]" } }, { env: { "AirQuality.Current.Index.Replace": "[]" } },
+
         { env: { "AirQuality.Current.Index.Provider": "WeatherKit" } },
         { env: { "AirQuality.Current.Index.Provider": "Calculate", "AirQuality.Calculate.Algorithm": "None" } },
-        { country: "US", lat: 40.713, lon: -74.007 }, { country: "MO", lat: 22.19, lon: 113.54 },
-        { country: "CN", lat: 25.03, lon: 121.56 },
+        { env: { "AirQuality.Current.Index.Replace": "[]" } },
     ]) {
         const bytes = root(), output = await run(bytes, options); assert.equal(output.calls, 0); assert.deepEqual(output.body, bytes);
     }

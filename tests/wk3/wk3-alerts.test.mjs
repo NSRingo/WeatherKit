@@ -30,7 +30,8 @@ function alertVectorPointer(bytes) {
 const fetchPage = async () => new Response(html, { headers: { "Content-Type": "text/html" } });
 test("observed WK3 enums are explicit, not WK2 arithmetic", () => {
     assert.equal(WK3_ALERT_ENUMS.severity.MINOR, 4); assert.equal(WK3_ALERT_ENUMS.significance.STATEMENT, 10);
-    assert.equal(WK3_ALERT_ENUMS.responses.MONITOR, 7); assert.equal(WK3_ALERT_ENUMS.severity.SEVERE, undefined);
+    assert.equal(WK3_ALERT_ENUMS.responses.MONITOR, 7);
+    assert.equal(WK3_ALERT_ENUMS.severity.SEVERE, 2); assert.equal(WK3_ALERT_ENUMS.severity.EXTREME, 1);
     const d = decodeWK3Alerts(fixture({ rawSeverity: 231 })); assert.equal(d.alerts[0].severity, 231);
     assert.deepEqual(d.alerts[0].responses, [7]); assert.deepEqual(d.alerts[0].id.bytes, Array.from({ length: 16 }, (_, i) => i));
 });

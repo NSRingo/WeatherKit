@@ -282,15 +282,15 @@ export default class QWeather {
             switch (body?.code) {
                 case "200": {
                     const timeStamp = (Date.now() / 1000) | 0;
-                    let minuteStemp = new Date(body?.updateTime).setSeconds(0, 0);
-                    minuteStemp = minuteStemp.valueOf() / 1000;
+                    // updateTime is publication time; fxTime defines the forecast grid.
+                    const minuteStemp = new Date(body?.minutely?.[0]?.fxTime).valueOf() / 1000;
                     forecastNextHour = {
                         metadata: {
                             attributionUrl: body?.fxLink,
-                            expireTime: timeStamp + 60 * 60,
+                            expireTime: timeStamp + ForecastNextHour.ExpirationInterval,
                             language: "zh-CN", // `${this.language}-${this.country}`, // body?.lang,
-                            latitude: this.latitude,
-                            longitude: this.longitude,
+                            latitude: Number(this.latitude),
+                            longitude: Number(this.longitude),
 
                             providerName: "和风天气",
                             readTime: timeStamp,
@@ -603,13 +603,13 @@ export default class QWeather {
     }
 
     #Metadata(attributionUrl = `https://www.qweather.com/`, sourceType = "MODELED", temporarilyUnavailable = false) {
-        const timeStamp = Date.now() / 1000;
+        const timeStamp = Math.trunc(Date.now() / 1000);
         return {
-            longitude: this.longitude,
+            longitude: Number(this.longitude),
             providerName: "和风天气",
 
             reportedTime: timeStamp,
-            latitude: this.latitude,
+            latitude: Number(this.latitude),
             expireTime: timeStamp + 60 * 60,
             attributionUrl,
             temporarilyUnavailable,

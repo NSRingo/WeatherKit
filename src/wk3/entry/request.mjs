@@ -9,12 +9,24 @@ export async function handleRequest(ctx) {
     const url = new URL(ctx.request.url);
     if (url.hostname !== "weatherkit.apple.com") return;
     if (/^\/api\/v[12]\/airQualityScale\//.test(url.pathname)) {
-        // Keep the existing Apple-first behavior while moving this responsibility
-        // to the upstream request category. Native ctx.http does not re-enter scripts.
+        const parts = url.pathname.split("/").filter(Boolean);
+        const scaleName = decodeURIComponent(parts[4] ?? "");
+        // Upstream dev requests EAQI's native, versionless Apple scale.
+        if (/^EU\.EAQI(?:\.\d+)?$/.test(scaleName)) {
+            url.pathname = `/api/${parts[1]}/airQualityScale/${parts[3]}/EU.EAQI`;
+            const headers = ctx.request.headers;
+            if (typeof headers?.delete === "function") headers.delete("if-none-match");
+            else for (const key of Object.keys(headers ?? {})) if (key.toLowerCase() === "if-none-match") delete headers[key];
+            return { url: url.toString(), headers };
+        }
+        // Other standards retain their existing Apple-first behavior.
         try {
             const upstream = await webFetch(url.toString(), { headers: headerObject(ctx.request.headers) });
-            if (upstream.status === 200) return ctx.respond({ status: 200, headers: responseHeaders(upstream.headers), body: await upstream.text() });
             const parts = url.pathname.split("/").filter(Boolean);
+            if (upstream.status === 200) {
+                let body = await upstream.text();
+                return ctx.respond({ status: 200, headers: responseHeaders(upstream.headers), body });
+            }
             const fallback = AirQualityScale.buildScale(parts[3] ?? "en", parts[4] ?? "");
             if (fallback) return ctx.respond(fallback);
             return ctx.respond({ status: upstream.status, headers: responseHeaders(upstream.headers), body: await upstream.text() });

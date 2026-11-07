@@ -76,46 +76,125 @@ export function encodeAirQuality(builder, data) {
 }
 // Verified by paired Apple v3 JSON / WK3 b66 responses, not WK2 enum arithmetic.
 // Only observed names are mapped; unsupported provider names fail closed.
-export const WK3_AQ_POLLUTANTS = { NOT_AVAILABLE: 1, NO: 5, NO2: 6, NOX: 7, OZONE: 8, PM2_5: 9, SO2: 10, PM10: 11, CO: 12 };
+export const WK3_AQ_POLLUTANTS = {
+    NOT_AVAILABLE: 1, C6H6: 2, NH3: 3, NMHC: 4, NO: 5, NO2: 6, NOX: 7,
+    OZONE: 8, PM2_5: 9, SO2: 10, PM10: 11, CO: 12,
+};
 export const WK3_AQ_UNITS = { PARTS_PER_BILLION: 1, MICROGRAMS_PER_CUBIC_METER: 2 };
-export const WK3_AQ_SOURCES = { MODELED: 2, STATION: 3 };
+export const WK3_AQ_SOURCES = { APPLE_INTERNAL: 1, MODELED: 2, STATION: 3 };
+export const WK3_AQ_COMPARISONS = { UNKNOWN: 0, WORSE: 2, SAME: 3, BETTER: 4 };
 
-/** Build a self-consistent US AQ child from one provider. Do not carry China's
- * primary pollutant / yesterday comparison into a new scale. UNKNOWN=0 was
- * verified against Apple JSON; yesterday injection remains unsupported.
+const WK3_AQ_SCALES = new Set([
+    "UBA", "EU.EAQI", "HJ6332012", "HJ6332025_DRAFT", "EPA_NowCast",
+    "HK.AQHI", "CA.AQHI", "CN.AQHI",
+]);
+function mapAQComparison(value = "UNKNOWN") {
+    if (!Object.hasOwn(WK3_AQ_COMPARISONS, value)) throw new TypeError(`Unknown WK3 AQ comparison: ${value}`);
+    return WK3_AQ_COMPARISONS[value];
+}
+function aqCategory(scale, index) {
+    if (["EPA_NowCast", "HJ6332012", "HJ6332025_DRAFT"].includes(scale)) return index <= 50 ? 1 : index <= 100 ? 2 : index <= 150 ? 3 : index <= 200 ? 4 : index <= 300 ? 5 : 6;
+    return null;
+}
+
+
+/** Convert supported algorithm/provider AQ payloads into WK3 wire enums.
+ * Required metadata: providerName and sourceType. Missing optional metadata
+ * fields (coordinates and timestamps included) retain codec defaults of zero.
  */
-export function providerToWK3USAirQuality(data) {
-    const map = (dictionary, name) => {
-        if (!Object.hasOwn(dictionary, name)) throw new TypeError(`Unsupported WK3 AQ enum: ${name}`);
-        return dictionary[name];
+export function providerToWK3AirQuality(data) {
+    if (!data || typeof data !== "object") throw new TypeError("Missing provider AQ data");
+    if (!Number.isInteger(data.index) || data.index < 0 || data.index > 32767) throw new RangeError("WK3 AQ index must be 0..32767");
+    if (!Number.isInteger(data.categoryIndex) || data.categoryIndex < 1 || data.categoryIndex > 127) throw new RangeError("WK3 AQ category must be 1..127");
+    const scaleBase = typeof data.scale === "string" ? data.scale.replace(/\.\d+(?:\.\d+)*$/, "") : "";
+    if (!WK3_AQ_SCALES.has(scaleBase)) throw new TypeError(`Unsupported WK3 AQ scale: ${data.scale}`);
+    const expectedCategory = aqCategory(scaleBase, data.index);
+    if (expectedCategory !== null && data.categoryIndex !== expectedCategory) throw new TypeError(`Inconsistent ${scaleBase} categoryIndex`);
+    if (expectedCategory !== null && data.isSignificant !== (data.categoryIndex >= 3)) throw new TypeError(`Inconsistent ${scaleBase} significance`);
+    if (!data.metadata || data.metadata.temporarilyUnavailable || typeof data.metadata.providerName !== "string" || !data.metadata.providerName || !Object.hasOwn(WK3_AQ_SOURCES, data.metadata.sourceType)) throw new TypeError("Missing or invalid AQ provider metadata");
+    if (!Array.isArray(data.pollutants) || data.pollutants.length === 0) throw new TypeError("Missing provider pollutants");
+    const seen = new Set();
+    const pollutants = data.pollutants.map(p => {
+        if (!p || typeof p !== "object" || !Object.hasOwn(WK3_AQ_POLLUTANTS, p.pollutantType) || !Object.hasOwn(WK3_AQ_UNITS, p.units)) throw new TypeError("Unknown WK3 AQ pollutant/unit");
+        const pollutantType = WK3_AQ_POLLUTANTS[p.pollutantType];
+        if (pollutantType === WK3_AQ_POLLUTANTS.NOT_AVAILABLE || seen.has(pollutantType)) throw new TypeError("Invalid or duplicate pollutant");
+        seen.add(pollutantType);
+        const amount = finite(p.amount);
+        if (amount < 0) throw new RangeError("Negative pollutant concentration");
+        return { ...p, pollutantType, amount, units: WK3_AQ_UNITS[p.units] };
+    });
+    if (!Object.hasOwn(WK3_AQ_POLLUTANTS, data.primaryPollutant)) throw new TypeError("Unknown WK3 AQ primary pollutant");
+    const primaryPollutant = WK3_AQ_POLLUTANTS[data.primaryPollutant];
+    if (primaryPollutant !== WK3_AQ_POLLUTANTS.NOT_AVAILABLE && !seen.has(primaryPollutant)) throw new TypeError("Primary pollutant missing from provider data");
+    const metadata = {
+        ...data.metadata, attributionUrl: data.metadata.attributionUrl ?? null, expireTime: data.metadata.expireTime ?? 0,
+        language: data.metadata.language ?? null, latitude: finite(data.metadata.latitude ?? 0), longitude: finite(data.metadata.longitude ?? 0),
+        providerLogo: data.metadata.providerLogo ?? null, readTime: data.metadata.readTime ?? 0, reportedTime: data.metadata.reportedTime ?? 0,
+        temporarilyUnavailable: false, sourceType: WK3_AQ_SOURCES[data.metadata.sourceType],
     };
-    if (!["EPA_NowCast.2414", "EPA_NowCast.2604"].includes(data?.scale)) throw new TypeError("Unsupported EPA_NowCast scale version");
+    const normalizedScale = data.scale === "EPA_NowCast.2414" ? "EPA_NowCast.2604" : data.scale;
+    return { ...data, metadata, index: data.index, categoryIndex: data.categoryIndex, isSignificant: data.isSignificant === true,
+        pollutants, primaryPollutant, previousDayComparison: mapAQComparison(data.previousDayComparison), scale: normalizedScale };
+}
+
+function enumName(dictionary, value, kind) {
+    const name = Object.keys(dictionary).find(key => dictionary[key] === value);
+    if (name === undefined) throw new TypeError(`Unknown WK3 AQ ${kind}: ${value}`);
+    return name;
+}
+function assertKnownVtableFields(table, count, label) {
+    if (!table) throw new TypeError(`Missing WK3 AQ ${label}`);
+    const bb = table.bb, position = table.bb_pos;
+    const vtable = position - bb.readInt32(position);
+    if (bb.readInt16(vtable) > 4 + count * 2) throw new TypeError(`Unknown WK3 AQ ${label} fields`);
+}
+export function wk3AirQualityToProvider(data) {
+    if (data && typeof data.index === "function") {
+        assertKnownVtableFields(data, 8, "table");
+        const metadataTable = data.metadata();
+        assertKnownVtableFields(metadataTable, 11, "metadata");
+        const pollutants = Array.from({ length: data.pollutantsLength() }, (_, i) => {
+            const p = data.pollutants(i); assertKnownVtableFields(p, 3, "pollutant");
+            return { pollutantType: p.pollutantType(), amount: p.amount(), units: p.units() };
+        });
+        return wk3AirQualityToProvider({ metadata: decodeMetadata(metadataTable), categoryIndex: data.categoryIndex(), index: data.index(),
+            isSignificant: data.isSignificant(), pollutants, previousDayComparison: data.previousDayComparison(),
+            primaryPollutant: data.primaryPollutant(), scale: data.scale() });
+    }
+    if (!data || !data.metadata || !Array.isArray(data.pollutants)) throw new TypeError("Missing raw WK3 AQ object");
+    const metadata = { ...data.metadata, sourceType: enumName(WK3_AQ_SOURCES, data.metadata.sourceType, "source") };
+    const pollutants = data.pollutants.map(p => ({
+        ...p, pollutantType: enumName(WK3_AQ_POLLUTANTS, p.pollutantType, "pollutant"),
+        units: enumName(WK3_AQ_UNITS, p.units, "unit"),
+    }));
+    return { ...data, metadata, pollutants,
+        previousDayComparison: enumName(WK3_AQ_COMPARISONS, data.previousDayComparison, "comparison"),
+        primaryPollutant: enumName(WK3_AQ_POLLUTANTS, data.primaryPollutant, "primary pollutant") };
+}
+
+/** US-specific compatibility wrapper retains its original 0..500 bands. */
+export function providerToWK3USAirQuality(data) {
+    if (!data || !["EPA_NowCast.2414", "EPA_NowCast.2604"].includes(data.scale)) throw new TypeError("Unsupported EPA_NowCast scale version");
     if (!Number.isInteger(data.index)) throw new TypeError("Missing integer AQI");
     const index = unsigned(data.index, 500);
     const category = index <= 50 ? 1 : index <= 100 ? 2 : index <= 150 ? 3 : index <= 200 ? 4 : index <= 300 ? 5 : 6;
     if (data.categoryIndex !== category || data.isSignificant !== (category >= 3)) throw new TypeError("Inconsistent EPA AQI category/significance");
-    if (!data.metadata || data.metadata.temporarilyUnavailable || !data.metadata.providerName) throw new TypeError("Missing AQ provider metadata");
-    if (!Array.isArray(data.pollutants) || !data.pollutants.length) throw new TypeError("Missing provider pollutants");
-    const seen = new Set();
-    const pollutants = data.pollutants.map(p => {
-        const pollutantType = map(WK3_AQ_POLLUTANTS, p.pollutantType);
-        if (pollutantType === 1 || seen.has(pollutantType)) throw new TypeError("Invalid or duplicate pollutant");
-        seen.add(pollutantType);
-        if (typeof p.amount !== "number") throw new TypeError("Missing pollutant concentration");
-        const amount = finite(p.amount);
-        if (amount < 0) throw new RangeError("Negative pollutant concentration");
-        return { pollutantType, amount, units: map(WK3_AQ_UNITS, p.units) };
-    });
-    const primaryPollutant = map(WK3_AQ_POLLUTANTS, data.primaryPollutant);
-    if (primaryPollutant !== 1 && !seen.has(primaryPollutant)) throw new TypeError("Primary pollutant missing from provider data");
-    return {
-        metadata: { ...data.metadata, sourceType: map(WK3_AQ_SOURCES, data.metadata.sourceType) },
-        index, categoryIndex: category, isSignificant: category >= 3, pollutants,
-        // Upstream providers still emit .2414 (Apple now returns 404). Both use
-        // the same six AQI bands; .2604 is the observed live display scale, not
-        // a claim that the provider implements Apple's concentration algorithm.
-        primaryPollutant, previousDayComparison: 0, scale: "EPA_NowCast.2604",
-    };
+    const result = providerToWK3AirQuality(data);
+    return { ...result, index, categoryIndex: category, isSignificant: category >= 3, previousDayComparison: 0, scale: "EPA_NowCast.2604" };
+}
+
+/** Unknown AQ/metadata/pollutant fields make complete-child replacement unsafe. */
+export function assertWK3AirQualityReplaceable(bytes) {
+    const bb = bytes instanceof ByteBuffer ? bytes : new ByteBuffer(bytes);
+    const start = bb.position(), root = start + bb.readUint32(start);
+    const offset = bb.__offset(root, 4 + 2 * WK3_ROOT_SLOTS.airQuality);
+    if (!offset) return true;
+    const aq = new WK3AirQualityTable().__init(bb.__indirect(root + offset), bb);
+    assertKnownVtableFields(aq, 8, "table");
+    const metadata = aq.metadata();
+    if (metadata) assertKnownVtableFields(metadata, 11, "metadata");
+    for (let i = 0; i < aq.pollutantsLength(); i++) assertKnownVtableFields(aq.pollutants(i), 3, "pollutant");
+    return true;
 }
 
 export const airQualityCodec = { tableClass: WK3AirQualityTable, decode: decodeAirQuality, encode: encodeAirQuality };

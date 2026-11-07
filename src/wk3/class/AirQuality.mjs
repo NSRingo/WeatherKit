@@ -259,6 +259,8 @@ export default class AirQuality {
                     return scales.CA_AQHI;
                 case scales.HK_AQHI.weatherKitScale.name:
                     return scales.HK_AQHI;
+                case scales.CN_DEATH_AQHI.weatherKitScale.name:
+                    return scales.CN_DEATH_AQHI;
                 default:
                     return scales[scaleName];
             }
@@ -320,6 +322,8 @@ export default class AirQuality {
 
         const pollutants = injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable ? injectedPollutants.pollutants : airQuality?.pollutants;
         Console.debug("✅ ConvertPollutants");
+
+        if (unitsMode === "None") return pollutants;
 
         if (replaceUnits.includes(scaleName)) {
             if (isIndexInjected && Settings?.AirQuality?.Current?.Index?.Provider === "Calculate" && unitsMode === "Scale") {
@@ -389,10 +393,10 @@ export default class AirQuality {
                     Console.debug("✅ chooseAlogrithm", `algorithm: WAQI_InstantCast_US`);
                     return "WAQI_InstantCast_US";
                 } else {
-                    const supportedScales = [scales.EU_EAQI.weatherKitScale.name, scales.UBA.weatherKitScale.name];
-                    if (supportedScales.includes(currentScale)) {
-                        Console.debug("✅ chooseAlogrithm", `algorithm: ${currentScale}`);
-                        return currentScale;
+                    const supportedScales = { [scales.EU_EAQI.weatherKitScale.name]: "EU_EAQI", [scales.UBA.weatherKitScale.name]: "UBA" };
+                    if (Object.hasOwn(supportedScales, currentScale)) {
+                        Console.debug("✅ chooseAlogrithm", `algorithm: ${supportedScales[currentScale]}`);
+                        return supportedScales[currentScale];
                     }
 
                     Console.error("chooseAlogrithm", "没有找到合适的内置算法");
@@ -443,6 +447,24 @@ export default class AirQuality {
                         break;
                     case "WAQI_InstantCast_CN_25_DRAFT":
                         scaleDesc = " (InstantCast with HJ 633 2025 DRAFT)";
+                        break;
+                    case "CN_DEATH_AQHI":
+                        scaleDesc = " (China CDC Death Risk AQHI)";
+                        break;
+                    case "CA_AQHI":
+                        scaleDesc = " (InstantCast with CA AQHI)";
+                        break;
+                    case "HK_AQHI":
+                        scaleDesc = " (InstantCast with HK AQHI)";
+                        break;
+                    case "CN_DEATH_HK_AQHI":
+                        scaleDesc = " (China CDC Death Risk + HK AQHI)";
+                        break;
+                    case "AQHI_Multi_CN":
+                        scaleDesc = " (AQHI-Multi for CN)";
+                        break;
+                    case "AQHI_Multi_CN_HK":
+                        scaleDesc = " (AQHI-Multi for CN+HK)";
                         break;
                     case "UBA":
                     default:
@@ -972,7 +994,6 @@ export default class AirQuality {
             EU_EAQI: {
                 weatherKitScale: {
                     name: "EU.EAQI",
-                    version: "2414",
                     maxIndex: 60,
                 },
                 // Indexes below for calculation only, not for display

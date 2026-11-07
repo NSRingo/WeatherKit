@@ -5,6 +5,9 @@ export default class ForecastNextHour {
     Version = "v1.6.3";
     Author = "iRingo";
 
+    // Match upstream dev b4a75db: next-hour products expire after ten minutes.
+    static ExpirationInterval = 10 * 60;
+
     static #Configs = {
         Pollutants: {
             co: "CO",
@@ -291,7 +294,7 @@ export default class ForecastNextHour {
         if (summaries.length > 4) {
             summaries = summaries.slice(0, 4);
             if (summaries[3]) {
-                summaries[3].endTime = 0;
+                summaries[3] = { ...summaries[3], endTime: 0 };
             }
         }
         // 先通过 summaries 定基调

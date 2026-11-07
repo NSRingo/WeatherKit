@@ -1,16 +1,18 @@
 import { Builder, ByteBuffer } from "flatbuffers";
 import WeatherAlerts from "./WeatherAlerts.mjs";
-import { buildNativeAlertDetailsURL } from "./NativeAlertDetails.mjs";
+import { buildNativeAlertDetailsURL, sameAlertTitle, isGenericAlertTitle } from "./NativeAlertDetails.mjs";
 
 /** Verified against paired Apple v3 JSON / WK3 b66 responses (2026-11-04):
  * Shanghai wind alert and Miami Coastal Flood Statement. NOT a WK2 codec.
  * Root slot 9; collection: metadata=0, detailsUrl=1, alerts=2.
  * Area-name slot 2 and slots >=22 of summaries remain UNVERIFIED.
- * Only observed enum tokens are translated. Unknown raw integers round-trip.
+ * Severity EXTREME/SEVERE follows upstream @nsringo/weatherkit 2.0.5,
+ * dev b4a75db / published dev bundle 2026-11-07 19:05:32.
+ * Other enums remain observed-only. Unknown raw integers round-trip.
  */
 export const WK3_ALERTS_ROOT_SLOT = 9;
 export const WK3_ALERT_ENUMS = {
-    severity: { UNKNOWN: 0, MODERATE: 3, MINOR: 4 },
+    severity: { UNKNOWN: 0, EXTREME: 1, SEVERE: 2, MODERATE: 3, MINOR: 4 },
     significance: { UNKNOWN: 0, STATEMENT: 10 },
     urgency: { UNKNOWN: 0, EXPECTED: 2 },
     certainty: { UNKNOWN: 0, LIKELY: 2 },
@@ -197,43 +199,75 @@ export const wk3AlertsCodec = {
  * Details link is opt-in: enable ONLY after routing /api/v1/weatherAlerts region
  * identifiers to WeatherAlerts.DetailsForQWeather(). Otherwise keep QWeather URL.
  */
-export async function patchWK3QWeatherAlerts(bytes, { language = "zh-CN", timezone, fetchImpl = globalThis.fetch, rewriteDetails = false } = {}) {
+export async function patchWK3QWeatherAlerts(bytes, { language = "zh-CN", timezone, fetchImpl = globalThis.fetch, rewriteDetails = false, report = {} } = {}) {
     const raw = input(bytes);
+    Object.assign(report, { total: 0, matched: 0, summariesUpdated: 0, detailsConverted: false, reason: "no-alerts", unmatched: {}, titleMismatches: [] });
+    let stage = "decode-failed";
     try {
         const original = decodeWK3Alerts(raw);
         if (!original?.alerts.length) return raw;
+        report.total = original.alerts.length;
+        report.reason = "unsupported-page-url";
         const identifier = WeatherAlerts.ParseWeatherAlertPageURL(original.detailsUrl);
         if (!identifier) return raw;
+        stage = "page-fetch-failed";
         const extracted = await WeatherAlerts.FetchWeatherAlertPage(identifier, language, fetchImpl);
+        report.reason = "empty-page";
         if (!extracted.alerts.length) return raw;
+        stage = "page-build-failed";
         const context = { identifier, language, countryCode: "CN", eventSource: "CN", attributionUrl: original.detailsUrl };
         const sources = WeatherAlerts.Build(extracted, context), used = new Set();
+        const unmatched = reason => { report.unmatched[reason] = (report.unmatched[reason] || 0) + 1; return null; };
         const matched = original.alerts.map(alert => {
-            // Never map solely by index: require title/phenomenon, same observed
-            // severity and a compatible issue time; ambiguity leaves it intact.
-            const candidates = sources.map((source, index) => ({ source, index })).filter(({ source, index }) => {
-                if (used.has(index) || !alert.description || !source.description.includes(alert.description)) return false;
-                const severity = WK3_ALERT_ENUMS.severity[String(source.severity).toUpperCase()];
-                if (severity === undefined || severity !== alert.severity) return false;
-                const issued = Date.parse(source.issuedTime) / 1000;
-                return !alert.issuedTime || issued === alert.issuedTime;
-            });
-            if (candidates.length !== 1) return null;
+            // An observed generic Apple title carries no event name. It may
+            // resolve only to a named, unique source with exact severity/time;
+            // never use array order or discard used candidates to force a match.
+            const generic = isGenericAlertTitle(alert.description);
+            if (generic && !alert.issuedTime) return unmatched("missing-issued-time");
+            let candidates = sources.map((source, index) => ({ source, index }))
+                .filter(({ source }) => generic
+                    ? typeof source.description === "string" && source.description.trim() && !isGenericAlertTitle(source.description)
+                    : sameAlertTitle(alert.description, source.description));
+            if (!candidates.length) {
+                // Public warning titles only: no URL, UUID, coordinates or credentials.
+                const title = value => typeof value === "string" ? value.replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, 320) : null;
+                if (report.titleMismatches.length < 4) report.titleMismatches.push({
+                    appleTitle: title(alert.description),
+                    pageTitles: extracted.alerts.slice(0, 8).map(source => title(source.description)),
+                    parsedTitles: sources.slice(0, 8).map(source => title(source.description)),
+                });
+                return unmatched("title-mismatch");
+            }
+            if (![WK3_ALERT_ENUMS.severity.EXTREME, WK3_ALERT_ENUMS.severity.SEVERE, WK3_ALERT_ENUMS.severity.MODERATE, WK3_ALERT_ENUMS.severity.MINOR].includes(alert.severity)) return unmatched("unverified-severity");
+            candidates = candidates.filter(({ source }) => WK3_ALERT_ENUMS.severity[String(source.severity).toUpperCase()] === alert.severity);
+            if (!candidates.length) return unmatched("severity-mismatch");
+            candidates = candidates.filter(({ source }) => !alert.issuedTime || Date.parse(source.issuedTime) / 1000 === alert.issuedTime);
+            if (!candidates.length) return unmatched("issued-time-mismatch");
+            if (candidates.length !== 1 || used.has(candidates[0].index)) return unmatched("ambiguous-match");
             used.add(candidates[0].index); return candidates[0].source;
         });
-        if (!matched.some(Boolean)) return raw;
+        report.matched = matched.filter(Boolean).length;
+        report.reason = "unmatched-alerts";
+        if (!report.matched) return raw;
         let alerts = enrichWK3Alerts(original, matched);
         // Source publication platform is not the issuer. With an exact match,
         // prefer the observed page's actual issuing meteorological office.
         alerts = alerts.map((alert, i) => matched[i] && /^(国家预警信息发布中心|QWeather|和风天气)$/.test(alert.source ?? "") ? { ...alert, source: matched[i].source } : alert);
+        const summariesUpdated = alerts.filter((alert, i) => JSON.stringify(alert) !== JSON.stringify(original.alerts[i])).length;
         const options = {};
-        if (rewriteDetails) {
-            // Do not send unrelated/generated IDs to the native renderer. All
-            // events must have exact matches before replacing the shared URL.
-            if (matched.some(source => !source)) return patchWK3Alerts(raw, alerts);
+        let detailsConverted = false;
+        if (rewriteDetails && report.matched === report.total) {
+            // All events must match before replacing the shared URL.
+            stage = "details-build-failed";
             const url = buildNativeAlertDetailsURL({ identifier, language, timezone, alerts });
             alerts = alerts.map(alert => ({ ...alert, detailsUrl: url })); options.detailsUrl = url;
+            detailsConverted = true;
         }
-        return patchWK3Alerts(raw, alerts, options);
-    } catch { return raw; }
+        stage = "summary-patch-failed";
+        const patched = patchWK3Alerts(raw, alerts, options);
+        // Publish successful counts only after the atomic patch completes.
+        Object.assign(report, { summariesUpdated, detailsConverted,
+            reason: detailsConverted ? "converted" : rewriteDetails ? "unmatched-alerts" : "details-disabled" });
+        return patched;
+    } catch { report.reason = stage; return raw; }
 }

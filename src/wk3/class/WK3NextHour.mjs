@@ -13,9 +13,14 @@ import { Metadata } from "../proto/apple/wk2.js";
  */
 export const WK3_NEXT_HOUR_ROOT_SLOT = 5;
 export const WK3_NEXT_HOUR_ENUMS = {
-    condition: { CLEAR: 1, RAIN: 7, DRIZZLE: 8 },
-    precipitation: { CLEAR: 1, RAIN: 2 },
-    forecastToken: { CLEAR: 1, START: 2, STOP: 3, START_STOP: 4, CONSTANT: 6 },
+    // Explicit WK3 exports from NSRingo dev b4a75db / @nsringo/weatherkit 2.0.5,
+    // VirgilClyne response.dev.bundle.js (2026-11-07 19:05:32). Not WK2 arithmetic.
+    // Snow members are upstream definitions, not newly device-verified captures.
+    // FLURRIES / POSSIBLE_FLURRIES have no numeric aliases; conversion may omit
+    // the complete descriptive condition vector after validating its source.
+    condition: { CLEAR: 1, SLEET: 4, POSSIBLE_SLEET: 5, HEAVY_RAIN: 6, RAIN: 7, DRIZZLE: 8, POSSIBLE_DRIZZLE: 9, HEAVY_SNOW: 10, SNOW: 11 },
+    precipitation: { CLEAR: 1, RAIN: 2, SNOW: 3, SLEET: 4, HAIL: 5, MIXED: 7 },
+    forecastToken: { CLEAR: 1, START: 2, STOP: 3, START_STOP: 4, STOP_START: 5, CONSTANT: 6 },
     parameterType: { FIRST_AT: 1, SECOND_AT: 2 },
     sourceType: { MODELED: 2, STATION: 3 },
 };
@@ -167,10 +172,14 @@ function requiredNumber(n, validate) {
  * Caller MUST explicitly attest units; no conversion of raw five-minute totals,
  * probability fractions, radar dBZ, or guessing conditions from text here.
  * Existing provider perceived intensity/condition/summary logic is not rederived.
- * Unsupported symbolic enums, missing data, or inconsistent timelines throw;
+ * FLURRIES/POSSIBLE_FLURRIES have no WK3 numeric definition. After validating
+ * every source condition, omit the WHOLE descriptive vector if either occurs;
+ * retain verified SNOW summaries and actual minute values without enum guesses.
+ * Other unsupported enums, missing data, or inconsistent timelines still throw;
  * caller catches and keeps the ORIGINAL child arena (including unknown fields).
+ * Optional report.omittedSnowConditions counts affected source segments.
  */
-export function providerToWK3NextHour(data, { intensityUnit, chanceUnit } = {}) {
+export function providerToWK3NextHour(data, { intensityUnit, chanceUnit, report = {} } = {}) {
     if (intensityUnit !== "mm/h" || chanceUnit !== "percent") throw new TypeError("Explicit mm/h and percent units required");
     if (!data?.metadata?.providerName || data.metadata.temporarilyUnavailable) throw new TypeError("Missing available nextHour provider metadata");
     if (!Array.isArray(data.minutes) || !data.minutes.length || !Array.isArray(data.condition) || !data.condition.length || !Array.isArray(data.summary) || !data.summary.length) throw new TypeError("Missing nextHour minutes/condition/summary");
@@ -184,9 +193,21 @@ export function providerToWK3NextHour(data, { intensityUnit, chanceUnit } = {}) 
     const segment = s => ({ startTime: requiredNumber(s.startTime, uint), endTime: s.endTime == null ? 0 : requiredNumber(s.endTime, uint) });
     const summary = data.summary.map(s => ({ ...segment(s), condition: (Array.isArray(s.condition) ? s.condition : [s.condition]).map(c => mapEnum("precipitation", c)), precipitationChance: requiredNumber(s.precipitationChance, chance), precipitationIntensity: requiredNumber(s.precipitationIntensity, float) }));
     if (summary.some(s => s.condition.length !== 1)) throw new TypeError("Unverified WK3 multi-condition summary vector");
+    let omittedSnowConditions = 0;
     const condition = data.condition.map(c => {
         if (!Array.isArray(c.parameters)) throw new TypeError("Missing condition parameters");
-        return { ...segment(c), forecastToken: mapEnum("forecastToken", c.forecastToken), beginCondition: mapEnum("condition", c.beginCondition), endCondition: mapEnum("condition", c.endCondition), parameters: c.parameters.map(p => ({ type: mapEnum("parameterType", p.type), date: requiredNumber(p.date, uint) })) };
+        // Validate tokens/parameters and both endpoints even if another endpoint
+        // is an unnamed snow description. Omission must never hide bad input.
+        const times = segment(c), forecastToken = mapEnum("forecastToken", c.forecastToken);
+        const parameters = c.parameters.map(p => ({ type: mapEnum("parameterType", p.type), date: requiredNumber(p.date, uint) }));
+        let omitted = false;
+        const conditionValue = name => {
+            if (name === "FLURRIES" || name === "POSSIBLE_FLURRIES") { omitted = true; return null; }
+            return mapEnum("condition", name);
+        };
+        const beginCondition = conditionValue(c.beginCondition), endCondition = conditionValue(c.endCondition);
+        if (omitted) omittedSnowConditions++;
+        return { ...times, forecastToken, beginCondition, endCondition, parameters };
     });
     for (const segments of [summary, condition]) {
         for (let i = 0; i < segments.length; i++) {
@@ -194,5 +215,8 @@ export function providerToWK3NextHour(data, { intensityUnit, chanceUnit } = {}) 
             if (s.startTime !== (i === 0 ? forecastStart : segments[i - 1].endTime) || (next ? s.endTime !== next.startTime || s.endTime <= s.startTime || s.endTime >= forecastEnd : s.endTime !== 0)) throw new TypeError("Inconsistent nextHour segment timeline");
         }
     }
-    return { metadata: { ...data.metadata, sourceType: mapEnum("sourceType", data.metadata.sourceType) }, forecastStart, forecastEnd, minutes, summary, condition };
+    if (omittedSnowConditions && !summary.some(s => s.condition[0] === WK3_NEXT_HOUR_ENUMS.precipitation.SNOW)) throw new TypeError("Unnamed snow conditions require a SNOW summary");
+    const metadata = { ...data.metadata, sourceType: mapEnum("sourceType", data.metadata.sourceType) };
+    report.omittedSnowConditions = omittedSnowConditions;
+    return { metadata, forecastStart, forecastEnd, minutes, summary, condition: omittedSnowConditions ? [] : condition };
 }

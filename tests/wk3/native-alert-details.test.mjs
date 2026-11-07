@@ -151,7 +151,7 @@ test("builder validates UUID bytes, region, count, field size, locale and timezo
 });
 
 test("unverified WK3 severity integers are never guessed or added to the wire mapping", async () => {
-    for (const severity of [0, 1, 2, 5, 231]) {
+    for (const severity of [0, 5, 231]) {
         await assert.rejects(resolveNativeAlertDetails(idsFor([alert("大风", 0, { severity })]), "zh-CN", async () => { assert.fail("must not fetch"); }), /Unverified WK3 severity/);
     }
 });
@@ -164,4 +164,21 @@ test('paired MODERATE=3 supports reordered yellow/yellow and yellow/blue event g
   assert.deepEqual(result.map(a=>a.id),readPayload(idsFor(originals)).alerts.map(a=>a.id));
   assert.ok(result.every(a=>a.messages.length&&a.detailsUrl==='#'+a.id));
  }
+});
+
+test('upstream severity definitions support red/orange across event types and mixed groups', async () => {
+    for (const name of ['高速公路灾害性天气预警', '道路结冰', '暴雪', '暴雨', '森林火险', '大风']) {
+        for (const [severity, color, css, token] of [[1, '红', 'red', 'extreme'], [2, '橙', 'orange', 'severe']]) {
+            const original = alert(name, 0, { severity });
+            const result = await resolveNativeAlertDetails(idsFor([original]), 'zh-CN', htmlFetch(block(`${name}${color}色预警信号`, undefined, css)));
+            assert.equal(result[0].id, uuid);
+            assert.equal(result[0].severity, token);
+            assert.ok(result[0].messages.length);
+            await assert.rejects(resolveNativeAlertDetails(idsFor([original]), 'zh-CN', htmlFetch(block(`${name}${color}色预警信号`, '2030-01-01T08:01:00+08:00', css))), /Missing or ambiguous/);
+        }
+    }
+    const originals = [alert('高速公路灾害性天气预警', 0, { severity: 1 }), alert('道路结冰', 16, { severity: 3 })];
+    const result = await resolveNativeAlertDetails(idsFor(originals), 'zh-CN', htmlFetch(block('道路结冰黄色预警', undefined, 'yellow') + block('高速公路灾害性天气预警红色预警信号', undefined, 'red')));
+    assert.deepEqual(result.map(a => a.severity), ['extreme', 'moderate']);
+    assert.deepEqual(result.map(a => a.id), readPayload(idsFor(originals)).alerts.map(a => a.id));
 });

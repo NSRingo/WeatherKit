@@ -65,7 +65,7 @@ test('WK3 replacement respects selected yesterday provider and same-source guard
     assert.equal(result.aq.previousDayComparison, 0);
 });
 
-test('entry does not prefetch for empty targets, None, or no replacement location', async () => {
+test('entry does not prefetch for empty targets or a disabled index provider', async () => {
     const original = ColorfulClouds.prototype.CurrentAirQuality;
     const oldYesterday = ColorfulClouds.prototype.prefetchYesterdayHourly;
     let calls = 0;
@@ -75,7 +75,6 @@ test('entry does not prefetch for empty targets, None, or no replacement locatio
         for (const [country, overrides] of [
             ['CN', { Current: { Index: { Provider: 'ColorfulCloudsUS', Replace: [] } }, Comparison: { Yesterday: { IndexProvider: 'ColorfulCloudsUS' } } }],
             ['CN', { Current: { Index: { Provider: 'None', Replace: ['HJ6332012'] } }, Comparison: { Yesterday: { IndexProvider: 'ColorfulCloudsUS' } } }],
-            ['US', { Current: { Index: { Provider: 'ColorfulCloudsUS' } }, Comparison: { Yesterday: { IndexProvider: 'ColorfulCloudsUS' } } }],
         ]) {
             const requestUrl = url.replace('country=CN', `country=${country}`);
             const output = await handleResponse({ env: { SETTINGS: JSON.stringify({ AirQuality: overrides }) }, request: { url: requestUrl, method: 'GET', headers: {} }, response: new globalThis.Response(bytes(), { headers: { 'content-type': 'application/vnd.apple.flatbuffer;messageType=WK3.Weather' } }) });

@@ -23,7 +23,7 @@ function numericClose(a, b, path = '') {
     else assert.equal(a, b, path);
 }
 
-test('provider conversion is independent from WK2 and maps only original-paired enums', () => {
+test('provider conversion maps paired rain enums independently from WK2', () => {
     const data = provider(), out = providerToWK3NextHour(data, units);
     assert.deepEqual(out.summary.map(s => s.condition), [[1], [2]]);
     assert.deepEqual(out.condition.map(c => c.forecastToken), [2, 6]);
@@ -32,7 +32,64 @@ test('provider conversion is independent from WK2 and maps only original-paired 
     assert.equal(out.metadata.sourceType, 2);
     assert.equal(out.minutes[2].precipitationIntensity, 1.5);
     assert.equal(data.summary[0].condition, 'CLEAR');
-    assert.deepEqual(WK3_NEXT_HOUR_ENUMS.forecastToken, { CLEAR: 1, START: 2, STOP: 3, START_STOP: 4, CONSTANT: 6 });
+    assert.deepEqual(WK3_NEXT_HOUR_ENUMS.forecastToken, { CLEAR: 1, START: 2, STOP: 3, START_STOP: 4, STOP_START: 5, CONSTANT: 6 });
+});
+test('explicit upstream WK3 snow, precipitation and condition definitions round-trip', () => {
+    // NSRingo dev b4a75db / @nsringo/weatherkit 2.0.5 / actual dev bundle 2026-11-07.
+    const conditions = { SLEET: 4, POSSIBLE_SLEET: 5, HEAVY_RAIN: 6, RAIN: 7, DRIZZLE: 8, POSSIBLE_DRIZZLE: 9, HEAVY_SNOW: 10, SNOW: 11 };
+    const precipitation = { CLEAR: 1, RAIN: 2, SNOW: 3, SLEET: 4, HAIL: 5, MIXED: 7 };
+    for (const [name, value] of Object.entries(conditions)) {
+        const p = provider(); p.condition.forEach(c => { c.beginCondition = c.endCondition = name; });
+        assert.equal(decodeWK3NextHour(root(providerToWK3NextHour(p, units))).condition[0].beginCondition, value);
+    }
+    for (const [name, value] of Object.entries(precipitation)) {
+        const p = provider(); p.summary[1].condition = name;
+        assert.deepEqual(decodeWK3NextHour(root(providerToWK3NextHour(p, units))).summary[1].condition, [value]);
+    }
+    assert.equal(WK3_NEXT_HOUR_ENUMS.condition.FLURRIES, undefined);
+    assert.equal(WK3_NEXT_HOUR_ENUMS.condition.POSSIBLE_FLURRIES, undefined);
+});
+function lightSnowProvider() {
+    const p = provider();
+    p.summary[1].condition = 'SNOW';
+    p.condition[0].beginCondition = p.condition[0].endCondition = 'FLURRIES';
+    p.condition[1].beginCondition = p.condition[1].endCondition = 'POSSIBLE_FLURRIES';
+    return p;
+}
+test('light snow omits the complete descriptive vector only after validating all source fields', () => {
+    const p = lightSnowProvider(), before = structuredClone(p), report = {};
+    const converted = providerToWK3NextHour(p, { ...units, report });
+    const out = decodeWK3NextHour(root(converted));
+    assert.deepEqual(out.condition, []);
+    assert.deepEqual(out.summary[1].condition, [3]);
+    assert.equal(out.minutes[2].precipitationIntensity, 1.5);
+    assert.equal(report.omittedSnowConditions, 2);
+    assert.deepEqual(p, before);
+    const knownReport = {};
+    providerToWK3NextHour(provider(), { ...units, report: knownReport });
+    assert.equal(knownReport.omittedSnowConditions, 0);
+});
+test('light snow never masks broken timelines, tokens, parameters or other unknown conditions', () => {
+    for (const change of [
+        d => d.condition[1].startTime++,
+        d => d.condition[0].endTime++,
+        d => d.condition[1].endTime = d.forecastEnd,
+        d => d.minutes[1].startTime++,
+        d => d.condition[0].forecastToken = 'UNKNOWN_TOKEN',
+        d => d.condition[1].forecastToken = 'UNKNOWN_TOKEN',
+        d => d.condition[0].parameters[0].type = 'THIRD_AT',
+        d => d.condition[0].parameters[0].date = NaN,
+        d => d.condition[1].parameters = undefined,
+        d => d.condition[0].endCondition = 'UNKNOWN_WEATHER',
+        d => d.condition[1].beginCondition = 'HAIL',
+        d => d.summary[1].condition = 'UNKNOWN_WEATHER',
+        d => d.summary[1].condition = 'RAIN',
+        d => d.metadata.sourceType = 'UNKNOWN'
+    ]) {
+        const p = lightSnowProvider(), report = {}; change(p);
+        assert.throws(() => providerToWK3NextHour(p, { ...units, report }));
+        assert.equal(report.omittedSnowConditions, undefined);
+    }
 });
 test('root 5 codec round-trips nonzero chance/intensity/perceived and summary enum vectors', () => {
     const data = providerToWK3NextHour(provider(), units), bytes = root(data), copy = bytes.slice();
@@ -98,7 +155,7 @@ test('provider conversion fails closed for unknown enums, absent units, missing 
     assert.throws(() => providerToWK3NextHour(provider()));
     assert.throws(() => providerToWK3NextHour(provider(), { ...units, chanceUnit: 'fraction' }));
     assert.throws(() => providerToWK3NextHour(provider(), { ...units, intensityUnit: 'mm/5min' }));
-    for (const change of [d => d.minutes[0].precipitationChance = 0.5, d => d.minutes[0].precipitationIntensity = undefined, d => d.minutes[0].perceivedPrecipitationIntensity = undefined, d => d.minutes[1].startTime++, d => d.forecastEnd++, d => d.condition[0].forecastToken = 'START_STOP_START', d => d.condition[0].beginCondition = 'HEAVY_RAIN', d => d.condition[0].parameters[0].type = 'THIRD_AT', d => d.condition[0].parameters[0].type = 'NO_RAIN', d => d.condition[0].parameters[0].type = 'BOTH', d => d.summary[1].condition = 'SNOW', d => d.summary[0].condition = [], d => d.summary[0].endTime++, d => d.metadata.sourceType = 'UNKNOWN', d => d.metadata.temporarilyUnavailable = true, d => d.minutes = [], d => d.summary = []]) {
+    for (const change of [d => d.minutes[0].precipitationChance = 0.5, d => d.minutes[0].precipitationIntensity = undefined, d => d.minutes[0].perceivedPrecipitationIntensity = undefined, d => d.minutes[1].startTime++, d => d.forecastEnd++, d => d.condition[0].forecastToken = 'START_STOP_START', d => d.condition[0].beginCondition = 'FLURRIES', d => d.condition[0].endCondition = 'POSSIBLE_FLURRIES', d => d.condition[0].parameters[0].type = 'THIRD_AT', d => d.condition[0].parameters[0].type = 'NO_RAIN', d => d.condition[0].parameters[0].type = 'BOTH', d => d.summary[1].condition = 'FLURRIES', d => d.summary[0].condition = [], d => d.summary[0].endTime++, d => d.metadata.sourceType = 'UNKNOWN', d => d.metadata.temporarilyUnavailable = true, d => d.minutes = [], d => d.summary = []]) {
         const data = provider(); change(data);
         assert.throws(() => providerToWK3NextHour(data, units));
     }
