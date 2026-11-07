@@ -423,15 +423,23 @@ async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
     const injectedPollutants = isPollutantEmpty ? await InjectPollutants(Settings, enviroments) : airQuality;
     const needPollutants = isPollutantEmpty && !!(injectedPollutants?.metadata && !injectedPollutants.metadata.temporarilyUnavailable);
 
-    // Step3. 根据污染物补齐情况与替换配置，决定是否注入 AQI 指数
-    const needInjectIndex = needPollutants || Settings?.AirQuality?.Current?.Index?.Replace?.some(scaleName => AirQuality.ScaleMatches(airQuality?.scale, scaleName));
-    const injectedIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : injectedPollutants;
+    // Step3. 目标列表决定是否替换指数；污染物补齐不应覆盖有效的 Apple 指数。
+    const hasUsableIndex = value => value?.metadata && !value.metadata.temporarilyUnavailable && Number.isFinite(value.index) && value.index >= 0 && Number.isInteger(value.categoryIndex) && value.categoryIndex > 0 && typeof value.scale === "string" && value.scale.length > 0;
+    const targets = Settings?.AirQuality?.Current?.Index?.Replace ?? [];
+    const indexProvider = Settings?.AirQuality?.Current?.Index?.Provider ?? "Calculate";
+    const calculateDisabled = indexProvider === "Calculate" && Settings?.AirQuality?.Calculate?.Algorithm === "None";
+    const targetMatches = targets.some(scaleName => AirQuality.ScaleMatches(airQuality?.scale, scaleName));
+    const needInjectIndex = targets.length > 0 && !calculateDisabled && (targetMatches || (!hasUsableIndex(airQuality) && needPollutants));
+    const candidateIndex = needInjectIndex ? await InjectIndex(injectedPollutants, Settings, enviroments) : undefined;
+    const indexAvailable = needInjectIndex && !!hasUsableIndex(candidateIndex);
+    const injectedIndex = indexAvailable ? candidateIndex : airQuality;
 
-    // Step4. 计算昨日对比是否需要重算；若未知则注入昨日对比结果
+    // Step4. 仅在有效指数实际变化且允许替换时重算；未知对比可独立补齐。
+    const indexChanged = indexAvailable && ["index", "scale", "categoryIndex"].some(key => airQuality?.[key] !== injectedIndex[key]);
     const weatherKitComparison = airQuality?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
-    const previousDayComparison = needInjectIndex && Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange ? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : weatherKitComparison;
+    const previousDayComparison = indexChanged && Settings?.AirQuality?.Comparison?.ReplaceWhenCurrentChange ? AirQuality.Config.CompareCategoryIndexes.UNKNOWN : weatherKitComparison;
     const needInjectComparison = previousDayComparison === AirQuality.Config.CompareCategoryIndexes.UNKNOWN;
-    const currentIndexProvider = needInjectIndex ? Settings?.AirQuality?.Current?.Index?.Provider : "WeatherKit";
+    const currentIndexProvider = indexAvailable ? indexProvider : "WeatherKit";
     const injectedComparison = needInjectComparison ? await InjectComparison(injectedIndex, currentIndexProvider, Settings, Caches, enviroments) : { ...injectedIndex, previousDayComparison: weatherKitComparison };
 
     // Step5. 收集各阶段元数据，拼接最终 providerName 展示文案
@@ -442,7 +450,7 @@ async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
     const providers = [
         ...(weatherKitMetadata?.providerName && !weatherKitMetadata.temporarilyUnavailable ? [weatherKitMetadata.providerName] : []),
         ...(needPollutants && pollutantMetadata?.providerName && !pollutantMetadata.temporarilyUnavailable ? [`污染物：${pollutantMetadata.providerName}`] : []),
-        ...(needInjectIndex && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${AirQuality.appendScaleToProviderName(injectedIndex, Settings)}`] : []),
+        ...(indexAvailable && indexMetadata?.providerName && !indexMetadata.temporarilyUnavailable ? [`指数：${AirQuality.appendScaleToProviderName(injectedIndex, Settings)}`] : []),
         ...(needInjectComparison && comparisonMetadata?.providerName && !comparisonMetadata.temporarilyUnavailable ? [`对比昨日：\n${comparisonMetadata.providerName}`] : []),
     ];
 
@@ -452,13 +460,14 @@ async function InjectAirQuality(airQuality, Settings, Caches, enviroments) {
     // Step7. 合并输出：优先使用可用注入结果，并统一 metadata / pollutants / previousDayComparison
     airQuality = {
         ...airQuality,
-        ...(injectedIndex?.metadata && !injectedIndex.metadata.temporarilyUnavailable ? injectedIndex : {}),
+        ...(indexAvailable ? injectedIndex : {}),
         metadata: {
             ...(airQuality?.metadata ? airQuality.metadata : injectedPollutants?.metadata),
+            ...(indexAvailable ? { temporarilyUnavailable: false } : {}),
             providerName: providers.join("\n"),
             ...(providerLogo ? { providerLogo } : {}),
         },
-        pollutants: AirQuality.ConvertPollutants(airQuality, injectedPollutants, needInjectIndex, injectedIndex, Settings) ?? [],
+        pollutants: AirQuality.ConvertPollutants(airQuality, injectedPollutants, indexAvailable, injectedIndex, Settings) ?? [],
         previousDayComparison: injectedComparison?.previousDayComparison ?? AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
     };
     Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
@@ -728,11 +737,13 @@ async function InjectComparison(airQuality, currentIndexProvider, Settings, Cach
             Console.info("✅ InjectComparison");
             return comparisonAirQuality;
         }
-        case "ColorfulCloudsUS":
-        default: {
+        case "ColorfulCloudsUS": {
             const comparisonAirQuality = colorfulCloudsComparison(true, isEPA454_B18007(currentIndexProvider) ? airQuality?.categoryIndex : undefined);
             Console.info("✅ InjectComparison");
             return comparisonAirQuality;
         }
+        case "WeatherKit":
+        default:
+            return { previousDayComparison: UNKNOWN };
     }
 }

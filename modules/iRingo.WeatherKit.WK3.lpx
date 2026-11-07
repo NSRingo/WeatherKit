@@ -1,0 +1,46 @@
+#!name = WeatherKit-Local-WK3
+#!desc = 空气质量、原生预警与雨雪分钟增强。安装与参数说明见仓库 modules/README.md。
+#!homepage = https://github.com/patrickyanxxxxx/WeatherKit-WK3
+#!icon = https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
+#!version = 3.3.8
+
+[Argument]
+DataSets = input,"airQuality,currentWeather,forecastDaily,forecastHourly,forecastNextHour,locationInfo,news,historicalComparisons,weatherAlerts,weatherChanges",tag=[数据集],desc=选择要处理的数据；留空或 [] 全部保留原数据。
+Weather.Replace = input,"CN",tag=[天气] 替换范围,desc=普通天气的替换地区。WK3 空气质量单独处理，不受此项限制。
+Weather.Provider = select,"ColorfulClouds","WeatherKit","QWeather",tag=[天气] 数据源,desc=选择普通天气来源；WK3 当前、逐日和逐小时天气仍使用 Apple 数据。
+Weather.ReplaceDaily = switch,false,tag=[天气] 替换逐日预报,desc=是否替换逐日预报；仅 WK2 生效。
+Weather.ReplaceHourly = switch,false,tag=[天气] 替换逐小时预报,desc=是否替换逐小时预报；仅 WK2 生效。
+WeatherAlerts.Provider = select,"QWeatherWeb","WeatherKit",tag=[天气预警] 数据源,desc=和风网页补全原生预警；选择 WeatherKit 保留原数据。
+NextHour.Provider = select,"ColorfulClouds","WeatherKit","QWeather",tag=[未来一小时降水强度] 数据源,desc=选择未来一小时雨雪分钟数据来源。
+AirQuality.Current.Index.Provider = select,"iRingo内置算法","彩云天气（美标）","彩云天气（国标）","和风天气",tag=[今日空气指数] 数据源,desc=选择指数来源：iRingo内置算法、彩云或和风。
+AirQuality.Current.Index.Replace = input,"HJ6332012",tag=[今日空气指数] 替换目标,desc=填写要替换的原始标准，逗号分隔；留空或 [] 不替换。
+AirQuality.Current.Index.ForceCNPrimaryPollutants = switch,true,tag=[今日空气指数] 强制主要污染物,desc=国标指数不超过 50 时，仍显示主要污染物。
+AirQuality.Current.Pollutants.Provider = select,"ColorfulClouds","QWeather",tag=[今日污染物] 数据源,desc=已有 Apple 污染物优先保留；缺失时使用此来源。
+AirQuality.Current.Pollutants.Units.Replace = input,"[]",tag=[今日污染物 - 单位转换] 替换目标,desc=需要转换单位的空气质量标准；留空或 [] 不转换。
+AirQuality.Current.Pollutants.Units.Mode = select,"Scale","None","ugm3","EU_ppb","US_ppb","Force_ugm3","Force_EU_ppb","Force_US_ppb",tag=[今日污染物 - 单位转换] 模式,desc=Scale 跟随标准，Force 强制转换，None 保留原单位。
+AirQuality.Comparison.ReplaceWhenCurrentChange = switch,false,tag=[空气质量 - 对比昨日] 变化时替换,desc=今日指数变化时，是否重新计算昨日对比。
+AirQuality.Comparison.Yesterday.IndexProvider = select,"彩云天气（美标）","iRingo内置算法","彩云天气（国标）","和风天气",tag=[昨日空气指数] 数据源,desc=选择昨日指数来源；仅同源、同标准的数据可比较。
+AirQuality.Comparison.Yesterday.PollutantsProvider = select,"QWeather",tag=[昨日污染物] 数据源,desc=内置算法计算昨日指数所需的污染物来源。
+AirQuality.Calculate.Algorithm = select,"欧盟EAQI","不转换","德国LQI","美标InstantCast","国标InstantCast（2012）","国标InstantCast（2025草案）","加拿大AQHI","香港AQHI","AQHI-Multi（中国）","AQHI-Multi（中国+香港）","中国健康风险AQHI","中国+香港健康风险AQHI",tag=[iRingo内置算法] 算法,desc=使用污染物本地计算指数；None 不转换。
+AirQuality.Calculate.AllowOverRange = switch,true,tag=[iRingo内置算法] 允许指数超标,desc=允许内置美标、国标指数超过 500。
+API.ColorfulClouds.Token = input,"",tag=[API] 彩云天气令牌,desc=自有彩云令牌；留空使用内置公开令牌。
+API.QWeather.Host = input,"devapi.qweather.com",tag=[API] 和风天气主机,desc=和风 API 主机名；使用和风来源时填写。
+API.QWeather.Token = input,"",tag=[API] 和风天气令牌,desc=和风 API 令牌；网页预警不需要。
+LogLevel = select,"INFO","OFF","ERROR","WARN","DEBUG","ALL",tag=[调试] 日志等级,desc=默认 INFO；DEBUG 显示细节，OFF 关闭日志。
+HTTP_TIMEOUT_MS = input,"8000",tag=[网络] 单次请求超时（毫秒）,desc=单次网络请求超时，默认 8000 毫秒。
+
+[Rule]
+DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
+DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
+DOMAIN,tether.edge.apple,REJECT-DROP
+AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),REJECT-DROP
+
+[Script]
+http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/availability\/ requires-body=1, script-path=https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-loon-response.bundle.js, tag=WeatherKit.api.availability.response, argument=[{DataSets},{Weather.Replace},{Weather.Provider},{Weather.ReplaceDaily},{Weather.ReplaceHourly},{WeatherAlerts.Provider},{NextHour.Provider},{AirQuality.Current.Index.Provider},{AirQuality.Current.Index.Replace},{AirQuality.Current.Index.ForceCNPrimaryPollutants},{AirQuality.Current.Pollutants.Provider},{AirQuality.Current.Pollutants.Units.Replace},{AirQuality.Current.Pollutants.Units.Mode},{AirQuality.Comparison.ReplaceWhenCurrentChange},{AirQuality.Comparison.Yesterday.IndexProvider},{AirQuality.Comparison.Yesterday.PollutantsProvider},{AirQuality.Calculate.Algorithm},{AirQuality.Calculate.AllowOverRange},{API.ColorfulClouds.Token},{API.QWeather.Host},{API.QWeather.Token},{LogLevel},{HTTP_TIMEOUT_MS}]
+http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/airQualityScale\/ script-path=https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-loon-request.bundle.js, tag=WeatherKit.api.airQualityScale.request, argument=[{DataSets},{Weather.Replace},{Weather.Provider},{Weather.ReplaceDaily},{Weather.ReplaceHourly},{WeatherAlerts.Provider},{NextHour.Provider},{AirQuality.Current.Index.Provider},{AirQuality.Current.Index.Replace},{AirQuality.Current.Index.ForceCNPrimaryPollutants},{AirQuality.Current.Pollutants.Provider},{AirQuality.Current.Pollutants.Units.Replace},{AirQuality.Current.Pollutants.Units.Mode},{AirQuality.Comparison.ReplaceWhenCurrentChange},{AirQuality.Comparison.Yesterday.IndexProvider},{AirQuality.Comparison.Yesterday.PollutantsProvider},{AirQuality.Calculate.Algorithm},{AirQuality.Calculate.AllowOverRange},{API.ColorfulClouds.Token},{API.QWeather.Host},{API.QWeather.Token},{LogLevel},{HTTP_TIMEOUT_MS}]
+http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/weatherAlerts\?(?:[^#]*&)?ids=(?!wk3_)[a-zA-Z0-9][a-zA-Z0-9_-]*-[0-9]{9}(?:&|$) script-path=https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-loon-request.bundle.js, tag=WeatherKit.api.weatherAlerts.html.request, argument=[{DataSets},{Weather.Replace},{Weather.Provider},{Weather.ReplaceDaily},{Weather.ReplaceHourly},{WeatherAlerts.Provider},{NextHour.Provider},{AirQuality.Current.Index.Provider},{AirQuality.Current.Index.Replace},{AirQuality.Current.Index.ForceCNPrimaryPollutants},{AirQuality.Current.Pollutants.Provider},{AirQuality.Current.Pollutants.Units.Replace},{AirQuality.Current.Pollutants.Units.Mode},{AirQuality.Comparison.ReplaceWhenCurrentChange},{AirQuality.Comparison.Yesterday.IndexProvider},{AirQuality.Comparison.Yesterday.PollutantsProvider},{AirQuality.Calculate.Algorithm},{AirQuality.Calculate.AllowOverRange},{API.ColorfulClouds.Token},{API.QWeather.Host},{API.QWeather.Token},{LogLevel},{HTTP_TIMEOUT_MS}]
+http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/weatherAlerts\?(?:[^#]*&)?ids=(?:wk3_[^&#]*|-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?)(?:&|$) script-path=https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-loon-request.bundle.js, tag=WeatherKit.api.weatherAlerts.api.request, argument=[{DataSets},{Weather.Replace},{Weather.Provider},{Weather.ReplaceDaily},{Weather.ReplaceHourly},{WeatherAlerts.Provider},{NextHour.Provider},{AirQuality.Current.Index.Provider},{AirQuality.Current.Index.Replace},{AirQuality.Current.Index.ForceCNPrimaryPollutants},{AirQuality.Current.Pollutants.Provider},{AirQuality.Current.Pollutants.Units.Replace},{AirQuality.Current.Pollutants.Units.Mode},{AirQuality.Comparison.ReplaceWhenCurrentChange},{AirQuality.Comparison.Yesterday.IndexProvider},{AirQuality.Comparison.Yesterday.PollutantsProvider},{AirQuality.Calculate.Algorithm},{AirQuality.Calculate.AllowOverRange},{API.ColorfulClouds.Token},{API.QWeather.Host},{API.QWeather.Token},{LogLevel},{HTTP_TIMEOUT_MS}]
+http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v[23]\/weather\/ requires-body=1, binary-body-mode=1, script-path=https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-loon-response.bundle.js, tag=WeatherKit.api.weather.response, argument=[{DataSets},{Weather.Replace},{Weather.Provider},{Weather.ReplaceDaily},{Weather.ReplaceHourly},{WeatherAlerts.Provider},{NextHour.Provider},{AirQuality.Current.Index.Provider},{AirQuality.Current.Index.Replace},{AirQuality.Current.Index.ForceCNPrimaryPollutants},{AirQuality.Current.Pollutants.Provider},{AirQuality.Current.Pollutants.Units.Replace},{AirQuality.Current.Pollutants.Units.Mode},{AirQuality.Comparison.ReplaceWhenCurrentChange},{AirQuality.Comparison.Yesterday.IndexProvider},{AirQuality.Comparison.Yesterday.PollutantsProvider},{AirQuality.Calculate.Algorithm},{AirQuality.Calculate.AllowOverRange},{API.ColorfulClouds.Token},{API.QWeather.Host},{API.QWeather.Token},{LogLevel},{HTTP_TIMEOUT_MS}]
+
+[MITM]
+hostname = weatherkit.apple.com

@@ -1,0 +1,692 @@
+import { Console, fetch } from "../utils/index.mjs";
+import AirQuality from "./AirQuality.mjs";
+import ForecastNextHour from "./ForecastNextHour.mjs";
+import Weather from "./Weather.mjs";
+
+export default class ColorfulClouds {
+    constructor(parameters, token) {
+        this.Name = "ColorfulClouds";
+        this.Version = "4.1.0";
+        Console.debug(`🟧 ${this.Name} v${this.Version}`);
+        this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
+        this.headers = { Referer: "https://caiyunapp.com/" };
+        this.version = parameters.version;
+        this.language = parameters.language;
+        this.latitude = parameters.latitude;
+        this.longitude = parameters.longitude;
+        this.country = parameters.country;
+    }
+
+    #cache = {
+        realtimePromise: null,
+        yesterdayHourly: undefined,
+    };
+
+    #Config = {
+        Pollutants: {
+            co: "CO",
+            no: "NO",
+            no2: "NO2",
+            so2: "SO2",
+            o3: "OZONE",
+            nox: "NOX",
+            pm25: "PM2_5",
+            pm10: "PM10",
+            other: "NOT_AVAILABLE",
+        },
+        Availability: {
+            Minutely: [
+                "CN",
+                "HK",
+                "MO",
+                "TW",
+                "IT",
+                "LT",
+                "MT",
+                "FR",
+                "SK",
+                "NO",
+                "BY",
+                "IS",
+                "CZ",
+                "SI",
+                "DE",
+                "ES",
+                "UA",
+                "DK",
+                "PL",
+                "FI",
+                "SE",
+                "HR",
+                "RU",
+                "RO",
+                "PT",
+                "EE",
+                "RS",
+                "AT",
+                "GR",
+                "HU",
+                "FJ",
+                "GU",
+                "MH",
+                "NC",
+                "TR",
+                "BH",
+                "SA",
+                "ID",
+                "IR",
+                "SG",
+                "OM",
+                "PH",
+                "IN",
+                "KH",
+                "CY",
+                "MY",
+                "VN",
+                "KW",
+                "TH",
+                "KR",
+                "KP",
+                "CA",
+                "BS",
+                "KY",
+                "MX",
+                "PA",
+                "MQ",
+                "CU",
+                "BM",
+                "PR",
+                "CW",
+                "GP",
+                "NI",
+                "BR",
+                "GF",
+                "CO",
+                "GY",
+                "PY",
+                "AR",
+            ],
+            AirQuality: ["CN", "HK", "MO"],
+        },
+    };
+
+    async #RealTime() {
+        Console.debug("☑️ RealTime");
+
+        if (!this.#cache.realtimePromise) {
+            const request = {
+                url: `${this.endpoint}/realtime`,
+                headers: this.headers,
+            };
+            this.#cache.realtimePromise = fetch(request)
+                .then(response => JSON.parse(response?.body ?? "{}"))
+                .then(body => {
+                    if (body?.status === "ok" && body?.result?.realtime?.status === "ok") {
+                        return body;
+                    }
+                    throw Error(JSON.stringify(body ?? {}));
+                })
+                .catch(error => {
+                    Console.error(`RealTime: ${error}`);
+                    this.#cache.realtimePromise = null;
+                    return {};
+                });
+        } else {
+            Console.debug("✅ RealTime", "Using cache promise");
+        }
+        return this.#cache.realtimePromise;
+    }
+
+    async Minutely() {
+        Console.debug("☑️ Minutely");
+        // 判断可用性：当前数据源不支持这个国家/地区
+        if (!this.#Config.Availability.Minutely.includes(this.country)) {
+            Console.warn("Minutely", `Unsupported country: ${this.country}`);
+            return;
+        }
+
+        const request = {
+            url: `${this.endpoint}/minutely?unit=metric:v2`,
+            headers: this.headers,
+        };
+        let forecastNextHour;
+        try {
+            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            switch (body?.status) {
+                case "ok":
+                    switch (body?.result?.minutely?.status) {
+                        case "ok": {
+                            const timeStamp = (Date.now() / 1000) | 0;
+                            const metadata = {
+                                attributionUrl: "https://www.caiyunapp.com/h5",
+                                expireTime: timeStamp + ForecastNextHour.ExpirationInterval,
+                                language: "zh-CN", // `${this.language}-${this.country}`, // body?.lang,
+                                latitude: body?.location?.[0],
+                                longitude: body?.location?.[1],
+
+                                providerName: "彩云天气",
+                                readTime: timeStamp,
+                                reportedTime: body?.server_time,
+                                temporarilyUnavailable: false,
+                                sourceType: "MODELED",
+                            };
+                            body.result.minutely.probability = body.result.minutely.probability.map(probability => Math.round(probability * 100));
+                            let minuteStemp = new Date(body?.server_time * 1000).setSeconds(0, 0);
+                            minuteStemp = minuteStemp.valueOf() / 1000 - 60;
+                            forecastNextHour = {
+                                metadata: metadata,
+                                condition: [],
+                                forecastEnd: 0,
+                                forecastStart: minuteStemp,
+                                minutes: body?.result?.minutely?.precipitation_2h?.map((precipitationIntensity, index) => {
+                                    const minute = {
+                                        perceivedPrecipitationIntensity: 0,
+                                        precipitationChance: 0,
+                                        precipitationIntensity: precipitationIntensity,
+                                        startTime: minuteStemp + 60 * index,
+                                    };
+                                    if (index < 30) minute.precipitationChance = body?.result?.minutely?.probability?.[0];
+                                    else if (index < 60) minute.precipitationChance = body?.result?.minutely?.probability?.[1];
+                                    else if (index < 90) minute.precipitationChance = body?.result?.minutely?.probability?.[2];
+                                    else minute.precipitationChance = body?.result?.minutely?.probability?.[3];
+                                    return minute;
+                                }),
+                                summary: [],
+                            };
+                            forecastNextHour.minutes.length = Math.min(85, forecastNextHour.minutes.length);
+                            forecastNextHour.forecastEnd = minuteStemp + 60 * forecastNextHour.minutes.length;
+                            forecastNextHour.minutes = ForecastNextHour.Minute(forecastNextHour.minutes, body?.result?.minutely?.description, "mmph");
+                            forecastNextHour.summary = ForecastNextHour.Summary(forecastNextHour.minutes);
+                            forecastNextHour.condition = ForecastNextHour.Condition(forecastNextHour.summary);
+                            break;
+                        }
+                        case "error":
+                        case "failed":
+                        case undefined:
+                            throw Error(JSON.stringify({ status: body?.result?.minutely?.status, reason: body?.result?.minutely }));
+                    }
+                    break;
+                case "error":
+                case "failed":
+                case undefined:
+                    throw Error(JSON.stringify(body ?? {}));
+            }
+        } catch (error) {
+            Console.error(`Minutely: ${error}`);
+        } finally {
+            //Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
+            Console.debug("✅ Minutely");
+        }
+        return forecastNextHour;
+    }
+
+    async #Hourly(hourlysteps = 273, begin = undefined) {
+        Console.debug("☑️ Hourly", `hourlysteps: ${hourlysteps}`, `begin: ${begin}`);
+        const request = {
+            url: `${this.endpoint}/hourly?hourlysteps=${hourlysteps}`,
+            headers: this.headers,
+        };
+        if (begin) request.url += `&begin=${begin}`;
+        try {
+            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            switch (body?.status) {
+                case "ok":
+                    switch (body?.result?.hourly?.status) {
+                        case "ok": {
+                            Console.debug("✅ Hourly");
+                            return body;
+                        }
+                        case "error":
+                        case undefined:
+                            throw Error(JSON.stringify({ status: body?.result?.hourly?.status, reason: body?.result?.hourly }));
+                    }
+                    break;
+                case "error":
+                case "failed":
+                case undefined:
+                    throw Error(JSON.stringify(body ?? {}));
+            }
+        } catch (error) {
+            Console.error(`Hourly: ${error}`);
+        } finally {
+            //Console.debug(`airQuality: ${JSON.stringify(this.airQuality, null, 2)}`);
+            Console.debug("✅ Hourly");
+        }
+        return {};
+    }
+
+    async Daily(dailysteps = 10, begin = undefined) {
+        Console.debug("☑️ Daily");
+        const request = {
+            url: `${this.endpoint}/daily?dailysteps=${dailysteps}`,
+            headers: this.headers,
+        };
+        if (begin) request.url += `&begin=${begin}`;
+        let forecastDaily;
+        try {
+            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            switch (body?.status) {
+                case "ok":
+                    switch (body?.result?.daily?.status) {
+                        case "ok": {
+                            const timeStamp = (Date.now() / 1000) | 0;
+                            const metadata = {
+                                attributionUrl: "https://www.caiyunapp.com/h5",
+                                expireTime: timeStamp + 60 * 60,
+                                language: "zh-CN", // `${this.language}-${this.country}`,
+                                latitude: body?.location?.[0],
+                                longitude: body?.location?.[1],
+
+                                providerName: "彩云天气",
+                                readTime: timeStamp,
+                                reportedTime: body?.server_time,
+                                temporarilyUnavailable: false,
+                                sourceType: "STATION",
+                            };
+                            forecastDaily = {
+                                metadata: metadata,
+                                days: [],
+                            };
+                            for (let i = 0; i < dailysteps; i++) {
+                                const timeStamp = (new Date(body?.result?.daily?.skycon?.[i]?.date).getTime() / 1000) | 0;
+                                forecastDaily.days.push({
+                                    forecastStart: timeStamp,
+                                    forecastEnd: timeStamp + 24 * 3600, // 24 hours
+                                    conditionCode: Weather.ConvertWeatherCode(body?.result?.daily?.skycon?.[i]?.value),
+                                    humidityMax: Math.round(body?.result?.daily?.humidity?.[i]?.max * 100),
+                                    humidityMin: Math.round(body?.result?.daily?.humidity?.[i]?.min * 100),
+                                    // maxUvIndex: Weather.ConvertDSWRF(body?.result?.daily?.dswrf?.[i]?.max), // ConvertDSWRF 转换不准确
+                                    // moonPhase: "", // Not given
+                                    // moonrise: body?.result?.daily?.astro?.[i].sunset.time, // Not given
+                                    // moonset: body?.result?.daily?.astro?.[i].sunrise.time, // Not given
+                                    precipitationAmount: body?.result?.daily?.precipitation?.[i]?.avg,
+                                    // precipitationAmountByType: [], // Not given
+                                    precipitationChance: body?.result?.daily?.precipitation?.[i]?.probability,
+                                    // precipitationType: "", // Not given
+                                    // snowfallAmount: 0, // Not given
+                                    // solarMidnight: 0, // Not given
+                                    // solarNoon: 0, // Not given
+                                    //sunrise: body?.result?.daily?.astro?.[i].sunrise.time, // 未转换
+                                    // sunriseAstronomical: 0, // Not given
+                                    // sunriseCivil: 0, // Not given
+                                    // sunriseNautical: 0, // Not given
+                                    //sunset: body?.result?.daily?.astro?.[i].sunset.time, // 未转换
+                                    // sunsetAstronomical: 0, // Not given
+                                    // sunsetCivil: 0, // Not given
+                                    // sunsetNautical: 0, // Not given
+                                    temperatureMax: body?.result?.daily?.temperature?.[i]?.max,
+                                    // temperatureMaxTime: 0, // Not given
+                                    temperatureMin: body?.result?.daily?.temperature?.[i]?.min,
+                                    // temperatureMinTime: 0, // Not given
+                                    visibilityMax: body?.result?.daily?.visibility?.[i]?.max * 1000,
+                                    visibilityMin: body?.result?.daily?.visibility?.[i]?.min * 1000,
+                                    // windGustSpeedMax: 0, // Not given
+                                    windSpeedAvg: body?.result?.daily?.wind?.[i]?.avg?.speed,
+                                    windSpeedMax: body?.result?.daily?.wind?.[i]?.max?.speed,
+                                    daytimeForecast: {
+                                        forecastStart: timeStamp + 8 * 3600, // 8 hours
+                                        forecastEnd: timeStamp + 8 * 3600 + 12 * 3600, // 8 + 12 hours
+                                        cloudCover: body?.result?.daily?.cloudrate?.[i]?.avg,
+                                        // cloudCoverHighAltPct: 0, // Not given
+                                        // cloudCoverLowAltPct: 0, // Not given
+                                        // cloudCoverMidAltPct: 0, // Not given
+                                        conditionCode: Weather.ConvertWeatherCode(body?.result?.daily?.skycon_08h_20h?.[i]?.value),
+                                        // humidityMax: Math.round(body?.result?.daily?.humidity?.[i]?.max * 100), // Not given
+                                        // humidityMin: Math.round(body?.result?.daily?.humidity?.[i]?.min * 100), // Not given
+                                        precipitationAmount: body?.result?.daily?.precipitation_08h_20h?.[i]?.avg,
+                                        // precipitationAmountByType: [], // Not given
+                                        precipitationChance: body?.result?.daily?.precipitation_08h_20h?.[i]?.probability,
+                                        // precipitationType: "", // Not given
+                                        // snowfallAmount: 0, // Not given
+                                        temperatureMax: body?.result?.daily?.temperature_08h_20h?.[i]?.max,
+                                        temperatureMin: body?.result?.daily?.temperature_08h_20h?.[i]?.min,
+                                        // visibilityMax: body?.result?.daily?.visibility?.[i]?.max * 1000, // Not given
+                                        // visibilityMin: body?.result?.daily?.visibility?.[i]?.min * 1000, // Not given
+                                        windDirection: body?.result?.daily?.wind_08h_20h?.[i]?.avg?.direction,
+                                        // windGustSpeedMax: 0, // Not given
+                                        windSpeed: body?.result?.daily?.wind_08h_20h?.[i]?.avg?.speed,
+                                        windSpeedMax: body?.result?.daily?.wind_08h_20h?.[i]?.max?.speed,
+                                    },
+                                    overnightForecast: {
+                                        forecastStart: timeStamp + 20 * 3600, // 20 hours
+                                        forecastEnd: timeStamp + 20 * 3600 + 12 * 3600, // 20 + 12 hours
+                                        cloudCover: body?.result?.daily?.cloudrate?.[i]?.avg,
+                                        // cloudCoverHighAltPct: 0, // Not given
+                                        // cloudCoverLowAltPct: 0, // Not given
+                                        // cloudCoverMidAltPct: 0, // Not given
+                                        conditionCode: Weather.ConvertWeatherCode(body?.result?.daily?.skycon_20h_32h?.[i]?.value),
+                                        // humidityMax: Math.round(body?.result?.daily?.humidity?.[i]?.max * 100), // Not given
+                                        // humidityMin: Math.round(body?.result?.daily?.humidity?.[i]?.min * 100), // Not given
+                                        precipitationAmount: body?.result?.daily?.precipitation_20h_32h?.[i]?.avg,
+                                        // precipitationAmountByType: [], // Not given
+                                        precipitationChance: body?.result?.daily?.precipitation_20h_32h?.[i]?.probability,
+                                        // precipitationType: "", // Not given
+                                        // snowfallAmount: 0, // Not given
+                                        temperatureMax: body?.result?.daily?.temperature_20h_32h?.[i]?.max,
+                                        temperatureMin: body?.result?.daily?.temperature_20h_32h?.[i]?.min,
+                                        // visibilityMax: body?.result?.daily?.visibility?.[i]?.max * 1000, // Not given
+                                        // visibilityMin: body?.result?.daily?.visibility?.[i]?.min * 1000, // Not given
+                                        windDirection: body?.result?.daily?.wind_20h_32h?.[i]?.avg?.direction,
+                                        // windGustSpeedMax: 0, // Not given
+                                        windSpeed: body?.result?.daily?.wind_20h_32h?.[i]?.avg?.speed,
+                                        windSpeedMax: body?.result?.daily?.wind_20h_32h?.[i]?.max?.speed,
+                                    },
+                                });
+                            }
+                            break;
+                        }
+                        case "error":
+                        case undefined:
+                            throw Error(JSON.stringify({ status: body?.result?.daily?.status, reason: body?.result?.daily }));
+                    }
+                    break;
+                case "error":
+                case "failed":
+                case undefined:
+                    throw Error(JSON.stringify(body ?? {}));
+            }
+        } catch (error) {
+            Console.error(`Daily: ${error}`);
+        } finally {
+            //Console.debug(`Daily: ${JSON.stringify(Daily, null, 2)}`);
+            Console.debug("✅ Daily");
+        }
+        return forecastDaily;
+    }
+
+    #Metadata(reportedTime, location = [this.latitude, this.longitude], temporarilyUnavailable = false) {
+        const timeStamp = Math.trunc(Date.now() / 1000);
+        const [latitude, longitude] = location;
+        return {
+            longitude,
+            providerName: "彩云天气",
+            reportedTime: reportedTime ?? timeStamp,
+            latitude,
+            expireTime: timeStamp + 60 * 60,
+            attributionUrl: "https://www.caiyunapp.com/h5",
+            temporarilyUnavailable,
+            readTime: timeStamp,
+            sourceType: "MODELED",
+        };
+    }
+
+    /**
+     * 创建 WeatherKit 格式的污染物对象
+     * @link https://docs.caiyunapp.com/weather-api/v2/v2.6/1-realtime.html
+     * @param {Object} pollutantsObj - 污染物对象
+     * @param {String} [scale] - AQI 标准（如 HJ6332012）
+     * @returns {Object} 修复后的污染物对象
+     */
+    #CreatePollutants(pollutantsObj = {}, scale = "") {
+        Console.debug("☑️ CreatePollutants");
+        const { mgm3, ugm3 } = AirQuality.Config.Units.WeatherKit;
+        const pollutants = Object.entries(pollutantsObj)
+            .map(([name, amount]) => {
+                switch (name) {
+                    case "co":
+                        return {
+                            amount: AirQuality.ConvertUnit(amount ?? -1, mgm3, ugm3),
+                            pollutantType: this.#Config.Pollutants[name],
+                            units: ugm3,
+                            index: scale === "HJ6332012" ? pollutantsObj.co_iaqi_chn : undefined,
+                        };
+                    case "no":
+                    case "no2":
+                    case "so2":
+                    case "o3":
+                    case "nox":
+                    case "pm25":
+                    case "pm10":
+                        return {
+                            amount: amount ?? -1,
+                            pollutantType: this.#Config.Pollutants[name],
+                            units: ugm3,
+                            index: scale === "HJ6332012" ? pollutantsObj[`${name}_iaqi_chn`] : undefined,
+                        };
+                    default:
+                        return null;
+                }
+            })
+            .filter(Boolean);
+
+        Console.debug("✅ CreatePollutants");
+        return pollutants;
+    }
+
+    /**
+     * 获取当前空气质量并转换为 WeatherKit 风格结构。
+     *
+     * 逻辑概览：
+     * 1) 校验国家/地区是否支持空气质量；
+     * 2) 拉取 realtime 数据并做可用性检查；
+     * 3) 构建通用空气质量基础结构（metadata/pollutants）；
+     * 4) 按 useUsa 选择 US 或 CN 口径生成 index、categoryIndex 与 primaryPollutant。
+     *
+     * @param {boolean} [useUsa=true]
+     * 是否使用美国 AQI 口径。
+     * - true: 使用 `EPA_NowCast`（usa）；
+     * - false: 使用 `HJ6332012`（chn）。
+     *
+     * @param {boolean} [forcePrimaryPollutant=true]
+     * 在 CN 口径下是否强制展示主污染物。
+     * - true: 始终展示计算得到的主污染物；
+     * - false: 当主污染物 index <= 50 时返回 `NOT_AVAILABLE`。
+     *
+     * @returns {Promise<{
+     *   metadata: any,
+     *   pollutants: Array<{amount: number, pollutantType: string, units: string}>,
+     *   previousDayComparison: string,
+     *   categoryIndex?: number,
+     *   index?: number,
+     *   isSignificant?: boolean,
+     *   primaryPollutant?: string,
+     *   scale?: string
+     * }>}
+     * 成功时返回完整空气质量对象；不可用时返回 temporarilyUnavailable 的降级对象。
+     */
+    async CurrentAirQuality(useUsa = true, forcePrimaryPollutant = true) {
+        Console.debug("☑️ CurrentAirQuality");
+        // 统一失败兜底对象，任一关键步骤失败时直接返回。
+        const failedAirQuality = {
+            metadata: this.#Metadata(undefined, undefined, true),
+            pollutants: [],
+            previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
+        };
+
+        // 可用性判断：当前数据源不支持该国家/地区时直接返回兜底结果。
+        if (!this.#Config.Availability.AirQuality.includes(this.country)) {
+            Console.warn("CurrentAirQuality", `Unsupported country: ${this.country}`);
+            return failedAirQuality;
+        }
+
+        // 拉取实时数据（内部已带缓存）。
+        const realtime = await this.#RealTime();
+
+        // realtime 主体缺失，视为不可用。
+        if (!realtime.result) {
+            Console.error("CurrentAirQuality", "无法获取realtime数据");
+            return failedAirQuality;
+        }
+
+        // 彩云在不支持位置时 usa 描述为空字符串。
+        if (realtime.result.realtime.air_quality.description.usa === "") {
+            Console.error("CurrentAirQuality", `不支持的位置`);
+            return failedAirQuality;
+        }
+
+        // 构建与算法无关的基础空气质量结构。
+        const particularAirQuality = {
+            metadata: this.#Metadata(realtime.result.realtime.air_quality.obs_time, realtime.location),
+            pollutants: this.#CreatePollutants(realtime.result.realtime.air_quality, useUsa ? undefined : "HJ6332012"),
+            previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
+        };
+
+        // US 口径：直接使用 usa AQI，并按 EPA_NowCast 分类。
+        if (useUsa) {
+            const scale = AirQuality.Config.Scales.WAQI_InstantCast_US;
+            const index = realtime.result.realtime.air_quality.aqi.usa;
+            const categoryIndex = AirQuality.CategoryIndex(index, scale.categories);
+            const indexedPollutants = AirQuality.PollutantsToIndexes(particularAirQuality.pollutants, "WAQI_InstantCast_US", { stpConversionFactors: AirQuality.Config.STP_ConversionFactors.US });
+            const primaryPollutant = AirQuality.PrimaryPollutant(indexedPollutants, scale.categories);
+
+            const airQuality = {
+                ...particularAirQuality,
+                pollutants: indexedPollutants,
+                categoryIndex,
+                index,
+                isSignificant: categoryIndex >= scale.categories.significantIndex,
+                primaryPollutant: primaryPollutant.pollutantType,
+                scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
+            };
+            Console.debug("✅ CurrentAirQuality");
+            return airQuality;
+        } else {
+            // CN 口径：使用 chn AQI，并基于分污染物 IAQI 判定主污染物。
+            const scale = AirQuality.Config.Scales.HJ6332012;
+            const index = realtime.result.realtime.air_quality.aqi.chn;
+            const categoryIndex = AirQuality.CategoryIndex(index, scale.categories);
+
+            const primaryPollutant = AirQuality.PrimaryPollutant(particularAirQuality.pollutants, scale.categories);
+            // 当不强制展示主污染物且整体空气质量较好（<=50）时，主污染物置为不可用。
+            const isNotAvailable = !forcePrimaryPollutant && primaryPollutant.index <= 50;
+            if (isNotAvailable) {
+                Console.info("CurrentAirQuality", `Max index of pollutants ${primaryPollutant.pollutantType} = ${primaryPollutant.index} is <= 50, primaryPollutant will be set to NOT_AVAILABLE.`);
+            }
+
+            const airQuality = {
+                ...particularAirQuality,
+                categoryIndex,
+                index,
+                isSignificant: categoryIndex >= scale.categories.significantIndex,
+                primaryPollutant: isNotAvailable ? "NOT_AVAILABLE" : primaryPollutant.pollutantType,
+                scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
+            };
+            Console.debug("✅ CurrentAirQuality");
+            return airQuality;
+        }
+    }
+
+    async CurrentWeather() {
+        Console.debug("☑️ CurrentWeather");
+        const realtime = await this.#RealTime();
+        if (!realtime.result) {
+            Console.error("CurrentWeather", "无法获取realtime数");
+            return {
+                metadata: this.#Metadata(undefined, undefined, true),
+            };
+        }
+
+        Console.debug("✅ CurrentWeather");
+        return {
+            metadata: this.#Metadata(realtime.result.server_time, realtime.location),
+            cloudCover: Math.round(realtime.result.realtime.cloudrate * 100),
+            conditionCode: Weather.ConvertWeatherCode(realtime.result.realtime.skycon),
+            humidity: Math.round(realtime.result.realtime.humidity * 100),
+            // uvIndex: Weather.ConvertDSWRF(body?.result?.realtime?.dswrf), // ConvertDSWRF 转换不准确
+            perceivedPrecipitationIntensity: realtime.result.realtime.precipitation.local.intensity,
+            pressure: realtime.result.realtime.pressure / 100,
+            temperature: realtime.result.realtime.temperature,
+            temperatureApparent: realtime.result.realtime.apparent_temperature,
+            visibility: realtime.result.realtime.visibility * 1000,
+            windDirection: realtime.result.realtime.wind.direction,
+            windSpeed: realtime.result.realtime.wind.speed,
+        };
+    }
+
+    /**
+     * 预取昨日小时数据，供 YesterdayAirQuality 使用
+     * 与 WeatherKit fetch 并发，减少总体延迟
+     * @returns {Promise<object>} 昨日小时数据 Promise
+     */
+    async prefetchYesterdayHourly() {
+        Console.debug("☑️ prefetchYesterdayHourly");
+        this.#cache.yesterdayHourly = this.#Hourly(1, Math.trunc((Date.now() - 864e5) / 1000));
+        const result = await this.#cache.yesterdayHourly;
+        Console.debug("✅ prefetchYesterdayHourly");
+        return result;
+    }
+
+    async YesterdayAirQuality(useUsa = true) {
+        Console.debug("☑️ YesterdayAirQuality");
+
+        const yesterdayHourly = await (this.#cache.yesterdayHourly ?? this.#Hourly(1, Math.trunc((Date.now() - 864e5) / 1000)));
+        const scale = useUsa ? AirQuality.Config.Scales.EPA_NowCast : AirQuality.Config.Scales.HJ6332012;
+        const particularAirQuality = {
+            previousDayComparison: AirQuality.Config.CompareCategoryIndexes.UNKNOWN,
+            pollutants: [],
+            primaryPollutant: "NOT_AVAILABLE",
+            scale: AirQuality.ToWeatherKitScale(scale.weatherKitScale),
+        };
+
+        if (!yesterdayHourly.result) {
+            Console.error("YesterdayAirQuality", "无法获取hourly数据");
+            return {
+                ...particularAirQuality,
+                categoryIndex: -1,
+                metadata: this.#Metadata(undefined, undefined, true),
+            };
+        }
+
+        const { usa, chn } = yesterdayHourly.result.hourly.air_quality.aqi[0].value;
+        if (usa === 0 && chn === 0) {
+            Console.warn("YesterdayAirQuality", "usa和chn的AQI值都为0，不支持的位置？");
+        }
+
+        const index = useUsa ? usa : chn;
+        const categoryIndex = AirQuality.CategoryIndex(index, scale.categories);
+        const isSignificant = categoryIndex >= scale.categories.significantIndex;
+        Console.debug(`index: ${index}`);
+
+        Console.debug("✅ YesterdayAirQuality", `categoryIndex: ${categoryIndex}`);
+        return {
+            ...particularAirQuality,
+            index,
+            categoryIndex,
+            isSignificant,
+            metadata: this.#Metadata(yesterdayHourly.result.server_time, yesterdayHourly.location),
+        };
+    }
+
+    async ForecastHourly(hourlysteps, begin) {
+        Console.debug("☑️ ForecastHourly");
+        const hourly = await this.#Hourly(hourlysteps, begin);
+        if (!hourly.result) {
+            Console.error("ForecastHourly", "Failed to get hourly data");
+            return {
+                metadata: this.#Metadata(undefined, undefined, true),
+            };
+        }
+
+        Console.debug("✅ ForecastHourly");
+        return {
+            metadata: this.#Metadata(hourly.result.server_time, hourly.location),
+            hours: Array.from({ length: hourly.result.hourly.skycon.length }, (_, i) => ({
+                cloudCover: hourly.result.hourly.cloudrate[i].value,
+                // cloudCoverHighAltPct: 0, // Not given
+                // cloudCoverLowAltPct: 0, // Not given
+                // cloudCoverMidAltPct: 0, // Not given
+                conditionCode: Weather.ConvertWeatherCode(hourly.result.hourly.skycon[i].value),
+                // daylight: false, // Not given
+                forecastStart: (new Date(hourly.result.hourly.skycon[i].datetime).getTime() / 1000) | 0,
+                humidity: Math.round(hourly.result.hourly.humidity[i].value * 100),
+                // perceivedPrecipitationIntensity: "", // Not given
+                precipitationAmount: hourly.result.hourly.precipitation[i].value,
+                precipitationChance: hourly.result.hourly.precipitation[i].probability,
+                // precipitationIntensity: 0, // Not given
+                // precipitationType: "", // Not given
+                pressure: hourly.result.hourly.pressure[i].value / 100,
+                // pressureTrend: "", // Not given
+                // snowfallAmount: 0, // Not given
+                // snowfallIntensity: 0, // Not given
+                temperature: hourly.result.hourly.temperature[i].value,
+                temperatureApparent: hourly.result.hourly.apparent_temperature[i].value,
+                // temperatureDewPoint: 0, // Not given
+                // uvIndex: 0, // Not given
+                visibility: hourly.result.hourly.visibility[i].value * 1000,
+                windDirection: hourly.result.hourly.wind[i].direction,
+                // windGust: 0, // Not given
+                windSpeed: hourly.result.hourly.wind[i].speed,
+            })),
+        };
+    }
+}

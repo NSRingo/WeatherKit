@@ -1,0 +1,67 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { localParameters, parameterDescription } from '../src/wk3/parameters.mjs';
+import { groups } from '../src/wk3/routes.mjs';
+import { displayModuleOption } from '../src/wk3/option-values.mjs';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const parameters = localParameters;
+export const platforms = { surge: 'sgmodule', loon: 'lpx', stash: 'stoverride', quantumultx: 'snippet' };
+export const release = version => `https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v${version}`;
+export { groups } from '../src/wk3/routes.mjs';
+const label = group => `WeatherKit.api.${group.name}`;
+const script = (group, platform) => `wk3-${platform}-${group.stage}.bundle.js`;
+const url = (group, version, platform) => `${release(version)}/${script(group, platform)}`;
+const surgeArgument = parameters.map(({ key }) => `${key}="{{{${key}}}}"`).join('&');
+const loonArgument = `[${parameters.map(({ key }) => `{${key}}`).join(',')}]`;
+const expand = (text, replacements) => {
+    for (const [key, value] of Object.entries(replacements)) text = text.replaceAll(`__WK3_${key}__`, value);
+    if (/__WK3_[A-Z_]+__/.test(text)) throw new Error('Unrendered WK3 template placeholder');
+    return text;
+};
+const defaults = parameters.map(({ key, value }) => `${key}:${JSON.stringify(displayModuleOption(key, value))}`).join(',');
+const descriptions = parameters.map(parameter => `${parameter.key}: ${parameter.name}；${parameterDescription(parameter)}`.replaceAll('\n', ' '));
+const description = descriptions.join('\\n');
+const loonArguments = parameters.map(parameter => {
+    const { key, value, boolean, options, name } = parameter;
+    const kind = boolean ? `switch,${value}` : options ? `select,${[value, ...options.filter(v => v !== value)].map(v => JSON.stringify(displayModuleOption(key, v))).join(',')}` : `input,${JSON.stringify(value)}`;
+    return `${key} = ${kind},tag=${name},desc=${parameterDescription(parameter).replaceAll(/[\r\n,]/g, '，')}`;
+}).join('\n');
+const quoteYaml = text => `'${text.replaceAll("'", "''")}'`;
+const stashArgument = quoteYaml(JSON.stringify(Object.fromEntries(parameters.map(({ key, value }) => [key, displayModuleOption(key, value)]))));
+
+export function renderWK3Module(platform, version) {
+    if (!Object.hasOwn(platforms, platform)) throw new Error(`Unsupported platform: ${platform}`);
+    if (!/^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/.test(version)) throw new Error('Specify an explicit release version, e.g. 3.3.2');
+    const template = fs.readFileSync(path.join(root, `template/wk3.${platform}.handlebars`), 'utf8');
+    const rows = groups.map((group, index) => {
+        const tag = label(group), target = url(group, version, platform);
+        if (platform === 'surge') return `${tag} = type=http-${group.stage}, pattern=${group.pattern.includes('(?:') ? `"${group.pattern}"` : group.pattern}${group.body ? ', requires-body=1' : ''}${group.binary ? ', binary-body-mode=1' : ''}, engine=webview, script-path=${target}, argument=${surgeArgument}`;
+        if (platform === 'loon') return `http-${group.stage} ${group.pattern}${group.body ? ' requires-body=1,' : ''}${group.binary ? ' binary-body-mode=1,' : ''} script-path=${target}, tag=${tag}, argument=${loonArgument}`;
+        if (platform === 'stash') return `    - match: ${quoteYaml(group.pattern)}\n      name: ${tag}\n      type: ${group.stage}${group.body ? '\n      require-body: true' : ''}${group.binary ? '\n      binary-mode: true' : ''}\n      argument: ${index === 0 ? `&wk3-arguments ${stashArgument}` : '*wk3-arguments'}`;
+        const action = group.echo ? 'script-echo-response' : group.stage === 'request' ? 'script-request-header' : 'script-response-body';
+        return `# ${tag}${group.binary ? ' (binary response requires device validation)' : ''}\n${group.pattern} url ${action} ${target}`;
+    }).join('\n');
+    const providers = groups.map(group => `  ${label(group)}:\n    url: ${url(group, version, platform)}\n    interval: 86400`).join('\n');
+    return expand(template, { VERSION: version, SCRIPTS: rows, PROVIDERS: providers, ARGUMENTS: platform === 'loon' ? loonArguments : defaults, ARGUMENT_DESC: description, ARGUMENT_COMMENTS: descriptions.map(line => `# ${line}`).join('\n') });
+}
+
+export function buildWK3Modules({ outdir, version } = {}) {
+    if (!outdir) throw new Error('Specify --outdir to avoid changing existing modules');
+    const outputs = {};
+    for (const [platform, extension] of Object.entries(platforms)) {
+        const file = path.join(outdir, `iRingo.WeatherKit.WK3.${extension}`);
+        const text = renderWK3Module(platform, version);
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(file, text);
+        outputs[platform] = file;
+    }
+    return outputs;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+    const readFlag = name => { const index = process.argv.indexOf(name); return index === -1 ? undefined : process.argv[index + 1]; };
+    const outputs = buildWK3Modules({ outdir: readFlag('--outdir'), version: readFlag('--version') });
+    for (const [platform, file] of Object.entries(outputs)) console.log(`${platform}: ${file}`);
+}

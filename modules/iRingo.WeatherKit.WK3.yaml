@@ -1,0 +1,259 @@
+name: 'WeatherKit-WK3'
+description: '空气质量、原生预警与雨雪分钟增强。'
+author: WeatherKit-WK3 contributors
+homepage: https://github.com/patrickyanxxxxx/WeatherKit-WK3
+icon: https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
+rules:
+- and:
+    match:
+    - domain_suffix:
+        match: weatherkit.apple.com
+    - protocol:
+        match: QUIC
+    - dest_port:
+        match: '443'
+    policy: REJECT-NO-DROP
+- and:
+    match:
+    - or:
+        match:
+        - ip_cidr:
+            match: 139.178.128.0/18
+            no_resolve: true
+        - ip_cidr:
+            match: 144.178.0.0/19
+            no_resolve: true
+        - ip_cidr:
+            match: 144.178.36.0/22
+            no_resolve: true
+        - ip_cidr:
+            match: 144.178.48.0/20
+            no_resolve: true
+        - ip_cidr:
+            match: 17.0.0.0/8
+            no_resolve: true
+        - ip_cidr:
+            match: 192.35.50.0/24
+            no_resolve: true
+        - ip_cidr:
+            match: 198.183.17.0/24
+            no_resolve: true
+        - ip_cidr:
+            match: 205.180.175.0/24
+            no_resolve: true
+        - ip_cidr6:
+            match: 2403:300::/32
+            no_resolve: true
+        - ip_cidr6:
+            match: 2620:149::/32
+            no_resolve: true
+        - ip_cidr6:
+            match: 2a01:b740::/32
+            no_resolve: true
+        - ip_cidr:
+            match: 63.92.224.0/19
+            no_resolve: true
+        - ip_cidr:
+            match: 65.199.22.0/23
+            no_resolve: true
+    - protocol:
+        match: UDP
+    - dest_port:
+        match: '443'
+    policy: REJECT-NO-DROP
+- and:
+    match:
+    - or:
+        match:
+        - asn:
+            match: '714'
+            no_resolve: true
+        - asn:
+            match: '6185'
+            no_resolve: true
+    - protocol:
+        match: QUIC
+    policy: REJECT-DROP
+- domain_suffix:
+    match: weatherkit.apple.com
+    policy: DIRECT
+- domain:
+    match: weather-analytics-events.apple.com
+    policy: REJECT-DROP
+- domain_suffix:
+    match: tthr.apple.com
+    policy: REJECT-DROP
+- domain:
+    match: tether.edge.apple
+    policy: REJECT-DROP
+compat_arguments: {"DataSets":"airQuality,currentWeather,forecastDaily,forecastHourly,forecastNextHour,locationInfo,news,historicalComparisons,weatherAlerts,weatherChanges","Weather.Replace":"CN","Weather.Provider":"ColorfulClouds","Weather.ReplaceDaily":"false","Weather.ReplaceHourly":"false","WeatherAlerts.Provider":"QWeatherWeb","NextHour.Provider":"ColorfulClouds","AirQuality.Current.Index.Provider":"iRingo内置算法","AirQuality.Current.Index.Replace":"HJ6332012","AirQuality.Current.Index.ForceCNPrimaryPollutants":"true","AirQuality.Current.Pollutants.Provider":"ColorfulClouds","AirQuality.Current.Pollutants.Units.Replace":"[]","AirQuality.Current.Pollutants.Units.Mode":"Scale","AirQuality.Comparison.ReplaceWhenCurrentChange":"false","AirQuality.Comparison.Yesterday.IndexProvider":"彩云天气（美标）","AirQuality.Comparison.Yesterday.PollutantsProvider":"QWeather","AirQuality.Calculate.Algorithm":"欧盟EAQI","AirQuality.Calculate.AllowOverRange":"true","API.ColorfulClouds.Token":"","API.QWeather.Host":"devapi.qweather.com","API.QWeather.Token":"","LogLevel":"INFO","HTTP_TIMEOUT_MS":"8000"}
+compat_arguments_desc: "DataSets: [数据集]\n  选择要处理的数据；留空或 [] 全部保留原数据。\nWeather.Replace: [天气] 替换范围\n  普通天气的替换地区。WK3 空气质量单独处理，不受此项限制。\nWeather.Provider: [天气] 数据源\n  选择普通天气来源；WK3 当前、逐日和逐小时天气仍使用 Apple 数据。\nWeather.ReplaceDaily: [天气] 替换逐日预报\n  是否替换逐日预报；仅 WK2 生效。\nWeather.ReplaceHourly: [天气] 替换逐小时预报\n  是否替换逐小时预报；仅 WK2 生效。\nWeatherAlerts.Provider: [天气预警] 数据源\n  和风网页补全原生预警；选择 WeatherKit 保留原数据。\nNextHour.Provider: [未来一小时降水强度] 数据源\n  选择未来一小时雨雪分钟数据来源。\nAirQuality.Current.Index.Provider: [今日空气指数] 数据源\n  选择指数来源：iRingo内置算法、彩云或和风。\nAirQuality.Current.Index.Replace: [今日空气指数] 替换目标\n  填写要替换的原始标准，逗号分隔；留空或 [] 不替换。\nAirQuality.Current.Index.ForceCNPrimaryPollutants: [今日空气指数] 强制主要污染物\n  国标指数不超过 50 时，仍显示主要污染物。\nAirQuality.Current.Pollutants.Provider: [今日污染物] 数据源\n  已有 Apple 污染物优先保留；缺失时使用此来源。\nAirQuality.Current.Pollutants.Units.Replace: [今日污染物 - 单位转换] 替换目标\n  需要转换单位的空气质量标准；留空或 [] 不转换。\nAirQuality.Current.Pollutants.Units.Mode: [今日污染物 - 单位转换] 模式\n  Scale 跟随标准，Force 强制转换，None 保留原单位。\nAirQuality.Comparison.ReplaceWhenCurrentChange: [空气质量 - 对比昨日] 变化时替换\n  今日指数变化时，是否重新计算昨日对比。\nAirQuality.Comparison.Yesterday.IndexProvider: [昨日空气指数] 数据源\n  选择昨日指数来源；仅同源、同标准的数据可比较。\nAirQuality.Comparison.Yesterday.PollutantsProvider: [昨日污染物] 数据源\n  内置算法计算昨日指数所需的污染物来源。\nAirQuality.Calculate.Algorithm: [iRingo内置算法] 算法\n  使用污染物本地计算指数；None 不转换。\nAirQuality.Calculate.AllowOverRange: [iRingo内置算法] 允许指数超标\n  允许内置美标、国标指数超过 500。\nAPI.ColorfulClouds.Token: [API] 彩云天气令牌\n  自有彩云令牌；留空使用内置公开令牌。\nAPI.QWeather.Host: [API] 和风天气主机\n  和风 API 主机名；使用和风来源时填写。\nAPI.QWeather.Token: [API] 和风天气令牌\n  和风 API 令牌；网页预警不需要。\nLogLevel: [调试] 日志等级\n  默认 INFO；DEBUG 显示细节，OFF 关闭日志。\nHTTP_TIMEOUT_MS: [网络] 单次请求超时（毫秒）\n  单次网络请求超时，默认 8000 毫秒。"
+env_schema: {"DataSets":{"name":"[数据集]","description":"选择要处理的数据；留空或 [] 全部保留原数据。","default_value":"airQuality,currentWeather,forecastDaily,forecastHourly,forecastNextHour,locationInfo,news,historicalComparisons,weatherAlerts,weatherChanges"},"Weather.Replace":{"name":"[天气] 替换范围","description":"普通天气的替换地区。WK3 空气质量单独处理，不受此项限制。","default_value":"CN"},"Weather.Provider":{"name":"[天气] 数据源","description":"选择普通天气来源；WK3 当前、逐日和逐小时天气仍使用 Apple 数据。","default_value":"ColorfulClouds","options":["WeatherKit","ColorfulClouds","QWeather"]},"Weather.ReplaceDaily":{"name":"[天气] 替换逐日预报","description":"是否替换逐日预报；仅 WK2 生效。","default_value":"false","options":["true","false"]},"Weather.ReplaceHourly":{"name":"[天气] 替换逐小时预报","description":"是否替换逐小时预报；仅 WK2 生效。","default_value":"false","options":["true","false"]},"WeatherAlerts.Provider":{"name":"[天气预警] 数据源","description":"和风网页补全原生预警；选择 WeatherKit 保留原数据。","default_value":"QWeatherWeb","options":["WeatherKit","QWeatherWeb"]},"NextHour.Provider":{"name":"[未来一小时降水强度] 数据源","description":"选择未来一小时雨雪分钟数据来源。","default_value":"ColorfulClouds","options":["WeatherKit","ColorfulClouds","QWeather"]},"AirQuality.Current.Index.Provider":{"name":"[今日空气指数] 数据源","description":"选择指数来源：iRingo内置算法、彩云或和风。","default_value":"iRingo内置算法","options":["iRingo内置算法","彩云天气（美标）","彩云天气（国标）","和风天气"]},"AirQuality.Current.Index.Replace":{"name":"[今日空气指数] 替换目标","description":"填写要替换的原始标准，逗号分隔；留空或 [] 不替换。","default_value":"HJ6332012"},"AirQuality.Current.Index.ForceCNPrimaryPollutants":{"name":"[今日空气指数] 强制主要污染物","description":"国标指数不超过 50 时，仍显示主要污染物。","default_value":"true","options":["true","false"]},"AirQuality.Current.Pollutants.Provider":{"name":"[今日污染物] 数据源","description":"已有 Apple 污染物优先保留；缺失时使用此来源。","default_value":"ColorfulClouds","options":["ColorfulClouds","QWeather"]},"AirQuality.Current.Pollutants.Units.Replace":{"name":"[今日污染物 - 单位转换] 替换目标","description":"需要转换单位的空气质量标准；留空或 [] 不转换。","default_value":"[]"},"AirQuality.Current.Pollutants.Units.Mode":{"name":"[今日污染物 - 单位转换] 模式","description":"Scale 跟随标准，Force 强制转换，None 保留原单位。","default_value":"Scale","options":["None","Scale","ugm3","EU_ppb","US_ppb","Force_ugm3","Force_EU_ppb","Force_US_ppb"]},"AirQuality.Comparison.ReplaceWhenCurrentChange":{"name":"[空气质量 - 对比昨日] 变化时替换","description":"今日指数变化时，是否重新计算昨日对比。","default_value":"false","options":["true","false"]},"AirQuality.Comparison.Yesterday.IndexProvider":{"name":"[昨日空气指数] 数据源","description":"选择昨日指数来源；仅同源、同标准的数据可比较。","default_value":"彩云天气（美标）","options":["iRingo内置算法","彩云天气（美标）","彩云天气（国标）","和风天气"]},"AirQuality.Comparison.Yesterday.PollutantsProvider":{"name":"[昨日污染物] 数据源","description":"内置算法计算昨日指数所需的污染物来源。","default_value":"QWeather","options":["QWeather"]},"AirQuality.Calculate.Algorithm":{"name":"[iRingo内置算法] 算法","description":"使用污染物本地计算指数；None 不转换。","default_value":"欧盟EAQI","options":["不转换","德国LQI","欧盟EAQI","美标InstantCast","国标InstantCast（2012）","国标InstantCast（2025草案）","加拿大AQHI","香港AQHI","AQHI-Multi（中国）","AQHI-Multi（中国+香港）","中国健康风险AQHI","中国+香港健康风险AQHI"]},"AirQuality.Calculate.AllowOverRange":{"name":"[iRingo内置算法] 允许指数超标","description":"允许内置美标、国标指数超过 500。","default_value":"true","options":["true","false"]},"API.ColorfulClouds.Token":{"name":"[API] 彩云天气令牌","description":"自有彩云令牌；留空使用内置公开令牌。","default_value":""},"API.QWeather.Host":{"name":"[API] 和风天气主机","description":"和风 API 主机名；使用和风来源时填写。","default_value":"devapi.qweather.com"},"API.QWeather.Token":{"name":"[API] 和风天气令牌","description":"和风 API 令牌；网页预警不需要。","default_value":""},"LogLevel":{"name":"[调试] 日志等级","description":"默认 INFO；DEBUG 显示细节，OFF 关闭日志。","default_value":"INFO","options":["OFF","ERROR","WARN","INFO","DEBUG","ALL"]},"HTTP_TIMEOUT_MS":{"name":"[网络] 单次请求超时（毫秒）","description":"单次网络请求超时，默认 8000 毫秒。","default_value":"8000"}}
+scriptings:
+- http_response:
+    name: WeatherKit.api.availability.response
+    env:
+      DataSets: '{{{DataSets}}}'
+      Weather.Replace: '{{{Weather.Replace}}}'
+      Weather.Provider: '{{{Weather.Provider}}}'
+      Weather.ReplaceDaily: '{{{Weather.ReplaceDaily}}}'
+      Weather.ReplaceHourly: '{{{Weather.ReplaceHourly}}}'
+      WeatherAlerts.Provider: '{{{WeatherAlerts.Provider}}}'
+      NextHour.Provider: '{{{NextHour.Provider}}}'
+      AirQuality.Current.Index.Provider: '{{{AirQuality.Current.Index.Provider}}}'
+      AirQuality.Current.Index.Replace: '{{{AirQuality.Current.Index.Replace}}}'
+      AirQuality.Current.Index.ForceCNPrimaryPollutants: '{{{AirQuality.Current.Index.ForceCNPrimaryPollutants}}}'
+      AirQuality.Current.Pollutants.Provider: '{{{AirQuality.Current.Pollutants.Provider}}}'
+      AirQuality.Current.Pollutants.Units.Replace: '{{{AirQuality.Current.Pollutants.Units.Replace}}}'
+      AirQuality.Current.Pollutants.Units.Mode: '{{{AirQuality.Current.Pollutants.Units.Mode}}}'
+      AirQuality.Comparison.ReplaceWhenCurrentChange: '{{{AirQuality.Comparison.ReplaceWhenCurrentChange}}}'
+      AirQuality.Comparison.Yesterday.IndexProvider: '{{{AirQuality.Comparison.Yesterday.IndexProvider}}}'
+      AirQuality.Comparison.Yesterday.PollutantsProvider: '{{{AirQuality.Comparison.Yesterday.PollutantsProvider}}}'
+      AirQuality.Calculate.Algorithm: '{{{AirQuality.Calculate.Algorithm}}}'
+      AirQuality.Calculate.AllowOverRange: '{{{AirQuality.Calculate.AllowOverRange}}}'
+      API.ColorfulClouds.Token: '{{{API.ColorfulClouds.Token}}}'
+      API.QWeather.Host: '{{{API.QWeather.Host}}}'
+      API.QWeather.Token: '{{{API.QWeather.Token}}}'
+      LogLevel: '{{{LogLevel}}}'
+      HTTP_TIMEOUT_MS: '{{{HTTP_TIMEOUT_MS}}}'
+    match: '^https://weatherkit\.apple\.com/api/v[12]/availability/'
+    script_url: https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-egern-response.bundle.js
+    timeout: 30
+    body_required: true
+    binary_body: false
+    max_size: 2097152
+    update_interval: 86400
+- http_request:
+    name: WeatherKit.api.airQualityScale.request
+    env:
+      DataSets: '{{{DataSets}}}'
+      Weather.Replace: '{{{Weather.Replace}}}'
+      Weather.Provider: '{{{Weather.Provider}}}'
+      Weather.ReplaceDaily: '{{{Weather.ReplaceDaily}}}'
+      Weather.ReplaceHourly: '{{{Weather.ReplaceHourly}}}'
+      WeatherAlerts.Provider: '{{{WeatherAlerts.Provider}}}'
+      NextHour.Provider: '{{{NextHour.Provider}}}'
+      AirQuality.Current.Index.Provider: '{{{AirQuality.Current.Index.Provider}}}'
+      AirQuality.Current.Index.Replace: '{{{AirQuality.Current.Index.Replace}}}'
+      AirQuality.Current.Index.ForceCNPrimaryPollutants: '{{{AirQuality.Current.Index.ForceCNPrimaryPollutants}}}'
+      AirQuality.Current.Pollutants.Provider: '{{{AirQuality.Current.Pollutants.Provider}}}'
+      AirQuality.Current.Pollutants.Units.Replace: '{{{AirQuality.Current.Pollutants.Units.Replace}}}'
+      AirQuality.Current.Pollutants.Units.Mode: '{{{AirQuality.Current.Pollutants.Units.Mode}}}'
+      AirQuality.Comparison.ReplaceWhenCurrentChange: '{{{AirQuality.Comparison.ReplaceWhenCurrentChange}}}'
+      AirQuality.Comparison.Yesterday.IndexProvider: '{{{AirQuality.Comparison.Yesterday.IndexProvider}}}'
+      AirQuality.Comparison.Yesterday.PollutantsProvider: '{{{AirQuality.Comparison.Yesterday.PollutantsProvider}}}'
+      AirQuality.Calculate.Algorithm: '{{{AirQuality.Calculate.Algorithm}}}'
+      AirQuality.Calculate.AllowOverRange: '{{{AirQuality.Calculate.AllowOverRange}}}'
+      API.ColorfulClouds.Token: '{{{API.ColorfulClouds.Token}}}'
+      API.QWeather.Host: '{{{API.QWeather.Host}}}'
+      API.QWeather.Token: '{{{API.QWeather.Token}}}'
+      LogLevel: '{{{LogLevel}}}'
+      HTTP_TIMEOUT_MS: '{{{HTTP_TIMEOUT_MS}}}'
+    match: '^https://weatherkit\.apple\.com/api/v[12]/airQualityScale/'
+    script_url: https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-egern-request.bundle.js
+    timeout: 30
+    body_required: false
+    binary_body: false
+    update_interval: 86400
+- http_request:
+    name: WeatherKit.api.weatherAlerts.html.request
+    env:
+      DataSets: '{{{DataSets}}}'
+      Weather.Replace: '{{{Weather.Replace}}}'
+      Weather.Provider: '{{{Weather.Provider}}}'
+      Weather.ReplaceDaily: '{{{Weather.ReplaceDaily}}}'
+      Weather.ReplaceHourly: '{{{Weather.ReplaceHourly}}}'
+      WeatherAlerts.Provider: '{{{WeatherAlerts.Provider}}}'
+      NextHour.Provider: '{{{NextHour.Provider}}}'
+      AirQuality.Current.Index.Provider: '{{{AirQuality.Current.Index.Provider}}}'
+      AirQuality.Current.Index.Replace: '{{{AirQuality.Current.Index.Replace}}}'
+      AirQuality.Current.Index.ForceCNPrimaryPollutants: '{{{AirQuality.Current.Index.ForceCNPrimaryPollutants}}}'
+      AirQuality.Current.Pollutants.Provider: '{{{AirQuality.Current.Pollutants.Provider}}}'
+      AirQuality.Current.Pollutants.Units.Replace: '{{{AirQuality.Current.Pollutants.Units.Replace}}}'
+      AirQuality.Current.Pollutants.Units.Mode: '{{{AirQuality.Current.Pollutants.Units.Mode}}}'
+      AirQuality.Comparison.ReplaceWhenCurrentChange: '{{{AirQuality.Comparison.ReplaceWhenCurrentChange}}}'
+      AirQuality.Comparison.Yesterday.IndexProvider: '{{{AirQuality.Comparison.Yesterday.IndexProvider}}}'
+      AirQuality.Comparison.Yesterday.PollutantsProvider: '{{{AirQuality.Comparison.Yesterday.PollutantsProvider}}}'
+      AirQuality.Calculate.Algorithm: '{{{AirQuality.Calculate.Algorithm}}}'
+      AirQuality.Calculate.AllowOverRange: '{{{AirQuality.Calculate.AllowOverRange}}}'
+      API.ColorfulClouds.Token: '{{{API.ColorfulClouds.Token}}}'
+      API.QWeather.Host: '{{{API.QWeather.Host}}}'
+      API.QWeather.Token: '{{{API.QWeather.Token}}}'
+      LogLevel: '{{{LogLevel}}}'
+      HTTP_TIMEOUT_MS: '{{{HTTP_TIMEOUT_MS}}}'
+    match: '^https://weatherkit\.apple\.com/api/v[12]/weatherAlerts\?(?:[^#]*&)?ids=(?!wk3_)[a-zA-Z0-9][a-zA-Z0-9_-]*-[0-9]{9}(?:&|$)'
+    script_url: https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-egern-request.bundle.js
+    timeout: 30
+    body_required: false
+    binary_body: false
+    update_interval: 86400
+- http_request:
+    name: WeatherKit.api.weatherAlerts.api.request
+    env:
+      DataSets: '{{{DataSets}}}'
+      Weather.Replace: '{{{Weather.Replace}}}'
+      Weather.Provider: '{{{Weather.Provider}}}'
+      Weather.ReplaceDaily: '{{{Weather.ReplaceDaily}}}'
+      Weather.ReplaceHourly: '{{{Weather.ReplaceHourly}}}'
+      WeatherAlerts.Provider: '{{{WeatherAlerts.Provider}}}'
+      NextHour.Provider: '{{{NextHour.Provider}}}'
+      AirQuality.Current.Index.Provider: '{{{AirQuality.Current.Index.Provider}}}'
+      AirQuality.Current.Index.Replace: '{{{AirQuality.Current.Index.Replace}}}'
+      AirQuality.Current.Index.ForceCNPrimaryPollutants: '{{{AirQuality.Current.Index.ForceCNPrimaryPollutants}}}'
+      AirQuality.Current.Pollutants.Provider: '{{{AirQuality.Current.Pollutants.Provider}}}'
+      AirQuality.Current.Pollutants.Units.Replace: '{{{AirQuality.Current.Pollutants.Units.Replace}}}'
+      AirQuality.Current.Pollutants.Units.Mode: '{{{AirQuality.Current.Pollutants.Units.Mode}}}'
+      AirQuality.Comparison.ReplaceWhenCurrentChange: '{{{AirQuality.Comparison.ReplaceWhenCurrentChange}}}'
+      AirQuality.Comparison.Yesterday.IndexProvider: '{{{AirQuality.Comparison.Yesterday.IndexProvider}}}'
+      AirQuality.Comparison.Yesterday.PollutantsProvider: '{{{AirQuality.Comparison.Yesterday.PollutantsProvider}}}'
+      AirQuality.Calculate.Algorithm: '{{{AirQuality.Calculate.Algorithm}}}'
+      AirQuality.Calculate.AllowOverRange: '{{{AirQuality.Calculate.AllowOverRange}}}'
+      API.ColorfulClouds.Token: '{{{API.ColorfulClouds.Token}}}'
+      API.QWeather.Host: '{{{API.QWeather.Host}}}'
+      API.QWeather.Token: '{{{API.QWeather.Token}}}'
+      LogLevel: '{{{LogLevel}}}'
+      HTTP_TIMEOUT_MS: '{{{HTTP_TIMEOUT_MS}}}'
+    match: '^https://weatherkit\.apple\.com/api/v[12]/weatherAlerts\?(?:[^#]*&)?ids=(?:wk3_[^&#]*|-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?)(?:&|$)'
+    script_url: https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-egern-request.bundle.js
+    timeout: 30
+    body_required: false
+    binary_body: false
+    update_interval: 86400
+- http_response:
+    name: WeatherKit.api.weather.response
+    env:
+      DataSets: '{{{DataSets}}}'
+      Weather.Replace: '{{{Weather.Replace}}}'
+      Weather.Provider: '{{{Weather.Provider}}}'
+      Weather.ReplaceDaily: '{{{Weather.ReplaceDaily}}}'
+      Weather.ReplaceHourly: '{{{Weather.ReplaceHourly}}}'
+      WeatherAlerts.Provider: '{{{WeatherAlerts.Provider}}}'
+      NextHour.Provider: '{{{NextHour.Provider}}}'
+      AirQuality.Current.Index.Provider: '{{{AirQuality.Current.Index.Provider}}}'
+      AirQuality.Current.Index.Replace: '{{{AirQuality.Current.Index.Replace}}}'
+      AirQuality.Current.Index.ForceCNPrimaryPollutants: '{{{AirQuality.Current.Index.ForceCNPrimaryPollutants}}}'
+      AirQuality.Current.Pollutants.Provider: '{{{AirQuality.Current.Pollutants.Provider}}}'
+      AirQuality.Current.Pollutants.Units.Replace: '{{{AirQuality.Current.Pollutants.Units.Replace}}}'
+      AirQuality.Current.Pollutants.Units.Mode: '{{{AirQuality.Current.Pollutants.Units.Mode}}}'
+      AirQuality.Comparison.ReplaceWhenCurrentChange: '{{{AirQuality.Comparison.ReplaceWhenCurrentChange}}}'
+      AirQuality.Comparison.Yesterday.IndexProvider: '{{{AirQuality.Comparison.Yesterday.IndexProvider}}}'
+      AirQuality.Comparison.Yesterday.PollutantsProvider: '{{{AirQuality.Comparison.Yesterday.PollutantsProvider}}}'
+      AirQuality.Calculate.Algorithm: '{{{AirQuality.Calculate.Algorithm}}}'
+      AirQuality.Calculate.AllowOverRange: '{{{AirQuality.Calculate.AllowOverRange}}}'
+      API.ColorfulClouds.Token: '{{{API.ColorfulClouds.Token}}}'
+      API.QWeather.Host: '{{{API.QWeather.Host}}}'
+      API.QWeather.Token: '{{{API.QWeather.Token}}}'
+      LogLevel: '{{{LogLevel}}}'
+      HTTP_TIMEOUT_MS: '{{{HTTP_TIMEOUT_MS}}}'
+    match: '^https://weatherkit\.apple\.com/api/v[23]/weather/'
+    script_url: https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-egern-response.bundle.js
+    timeout: 30
+    body_required: true
+    binary_body: true
+    max_size: 2097152
+    update_interval: 86400
+
+mitm:
+  hostnames:
+    includes:
+    - weatherkit.apple.com

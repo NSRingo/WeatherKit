@@ -1,0 +1,77 @@
+name: WeatherKit-Local-WK3
+desc: 空气质量、原生预警与雨雪分钟增强。安装与参数说明见仓库 modules/README.md。
+homepage: https://github.com/patrickyanxxxxx/WeatherKit-WK3
+icon: https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
+version: "3.3.8"
+rules:
+  - DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
+  - DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
+  - DOMAIN,tether.edge.apple,REJECT-DROP
+  - AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),REJECT-DROP
+# Stash 无插件参数选择面板；编辑首个 argument 的 JSON，YAML 锚点会将设置共享到全部五组脚本。
+# DataSets: [数据集]；选择要处理的数据；留空或 [] 全部保留原数据。
+# Weather.Replace: [天气] 替换范围；普通天气的替换地区。WK3 空气质量单独处理，不受此项限制。
+# Weather.Provider: [天气] 数据源；选择普通天气来源；WK3 当前、逐日和逐小时天气仍使用 Apple 数据。
+# Weather.ReplaceDaily: [天气] 替换逐日预报；是否替换逐日预报；仅 WK2 生效。
+# Weather.ReplaceHourly: [天气] 替换逐小时预报；是否替换逐小时预报；仅 WK2 生效。
+# WeatherAlerts.Provider: [天气预警] 数据源；和风网页补全原生预警；选择 WeatherKit 保留原数据。
+# NextHour.Provider: [未来一小时降水强度] 数据源；选择未来一小时雨雪分钟数据来源。
+# AirQuality.Current.Index.Provider: [今日空气指数] 数据源；选择指数来源：iRingo内置算法、彩云或和风。
+# AirQuality.Current.Index.Replace: [今日空气指数] 替换目标；填写要替换的原始标准，逗号分隔；留空或 [] 不替换。
+# AirQuality.Current.Index.ForceCNPrimaryPollutants: [今日空气指数] 强制主要污染物；国标指数不超过 50 时，仍显示主要污染物。
+# AirQuality.Current.Pollutants.Provider: [今日污染物] 数据源；已有 Apple 污染物优先保留；缺失时使用此来源。
+# AirQuality.Current.Pollutants.Units.Replace: [今日污染物 - 单位转换] 替换目标；需要转换单位的空气质量标准；留空或 [] 不转换。
+# AirQuality.Current.Pollutants.Units.Mode: [今日污染物 - 单位转换] 模式；Scale 跟随标准，Force 强制转换，None 保留原单位。
+# AirQuality.Comparison.ReplaceWhenCurrentChange: [空气质量 - 对比昨日] 变化时替换；今日指数变化时，是否重新计算昨日对比。
+# AirQuality.Comparison.Yesterday.IndexProvider: [昨日空气指数] 数据源；选择昨日指数来源；仅同源、同标准的数据可比较。
+# AirQuality.Comparison.Yesterday.PollutantsProvider: [昨日污染物] 数据源；内置算法计算昨日指数所需的污染物来源。
+# AirQuality.Calculate.Algorithm: [iRingo内置算法] 算法；使用污染物本地计算指数；None 不转换。
+# AirQuality.Calculate.AllowOverRange: [iRingo内置算法] 允许指数超标；允许内置美标、国标指数超过 500。
+# API.ColorfulClouds.Token: [API] 彩云天气令牌；自有彩云令牌；留空使用内置公开令牌。
+# API.QWeather.Host: [API] 和风天气主机；和风 API 主机名；使用和风来源时填写。
+# API.QWeather.Token: [API] 和风天气令牌；和风 API 令牌；网页预警不需要。
+# LogLevel: [调试] 日志等级；默认 INFO；DEBUG 显示细节，OFF 关闭日志。
+# HTTP_TIMEOUT_MS: [网络] 单次请求超时（毫秒）；单次网络请求超时，默认 8000 毫秒。
+http:
+  mitm:
+    - weatherkit.apple.com
+  script:
+    - match: '^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/availability\/'
+      name: WeatherKit.api.availability.response
+      type: response
+      require-body: true
+      argument: &wk3-arguments '{"DataSets":"airQuality,currentWeather,forecastDaily,forecastHourly,forecastNextHour,locationInfo,news,historicalComparisons,weatherAlerts,weatherChanges","Weather.Replace":"CN","Weather.Provider":"ColorfulClouds","Weather.ReplaceDaily":"false","Weather.ReplaceHourly":"false","WeatherAlerts.Provider":"QWeatherWeb","NextHour.Provider":"ColorfulClouds","AirQuality.Current.Index.Provider":"iRingo内置算法","AirQuality.Current.Index.Replace":"HJ6332012","AirQuality.Current.Index.ForceCNPrimaryPollutants":"true","AirQuality.Current.Pollutants.Provider":"ColorfulClouds","AirQuality.Current.Pollutants.Units.Replace":"[]","AirQuality.Current.Pollutants.Units.Mode":"Scale","AirQuality.Comparison.ReplaceWhenCurrentChange":"false","AirQuality.Comparison.Yesterday.IndexProvider":"彩云天气（美标）","AirQuality.Comparison.Yesterday.PollutantsProvider":"QWeather","AirQuality.Calculate.Algorithm":"欧盟EAQI","AirQuality.Calculate.AllowOverRange":"true","API.ColorfulClouds.Token":"","API.QWeather.Host":"devapi.qweather.com","API.QWeather.Token":"","LogLevel":"INFO","HTTP_TIMEOUT_MS":"8000"}'
+    - match: '^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/airQualityScale\/'
+      name: WeatherKit.api.airQualityScale.request
+      type: request
+      argument: *wk3-arguments
+    - match: '^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/weatherAlerts\?(?:[^#]*&)?ids=(?!wk3_)[a-zA-Z0-9][a-zA-Z0-9_-]*-[0-9]{9}(?:&|$)'
+      name: WeatherKit.api.weatherAlerts.html.request
+      type: request
+      argument: *wk3-arguments
+    - match: '^https?:\/\/weatherkit\.apple\.com\/api\/v[12]\/weatherAlerts\?(?:[^#]*&)?ids=(?:wk3_[^&#]*|-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?)(?:&|$)'
+      name: WeatherKit.api.weatherAlerts.api.request
+      type: request
+      argument: *wk3-arguments
+    - match: '^https?:\/\/weatherkit\.apple\.com\/api\/v[23]\/weather\/'
+      name: WeatherKit.api.weather.response
+      type: response
+      require-body: true
+      binary-mode: true
+      argument: *wk3-arguments
+script-providers:
+  WeatherKit.api.availability.response:
+    url: https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-stash-response.bundle.js
+    interval: 86400
+  WeatherKit.api.airQualityScale.request:
+    url: https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-stash-request.bundle.js
+    interval: 86400
+  WeatherKit.api.weatherAlerts.html.request:
+    url: https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-stash-request.bundle.js
+    interval: 86400
+  WeatherKit.api.weatherAlerts.api.request:
+    url: https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-stash-request.bundle.js
+    interval: 86400
+  WeatherKit.api.weather.response:
+    url: https://github.com/patrickyanxxxxx/WeatherKit-WK3/releases/download/v3.3.8/wk3-stash-response.bundle.js
+    interval: 86400
