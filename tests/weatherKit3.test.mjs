@@ -360,13 +360,13 @@ test("WK3 drops condition entries with unverified enums when injecting nextHour"
         ...structuredClone(nextHourReplacement),
         condition: [
             { startTime: 2000000000, endTime: 2000000060, forecastToken: "STOP_START", beginCondition: "RAIN", endCondition: "RAIN", parameters: [{ type: "FIRST_AT", date: 2000000060 }, { type: "SECOND_AT", date: 2000000180 }] },
-            { startTime: 2000000060, endTime: 2000000180, forecastToken: "CONSTANT", beginCondition: "SNOW", endCondition: "SNOW", parameters: [] },
+            { startTime: 2000000060, endTime: 2000000180, forecastToken: "NOT_A_TOKEN", beginCondition: "RAIN", endCondition: "RAIN", parameters: [] },
         ],
     }));
     const output = (await response(buildWK3([[0, buildWK3AirQuality]]))).body;
     const nextHour = WK3.Weather.getRootAsWeather(new ByteBuffer(output)).forecastNextHour();
-    // STOP_START=5 已按 +1 偏移确认可写；未验证的 SNOW（ConditionType）整条跳过。
-    // STOP_START=5 is writable per the verified +1 shift; unverified SNOW (ConditionType) is dropped.
+    // STOP_START=5 与 SNOW 等偏移推导成员可写；未命名 token 整条跳过。
+    // STOP_START=5 and shift-derived members like SNOW are writable; unnamed tokens are dropped.
     assert.equal(nextHour.conditionLength(), 1);
     assert.equal(nextHour.condition(0).forecastToken(), 5); // STOP_START
     assert.equal(nextHour.condition(0).parameters(1).type(), 2); // SECOND_AT
