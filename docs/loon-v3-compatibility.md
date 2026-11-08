@@ -26,8 +26,10 @@ Loon 使用 request.loon.bundle.js、response.loon.bundle.js、scale.loon.bundle
 
 构建同时生成 dist/LICENSE.txt，包含项目 Apache-2.0、@noble/hashes 的完整 MIT 许可与公开地理数据出处；沿用原版的 dist 发行打包即可携带这些说明。
 
-`npm test` 检查算法、供应商失败、缓存边界、WK2 编解码、WK3 开发／发布入口及未知字段保留。`npm run build:loon` 编译原生入口并生成 Loon 文件，再执行 38 个压缩脚本 VM 场景与 15 个表达式／路由／jq 检查；这些检查不等于 Loon 真实配置解析器或设备耗电测量。
+`npm test` 检查算法、供应商失败、缓存边界、WK2 编解码、WK3 开发／发布入口及未知字段保留。`npm run build:loon` 编译原生入口并生成 Loon 文件，再执行 40 个压缩脚本 VM 场景与 15 个表达式／路由／jq 检查；这些检查不等于 Loon 真实配置解析器或设备耗电测量。
 
-本次参数含义修正前的发行代码曾在 macOS 27.3、Loon for Mac 0.5.0(1011) 核对七种算法和六项污染物，最终轮次无解码错误、无效天气或 CloudKit 回退，11 类产品进入原生缓存；另有用户反馈 iPhone 使用成功。该事实与当前分支的静态、构建和 VM 验证分别报告，不扩展为所有算法、预警、手表、地区或长期 VPN 的原生验收。没有设备内存或电量下降比例。
+Native macOS observations on 2026-11-06 and 07 covered all eleven algorithms and None, six physical concentrations, the original target-standard restriction, and disabled datasets. Warning banners and four full warning details were visible. The system-log snapshot contained no decoding errors, invalid weather or CloudKit fallback. The actual candidate runtime files were byte-identical to the three artifacts from commit 4d1f127. See [Mac native observations](mac-native-validation.md) for the exact scope and limitations.
 
-原版参数及默认行为核对见 [原始行为审计](original-behavior-audit.md)。本次修正不能沿用旧版运行脚本同字节的结论；新的设备复测尚未进行。
+The locked Node v22.23.4 CI passed 335 regressions, 40 compiled VM scenarios, 15 expression/route/jq checks and all twelve original argument defaults. The 0.0.0-test version is only a build fixture. Valid dedicated QWeather credentials, the final all-WeatherKit source combination, background/watch customization, long-running VPN operation and device battery or memory percentages were not comprehensively accepted.
+
+Original behavior and default settings are documented in [the original behavior audit](original-behavior-audit.md).

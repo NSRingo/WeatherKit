@@ -8,4 +8,4 @@
 
 这属于新 JSON 传输的读取器兼容，原 Apple 预警在未选择来源替换、选择 WeatherKit 或第三方补充失败时也需要执行。供应商结果同样校验，未知非法标识不能覆盖已有可读预警。原版来源选择、预警合并、指数目标、昨日对比和缓存边界继续保留。
 
-本次新增发布／开发入口、关闭处理、保留 Apple 来源、补充失败、无效标识、已有字符串、未知产品及重复执行的回归；实际压缩脚本另检查保留与失败回退。新的 GitHub 候选将在 Mac 重新读取预警及详情、检查完整系统日志，通过后才更新正式订阅及提交原作者审核。当前原版 PR #107 保持草稿。
+Regression coverage includes release/development entries, disabled replacement, retained Apple source, supplementation failure, malformed identifiers, existing strings, unknown products and repeated execution. The Mac candidate showed warning banners and four full warning details; with all replacement datasets disabled, two original Apple warnings remained visible. See [Mac native observations](mac-native-validation.md).
