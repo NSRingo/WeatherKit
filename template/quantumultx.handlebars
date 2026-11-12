@@ -23,5 +23,6 @@ host, tether.edge.apple, reject
 ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?(?:&|$) url script-echo-response https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/request.bundle.js
 # 🌤 WeatherKit.api.v2.weather.response
 ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ url script-response-body https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
+
 #[mitm]
 hostname = weatherkit.apple.com

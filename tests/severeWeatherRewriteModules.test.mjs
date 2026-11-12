@@ -239,7 +239,7 @@ test("Dev builds use dev templates, bundles, and output names", async () => {
         assert.match(template, /^\[URL Rewrite\]$/m);
         assert.match(template, /www\\\.qweather\\\.com\\\/\{1,2\}severe-weather/);
         assert.match(template, /www\\\.qweather\\\.com\\\/en\\\/severe-weather/);
-        assert.match(template, /weather-\*\.apple\.com, www\.qweather\.com, \*api\.qweather\.com, api\.caiyunapp\.com, \*\.waqi\.info/);
+        assert.match(template, /weatherkit\.apple\.com, www\.qweather\.com, \*api\.qweather\.com, api\.caiyunapp\.com, \*\.waqi\.info/);
         assert.doesNotMatch(template, /PROTOCOL,QUIC/);
     }
     for (const template of [surge, loon, quantumultX]) {
