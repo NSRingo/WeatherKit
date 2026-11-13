@@ -170,6 +170,7 @@ export async function replaceWeatherKit3JSON(response, dataSets, injectors) {
     } catch {
         return response;
     }
+    const fallback = JSON.stringify(body);
     await Promise.all(
         [...new Set(dataSets)].map(async name => {
             if (!injectors[name] || (!object(body[name]?.metadata) && name !== "forecastNextHour")) return;
@@ -177,15 +178,25 @@ export async function replaceWeatherKit3JSON(response, dataSets, injectors) {
             try {
                 const copy = original === undefined ? undefined : JSON.parse(JSON.stringify(original));
                 const value = await injectors[name](copy);
-                if (object(value?.metadata) && value.metadata.temporarilyUnavailable !== true) body[name] = adaptWeatherKit3JSON(value, name, true);
+                if (object(value?.metadata) && value.metadata.temporarilyUnavailable !== true) {
+                    const candidate = adaptWeatherKit3JSON(value, name, true);
+                    // Bound and validate before assigning so an invalid provider graph cannot poison the whole response.
+                    const encoded = JSON.stringify(candidate, (_key, item) => {
+                        if (typeof item === "number" && !Number.isFinite(item)) throw new RangeError("Invalid WK3 provider number");
+                        return item;
+                    });
+                    if (new TextEncoder().encode(encoded).byteLength > maxBodyBytes) throw new RangeError("WK3 product too large");
+                    body[name] = candidate;
+                }
             } catch (error) {
                 body[name] = original;
                 Console.warn("WeatherKit.api.v3.weather.json", `preserved ${name}: ${error?.name ?? "Error"}`);
             }
         }),
     );
-    const encoded = JSON.stringify(body);
-    if (new TextEncoder().encode(encoded).byteLength > maxBodyBytes) return response;
+    let encoded = JSON.stringify(body);
+    // Once JSON is negotiated, fallback must still satisfy the native JSON reader (not raw WK3 JSON).
+    if (new TextEncoder().encode(encoded).byteLength > maxBodyBytes) encoded = fallback;
     const headers = { ...response.headers };
     for (const key of Object.keys(headers)) if (["content-length", "content-encoding", "etag", "last-modified", "content-md5", "digest", "cache-control"].includes(key.toLowerCase())) delete headers[key];
     headers["Cache-Control"] = "no-store";

@@ -180,6 +180,30 @@ test("unknown nested fields retain their own shapes", () => {
     assert.deepEqual(value.unknown, unknown);
 });
 
+test("oversized/invalid provider graphs keep normalized Apple data instead of raw WK3 JSON", async () => {
+    for (const extra of ["x".repeat(4 * 1024 * 1024), [Number.NaN], 1n]) {
+        const output = await replaceWeatherKit3JSON(response(), ["currentWeather"], {
+            currentWeather: product => ({ ...product, temperature: 27, extra }),
+        });
+        const body = JSON.parse(output.body);
+        assert.equal(body.currentWeather.temperature, 20);
+        assert.equal(body.currentWeather.conditionCode, "RAIN");
+        assert.equal(body.currentWeather.extra, undefined);
+    }
+});
+
+test("combined product size fallback keeps the reader-compatible response", async () => {
+    const extra = "x".repeat(3 * 1024 * 1024);
+    const output = await replaceWeatherKit3JSON(response(), ["currentWeather", "forecastHourly"], {
+        currentWeather: product => ({ ...product, temperature: 27, extra }),
+        forecastHourly: product => ({ ...product, extra }),
+    });
+    const body = JSON.parse(output.body);
+    assert.equal(body.currentWeather.temperature, 20);
+    assert.equal(body.currentWeather.conditionCode, "RAIN");
+    assert.equal(body.forecastHourly.extra, undefined);
+});
+
 test("malformed/error/oversized JSON responses are returned untouched without provider calls", async () => {
     const cases = [
         { ...response(), status: 503 },
