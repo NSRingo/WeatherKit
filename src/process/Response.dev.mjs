@@ -14,6 +14,7 @@ import mergeWeatherKitAvailability from "../function/mergeWeatherKitAvailability
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
 import setENV from "../function/setENV.mjs";
+import { replaceWeatherKit3JSON, useWeatherKit3JSON } from "../function/weatherKit3JSON.mjs";
 /***************** Processing *****************/
 export async function Response($request, $response) {
     // 解构URL
@@ -31,6 +32,31 @@ export async function Response($request, $response) {
      */
     const { Settings, Caches, Configs } = setENV("iRingo", "WeatherKit", database);
     Console.logLevel = Settings.LogLevel;
+    const parameters = parseWeatherKitURL(url);
+    if (useWeatherKit3JSON($request, parameters, Settings) && Object.entries($response.headers ?? {}).some(([key, value]) => key.toLowerCase() === "content-type" && /^application\/json(?:;|$)/i.test(value))) {
+        const providerParameters = { ...parameters };
+        const enviroments = {
+            colorfulClouds: new ColorfulClouds(providerParameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
+            qWeather: new QWeather(providerParameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host),
+            waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
+            country: parameters.country,
+        };
+        return replaceWeatherKit3JSON(
+            $response,
+            parameters.dataSets.filter(name => Settings.DataSets.includes(name)),
+            {
+                currentWeather: product => InjectCurrentWeather(product, Settings, enviroments),
+                forecastDaily: product => InjectForecastDaily(product, Settings, enviroments),
+                forecastHourly: product => InjectForecastHourly(product, Settings, enviroments),
+                airQuality: product => InjectAirQuality(product, Settings, Caches, enviroments),
+                forecastNextHour: product => InjectForecastNextHour(product, Settings, enviroments),
+                weatherAlerts: product => {
+                    enviroments.qWeather.weatherKitLanguage = product?.metadata?.language ?? enviroments.qWeather.weatherKitLanguage;
+                    return InjectWeatherAlerts(product, Settings, enviroments);
+                },
+            },
+        );
+    }
     // 创建空数据
     let body = {};
     // 格式判断

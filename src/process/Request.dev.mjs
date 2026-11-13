@@ -6,6 +6,7 @@ import WeatherAlerts from "../class/WeatherAlerts.mjs";
 import database from "../function/database.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
 import setENV from "../function/setENV.mjs";
+import { useWeatherKit3JSON } from "../function/weatherKit3JSON.mjs";
 /***************** Processing *****************/
 export async function Request($request) {
     // 构造回复数据
@@ -165,6 +166,10 @@ export async function Request($request) {
             break;
     }
     $request.url = url.toString();
+    if (useWeatherKit3JSON($request, parseWeatherKitURL(url), Settings)) {
+        for (const key of Object.keys($request.headers)) if (["accept", "if-modified-since"].includes(key.toLowerCase())) delete $request.headers[key];
+        $request.headers.Accept = "application/json";
+    }
     Console.debug(`$request.url: ${$request.url}`);
     return { $request, $response };
 }
