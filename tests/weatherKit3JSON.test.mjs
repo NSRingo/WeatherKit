@@ -180,6 +180,48 @@ test("unknown nested fields retain their own shapes", () => {
     assert.deepEqual(value.unknown, unknown);
 });
 
+test("native 27.3 precipitation ranges, rest-of-day and periodic forecasts use scalar conditions", () => {
+    const current = { precipitationAmountPrevious1hByType: [{ expected: 2, precipitationType: ["RAIN"] }] };
+    adaptWeatherKit3JSON(current, "currentWeather");
+    assert.equal(current.precipitationAmountPrevious1hByType[0].precipitationType, "RAIN");
+    const daily = { days: [{ restOfDayForecast: { conditionCode: ["CLOUDY"], precipitationAmountByType: [{ expected: 3, precipitationType: ["RAIN"] }] } }] };
+    adaptWeatherKit3JSON(daily, "forecastDaily");
+    assert.equal(daily.days[0].restOfDayForecast.conditionCode, "CLOUDY");
+    assert.equal(daily.days[0].restOfDayForecast.precipitationAmountByType[0].precipitationType, "RAIN");
+    const periodic = { forecasts: [{ periods: [{ conditionCode: ["RAIN"] }] }] };
+    adaptWeatherKit3JSON(periodic, "forecastPeriodic");
+    assert.equal(periodic.forecasts[0].periods[0].conditionCode, "RAIN");
+});
+
+test("EAQI's unsupported CO sub-index does not roll back the whole AQ product", async t => {
+    globalThis.$argument.DataSets = "airQuality,currentWeather";
+    globalThis.$argument.AirQuality = { Calculate: { Algorithm: "EU_EAQI" }, Comparison: { ReplaceWhenCurrentChange: false } };
+    t.mock.method(ColorfulClouds.prototype, "CurrentWeather", async () => undefined);
+    // Minimal synthetic copy of the native response shape that exposed the -1 sentinel regression.
+    const apple = appleBody();
+    apple.airQuality = {
+        metadata: { ...metadata, providerName: "和风天气" },
+        index: 40,
+        categoryIndex: 1,
+        scale: "HJ6332012.2604",
+        previousDayComparison: "UNKNOWN",
+        pollutants: [
+            ["PM10", 40],
+            ["NO2", 57],
+            ["CO", 0.6],
+            ["OZONE", 46],
+            ["PM2_5", 26],
+            ["SO2", 9],
+        ].map(([pollutantType, amount]) => ({ pollutantType, amount, units: "MICROGRAMS_PER_CUBIC_METER" })),
+    };
+    const body = JSON.parse((await Response(request("airQuality,currentWeather"), response(apple))).body);
+    assert.match(body.airQuality.scale, /^EU\.EAQI/);
+    const co = body.airQuality.pollutants.find(pollutant => pollutant.pollutantType === "CO");
+    assert.equal(co.amount, 600, "existing provider-unit correction still applies");
+    assert.equal(co.index, undefined);
+    assert.equal(co.categoryIndex, undefined);
+});
+
 test("oversized/invalid provider graphs keep normalized Apple data instead of raw WK3 JSON", async () => {
     for (const extra of ["x".repeat(4 * 1024 * 1024), [Number.NaN], 1n]) {
         const output = await replaceWeatherKit3JSON(response(), ["currentWeather"], {

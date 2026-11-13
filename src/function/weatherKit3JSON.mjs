@@ -5,7 +5,8 @@ import { Console } from "@nsnanocat/util";
 
 const weatherProducts = ["currentWeather", "forecastDaily", "forecastHourly"];
 const clientProducts = [...weatherProducts, "airQuality", "forecastNextHour", "weatherAlerts", "forecastPeriodic", "weatherChanges"];
-const clientContainers = new Set(["metadata", "days", "hours", "minutes", "daytimeForecast", "overnightForecast", "series", "periods", "condition", "parameters", "summary", "alerts", "pollutants"]);
+const clientContainers = new Set(["metadata", "days", "hours", "minutes", "daytimeForecast", "overnightForecast", "restOfDayForecast", "series", "forecasts", "periods", "condition", "parameters", "summary", "alerts", "pollutants"]);
+const precipitationByType = /^precipitationAmount(?:(?:Previous|Next)\d+h)?ByType$/;
 const maxBodyBytes = 4 * 1024 * 1024;
 const object = value => value !== null && typeof value === "object" && !Array.isArray(value);
 const header = (headers, name) => Object.entries(headers ?? {}).find(([key]) => key.toLowerCase() === name)?.[1];
@@ -28,6 +29,13 @@ export function useWeatherKit3JSON(request, parameters, settings) {
 
 /** Adapt Apple's JSON representation to the native main-app reader; unknown roots stay untouched. */
 export function adaptWeatherKit3JSON(product, name, provider = false) {
+    // Existing AQ algorithms use -1 for an optional pollutant index not defined by that standard.
+    // WK3 JSON uses unsigned integers: omit the sentinel, preserving the concentration and overall AQ.
+    if (provider && name === "airQuality")
+        for (const pollutant of product?.pollutants ?? []) {
+            if (pollutant.index === -1) delete pollutant.index;
+            if (pollutant.categoryIndex === -1) delete pollutant.categoryIndex;
+        }
     let nodes = 0;
     function visit(value, depth = 0, known = true) {
         if (++nodes > 100000 || depth > 64) throw new RangeError("WK3 JSON exceeds traversal bounds");
@@ -50,7 +58,7 @@ export function adaptWeatherKit3JSON(product, name, provider = false) {
                 item = value[key];
             }
             if ((key === "precipitationAmount" || key.startsWith("snowfallAmount")) && object(item) && Number.isFinite(item.expected)) value[key] = item = item.expected;
-            if (/^precipitationAmount(?:(?:Previous|Next)\d+h)?ByType$/.test(key) && Array.isArray(item)) {
+            if (precipitationByType.test(key) && Array.isArray(item)) {
                 const scalar = key.slice(0, -"ByType".length);
                 if (value[scalar] === undefined && item.every(part => object(part) && Number.isFinite(part.expected) && part.expected >= 0)) {
                     const amount = item.reduce((sum, part) => sum + part.expected, 0);
@@ -81,7 +89,7 @@ export function adaptWeatherKit3JSON(product, name, provider = false) {
                         }
                 }
             }
-            visit(item, depth + 1, clientContainers.has(key));
+            visit(item, depth + 1, clientContainers.has(key) || precipitationByType.test(key));
         }
     }
     visit(product);

@@ -36,6 +36,21 @@ node --test tests/*.test.mjs
 request/response bundle 发起模拟供应商调用，检查 Surge `$done` 形状和天气结果。
 测试夹具是合成数据，不代表本机原生解码或真实天气来源已经验收。
 
-发布或启用前，仍需在 macOS/iOS 27.3 真机上核对实际 v3 请求、脚本日志、
-当前/逐小时/逐日数据与来源，并检查原生解码失败及 CloudKit 回退。
-本机已有的 Siri 路由例外属于安装配置，不混入上游协议补丁。
+## macOS 验收（2026-11-13）
+
+macOS 27.3（26C5035r）、Surge 6.12.0（12820），本地加载同一构建产物：
+
+- 主 App 的 v3 请求实际协商 `application/json`；抓取的改写响应中，当前、逐日和
+  逐小时产品均保留彩云来源（逐日 11 项、逐小时 274 项），空气标准为 `EU.EAQI`。
+- 苏州、无锡预览显示当前天气、逐小时、逐日、分钟雨与 EAQI；无锡逐日详情中的
+  当前温度、最高/最低温与主页面一致，小时图表可正常打开。
+- 真机发现的 EAQI 污染物 `index=-1` 哨兵、降水分类枚举、`restOfDayForecast`
+  和 `forecastPeriodic.forecasts[].periods[]` 均已补回归。修正后的三个有界日志窗口
+  合计 30 次 WeatherData 更新成功，无 `Unable to decode` 或 CloudKit 回退记录。
+- 未将原始位置、授权头或完整抓包加入仓库。未实测 iPhone、watchOS 或其他代理客户端；
+  这不是长时间稳定性/耗电结论。后台小组件保留既有 WK3 二进制路径。
+
+本机 GitHub 登录缺少 Packages 读取权限，因此协议依赖由公开 `v2.0.5` 标签
+（`NSRingo/apple.WeatherKit@c87c1dcd851ea9293141bcfb32fde1b2cca564b9`）源码构建；
+未改依赖声明或锁文件，也未声称与发布的 npm tarball 字节一致。
+Siri 路由例外属于独立配置修复，不混入此协议补丁。
