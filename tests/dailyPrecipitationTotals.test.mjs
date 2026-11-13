@@ -7,7 +7,8 @@ globalThis.$argument = { LogLevel: "OFF", Storage: "database" };
 globalThis.$httpClient = {
     get(request, callback) {
         let body;
-        if (request.url.includes("api.caiyunapp.com")) body = colorfulCloudsDaily;
+        if (request.url.includes("/hourly?")) body = colorfulCloudsHourly;
+        else if (request.url.includes("api.caiyunapp.com")) body = colorfulCloudsDaily;
         else if (request.url.includes("/v7/weather/")) body = qWeatherDaily;
         else throw new Error(`unexpected request: ${request.url}`);
         callback(null, { headers: {}, status: 200 }, JSON.stringify(body));
@@ -35,6 +36,8 @@ test("ColorfulClouds keeps WeatherKit daily amount pairs while replacing support
     assert.equal(appleDay.precipitationChance, 80);
     assert.equal(appleDay.daytimeForecast.precipitationChance, 70);
     assert.equal(appleDay.overnightForecast.precipitationChance, 60);
+    assert.equal(appleDay.daytimeForecast.cloudCover, 80);
+    assert.equal(appleDay.overnightForecast.cloudCover, 80);
 });
 
 test("QWeather keeps WeatherKit daily amount pairs instead of reusing one daily total", async () => {
@@ -129,3 +132,36 @@ const qWeatherDaily = {
     fxLink: "https://www.qweather.com/",
     updateTime: "2026-07-16T08:00:00+08:00",
 };
+
+// The provider boundary converts fractions once, before either WK2 encoding or WK3 JSON rounding.
+const colorfulCloudsHourly = {
+    status: "ok",
+    location: [30, 120],
+    result: {
+        hourly: {
+            status: "ok",
+            skycon: [{ value: "CLOUDY", datetime: "2026-11-13T12:00:00Z" }],
+            cloudrate: [{ value: 0.5 }],
+            humidity: [{ value: 0.5 }],
+            precipitation: [{ value: 0, probability: 0 }],
+            pressure: [{ value: 101300 }],
+            temperature: [{ value: 20 }],
+            apparent_temperature: [{ value: 20 }],
+            visibility: [{ value: 10 }],
+            wind: [{ direction: 0, speed: 1 }],
+        },
+    },
+};
+test("Caiyun hourly cloud-cover fractions are converted to percentages before rounding", async () => {
+    for (const [fraction, percent] of [
+        [0, 0],
+        [0.005, 1],
+        [0.5, 50],
+        [0.8, 80],
+        [1, 100],
+    ]) {
+        colorfulCloudsHourly.result.hourly.cloudrate[0].value = fraction;
+        const forecast = await new ColorfulClouds({ ...parameters, version: "v3" }, "token").ForecastHourly(1);
+        assert.equal(forecast.hours[0].cloudCover, percent);
+    }
+});
