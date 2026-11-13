@@ -1,0 +1,117 @@
+{
+  "schema": "lib-rc-3.0.0-b66",
+  "public_test_location": "seattle public city centre (not device location)",
+  "responses": [
+    {
+      "headers": {
+        "date": [
+          "Fri, 13 Nov 2026 11:34:33 GMT"
+        ],
+        "vary": [
+          "Accept-Encoding",
+          "User-Agent, Accept"
+        ],
+        "cache-control": [
+          "max-age=299, public, s-maxage=299"
+        ],
+        "x-cache": [
+          "MISS KS-CLOUD"
+        ]
+      },
+      "file": "apple.json",
+      "started": 1794569672.95542,
+      "finished": 1794569673.088546,
+      "status": 200,
+      "content_type": "application/json",
+      "bytes": 62455
+    },
+    {
+      "headers": {
+        "date": [
+          "Fri, 13 Nov 2026 11:34:33 GMT"
+        ],
+        "vary": [
+          "Accept-Encoding",
+          "User-Agent, Accept"
+        ],
+        "cache-control": [
+          "max-age=299, public, s-maxage=299"
+        ],
+        "x-cache": [
+          "MISS KS-CLOUD"
+        ]
+      },
+      "file": "apple.bin",
+      "started": 1794569672.9554958,
+      "finished": 1794569673.074862,
+      "status": 200,
+      "content_type": "application/vnd.apple.flatbuffer;messageType=WK3.Weather",
+      "bytes": 13820
+    }
+  ],
+  "sanitization": {
+    "coordinate_fields": [
+      {
+        "root_slot": 0,
+        "latitude_offset": 13712,
+        "longitude_offset": 13708
+      },
+      {
+        "root_slot": 1,
+        "latitude_offset": 13324,
+        "longitude_offset": 13320
+      },
+      {
+        "root_slot": 2,
+        "latitude_offset": 12904,
+        "longitude_offset": 12900
+      },
+      {
+        "root_slot": 3,
+        "latitude_offset": 7748,
+        "longitude_offset": 7744
+      },
+      {
+        "root_slot": 4,
+        "latitude_offset": 4584,
+        "longitude_offset": 4580
+      },
+      {
+        "root_slot": 5,
+        "latitude_offset": 3404,
+        "longitude_offset": 3400
+      },
+      {
+        "root_slot": 6,
+        "latitude_offset": 188,
+        "longitude_offset": 184
+      },
+      {
+        "root_slot": 7,
+        "latitude_offset": 380,
+        "longitude_offset": 376
+      },
+      {
+        "root_slot": 9,
+        "latitude_offset": 1164,
+        "longitude_offset": 1160
+      },
+      {
+        "root_slot": 14,
+        "latitude_offset": 2132,
+        "longitude_offset": 2128
+      }
+    ],
+    "coordinate_urls": 0,
+    "method": "Only vtable-validated Metadata latitude/longitude floats and same-length coordinate URL digits replaced. No re-encoding."
+  },
+  "sha256": {
+    "apple.json": "3df2e72858dcf0a192d81d3a08d7e8f853c655a4f7615a5d196bad7867cb010c",
+    "apple.bin": "93ef12a168e6a154f0ce6a6c30aa6e06297bd6cc6b8874e7489ff2dccaf74d36"
+  },
+  "schema_source": {
+    "weatherkit_dev": "cd9d7927094aff79906fe3430f339f39970ca46e",
+    "protocol_tag": "v2.0.5",
+    "protocol_commit": "c87c1dcd851ea9293141bcfb32fde1b2cca564b9"
+  }
+}
