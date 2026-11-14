@@ -143,7 +143,7 @@ test("missing AQ can use the existing provider fill without touching other roots
 
 test("unsupported provider enums or out-of-range scalars do not replace AQ", async t => {
     mockProvider(t);
-    for (const patch of [{ primaryPollutant: "UNVERIFIED" }, { index: 40000 }, { index: NaN }]) {
+    for (const patch of [{ primaryPollutant: "UNVERIFIED" }, { index: 65536 }, { index: NaN }]) {
         t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", async () => ({ ...structuredClone(replacement), ...patch }));
         assert.deepEqual((await response()).body, fixture);
     }
@@ -255,7 +255,7 @@ function buildWK3Alerts(builder, detailsUrl = "https://www.qweather.com/severe-w
         ),
     );
     const responses = WK3.WeatherAlertSummary.createResponsesVector(builder, [7]);
-    const alert = WK3.WeatherAlertSummary.createWeatherAlertSummary(builder, id, builder.createString("101010100"), 0, builder.createString("CN"), builder.createString("大风蓝色预警"), 0, 2000000000, 2000003600, 2000000000, 2000000000, 2000003600, 0, 0, 4, 10, 0, 0, 2, 2, 2, responses);
+    const alert = WK3.WeatherAlertSummary.createWeatherAlertSummary(builder, id, builder.createString("101010100"), 0, 0, builder.createString("CN"), builder.createString("大风蓝色预警"), 0, 2000000000, 2000003600, 2000000000, 2000000000, 2000003600, 0, 0, 4, 10, 0, 0, 2, 2, 2, responses, 0, 0);
     const alerts = WK3.WeatherAlertCollectionData.createAlertsVector(builder, [alert]);
     return WK3.WeatherAlertCollectionData.createWeatherAlertCollectionData(builder, buildWK3AlertsMetadata(builder), builder.createString(detailsUrl), alerts);
 }
@@ -398,7 +398,7 @@ test("Summary generates condition shape by target version at creation", async ()
     assert.deepEqual(ForecastNextHour.Summary(minutes, "v3")[0].condition, ["RAIN"]);
 });
 
-test("WK3 rejects multi-element summary condition arrays on injection", async t => {
+test("WK3 writes multi-element UInt8 summary condition vectors", async t => {
     t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", async () => structuredClone(replacement));
     t.mock.method(ColorfulClouds.prototype, "YesterdayAirQuality", async () => ({ ...structuredClone(replacement), index: 25, categoryIndex: 1 }));
     t.mock.method(ColorfulClouds.prototype, "Minutely", async () => ({
@@ -407,7 +407,8 @@ test("WK3 rejects multi-element summary condition arrays on injection", async t 
     }));
     const output = (await response(buildWK3([[0, buildWK3AirQuality]]))).body;
     const weather = WK3.Weather.getRootAsWeather(new ByteBuffer(output));
-    // 多元素向量的元素宽度未验证：注入被隔离，其余产品不受影响 / Multi-element vectors are unverified: injection is isolated while other products proceed
-    assert.equal(weather.forecastNextHour(), null);
+    const summary = weather.forecastNextHour().summary(0);
+    assert.equal(summary.conditionLength(), 2);
+    assert.deepEqual([summary.condition(0), summary.condition(1)], [2, 3]);
     assert.equal(weather.airQuality().index(), 175);
 });
