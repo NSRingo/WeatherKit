@@ -13,7 +13,7 @@ const [{ Response }, { Request }, { default: ColorfulClouds }] = await Promise.a
 const source = new Uint8Array(readFileSync(new URL("./fixtures/wk3-paired/hangzhou/apple.bin", import.meta.url)));
 const original = WK3.Codec.decode("Weather", WK3.Weather.getRootAsWeather(new ByteBuffer(source)));
 const metadata = { providerName: "Controlled provider", sourceType: "MODELED", temporarilyUnavailable: false, latitude: "30", longitude: "120" };
-const request = () => ({ method: "GET", url: "https://weatherkit.apple.com/api/v3/weather/en-US/30/120?country=CN&dataSets=currentWeather,forecastDaily,forecastHourly,weatherAlerts", headers: { Accept: "application/vnd.apple.flatbuffer;messageType=WK3.Weather", "User-Agent": "WeatherKit_Weather_macOS_Version 27.3" } });
+const request = () => ({ method: "GET", url: "https://weatherkit.apple.com/api/v3/weather/en-US/30/120?country=CN&dataSets=currentWeather,forecastDaily,forecastHourly,weatherAlerts", headers: { Accept: "application/vnd.apple.flatbuffer;messageType=WK3.Weather", "User-Agent": "WeatherWidget" } });
 const response = (body = source) => Response(request(), { status: 200, headers: { "Content-Type": "application/vnd.apple.flatbuffer;messageType=WK3.Weather" }, bodyBytes: body });
 function pointer(bytes, slot) { const b = new ByteBuffer(bytes), root = b.readUint32(0), off = b.__offset(root, 4 + 2 * slot); return off ? b.__indirect(root + off) : 0; }
 beforeEach(() => { globalThis.$request = request(); globalThis.$argument = { LogLevel: "OFF", Storage: "Argument", DataSets: "currentWeather,forecastDaily,forecastHourly", Weather: { Replace: "CN", Provider: "ColorfulClouds" } }; });
@@ -23,7 +23,7 @@ function mockWeather(t) {
     t.mock.method(ColorfulClouds.prototype, "ForecastHourly", async () => ({ metadata, hours: [{ forecastStart: original.forecastHourly.hours[0].forecastStart, temperature: 24.5, conditionCode: "RAIN", precipitationAmount: 2.5 }] }));
 }
 
-test("WK3 weather replacement stays binary and preserves every unrelated root arena", async t => {
+test("WK3 FlatBuffer requests stay binary and preserve every unrelated root arena", async t => {
     mockWeather(t);
     const req = (await Request(request())).$request;
     assert.equal(req.headers.Accept, "application/vnd.apple.flatbuffer;messageType=WK3.Weather");
