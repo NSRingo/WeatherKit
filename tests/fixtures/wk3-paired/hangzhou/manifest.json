@@ -1,0 +1,82 @@
+{
+  "schema": "lib-rc-3.0.0-b66",
+  "public_test_location": "Hangzhou city centre (not device location)",
+  "responses": [
+    {
+      "file": "apple.json",
+      "started": 1794569406.314852,
+      "finished": 1794569406.575212,
+      "status": 200,
+      "content_type": "application/json",
+      "bytes": 52693
+    },
+    {
+      "file": "apple.bin",
+      "started": 1794569406.314922,
+      "finished": 1794569406.559099,
+      "status": 200,
+      "content_type": "application/vnd.apple.flatbuffer;messageType=WK3.Weather",
+      "bytes": 11332
+    }
+  ],
+  "sanitization": {
+    "coordinate_fields": [
+      {
+        "root_slot": 0,
+        "latitude_offset": 11208,
+        "longitude_offset": 11204
+      },
+      {
+        "root_slot": 1,
+        "latitude_offset": 10860,
+        "longitude_offset": 10856
+      },
+      {
+        "root_slot": 2,
+        "latitude_offset": 10376,
+        "longitude_offset": 10372
+      },
+      {
+        "root_slot": 3,
+        "latitude_offset": 5028,
+        "longitude_offset": 5024
+      },
+      {
+        "root_slot": 4,
+        "latitude_offset": 1832,
+        "longitude_offset": 1828
+      },
+      {
+        "root_slot": 6,
+        "latitude_offset": 184,
+        "longitude_offset": 180
+      },
+      {
+        "root_slot": 7,
+        "latitude_offset": 420,
+        "longitude_offset": 416
+      },
+      {
+        "root_slot": 9,
+        "latitude_offset": 572,
+        "longitude_offset": 568
+      },
+      {
+        "root_slot": 14,
+        "latitude_offset": 704,
+        "longitude_offset": 700
+      }
+    ],
+    "coordinate_urls": 1,
+    "method": "Only vtable-validated Metadata latitude/longitude floats and same-length coordinate URL digits replaced. No re-encoding."
+  },
+  "sha256": {
+    "apple.json": "47f2bdeaad2495dcfb2619ea5e7e379e3071c4f9f69fdb6aa417be1acc9f32a2",
+    "apple.bin": "59ea8fe207345aad6c8ccb04f22b49b648fce0fa2566a7aed8aa035e875ed0a4"
+  },
+  "schema_source": {
+    "weatherkit_dev": "cd9d7927094aff79906fe3430f339f39970ca46e",
+    "protocol_tag": "v2.0.5",
+    "protocol_commit": "c87c1dcd851ea9293141bcfb32fde1b2cca564b9"
+  }
+}

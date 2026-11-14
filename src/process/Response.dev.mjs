@@ -8,7 +8,7 @@ import WAQI from "../class/WAQI.mjs";
 import Weather from "../class/Weather.mjs";
 import WeatherAlerts from "../class/WeatherAlerts.mjs";
 import WeatherKit2 from "../class/WeatherKit2.mjs";
-import WeatherKit3 from "../class/WeatherKit3.mjs";
+import WeatherKit3, { prepareWeatherKit3Product } from "../class/WeatherKit3.mjs";
 import database from "../function/database.mjs";
 import mergeWeatherKitAvailability from "../function/mergeWeatherKitAvailability.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
@@ -191,9 +191,8 @@ export async function Response($request, $response) {
                                 case url.pathname.startsWith("/api/v3/weather/"): {
                                     Console.info("🟪 WeatherKit.api.v3.weather");
                                     const parameters = parseWeatherKitURL(url);
-                                    // WK3 仅注册了这三个产品的 codec，其余产品保持原始 arena。
-                                    // Only these three products have registered WK3 codecs; other products keep their original arenas.
-                                    const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet) && ["airQuality", "forecastNextHour", "weatherAlerts"].includes(dataSet));
+                                    // Only selected injectable products are decoded; all other roots retain their original arena.
+                                    const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet) && ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"].includes(dataSet));
                                     if (dataSets.length === 0) break;
                                     const rootNames = dataSets.map(dataSet => Configs.DataSets[dataSet] ?? dataSet);
                                     const { json, failures } = WeatherKit3.decodeWithReport(ByteBuffer, rootNames);
@@ -213,6 +212,16 @@ export async function Response($request, $response) {
                                         country: parameters.country,
                                     };
                                     const patch = {};
+                                    const replaceWeather = async (name, inject) => {
+                                        const original = body[name];
+                                        try {
+                                            const copy = original ? JSON.parse(JSON.stringify(original)) : undefined;
+                                            const result = await inject(copy, Settings, enviroments);
+                                            if (result?.metadata && result.metadata.temporarilyUnavailable !== true && JSON.stringify(result) !== JSON.stringify(original)) patch[name] = result;
+                                        } catch (error) {
+                                            Console.warn("WeatherKit.api.v3.weather", `preserved ${name}: ${error?.name ?? "Error"}`);
+                                        }
+                                    };
 
                                     await Promise.all(
                                         dataSets.map(async dataSet => {
@@ -221,6 +230,18 @@ export async function Response($request, $response) {
                                                 return;
                                             }
                                             switch (dataSet) {
+                                                case "currentWeather": {
+                                                    await replaceWeather("currentWeather", InjectCurrentWeather);
+                                                    break;
+                                                }
+                                                case "forecastDaily": {
+                                                    if (body.forecastDaily) await replaceWeather("forecastDaily", InjectForecastDaily);
+                                                    break;
+                                                }
+                                                case "forecastHourly": {
+                                                    if (body.forecastHourly) await replaceWeather("forecastHourly", InjectForecastHourly);
+                                                    break;
+                                                }
                                                 case "airQuality": {
                                                     if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
                                                         matchEnum.airQuality();
@@ -266,6 +287,10 @@ export async function Response($request, $response) {
                                             }
                                         }),
                                     );
+                                    for (const name of Object.keys(patch)) {
+                                        try { patch[name] = prepareWeatherKit3Product(name, patch[name]); }
+                                        catch (error) { delete patch[name]; Console.warn("WeatherKit.api.v3.weather", `preserved ${name}: ${error?.name ?? "Error"}`); }
+                                    }
                                     if (Object.keys(patch).length > 0) rawBody = WeatherKit3.encode(ByteBuffer, patch);
                                     break;
                                 }
