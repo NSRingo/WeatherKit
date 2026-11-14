@@ -5,9 +5,10 @@ globalThis.$environment = { "surge-version": "test" };
 globalThis.$persistentStore = { read: () => null, write: () => true };
 globalThis.$argument = { LogLevel: "OFF", Storage: "Argument" };
 
-const [{ Request }, { Response }, { default: ColorfulClouds }, { default: QWeather }, { adaptWeatherKit3JSON, replaceWeatherKit3JSON }] = await Promise.all([
+const [{ Request }, { Response }, { default: WeatherKit3 }, { default: ColorfulClouds }, { default: QWeather }, { adaptWeatherKit3JSON, replaceWeatherKit3JSON }] = await Promise.all([
     import("../src/process/Request.dev.mjs"),
     import("../src/process/Response.dev.mjs"),
+    import("../src/class/WeatherKit3.mjs"),
     import("../src/class/ColorfulClouds.mjs"),
     import("../src/class/QWeather.mjs"),
     import("../src/function/weatherKit3JSON.mjs"),
@@ -101,12 +102,17 @@ test("JSON negotiation is restricted by client, version, method, country, provid
     assert.equal((await Request(input)).$request.headers.Accept, "application/json");
 });
 
-test("WK3 JSON reuses Caiyun current, daily and hourly replacements and preserves other roots", async t => {
-    t.mock.method(ColorfulClouds.prototype, "CurrentWeather", async () => ({ metadata: { providerName: "彩云天气" }, temperature: 27, humidity: 65.4, conditionCode: "CLEAR" }));
-    t.mock.method(ColorfulClouds.prototype, "Daily", async () => ({ metadata: { providerName: "彩云天气" }, days: [{ forecastStart: time, temperatureMax: 30, conditionCode: "CLEAR" }] }));
-    t.mock.method(ColorfulClouds.prototype, "ForecastHourly", async () => ({ metadata: { providerName: "彩云天气" }, hours: [{ forecastStart: time, temperature: 28, conditionCode: "CLEAR" }] }));
+test("WK3 JSON reuses Caiyun once per product without entering the binary codec", async t => {
+    t.mock.method(WeatherKit3, "decodeWithReport", () => assert.fail("negotiated JSON must not enter the FlatBuffer decoder"));
+    t.mock.method(WeatherKit3, "encode", () => assert.fail("negotiated JSON must not enter the FlatBuffer encoder"));
+    const now = t.mock.method(ColorfulClouds.prototype, "CurrentWeather", async () => ({ metadata: { providerName: "彩云天气" }, temperature: 27, humidity: 65.4, conditionCode: "CLEAR" }));
+    const daily = t.mock.method(ColorfulClouds.prototype, "Daily", async () => ({ metadata: { providerName: "彩云天气" }, days: [{ forecastStart: time, temperatureMax: 30, conditionCode: "CLEAR" }] }));
+    const hourly = t.mock.method(ColorfulClouds.prototype, "ForecastHourly", async () => ({ metadata: { providerName: "彩云天气" }, hours: [{ forecastStart: time, temperature: 28, conditionCode: "CLEAR" }] }));
     const input = response();
-    const output = await Response(request(), input);
+    const outgoing = (await Request(request())).$request;
+    assert.equal(outgoing.headers.Accept, "application/json");
+    const output = await Response(outgoing, input);
+    for (const provider of [now, daily, hourly]) assert.equal(provider.mock.callCount(), 1);
     const body = JSON.parse(output.body);
     assert.equal(body.currentWeather.temperature, 27);
     assert.equal(body.currentWeather.humidity, 65);

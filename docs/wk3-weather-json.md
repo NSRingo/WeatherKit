@@ -21,6 +21,25 @@
 表示适配依据 [PR #107 的固定版本与原生观察](https://github.com/hhhoratioxu/WeatherKit/blob/355b5f5dad9d01cb13167949f8334a489b301811/docs/loon-v3-compatibility.md)。
 派生代码保留作者及 Apache-2.0 声明；未引入该 PR 的缓存、备用来源、地理判定和算法重构。
 
+## 与协议包和二进制接入的分工
+
+三项改动组成同一条请求/响应链：
+
+| 层次 | PR | 职责 |
+| --- | --- | --- |
+| 协议模型 | [apple.WeatherKit #1](https://github.com/NSRingo/apple.WeatherKit/pull/1) | 提供 WK3 Schema/Codec，不决定客户端路由 |
+| JSON 协商和处理 | [WeatherKit #110](https://github.com/NSRingo/WeatherKit/pull/110) | 符合设置的主 App 请求协商 JSON，JSON 响应复用注入函数 |
+| FlatBuffer 响应处理 | [WeatherKit #111](https://github.com/NSRingo/WeatherKit/pull/111) | 对实际返回的 FlatBuffer 调用 Codec，保留其他产品的原始数据 |
+
+两条响应路径按 Content-Type 分流。JSON 分支返回后不会进入二进制分支，也不会为同一
+产品重复请求供应商。回归在正常 Request → Response 调用中检查 Accept=application/json、
+二进制 decode/encode 均未调用、每种供应商产品只调用一次。
+
+#110 可独立合并；#1 发布后，#111 更新协议依赖并合并。建议继续以本 PR 的 JSON 协商
+作为主 App 默认路径，由维护者确认长期策略。#111 中主 App 的二进制实测是专用模块下的
+codec 兼容性验收，不改变正常路由。新增 JSON 客户端只需扩展本 PR 的协商边界及验收，
+无需修改协议包或维护第二份供应商逻辑。
+
 ## 验证
 
 ```sh

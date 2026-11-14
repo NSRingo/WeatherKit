@@ -8,6 +8,7 @@ globalThis.$persistentStore ??= { read: () => null, write: () => true };
 const { Console } = await import("@nsnanocat/util");
 Console.logLevel = "OFF";
 const { default: WeatherKit3 } = await import("../src/class/WeatherKit3.mjs");
+// Retain the original three-product baseline; full-schema coverage lives in apple.WeatherKit.
 const supported = ["airQuality", "forecastNextHour", "weatherAlerts"];
 const missing = "<missing>";
 const floatFields = new Set(["latitude", "longitude", "amount", "precipitationIntensity", "perceivedPrecipitationIntensity"]);
@@ -53,7 +54,7 @@ export function comparePair(directory) {
         let equal = JSON.stringify(x) === JSON.stringify(y),
             reason = equal ? "一致" : "值不一致：需定位单位/枚举/偏移";
         const root = field.split(/[.[]/)[0];
-        if (!supported.includes(root)) reason = "缺字段：当前 dev 未实现该产品的 WK3 codec";
+        if (!supported.includes(root)) reason = "基线范围：该产品未纳入本脚本的三个产品比较";
         else if (floatFields.has(field.split(".").at(-1)) && typeof x === "number" && typeof y === "number" && Math.fround(x) === Math.fround(y)) {
             equal = true;
             reason = x === y ? "一致" : "一致：JSON 十进制与 float32 表示精度";

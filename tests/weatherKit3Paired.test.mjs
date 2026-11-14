@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
+import { WK3 } from "@nsringo/weatherkit";
 import { comparePair } from "../scripts/compare-wk3-pair.mjs";
 
 for (const city of ["hangzhou", "tianjin", "seattle", "seattle-repeat"]) {
-    test(`27.3 paired ${city}: current schema agrees with the raw Apple fields apart from recorded gaps`, () => {
+    test(`27.3 paired ${city}: baseline products agree with the raw Apple fields apart from recorded gaps`, () => {
         const dir = new URL(`./fixtures/wk3-paired/${city}/`, import.meta.url);
         const result = comparePair(dir.pathname);
         assert.deepEqual(result.failures, []);
@@ -29,7 +30,10 @@ for (const city of ["hangzhou", "tianjin", "seattle", "seattle-repeat"]) {
                 assert.equal(product.metadata.longitude, 0);
             }
         assert.equal(result.decoded.airQuality.metadata.expireTime, result.raw.aqExpiry);
-        assert.equal(result.rows.filter(row => !row.equal && row.reason.includes("deprecated")).length, city.startsWith("seattle") ? 1 : 0);
+        const hasSummaryCondition = typeof WK3.ForecastPeriodSummary.prototype.condition === "function";
+        assert.equal(result.rows.filter(row => !row.equal && row.reason.includes("deprecated")).length, !hasSummaryCondition && city.startsWith("seattle") ? 1 : 0);
+        if (hasSummaryCondition && city.startsWith("seattle"))
+            assert.deepEqual(result.decoded.forecastNextHour.summary.map(item => item.condition), apple.forecastNextHour.summary.map(item => item.condition));
         if (city === "seattle") {
             assert.equal(result.raw.minuteCount, 81);
             assert.equal(result.decoded.forecastNextHour.forecastEnd, apple.forecastNextHour.forecastEnd);
