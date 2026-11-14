@@ -19,7 +19,7 @@
 
 建议保留上述 JSON 优先策略，由维护者确认长期路线。下方主 App 二进制验收使用专用
 测试模块保留原生 Accept，用于证明 codec 与原生客户端兼容，不表示切换主 App 默认路由。
-macOS 小组件 JSON 白名单在补完显示与连续刷新验收后，可沿 #110 的协商边界扩展。
+macOS 小组件已通过下方二进制实测，本轮保留 FlatBuffer 路径，暂不扩展 JSON 白名单。
 
 ## 合并顺序
 
@@ -73,5 +73,29 @@ npm run build:dev
 未协商 JSON 的 Widget 请求保持 FlatBuffer，以及新旧 schema 的成对样本对照。
 组合后的 161 项测试全部通过（0 跳过），正式和开发构建通过。对应提交见 PR 正文。
 
-后续客户端验收按入口分别记录：macOS 小组件的 JSON 路径补实际显示和连续刷新；
-Siri、地图等入口先确认请求与响应格式，再测试该入口，不预先声明客户端覆盖。
+## macOS 小组件实测（2026-11-14）
+
+macOS 27.3（26C5035r）、Surge 6.12.0（12840）。主 App 隐藏，用户在桌面小组件中
+依次选择天津市津南区、昆明市、福州市，再恢复原来的当前位置。三次抓到的请求进程均为
+`WeatherWidget`，UA 均为 `WeatherKit_WeatherWidget_macOS_Version 27.3 (Build 26C5035r)`。
+Accept 和响应 Content-Type 均为 `application/vnd.apple.flatbuffer;messageType=WK3.Weather`。
+
+| 地点 / 请求时间（UTC+8） | 当前温度：解码 → 显示 | 当日高 / 低：解码 → 显示 | 成功构建 timeline |
+| --- | --- | --- | --- |
+| 天津市津南区 / 18:50:29 | 7.74° → 8° | 13.42° / 5.07° → 13° / 5° | 2 次 |
+| 昆明市 / 18:54:16 | 16.44° → 16° | 18.65° / 9.36° → 19° / 9° | 2 次 |
+| 福州市 / 18:54:27 | 22.07° → 22° | 23.10° / 22.00° → 23° / 22° | 1 次 |
+
+三次改写响应的当前、逐日、逐小时 metadata.providerName 均为彩云天气，分别含
+10 天和 24 小时预报。请求完成后的原生日志成功获取天气并构建 timeline，观察窗口内
+`failedToCreateResponseModel`、`Unable to decode`、`FlatbuffersErrors` 均为零。
+
+津南区同时保存了像素截图；昆明、福州用原生 Accessibility 文本核对完整显示结果。
+津南区 19–0 时温度的二进制值为 6.63、6.58、6.54、6.54、6.43、6.33°，
+截图显示 7、7、7、7、6、6°。
+
+![macOS 天气小组件：天津市津南区的 WK3 二进制替换结果](images/wk3-widget-tianjin.png)
+
+因此本轮保留“主 App JSON、小组件 FlatBuffer”的分工，暂不扩展小组件 JSON 白名单。
+Siri、地图、watchOS 等入口后续分别抓请求和验收。测试结束后恢复了原模块、当前位置
+与原桌面，并移除了只针对 WeatherKit 的临时抓包规则。
