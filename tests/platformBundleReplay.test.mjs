@@ -130,3 +130,59 @@ test("release bundle keeps the WK2 path byte-identical without injections", { sk
     const output = await replay(releaseBundle, "release-v2");
     assert.deepEqual(output.body, wk2Empty);
 });
+
+test("dev request/response bundles negotiate WK3 JSON and replace weather via the real Caiyun adapter", { skip: !bundlesExist && "dist bundles not built" }, async () => {
+    const date = 1800000000;
+    const metadata = { providerName: "Apple", temporarilyUnavailable: false };
+    const original = { currentWeather: { metadata, temperature: 20, conditionCode: ["RAIN"], retainedField: 42 }, unknown: { conditionCode: ["untouched"] } };
+    replayGlobals({ url: "https://weatherkit.apple.com/api/v3/weather/zh-Hans/22.54/114.06?country=CN&dataSets=currentWeather", body: new Uint8Array() });
+    globalThis.$request.headers = { "User-Agent": "WeatherKit_Weather_macOS_Version_27.3", accept: "application/vnd.apple.flatbuffer" };
+    globalThis.$argument = { LogLevel: "OFF", Storage: "Argument", DataSets: "currentWeather", Weather: { Provider: "ColorfulClouds", Replace: "CN" } };
+    const negotiated = await new Promise((resolve, reject) => {
+        globalThis.$done = resolve;
+        import(`${new URL("../dist/request.dev.bundle.js", import.meta.url).href}?replay=wk3-json`).catch(reject);
+    });
+    assert.equal(negotiated.headers.Accept, "application/json");
+    globalThis.$request = negotiated;
+    globalThis.$response = { status: 200, headers: { "Content-Type": "application/json", ETag: "old" }, body: new TextEncoder().encode(JSON.stringify(original)) };
+    let calls = 0;
+    globalThis.$httpClient.get = (request, callback) => {
+        calls++;
+        assert.match(request.url, /realtime/);
+        const payload = {
+            status: "ok",
+            location: [22.54, 114.06],
+            result: {
+                server_time: date,
+                realtime: {
+                    status: "ok",
+                    cloudrate: 0.25,
+                    skycon: "CLEAR_DAY",
+                    humidity: 0.65,
+                    precipitation: { local: { intensity: 0 } },
+                    pressure: 101300,
+                    temperature: 27,
+                    apparent_temperature: 28,
+                    visibility: 10,
+                    wind: { direction: 90, speed: 3 },
+                },
+            },
+        };
+        callback(null, { status: 200, headers: {} }, JSON.stringify(payload));
+    };
+    const output = await new Promise((resolve, reject) => {
+        globalThis.$done = resolve;
+        import(`${devBundle.href}?replay=wk3-json-weather`).catch(reject);
+    });
+    assert.equal(calls, 1);
+    assert.equal(output.response, undefined, "Surge response-stage $done is unwrapped");
+    assert.equal(output.bodyBytes, undefined);
+    const body = JSON.parse(output.body);
+    assert.equal(body.currentWeather.temperature, 27);
+    assert.equal(body.currentWeather.conditionCode, "CLEAR");
+    assert.equal(body.currentWeather.humidity, 65);
+    assert.equal(body.currentWeather.metadata.providerName, "彩云天气");
+    assert.equal(body.currentWeather.retainedField, 42);
+    assert.deepEqual(body.unknown, original.unknown);
+    assert.equal(output.headers.ETag, undefined);
+});
