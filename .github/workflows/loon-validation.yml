@@ -1,0 +1,43 @@
+name: Loon validation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ["src/**", "tests/**", "scripts/**", "template/loon.handlebars", "arguments-builder.*.config.ts", "package*.json", "rollup.config.mjs", ".github/workflows/loon-validation.yml"]
+  push:
+    branches: ["sync/**"]
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+      - name: Run regressions
+        run: npm test
+      - name: Set fixture-only build version
+        run: npm pkg set version=0.0.0-test
+      - name: Build and verify native Loon artifacts
+        run: npm run build:loon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weatherkit-loon-validation
+          path: |
+            dist/iRingo.WeatherKit.lpx
+            dist/*.loon.bundle.js
+            dist/LICENSE.txt
+          if-no-files-found: error

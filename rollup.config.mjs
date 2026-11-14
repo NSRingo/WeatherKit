@@ -1,4 +1,5 @@
 import path from "node:path";
+import { readFileSync } from "node:fs";
 import alias from "@rollup/plugin-alias";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import terser from "@rollup/plugin-terser";
@@ -45,4 +46,19 @@ export default [
             terser(),
         ],
     },
+    ...["request", "response", "scale"].map(name => ({
+        input: `./src/loon/${name}.js`,
+        output: { file: `./dist/${name}.loon.bundle.js`, format: "es" },
+        plugins: [
+            alias({ entries: [{ find: "@nsringo/weatherkit", replacement: path.resolve(import.meta.dirname, "node_modules/@nsringo/weatherkit/dist/index.js") }] }),
+            nodeResolve(),
+            terser(),
+            ...(name === "scale" ? [{
+                name: "weatherkit-third-party-licenses",
+                generateBundle() {
+                    this.emitFile({ type: "asset", fileName: "LICENSE.txt", source: readFileSync(new URL("./LICENSE", import.meta.url), "utf8") });
+                },
+            }] : []),
+        ],
+    })),
 ];

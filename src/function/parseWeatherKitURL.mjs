@@ -1,3 +1,4 @@
+// Parse only the request country and locale; no stored or geographic inference.
 import { Console } from "@nsnanocat/util";
 
 export default function parseWeatherKitURL(url = new URL($request.url)) {
@@ -53,6 +54,6 @@ export default function parseWeatherKitURL(url = new URL($request.url)) {
             break;
         }
     }
-    Console.info("✅ parseWeatherKitURL", `🟧version: ${result.version} 🟧language: ${result.language} 🟧country: ${result.country}`, `🟧latitude: ${result.latitude} 🟧longitude: ${result.longitude}`);
+    Console.info("✅ parseWeatherKitURL", `🟧version: ${result.version} 🟧language: ${result.language} 🟧country: ${result.country}`, "coordinates: redacted");
     return result;
 }

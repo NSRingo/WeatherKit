@@ -1,19 +1,19 @@
+// WeatherKit provider processing.
 import { Lodash as _, Console, Storage } from "@nsnanocat/util";
 import AirQualityScale from "../class/AirQualityScale.mjs";
-import ColorfulClouds from "../class/ColorfulClouds.mjs";
-import QWeather from "../class/QWeather.mjs";
-import WeatherAlerts from "../class/WeatherAlerts.mjs";
+import ProviderTransport from "../class/ProviderTransport.mjs";
 import database from "../function/database.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
 import setENV from "../function/setENV.mjs";
+import { GetWeatherAlerts } from "../function/getWeatherAlerts.mjs";
+export { GetWeatherAlerts };
 /***************** Processing *****************/
 export async function Request($request) {
     // 构造回复数据
     let $response = undefined;
     // 解构URL
     const url = new URL($request.url);
-    Console.info(`url: ${url.toJSON()}`);
-    const parameters = parseWeatherKitURL(url);
+    Console.info("WeatherKit request");
     // 解析格式
     const FORMAT = ($request.headers?.["Content-Type"] ?? $request.headers?.["content-type"])?.split(";")?.[0];
     Console.info(`FORMAT: ${FORMAT}`);
@@ -22,6 +22,9 @@ export async function Request($request) {
      * @type {{Settings: import('./types').Settings}}
      */
     const { Settings, Caches } = setENV("iRingo", "WeatherKit", database);
+    const parameters = parseWeatherKitURL(url);
+    const runtime = new ProviderTransport();
+
     // 方法判断
     switch ($request.method) {
         case "POST":
@@ -86,15 +89,17 @@ export async function Request($request) {
         case "HEAD":
         case "OPTIONS":
         default:
-            delete $request?.headers?.["If-None-Match"];
-            delete $request?.headers?.["if-none-match"];
+            if (url.pathname !== "/api/v1/weatherAlerts") {
+                delete $request?.headers?.["If-None-Match"];
+                delete $request?.headers?.["if-none-match"];
+            }
             // 主机判断
             switch (url.hostname) {
                 case "weatherkit.apple.com":
                     // 路径判断
                     switch (url.pathname) {
                         case "/api/v1/weatherAlerts": {
-                            $response = await GetWeatherAlerts(url.searchParams.get("ids")?.trim(), parameters, Settings, $request.headers);
+                            $response = await GetWeatherAlerts(url.searchParams.get("ids")?.trim(), parameters, Settings, $request.headers, runtime);
                             break;
                         }
                         default:
@@ -138,74 +143,6 @@ export async function Request($request) {
             break;
     }
     $request.url = url.toString();
-    Console.debug(`$request.url: ${$request.url}`);
-    return { $request, $response };
-}
 
-/**
- * 获取天气预警响应
- * @param {string | undefined} identifier - 预警标识
- * @param {ReturnType<typeof parseWeatherKitURL>} parameters - WeatherKit 请求参数
- * @param {import('../types').Settings} Settings - 设置对象
- * @param {Record<string, string>} headers - 请求头
- * @returns {Promise<object>} 天气预警响应
- */
-async function GetWeatherAlerts(identifier, parameters, Settings, headers) {
-    let body = [];
-    try {
-        switch (true) {
-            case /^[^&#]*-[0-9]{9}$/.test(identifier): {
-                Console.info("☑️ QWeather.FetchWeatherAlertPage", `ids: ${identifier}`);
-                const source = await QWeather.FetchWeatherAlertPage(identifier, parameters.language, headers);
-                body = WeatherAlerts.Build(source, {
-                    attributionUrl: QWeather.BuildWeatherAlertPageURL(identifier, parameters.language, false),
-                    identifier,
-                    language: parameters.language,
-                    countryCode: identifier.match(/-([0-9]+)$/)?.[1]?.startsWith("101") ? "CN" : "",
-                });
-                break;
-            }
-            case /^-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?$/.test(identifier): {
-                switch (Settings?.WeatherAlerts?.Provider) {
-                    case "ColorfulClouds": {
-                        Console.info("☑️ ColorfulClouds.WeatherAlert", `ids: ${identifier}`);
-                        const colorfulClouds = new ColorfulClouds(parameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ==");
-                        const source = await colorfulClouds.WeatherAlert();
-                        body = WeatherAlerts.Build(source, {
-                            attributionUrl: source?.metadata?.attributionUrl ?? "https://www.caiyunapp.com/h5",
-                            identifier: `${parameters.latitude},${parameters.longitude}`,
-                            language: parameters.language,
-                            countryCode: parameters.country,
-                        });
-                        break;
-                    }
-                    case "QWeatherWeb":
-                    case "QWeather": {
-                        const qWeather = new QWeather(parameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host);
-                        body = WeatherAlerts.Build(await qWeather.WeatherAlert(), {
-                            attributionUrl: "https://www.12379.cn/",
-                            identifier: `${parameters.latitude},${parameters.longitude}`,
-                            language: parameters.language,
-                            countryCode: parameters.country,
-                        });
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-    } catch (error) {
-        Console.error("WeatherAlerts", error?.stack ?? error?.message ?? String(error));
-    }
-    Console.info("✅ WeatherAlerts", `alerts: ${body.length}`, "status: 200");
-    return {
-        status: 200,
-        statusCode: 200,
-        headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Cache-Control": "max-age=0",
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-    };
+    return { $request, $response };
 }

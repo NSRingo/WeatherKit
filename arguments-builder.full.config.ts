@@ -1,3 +1,4 @@
+// WeatherKit user settings; preserve original parameters.
 import { defineConfig } from "@iringo/arguments-builder";
 
 type Arg = {
@@ -127,7 +128,20 @@ const weatherAlertsProvider: Arg = {
     description: "使用选定的数据源处理天气预警数据。",
 };
 
-export const weatherAlerts = [weatherAlertsProvider];
+const weatherAlertsLanguage: Arg = {
+    key: "WeatherAlerts.Language",
+    name: "[天气预警] 正文语言偏好",
+    defaultValue: "Auto",
+    type: "string",
+    options: [
+        { key: "Auto", label: "自动（沿用请求语言）" },
+        { key: "zh-Hans", label: "简体中文（来源支持时）" },
+        { key: "en", label: "English（来源支持时）" },
+    ],
+    description: "仅向所选来源请求预警语言，不使用第三方翻译。来源不支持或返回其他语言时保留原文、签发单位与出处；Apple 原始标题和页面标签可能仍随系统语言。",
+};
+
+export const weatherAlerts = [weatherAlertsProvider, weatherAlertsLanguage];
 
 const nextHourProvider: Arg = {
     key: "NextHour.Provider",

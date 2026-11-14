@@ -1,0 +1,26 @@
+{
+  "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/geojson/ne_10m_admin_0_countries.geojson",
+  "sourceSHA256": "239eec57ac17f100a11e2536cffc56752c318b50ae765b0918ff7aab4ce8f255",
+  "license": "Public domain",
+  "licenseURL": "https://www.naturalearthdata.com/about/terms-of-use/",
+  "providerCodes": [
+    "CN",
+    "HK",
+    "TW",
+    "MO"
+  ],
+  "simplificationToleranceDegrees": {
+    "CN": 0.01,
+    "HK": 0.001,
+    "MO": 0.001,
+    "TW": 0.001
+  },
+  "boundaryExclusionDegrees": {
+    "CN": 0.05,
+    "HK": 0.01,
+    "MO": 0.01,
+    "TW": 0.01
+  },
+  "quantizationDegrees": 1e-05,
+  "purpose": "Conservative weather-provider routing hints, not authoritative administrative boundaries"
+}

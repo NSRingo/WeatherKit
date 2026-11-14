@@ -50,7 +50,9 @@
         "build:args": "npm-run-all --serial build:release-args build:full-args",
         "dts": "arguments-builder dts -c arguments-builder.full.config.ts",
         "submodule": "git submodule update --remote",
-        "update": "npm update --save"
+        "update": "npm update --save",
+        "test": "node --test --test-concurrency=1 tests/*.test.mjs",
+        "build:loon": "rollup -c && arguments-builder loon -c arguments-builder.release.config.ts && node scripts/prepare-loon-plugin.mjs && node scripts/verify-loon-build.mjs"
     },
     "browserslist": [
         "iOS >= 18"
@@ -73,7 +75,8 @@
         "fetch-cookie": "^3.2.0",
         "flatbuffers": "^24.12.23",
         "hono": "^4.12.31",
-        "node-fetch": "^3.3.2"
+        "node-fetch": "^3.3.2",
+        "@noble/hashes": "1.8.0"
     },
     "overrides": {
         "@iringo/surge2egern": {

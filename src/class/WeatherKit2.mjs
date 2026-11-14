@@ -1,6 +1,8 @@
+import "../function/ensureTextEncoder.mjs";
 import { FlatBufferRootProcessor } from "@nsnanocat/flatbuffer-root";
 import * as WK2 from "@nsringo/weatherkit";
 import database from "../function/database.mjs";
+import { decodedVectorLength, newDecodeBudget } from "../function/weatherMemoryLimits.mjs";
 
 /**
  * 使用 Weather 根模型和产品 codec 配置通用根表处理器。
@@ -24,6 +26,15 @@ const WeatherKit2 = new FlatBufferRootProcessor({
     rootClass: WK2.Weather,
 });
 
+// O(1) table presence probe; no minute vector decoding or copying.
+export function hasForecastNextHour(byteBuffer) {
+    try {
+        return Boolean(WK2.Weather.getRootAsWeather(byteBuffer).forecastNextHour());
+    } catch {
+        return false;
+    }
+}
+
 export default WeatherKit2;
 
 function encodeAirQuality(builder, data) {
@@ -40,27 +51,27 @@ function encodeCurrentWeather(builder, data) {
     const metadataOffset = encodeMetadata(builder, data.metadata);
     const precipitationAmountNext1hByTypeOffset = WK2.CurrentWeatherData.createPrecipitationAmountNext1hByTypeVector(
         builder,
-        data.precipitationAmountNext1hByType.map(p => WK2.PrecipitationAmountByType.createPrecipitationAmountByType(builder, WK2.PrecipitationType[p.precipitationType], p.expected, p.minimumSnow, p.maximumSnow, p.expectedSnow)),
+        (data.precipitationAmountNext1hByType ?? []).map(p => WK2.PrecipitationAmountByType.createPrecipitationAmountByType(builder, WK2.PrecipitationType[p.precipitationType], p.expected, p.minimumSnow, p.maximumSnow, p.expectedSnow)),
     );
     const precipitationAmountNext24hByTypeOffset = WK2.CurrentWeatherData.createPrecipitationAmountNext24hByTypeVector(
         builder,
-        data.precipitationAmountNext24hByType.map(p => WK2.PrecipitationAmountByType.createPrecipitationAmountByType(builder, WK2.PrecipitationType[p.precipitationType], p.expected, p.minimumSnow, p.maximumSnow, p.expectedSnow)),
+        (data.precipitationAmountNext24hByType ?? []).map(p => WK2.PrecipitationAmountByType.createPrecipitationAmountByType(builder, WK2.PrecipitationType[p.precipitationType], p.expected, p.minimumSnow, p.maximumSnow, p.expectedSnow)),
     );
     const precipitationAmountNext6hByTypeOffset = WK2.CurrentWeatherData.createPrecipitationAmountNext6hByTypeVector(
         builder,
-        data.precipitationAmountNext6hByType.map(p => WK2.PrecipitationAmountByType.createPrecipitationAmountByType(builder, WK2.PrecipitationType[p.precipitationType], p.expected, p.minimumSnow, p.maximumSnow, p.expectedSnow)),
+        (data.precipitationAmountNext6hByType ?? []).map(p => WK2.PrecipitationAmountByType.createPrecipitationAmountByType(builder, WK2.PrecipitationType[p.precipitationType], p.expected, p.minimumSnow, p.maximumSnow, p.expectedSnow)),
     );
     const precipitationAmountPrevious1hByTypeOffset = WK2.CurrentWeatherData.createPrecipitationAmountPrevious1hByTypeVector(
         builder,
-        data.precipitationAmountPrevious1hByType.map(p => WK2.PrecipitationAmountByType.createPrecipitationAmountByType(builder, WK2.PrecipitationType[p.precipitationType], p.expected, p.minimumSnow, p.maximumSnow, p.expectedSnow)),
+        (data.precipitationAmountPrevious1hByType ?? []).map(p => WK2.PrecipitationAmountByType.createPrecipitationAmountByType(builder, WK2.PrecipitationType[p.precipitationType], p.expected, p.minimumSnow, p.maximumSnow, p.expectedSnow)),
     );
     const precipitationAmountPrevious24hByTypeOffset = WK2.CurrentWeatherData.createPrecipitationAmountPrevious24hByTypeVector(
         builder,
-        data.precipitationAmountPrevious24hByType.map(p => WK2.PrecipitationAmountByType.createPrecipitationAmountByType(builder, WK2.PrecipitationType[p.precipitationType], p.expected, p.minimumSnow, p.maximumSnow, p.expectedSnow)),
+        (data.precipitationAmountPrevious24hByType ?? []).map(p => WK2.PrecipitationAmountByType.createPrecipitationAmountByType(builder, WK2.PrecipitationType[p.precipitationType], p.expected, p.minimumSnow, p.maximumSnow, p.expectedSnow)),
     );
     const precipitationAmountPrevious6hByTypeOffset = WK2.CurrentWeatherData.createPrecipitationAmountPrevious6hByTypeVector(
         builder,
-        data.precipitationAmountPrevious6hByType.map(p => WK2.PrecipitationAmountByType.createPrecipitationAmountByType(builder, WK2.PrecipitationType[p.precipitationType], p.expected, p.minimumSnow, p.maximumSnow, p.expectedSnow)),
+        (data.precipitationAmountPrevious6hByType ?? []).map(p => WK2.PrecipitationAmountByType.createPrecipitationAmountByType(builder, WK2.PrecipitationType[p.precipitationType], p.expected, p.minimumSnow, p.maximumSnow, p.expectedSnow)),
     );
     return WK2.CurrentWeatherData.createCurrentWeatherData(
         builder,
@@ -428,6 +439,7 @@ function encodeLocationInfo(builder, data) {
 }
 
 function decodeAirQuality(data) {
+    const budget = newDecodeBudget();
     const AirQualityData = data;
     data = {
         metadata: decodeMetadata(AirQualityData.metadata()),
@@ -439,7 +451,7 @@ function decodeAirQuality(data) {
         primaryPollutant: WK2.PollutantType[AirQualityData.primaryPollutant()],
         scale: AirQualityData.scale(),
     };
-    for (let i = 0; i < AirQualityData.pollutantsLength(); i++)
+    for (let i = 0, count = decodedVectorLength(AirQualityData.pollutantsLength(), budget); i < count; i++)
         data.pollutants.push({
             amount: AirQualityData.pollutants(i).amount(),
             pollutantType: WK2.PollutantType[AirQualityData.pollutants(i).pollutantType()],
@@ -449,6 +461,7 @@ function decodeAirQuality(data) {
 }
 
 function decodeCurrentWeather(data) {
+    const budget = newDecodeBudget();
     const CurrentWeatherData = data;
     data = {
         metadata: decodeMetadata(CurrentWeatherData.metadata()),
@@ -492,7 +505,7 @@ function decodeCurrentWeather(data) {
         windGust: CurrentWeatherData.windGust(),
         windSpeed: CurrentWeatherData.windSpeed(),
     };
-    for (let i = 0; i < CurrentWeatherData.precipitationAmountNext1hByTypeLength(); i++)
+    for (let i = 0, count = decodedVectorLength(CurrentWeatherData.precipitationAmountNext1hByTypeLength(), budget); i < count; i++)
         data.precipitationAmountNext1hByType.push({
             expected: CurrentWeatherData.precipitationAmountNext1hByType(i).expected(),
             expectedSnow: CurrentWeatherData.precipitationAmountNext1hByType(i).expectedSnow(),
@@ -500,7 +513,7 @@ function decodeCurrentWeather(data) {
             minimumSnow: CurrentWeatherData.precipitationAmountNext1hByType(i).minimumSnow(),
             precipitationType: WK2.PrecipitationType[CurrentWeatherData.precipitationAmountNext1hByType(i).precipitationType()],
         });
-    for (let i = 0; i < CurrentWeatherData.precipitationAmountNext24hByTypeLength(); i++)
+    for (let i = 0, count = decodedVectorLength(CurrentWeatherData.precipitationAmountNext24hByTypeLength(), budget); i < count; i++)
         data.precipitationAmountNext24hByType.push({
             expected: CurrentWeatherData.precipitationAmountNext24hByType(i).expected(),
             expectedSnow: CurrentWeatherData.precipitationAmountNext24hByType(i).expectedSnow(),
@@ -508,7 +521,7 @@ function decodeCurrentWeather(data) {
             minimumSnow: CurrentWeatherData.precipitationAmountNext24hByType(i).minimumSnow(),
             precipitationType: WK2.PrecipitationType[CurrentWeatherData.precipitationAmountNext24hByType(i).precipitationType()],
         });
-    for (let i = 0; i < CurrentWeatherData.precipitationAmountNext6hByTypeLength(); i++)
+    for (let i = 0, count = decodedVectorLength(CurrentWeatherData.precipitationAmountNext6hByTypeLength(), budget); i < count; i++)
         data.precipitationAmountNext6hByType.push({
             expected: CurrentWeatherData.precipitationAmountNext6hByType(i).expected(),
             expectedSnow: CurrentWeatherData.precipitationAmountNext6hByType(i).expectedSnow(),
@@ -516,7 +529,7 @@ function decodeCurrentWeather(data) {
             minimumSnow: CurrentWeatherData.precipitationAmountNext6hByType(i).minimumSnow(),
             precipitationType: WK2.PrecipitationType[CurrentWeatherData.precipitationAmountNext6hByType(i).precipitationType()],
         });
-    for (let i = 0; i < CurrentWeatherData.precipitationAmountPrevious1hByTypeLength(); i++)
+    for (let i = 0, count = decodedVectorLength(CurrentWeatherData.precipitationAmountPrevious1hByTypeLength(), budget); i < count; i++)
         data.precipitationAmountPrevious1hByType.push({
             expected: CurrentWeatherData.precipitationAmountPrevious1hByType(i).expected(),
             expectedSnow: CurrentWeatherData.precipitationAmountPrevious1hByType(i).expectedSnow(),
@@ -524,7 +537,7 @@ function decodeCurrentWeather(data) {
             minimumSnow: CurrentWeatherData.precipitationAmountPrevious1hByType(i).minimumSnow(),
             precipitationType: WK2.PrecipitationType[CurrentWeatherData.precipitationAmountPrevious1hByType(i).precipitationType()],
         });
-    for (let i = 0; i < CurrentWeatherData.precipitationAmountPrevious24hByTypeLength(); i++)
+    for (let i = 0, count = decodedVectorLength(CurrentWeatherData.precipitationAmountPrevious24hByTypeLength(), budget); i < count; i++)
         data.precipitationAmountPrevious24hByType.push({
             expected: CurrentWeatherData.precipitationAmountPrevious24hByType(i).expected(),
             expectedSnow: CurrentWeatherData.precipitationAmountPrevious24hByType(i).expectedSnow(),
@@ -532,7 +545,7 @@ function decodeCurrentWeather(data) {
             minimumSnow: CurrentWeatherData.precipitationAmountPrevious24hByType(i).minimumSnow(),
             precipitationType: WK2.PrecipitationType[CurrentWeatherData.precipitationAmountPrevious24hByType(i).precipitationType()],
         });
-    for (let i = 0; i < CurrentWeatherData.precipitationAmountPrevious6hByTypeLength(); i++)
+    for (let i = 0, count = decodedVectorLength(CurrentWeatherData.precipitationAmountPrevious6hByTypeLength(), budget); i < count; i++)
         data.precipitationAmountPrevious6hByType.push({
             expected: CurrentWeatherData.precipitationAmountPrevious6hByType(i).expected(),
             expectedSnow: CurrentWeatherData.precipitationAmountPrevious6hByType(i).expectedSnow(),
@@ -544,179 +557,184 @@ function decodeCurrentWeather(data) {
 }
 
 function decodeForecastDaily(data) {
+    const budget = newDecodeBudget();
     const DailyForecastData = data;
     data = {
         metadata: decodeMetadata(DailyForecastData.metadata()),
         days: [],
     };
-    for (let i = 0; i < DailyForecastData.daysLength(); i++) {
+    for (let i = 0, count = decodedVectorLength(DailyForecastData.daysLength(), budget); i < count; i++) {
+        const sourceDay = DailyForecastData.days(i);
         const day = {
-            conditionCode: WK2.WeatherCondition[DailyForecastData.days(i).conditionCode()],
-            forecastEnd: DailyForecastData.days(i).forecastEnd(),
-            forecastStart: DailyForecastData.days(i).forecastStart(),
-            humidityMax: DailyForecastData.days(i).humidityMax(),
-            humidityMin: DailyForecastData.days(i).humidityMin(),
-            maxUvIndex: DailyForecastData.days(i).maxUvIndex(),
-            moonPhase: WK2.MoonPhase[DailyForecastData.days(i).moonPhase()],
-            moonrise: DailyForecastData.days(i).moonrise(),
-            moonset: DailyForecastData.days(i).moonset(),
-            precipitationAmount: DailyForecastData.days(i).precipitationAmount(),
+            conditionCode: WK2.WeatherCondition[sourceDay.conditionCode()],
+            forecastEnd: sourceDay.forecastEnd(),
+            forecastStart: sourceDay.forecastStart(),
+            humidityMax: sourceDay.humidityMax(),
+            humidityMin: sourceDay.humidityMin(),
+            maxUvIndex: sourceDay.maxUvIndex(),
+            moonPhase: WK2.MoonPhase[sourceDay.moonPhase()],
+            moonrise: sourceDay.moonrise(),
+            moonset: sourceDay.moonset(),
+            precipitationAmount: sourceDay.precipitationAmount(),
             precipitationAmountByType: [],
-            precipitationChance: DailyForecastData.days(i).precipitationChance(),
-            precipitationType: WK2.PrecipitationType[DailyForecastData.days(i).precipitationType()],
-            snowfallAmount: DailyForecastData.days(i).snowfallAmount(),
-            solarMidnight: DailyForecastData.days(i).solarMidnight(),
-            solarNoon: DailyForecastData.days(i).solarNoon(),
-            sunrise: DailyForecastData.days(i).sunrise(),
-            sunriseCivil: DailyForecastData.days(i).sunriseCivil(),
-            sunriseNautical: DailyForecastData.days(i).sunriseNautical(),
-            sunriseAstronomical: DailyForecastData.days(i).sunriseAstronomical(),
-            sunset: DailyForecastData.days(i).sunset(),
-            sunsetCivil: DailyForecastData.days(i).sunsetCivil(),
-            sunsetNautical: DailyForecastData.days(i).sunsetNautical(),
-            sunsetAstronomical: DailyForecastData.days(i).sunsetAstronomical(),
-            temperatureMax: DailyForecastData.days(i).temperatureMax(),
-            temperatureMaxTime: DailyForecastData.days(i).temperatureMaxTime(),
-            temperatureMin: DailyForecastData.days(i).temperatureMin(),
-            temperatureMinTime: DailyForecastData.days(i).temperatureMinTime(),
-            visibilityMax: DailyForecastData.days(i).visibilityMax(),
-            visibilityMin: DailyForecastData.days(i).visibilityMin(),
-            windGustSpeedMax: DailyForecastData.days(i).windGustSpeedMax(),
-            windSpeedAvg: DailyForecastData.days(i).windSpeedAvg(),
-            windSpeedMax: DailyForecastData.days(i).windSpeedMax(),
+            precipitationChance: sourceDay.precipitationChance(),
+            precipitationType: WK2.PrecipitationType[sourceDay.precipitationType()],
+            snowfallAmount: sourceDay.snowfallAmount(),
+            solarMidnight: sourceDay.solarMidnight(),
+            solarNoon: sourceDay.solarNoon(),
+            sunrise: sourceDay.sunrise(),
+            sunriseCivil: sourceDay.sunriseCivil(),
+            sunriseNautical: sourceDay.sunriseNautical(),
+            sunriseAstronomical: sourceDay.sunriseAstronomical(),
+            sunset: sourceDay.sunset(),
+            sunsetCivil: sourceDay.sunsetCivil(),
+            sunsetNautical: sourceDay.sunsetNautical(),
+            sunsetAstronomical: sourceDay.sunsetAstronomical(),
+            temperatureMax: sourceDay.temperatureMax(),
+            temperatureMaxTime: sourceDay.temperatureMaxTime(),
+            temperatureMin: sourceDay.temperatureMin(),
+            temperatureMinTime: sourceDay.temperatureMinTime(),
+            visibilityMax: sourceDay.visibilityMax(),
+            visibilityMin: sourceDay.visibilityMin(),
+            windGustSpeedMax: sourceDay.windGustSpeedMax(),
+            windSpeedAvg: sourceDay.windSpeedAvg(),
+            windSpeedMax: sourceDay.windSpeedMax(),
         };
-        for (let j = 0; j < DailyForecastData.days(i).precipitationAmountByTypeLength(); j++)
+        for (let j = 0, count = decodedVectorLength(sourceDay.precipitationAmountByTypeLength(), budget); j < count; j++)
             day.precipitationAmountByType.push({
-                expected: DailyForecastData.days(i).precipitationAmountByType(j).expected(),
-                expectedSnow: DailyForecastData.days(i).precipitationAmountByType(j).expectedSnow(),
-                maximumSnow: DailyForecastData.days(i).precipitationAmountByType(j).maximumSnow(),
-                minimumSnow: DailyForecastData.days(i).precipitationAmountByType(j).minimumSnow(),
-                precipitationType: WK2.PrecipitationType[DailyForecastData.days(i).precipitationAmountByType(j).precipitationType()],
+                expected: sourceDay.precipitationAmountByType(j).expected(),
+                expectedSnow: sourceDay.precipitationAmountByType(j).expectedSnow(),
+                maximumSnow: sourceDay.precipitationAmountByType(j).maximumSnow(),
+                minimumSnow: sourceDay.precipitationAmountByType(j).minimumSnow(),
+                precipitationType: WK2.PrecipitationType[sourceDay.precipitationAmountByType(j).precipitationType()],
             });
-        if (DailyForecastData.days(i).daytimeForecast()) {
+        const daytimeForecast = sourceDay.daytimeForecast();
+        if (daytimeForecast) {
             day.daytimeForecast = {
-                cloudCover: DailyForecastData.days(i).daytimeForecast().cloudCover(),
-                cloudCoverHighAltPct: DailyForecastData.days(i).daytimeForecast().cloudCoverHighAltPct(),
-                cloudCoverLowAltPct: DailyForecastData.days(i).daytimeForecast().cloudCoverLowAltPct(),
-                cloudCoverMidAltPct: DailyForecastData.days(i).daytimeForecast().cloudCoverMidAltPct(),
-                conditionCode: WK2.WeatherCondition[DailyForecastData.days(i).daytimeForecast().conditionCode()],
-                forecastEnd: DailyForecastData.days(i).daytimeForecast().forecastEnd(),
-                forecastStart: DailyForecastData.days(i).daytimeForecast().forecastStart(),
-                humidity: DailyForecastData.days(i).daytimeForecast().humidity(),
-                humidityMax: DailyForecastData.days(i).daytimeForecast().humidityMax(),
-                humidityMin: DailyForecastData.days(i).daytimeForecast().humidityMin(),
-                precipitationAmount: DailyForecastData.days(i).daytimeForecast().precipitationAmount(),
+                cloudCover: daytimeForecast.cloudCover(),
+                cloudCoverHighAltPct: daytimeForecast.cloudCoverHighAltPct(),
+                cloudCoverLowAltPct: daytimeForecast.cloudCoverLowAltPct(),
+                cloudCoverMidAltPct: daytimeForecast.cloudCoverMidAltPct(),
+                conditionCode: WK2.WeatherCondition[daytimeForecast.conditionCode()],
+                forecastEnd: daytimeForecast.forecastEnd(),
+                forecastStart: daytimeForecast.forecastStart(),
+                humidity: daytimeForecast.humidity(),
+                humidityMax: daytimeForecast.humidityMax(),
+                humidityMin: daytimeForecast.humidityMin(),
+                precipitationAmount: daytimeForecast.precipitationAmount(),
                 precipitationAmountByType: [],
-                precipitationChance: DailyForecastData.days(i).daytimeForecast().precipitationChance(),
-                precipitationType: WK2.PrecipitationType[DailyForecastData.days(i).daytimeForecast().precipitationType()],
-                snowfallAmount: DailyForecastData.days(i).daytimeForecast().snowfallAmount(),
-                temperatureMax: DailyForecastData.days(i).daytimeForecast().temperatureMax(),
-                temperatureMin: DailyForecastData.days(i).daytimeForecast().temperatureMin(),
-                visibilityMax: DailyForecastData.days(i).daytimeForecast().visibilityMax(),
-                visibilityMin: DailyForecastData.days(i).daytimeForecast().visibilityMin(),
-                windDirection: DailyForecastData.days(i).daytimeForecast().windDirection(),
-                windGustSpeedMax: DailyForecastData.days(i).daytimeForecast().windGustSpeedMax(),
-                windSpeed: DailyForecastData.days(i).daytimeForecast().windSpeed(),
-                windSpeedMax: DailyForecastData.days(i).daytimeForecast().windSpeedMax(),
-                precipitationIntensityMax: DailyForecastData.days(i).daytimeForecast().precipitationIntensityMax(),
-                perceivedPrecipitationIntensityMax: DailyForecastData.days(i).daytimeForecast().perceivedPrecipitationIntensityMax(),
-                uvIndexMin: DailyForecastData.days(i).daytimeForecast().uvIndexMin(),
-                uvIndexMax: DailyForecastData.days(i).daytimeForecast().uvIndexMax(),
-                temperatureApparentMin: DailyForecastData.days(i).daytimeForecast().temperatureApparentMin(),
-                temperatureApparentMax: DailyForecastData.days(i).daytimeForecast().temperatureApparentMax(),
-                daylight: DailyForecastData.days(i).daytimeForecast().daylight(),
+                precipitationChance: daytimeForecast.precipitationChance(),
+                precipitationType: WK2.PrecipitationType[daytimeForecast.precipitationType()],
+                snowfallAmount: daytimeForecast.snowfallAmount(),
+                temperatureMax: daytimeForecast.temperatureMax(),
+                temperatureMin: daytimeForecast.temperatureMin(),
+                visibilityMax: daytimeForecast.visibilityMax(),
+                visibilityMin: daytimeForecast.visibilityMin(),
+                windDirection: daytimeForecast.windDirection(),
+                windGustSpeedMax: daytimeForecast.windGustSpeedMax(),
+                windSpeed: daytimeForecast.windSpeed(),
+                windSpeedMax: daytimeForecast.windSpeedMax(),
+                precipitationIntensityMax: daytimeForecast.precipitationIntensityMax(),
+                perceivedPrecipitationIntensityMax: daytimeForecast.perceivedPrecipitationIntensityMax(),
+                uvIndexMin: daytimeForecast.uvIndexMin(),
+                uvIndexMax: daytimeForecast.uvIndexMax(),
+                temperatureApparentMin: daytimeForecast.temperatureApparentMin(),
+                temperatureApparentMax: daytimeForecast.temperatureApparentMax(),
+                daylight: daytimeForecast.daylight(),
             };
-            for (let j = 0; j < DailyForecastData.days(i).daytimeForecast().precipitationAmountByTypeLength(); j++)
+            for (let j = 0, count = decodedVectorLength(daytimeForecast.precipitationAmountByTypeLength(), budget); j < count; j++)
                 day.daytimeForecast.precipitationAmountByType.push({
-                    expected: DailyForecastData.days(i).daytimeForecast().precipitationAmountByType(j).expected(),
-                    expectedSnow: DailyForecastData.days(i).daytimeForecast().precipitationAmountByType(j).expectedSnow(),
-                    maximumSnow: DailyForecastData.days(i).daytimeForecast().precipitationAmountByType(j).maximumSnow(),
-                    minimumSnow: DailyForecastData.days(i).daytimeForecast().precipitationAmountByType(j).minimumSnow(),
-                    precipitationType: WK2.PrecipitationType[DailyForecastData.days(i).daytimeForecast().precipitationAmountByType(j).precipitationType()],
+                    expected: daytimeForecast.precipitationAmountByType(j).expected(),
+                    expectedSnow: daytimeForecast.precipitationAmountByType(j).expectedSnow(),
+                    maximumSnow: daytimeForecast.precipitationAmountByType(j).maximumSnow(),
+                    minimumSnow: daytimeForecast.precipitationAmountByType(j).minimumSnow(),
+                    precipitationType: WK2.PrecipitationType[daytimeForecast.precipitationAmountByType(j).precipitationType()],
                 });
         }
-        if (DailyForecastData.days(i).overnightForecast()) {
+        const overnightForecast = sourceDay.overnightForecast();
+        if (overnightForecast) {
             day.overnightForecast = {
-                cloudCover: DailyForecastData.days(i).overnightForecast().cloudCover(),
-                cloudCoverHighAltPct: DailyForecastData.days(i).overnightForecast().cloudCoverHighAltPct(),
-                cloudCoverLowAltPct: DailyForecastData.days(i).overnightForecast().cloudCoverLowAltPct(),
-                cloudCoverMidAltPct: DailyForecastData.days(i).overnightForecast().cloudCoverMidAltPct(),
-                conditionCode: WK2.WeatherCondition[DailyForecastData.days(i).overnightForecast().conditionCode()],
-                forecastEnd: DailyForecastData.days(i).overnightForecast().forecastEnd(),
-                forecastStart: DailyForecastData.days(i).overnightForecast().forecastStart(),
-                humidity: DailyForecastData.days(i).overnightForecast().humidity(),
-                humidityMax: DailyForecastData.days(i).overnightForecast().humidityMax(),
-                humidityMin: DailyForecastData.days(i).overnightForecast().humidityMin(),
-                precipitationAmount: DailyForecastData.days(i).overnightForecast().precipitationAmount(),
+                cloudCover: overnightForecast.cloudCover(),
+                cloudCoverHighAltPct: overnightForecast.cloudCoverHighAltPct(),
+                cloudCoverLowAltPct: overnightForecast.cloudCoverLowAltPct(),
+                cloudCoverMidAltPct: overnightForecast.cloudCoverMidAltPct(),
+                conditionCode: WK2.WeatherCondition[overnightForecast.conditionCode()],
+                forecastEnd: overnightForecast.forecastEnd(),
+                forecastStart: overnightForecast.forecastStart(),
+                humidity: overnightForecast.humidity(),
+                humidityMax: overnightForecast.humidityMax(),
+                humidityMin: overnightForecast.humidityMin(),
+                precipitationAmount: overnightForecast.precipitationAmount(),
                 precipitationAmountByType: [],
-                precipitationChance: DailyForecastData.days(i).overnightForecast().precipitationChance(),
-                precipitationType: WK2.PrecipitationType[DailyForecastData.days(i).overnightForecast().precipitationType()],
-                snowfallAmount: DailyForecastData.days(i).overnightForecast().snowfallAmount(),
-                temperatureMax: DailyForecastData.days(i).overnightForecast().temperatureMax(),
-                temperatureMin: DailyForecastData.days(i).overnightForecast().temperatureMin(),
-                visibilityMax: DailyForecastData.days(i).overnightForecast().visibilityMax(),
-                visibilityMin: DailyForecastData.days(i).overnightForecast().visibilityMin(),
-                windDirection: DailyForecastData.days(i).overnightForecast().windDirection(),
-                windGustSpeedMax: DailyForecastData.days(i).overnightForecast().windGustSpeedMax(),
-                windSpeed: DailyForecastData.days(i).overnightForecast().windSpeed(),
-                windSpeedMax: DailyForecastData.days(i).overnightForecast().windSpeedMax(),
-                precipitationIntensityMax: DailyForecastData.days(i).overnightForecast().precipitationIntensityMax(),
-                perceivedPrecipitationIntensityMax: DailyForecastData.days(i).overnightForecast().perceivedPrecipitationIntensityMax(),
-                uvIndexMin: DailyForecastData.days(i).overnightForecast().uvIndexMin(),
-                uvIndexMax: DailyForecastData.days(i).overnightForecast().uvIndexMax(),
-                temperatureApparentMin: DailyForecastData.days(i).overnightForecast().temperatureApparentMin(),
-                temperatureApparentMax: DailyForecastData.days(i).overnightForecast().temperatureApparentMax(),
-                daylight: DailyForecastData.days(i).overnightForecast().daylight(),
+                precipitationChance: overnightForecast.precipitationChance(),
+                precipitationType: WK2.PrecipitationType[overnightForecast.precipitationType()],
+                snowfallAmount: overnightForecast.snowfallAmount(),
+                temperatureMax: overnightForecast.temperatureMax(),
+                temperatureMin: overnightForecast.temperatureMin(),
+                visibilityMax: overnightForecast.visibilityMax(),
+                visibilityMin: overnightForecast.visibilityMin(),
+                windDirection: overnightForecast.windDirection(),
+                windGustSpeedMax: overnightForecast.windGustSpeedMax(),
+                windSpeed: overnightForecast.windSpeed(),
+                windSpeedMax: overnightForecast.windSpeedMax(),
+                precipitationIntensityMax: overnightForecast.precipitationIntensityMax(),
+                perceivedPrecipitationIntensityMax: overnightForecast.perceivedPrecipitationIntensityMax(),
+                uvIndexMin: overnightForecast.uvIndexMin(),
+                uvIndexMax: overnightForecast.uvIndexMax(),
+                temperatureApparentMin: overnightForecast.temperatureApparentMin(),
+                temperatureApparentMax: overnightForecast.temperatureApparentMax(),
+                daylight: overnightForecast.daylight(),
             };
-            for (let j = 0; j < DailyForecastData.days(i).overnightForecast().precipitationAmountByTypeLength(); j++)
+            for (let j = 0, count = decodedVectorLength(overnightForecast.precipitationAmountByTypeLength(), budget); j < count; j++)
                 day.overnightForecast.precipitationAmountByType.push({
-                    expected: DailyForecastData.days(i).overnightForecast().precipitationAmountByType(j).expected(),
-                    expectedSnow: DailyForecastData.days(i).overnightForecast().precipitationAmountByType(j).expectedSnow(),
-                    maximumSnow: DailyForecastData.days(i).overnightForecast().precipitationAmountByType(j).maximumSnow(),
-                    minimumSnow: DailyForecastData.days(i).overnightForecast().precipitationAmountByType(j).minimumSnow(),
-                    precipitationType: WK2.PrecipitationType[DailyForecastData.days(i).overnightForecast().precipitationAmountByType(j).precipitationType()],
+                    expected: overnightForecast.precipitationAmountByType(j).expected(),
+                    expectedSnow: overnightForecast.precipitationAmountByType(j).expectedSnow(),
+                    maximumSnow: overnightForecast.precipitationAmountByType(j).maximumSnow(),
+                    minimumSnow: overnightForecast.precipitationAmountByType(j).minimumSnow(),
+                    precipitationType: WK2.PrecipitationType[overnightForecast.precipitationAmountByType(j).precipitationType()],
                 });
         }
-        if (DailyForecastData.days(i).restOfDayForecast()) {
+        const restOfDayForecast = sourceDay.restOfDayForecast();
+        if (restOfDayForecast) {
             day.restOfDayForecast = {
-                cloudCover: DailyForecastData.days(i).restOfDayForecast().cloudCover(),
-                cloudCoverHighAltPct: DailyForecastData.days(i).restOfDayForecast().cloudCoverHighAltPct(),
-                cloudCoverLowAltPct: DailyForecastData.days(i).restOfDayForecast().cloudCoverLowAltPct(),
-                cloudCoverMidAltPct: DailyForecastData.days(i).restOfDayForecast().cloudCoverMidAltPct(),
-                conditionCode: WK2.WeatherCondition[DailyForecastData.days(i).restOfDayForecast().conditionCode()],
-                forecastEnd: DailyForecastData.days(i).restOfDayForecast().forecastEnd(),
-                forecastStart: DailyForecastData.days(i).restOfDayForecast().forecastStart(),
-                humidity: DailyForecastData.days(i).restOfDayForecast().humidity(),
-                humidityMax: DailyForecastData.days(i).restOfDayForecast().humidityMax(),
-                humidityMin: DailyForecastData.days(i).restOfDayForecast().humidityMin(),
-                precipitationAmount: DailyForecastData.days(i).restOfDayForecast().precipitationAmount(),
+                cloudCover: restOfDayForecast.cloudCover(),
+                cloudCoverHighAltPct: restOfDayForecast.cloudCoverHighAltPct(),
+                cloudCoverLowAltPct: restOfDayForecast.cloudCoverLowAltPct(),
+                cloudCoverMidAltPct: restOfDayForecast.cloudCoverMidAltPct(),
+                conditionCode: WK2.WeatherCondition[restOfDayForecast.conditionCode()],
+                forecastEnd: restOfDayForecast.forecastEnd(),
+                forecastStart: restOfDayForecast.forecastStart(),
+                humidity: restOfDayForecast.humidity(),
+                humidityMax: restOfDayForecast.humidityMax(),
+                humidityMin: restOfDayForecast.humidityMin(),
+                precipitationAmount: restOfDayForecast.precipitationAmount(),
                 precipitationAmountByType: [],
-                precipitationChance: DailyForecastData.days(i).restOfDayForecast().precipitationChance(),
-                precipitationType: WK2.PrecipitationType[DailyForecastData.days(i).restOfDayForecast().precipitationType()],
-                snowfallAmount: DailyForecastData.days(i).restOfDayForecast().snowfallAmount(),
-                temperatureMax: DailyForecastData.days(i).restOfDayForecast().temperatureMax(),
-                temperatureMin: DailyForecastData.days(i).restOfDayForecast().temperatureMin(),
-                visibilityMax: DailyForecastData.days(i).restOfDayForecast().visibilityMax(),
-                visibilityMin: DailyForecastData.days(i).restOfDayForecast().visibilityMin(),
-                windDirection: DailyForecastData.days(i).restOfDayForecast().windDirection(),
-                windGustSpeedMax: DailyForecastData.days(i).restOfDayForecast().windGustSpeedMax(),
-                windSpeed: DailyForecastData.days(i).restOfDayForecast().windSpeed(),
-                windSpeedMax: DailyForecastData.days(i).restOfDayForecast().windSpeedMax(),
-                precipitationIntensityMax: DailyForecastData.days(i).restOfDayForecast().precipitationIntensityMax(),
-                perceivedPrecipitationIntensityMax: DailyForecastData.days(i).restOfDayForecast().perceivedPrecipitationIntensityMax(),
-                uvIndexMin: DailyForecastData.days(i).restOfDayForecast().uvIndexMin(),
-                uvIndexMax: DailyForecastData.days(i).restOfDayForecast().uvIndexMax(),
-                temperatureApparentMin: DailyForecastData.days(i).restOfDayForecast().temperatureApparentMin(),
-                temperatureApparentMax: DailyForecastData.days(i).restOfDayForecast().temperatureApparentMax(),
-                daylight: DailyForecastData.days(i).restOfDayForecast().daylight(),
+                precipitationChance: restOfDayForecast.precipitationChance(),
+                precipitationType: WK2.PrecipitationType[restOfDayForecast.precipitationType()],
+                snowfallAmount: restOfDayForecast.snowfallAmount(),
+                temperatureMax: restOfDayForecast.temperatureMax(),
+                temperatureMin: restOfDayForecast.temperatureMin(),
+                visibilityMax: restOfDayForecast.visibilityMax(),
+                visibilityMin: restOfDayForecast.visibilityMin(),
+                windDirection: restOfDayForecast.windDirection(),
+                windGustSpeedMax: restOfDayForecast.windGustSpeedMax(),
+                windSpeed: restOfDayForecast.windSpeed(),
+                windSpeedMax: restOfDayForecast.windSpeedMax(),
+                precipitationIntensityMax: restOfDayForecast.precipitationIntensityMax(),
+                perceivedPrecipitationIntensityMax: restOfDayForecast.perceivedPrecipitationIntensityMax(),
+                uvIndexMin: restOfDayForecast.uvIndexMin(),
+                uvIndexMax: restOfDayForecast.uvIndexMax(),
+                temperatureApparentMin: restOfDayForecast.temperatureApparentMin(),
+                temperatureApparentMax: restOfDayForecast.temperatureApparentMax(),
+                daylight: restOfDayForecast.daylight(),
             };
-            for (let j = 0; j < DailyForecastData.days(i).restOfDayForecast().precipitationAmountByTypeLength(); j++)
+            for (let j = 0, count = decodedVectorLength(restOfDayForecast.precipitationAmountByTypeLength(), budget); j < count; j++)
                 day.restOfDayForecast.precipitationAmountByType.push({
-                    expected: DailyForecastData.days(i).restOfDayForecast().precipitationAmountByType(j).expected(),
-                    expectedSnow: DailyForecastData.days(i).restOfDayForecast().precipitationAmountByType(j).expectedSnow(),
-                    maximumSnow: DailyForecastData.days(i).restOfDayForecast().precipitationAmountByType(j).maximumSnow(),
-                    minimumSnow: DailyForecastData.days(i).restOfDayForecast().precipitationAmountByType(j).minimumSnow(),
-                    precipitationType: WK2.PrecipitationType[DailyForecastData.days(i).restOfDayForecast().precipitationAmountByType(j).precipitationType()],
+                    expected: restOfDayForecast.precipitationAmountByType(j).expected(),
+                    expectedSnow: restOfDayForecast.precipitationAmountByType(j).expectedSnow(),
+                    maximumSnow: restOfDayForecast.precipitationAmountByType(j).maximumSnow(),
+                    minimumSnow: restOfDayForecast.precipitationAmountByType(j).minimumSnow(),
+                    precipitationType: WK2.PrecipitationType[restOfDayForecast.precipitationAmountByType(j).precipitationType()],
                 });
         }
         data.days.push(day);
@@ -725,44 +743,48 @@ function decodeForecastDaily(data) {
 }
 
 function decodeForecastHourly(data) {
+    const budget = newDecodeBudget();
     const HourlyForecastData = data;
     data = {
         metadata: decodeMetadata(HourlyForecastData.metadata()),
         hours: [],
     };
-    for (let i = 0; i < HourlyForecastData.hoursLength(); i++)
+    for (let i = 0, count = decodedVectorLength(HourlyForecastData.hoursLength(), budget); i < count; i++) {
+        const hour = HourlyForecastData.hours(i);
         data.hours.push({
-            cloudCover: HourlyForecastData.hours(i).cloudCover(),
-            cloudCoverHighAltPct: HourlyForecastData.hours(i).cloudCoverHighAltPct(),
-            cloudCoverLowAltPct: HourlyForecastData.hours(i).cloudCoverLowAltPct(),
-            cloudCoverMidAltPct: HourlyForecastData.hours(i).cloudCoverMidAltPct(),
-            conditionCode: WK2.WeatherCondition[HourlyForecastData.hours(i).conditionCode()],
-            daylight: HourlyForecastData.hours(i).daylight(),
-            forecastStart: HourlyForecastData.hours(i).forecastStart(),
-            humidity: HourlyForecastData.hours(i).humidity(),
-            perceivedPrecipitationIntensity: HourlyForecastData.hours(i).perceivedPrecipitationIntensity(),
-            precipitationAmount: HourlyForecastData.hours(i).precipitationAmount(),
-            precipitationChance: HourlyForecastData.hours(i).precipitationChance(),
-            precipitationIntensity: HourlyForecastData.hours(i).precipitationIntensity(),
-            precipitationType: WK2.PrecipitationType[HourlyForecastData.hours(i).precipitationType()],
-            pressure: HourlyForecastData.hours(i).pressure(),
-            pressureTrend: WK2.PressureTrend[HourlyForecastData.hours(i).pressureTrend()],
-            snowfallAmount: HourlyForecastData.hours(i).snowfallAmount(),
-            snowfallIntensity: HourlyForecastData.hours(i).snowfallIntensity(),
-            temperature: HourlyForecastData.hours(i).temperature(),
-            temperatureApparent: HourlyForecastData.hours(i).temperatureApparent(),
-            unknown20: HourlyForecastData.hours(i).unknown20(),
-            temperatureDewPoint: HourlyForecastData.hours(i).temperatureDewPoint(),
-            uvIndex: HourlyForecastData.hours(i).uvIndex(),
-            visibility: HourlyForecastData.hours(i).visibility(),
-            windDirection: HourlyForecastData.hours(i).windDirection(),
-            windGust: HourlyForecastData.hours(i).windGust(),
-            windSpeed: HourlyForecastData.hours(i).windSpeed(),
+            cloudCover: hour.cloudCover(),
+            cloudCoverHighAltPct: hour.cloudCoverHighAltPct(),
+            cloudCoverLowAltPct: hour.cloudCoverLowAltPct(),
+            cloudCoverMidAltPct: hour.cloudCoverMidAltPct(),
+            conditionCode: WK2.WeatherCondition[hour.conditionCode()],
+            daylight: hour.daylight(),
+            forecastStart: hour.forecastStart(),
+            humidity: hour.humidity(),
+            perceivedPrecipitationIntensity: hour.perceivedPrecipitationIntensity(),
+            precipitationAmount: hour.precipitationAmount(),
+            precipitationChance: hour.precipitationChance(),
+            precipitationIntensity: hour.precipitationIntensity(),
+            precipitationType: WK2.PrecipitationType[hour.precipitationType()],
+            pressure: hour.pressure(),
+            pressureTrend: WK2.PressureTrend[hour.pressureTrend()],
+            snowfallAmount: hour.snowfallAmount(),
+            snowfallIntensity: hour.snowfallIntensity(),
+            temperature: hour.temperature(),
+            temperatureApparent: hour.temperatureApparent(),
+            unknown20: hour.unknown20(),
+            temperatureDewPoint: hour.temperatureDewPoint(),
+            uvIndex: hour.uvIndex(),
+            visibility: hour.visibility(),
+            windDirection: hour.windDirection(),
+            windGust: hour.windGust(),
+            windSpeed: hour.windSpeed(),
         });
+    }
     return data;
 }
 
 function decodeForecastNextHour(data) {
+    const budget = newDecodeBudget();
     const NextHourForecastData = data;
     data = {
         metadata: decodeMetadata(NextHourForecastData.metadata()),
@@ -772,7 +794,7 @@ function decodeForecastNextHour(data) {
         minutes: [],
         summary: [],
     };
-    for (let i = 0; i < NextHourForecastData.conditionLength(); i++) {
+    for (let i = 0, count = decodedVectorLength(NextHourForecastData.conditionLength(), budget); i < count; i++) {
         const condition = {
             beginCondition: WK2.ConditionType[NextHourForecastData.condition(i).beginCondition()],
             endCondition: WK2.ConditionType[NextHourForecastData.condition(i).endCondition()],
@@ -781,21 +803,21 @@ function decodeForecastNextHour(data) {
             parameters: [],
             startTime: NextHourForecastData.condition(i).startTime(),
         };
-        for (let j = 0; j < NextHourForecastData.condition(i).parametersLength(); j++)
+        for (let j = 0, count = decodedVectorLength(NextHourForecastData.condition(i).parametersLength(), budget); j < count; j++)
             condition.parameters.push({
                 date: NextHourForecastData.condition(i).parameters(j).date(),
                 type: WK2.ParameterType[NextHourForecastData.condition(i).parameters(j).type()],
             });
         data.condition.push(condition);
     }
-    for (let i = 0; i < NextHourForecastData.minutesLength(); i++)
+    for (let i = 0, count = decodedVectorLength(NextHourForecastData.minutesLength(), budget); i < count; i++)
         data.minutes.push({
             perceivedPrecipitationIntensity: NextHourForecastData.minutes(i).perceivedPrecipitationIntensity(),
             precipitationChance: NextHourForecastData.minutes(i).precipitationChance(),
             precipitationIntensity: NextHourForecastData.minutes(i).precipitationIntensity(),
             startTime: NextHourForecastData.minutes(i).startTime(),
         });
-    for (let i = 0; i < NextHourForecastData.summaryLength(); i++)
+    for (let i = 0, count = decodedVectorLength(NextHourForecastData.summaryLength(), budget); i < count; i++)
         data.summary.push({
             condition: WK2.PrecipitationType[NextHourForecastData.summary(i).condition()],
             endTime: NextHourForecastData.summary(i).endTime(),
@@ -807,18 +829,19 @@ function decodeForecastNextHour(data) {
 }
 
 function decodeNews(data) {
+    const budget = newDecodeBudget();
     const NewsData = data;
     data = {
         metadata: decodeMetadata(NewsData.metadata()),
         placements: [],
     };
-    for (let i = 0; i < NewsData.placementsLength(); i++) {
+    for (let i = 0, count = decodedVectorLength(NewsData.placementsLength(), budget); i < count; i++) {
         const placement = {
             articles: [],
             placement: WK2.PlacementType[NewsData.placements(i).placement()],
             priority: NewsData.placements(i).priority(),
         };
-        for (let j = 0; j < NewsData.placements(i).articlesLength(); j++) {
+        for (let j = 0, count = decodedVectorLength(NewsData.placements(i).articlesLength(), budget); j < count; j++) {
             const article = {
                 alertIds: [],
                 headlineOverride: NewsData.placements(i).articles(j).headlineOverride(),
@@ -827,9 +850,9 @@ function decodeNews(data) {
                 phenomena: [],
                 supportedStorefronts: [],
             };
-            for (let k = 0; k < NewsData.placements(i).articles(j).alertIdsLength(); k++) article.alertIds.push(decodeUuid(NewsData.placements(i).articles(j).alertIds(k)));
-            for (let k = 0; k < NewsData.placements(i).articles(j).phenomenaLength(); k++) article.phenomena.push(NewsData.placements(i).articles(j).phenomena(k));
-            for (let k = 0; k < NewsData.placements(i).articles(j).supportedStorefrontsLength(); k++) article.supportedStorefronts.push(NewsData.placements(i).articles(j).supportedStorefronts(k));
+            for (let k = 0, count = decodedVectorLength(NewsData.placements(i).articles(j).alertIdsLength(), budget); k < count; k++) article.alertIds.push(decodeUuid(NewsData.placements(i).articles(j).alertIds(k)));
+            for (let k = 0, count = decodedVectorLength(NewsData.placements(i).articles(j).phenomenaLength(), budget); k < count; k++) article.phenomena.push(NewsData.placements(i).articles(j).phenomena(k));
+            for (let k = 0, count = decodedVectorLength(NewsData.placements(i).articles(j).supportedStorefrontsLength(), budget); k < count; k++) article.supportedStorefronts.push(NewsData.placements(i).articles(j).supportedStorefronts(k));
             placement.articles.push(article);
         }
         data.placements.push(placement);
@@ -838,50 +861,53 @@ function decodeNews(data) {
 }
 
 function decodeWeatherAlerts(data) {
+    const budget = newDecodeBudget();
     const WeatherAlertCollectionData = data;
     data = {
         metadata: decodeMetadata(WeatherAlertCollectionData.metadata()),
         alerts: [],
         detailsUrl: WeatherAlertCollectionData.detailsUrl(),
     };
-    for (let i = 0; i < WeatherAlertCollectionData.alertsLength(); i++) {
+    for (let i = 0, count = decodedVectorLength(WeatherAlertCollectionData.alertsLength(), budget); i < count; i++) {
+        const alertView = WeatherAlertCollectionData.alerts(i);
         const alert = {
-            areaId: WeatherAlertCollectionData.alerts(i).areaId(),
-            areaName: WeatherAlertCollectionData.alerts(i).areaName(),
-            attributionUrl: WeatherAlertCollectionData.alerts(i).attributionUrl(),
-            certainty: WK2.Certainty[WeatherAlertCollectionData.alerts(i).certainty()],
-            countryCode: WeatherAlertCollectionData.alerts(i).countryCode(),
-            description: WeatherAlertCollectionData.alerts(i).description(),
-            detailsUrl: WeatherAlertCollectionData.alerts(i).detailsUrl(),
-            effectiveTime: WeatherAlertCollectionData.alerts(i).effectiveTime(),
-            eventEndTime: WeatherAlertCollectionData.alerts(i).eventEndTime(),
-            eventOnsetTime: WeatherAlertCollectionData.alerts(i).eventOnsetTime(),
-            eventSource: WeatherAlertCollectionData.alerts(i).eventSource(),
-            expireTime: WeatherAlertCollectionData.alerts(i).expireTime(),
-            id: decodeUuid(WeatherAlertCollectionData.alerts(i).id()),
-            importance: WK2.ImportanceType[WeatherAlertCollectionData.alerts(i).importance()],
-            issuedTime: WeatherAlertCollectionData.alerts(i).issuedTime(),
-            phenomenon: WeatherAlertCollectionData.alerts(i).phenomenon(),
+            areaId: alertView.areaId(),
+            areaName: alertView.areaName(),
+            attributionUrl: alertView.attributionUrl(),
+            certainty: WK2.Certainty[alertView.certainty()],
+            countryCode: alertView.countryCode(),
+            description: alertView.description(),
+            detailsUrl: alertView.detailsUrl(),
+            effectiveTime: alertView.effectiveTime(),
+            eventEndTime: alertView.eventEndTime(),
+            eventOnsetTime: alertView.eventOnsetTime(),
+            eventSource: alertView.eventSource(),
+            expireTime: alertView.expireTime(),
+            id: decodeUuid(alertView.id()),
+            importance: WK2.ImportanceType[alertView.importance()],
+            issuedTime: alertView.issuedTime(),
+            phenomenon: alertView.phenomenon(),
             responses: [],
-            severity: WK2.Severity[WeatherAlertCollectionData.alerts(i).severity()],
-            significance: WK2.SignificanceType[WeatherAlertCollectionData.alerts(i).significance()],
-            source: WeatherAlertCollectionData.alerts(i).source(),
-            token: WeatherAlertCollectionData.alerts(i).token(),
-            urgency: WK2.Urgency[WeatherAlertCollectionData.alerts(i).urgency()],
-            unknown23: WeatherAlertCollectionData.alerts(i).unknown23(),
-            unknown24: WeatherAlertCollectionData.alerts(i).unknown24(),
-            unknown25: WeatherAlertCollectionData.alerts(i).unknown25(),
-            unknown26: WeatherAlertCollectionData.alerts(i).unknown26(),
+            severity: WK2.Severity[alertView.severity()],
+            significance: WK2.SignificanceType[alertView.significance()],
+            source: alertView.source(),
+            token: alertView.token(),
+            urgency: WK2.Urgency[alertView.urgency()],
+            unknown23: alertView.unknown23(),
+            unknown24: alertView.unknown24(),
+            unknown25: alertView.unknown25(),
+            unknown26: alertView.unknown26(),
         };
-        //for (let j = 0; j < WeatherAlertCollectionData.alerts(i).idLength(); j++) alert.id.push(WeatherAlertCollectionData.alerts(i).id(j));
-        //for (let j = 0; j < WeatherAlertCollectionData.alerts(i).idLength(); j++) alert.id.push({ "lowBytes": WeatherAlertCollectionData.alerts(i).id(j).lowBytes(), "highBytes": WeatherAlertCollectionData.alerts(i).id(j).highBytes() });
-        for (let j = 0; j < WeatherAlertCollectionData.alerts(i).responsesLength(); j++) alert.responses.push(WK2.ResponseType[WeatherAlertCollectionData.alerts(i).responses(j)]);
+        //for (let j = 0, count = decodedVectorLength(alertView.idLength(), budget); j < count; j++) alert.id.push(alertView.id(j));
+        //for (let j = 0, count = decodedVectorLength(alertView.idLength(), budget); j < count; j++) alert.id.push({ "lowBytes": alertView.id(j).lowBytes(), "highBytes": alertView.id(j).highBytes() });
+        for (let j = 0, count = decodedVectorLength(alertView.responsesLength(), budget); j < count; j++) alert.responses.push(WK2.ResponseType[alertView.responses(j)]);
         data.alerts.push(alert);
     }
     return data;
 }
 
 function decodeWeatherChanges(data) {
+    const budget = newDecodeBudget();
     const WeatherChangesData = data;
     data = {
         metadata: decodeMetadata(WeatherChangesData.metadata()),
@@ -889,7 +915,7 @@ function decodeWeatherChanges(data) {
         forecastEnd: WeatherChangesData.forecastEnd(),
         forecastStart: WeatherChangesData.forecastStart(),
     };
-    for (let i = 0; i < WeatherChangesData.changesLength(); i++) {
+    for (let i = 0, count = decodedVectorLength(WeatherChangesData.changesLength(), budget); i < count; i++) {
         const change = {
             dayPrecipitationChange: WK2.Direction[WeatherChangesData.changes(i).dayPrecipitationChange()],
             forecastEnd: WeatherChangesData.changes(i).forecastEnd(),
@@ -904,12 +930,13 @@ function decodeWeatherChanges(data) {
 }
 
 function decodeHistoricalComparisons(data) {
+    const budget = newDecodeBudget();
     const HistoricalComparisonsData = data;
     data = {
         metadata: decodeMetadata(HistoricalComparisonsData.metadata()),
         comparisons: [],
     };
-    for (let i = 0; i < HistoricalComparisonsData.comparisonsLength(); i++) {
+    for (let i = 0, count = decodedVectorLength(HistoricalComparisonsData.comparisonsLength(), budget); i < count; i++) {
         const comparison = {
             baselineStartDate: HistoricalComparisonsData.comparisons(i).baselineStartDate(),
             baselineType: HistoricalComparisonsData.comparisons(i).baselineType(),

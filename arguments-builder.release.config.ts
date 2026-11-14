@@ -1,3 +1,4 @@
+// User-facing weather parameters; retain the original defaults.
 import { defineConfig } from "@iringo/arguments-builder";
 import { airQuality, api, calculate, dataSets, logLevel, nextHour, output, storage, weather, weatherAlerts } from "./arguments-builder.full.config";
 

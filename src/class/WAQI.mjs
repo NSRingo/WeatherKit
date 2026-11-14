@@ -1,12 +1,16 @@
-import { Console, fetch } from "@nsnanocat/util";
+// WeatherKit provider processing.
+import { Console } from "@nsnanocat/util";
 import AirQuality from "../class/AirQuality.mjs";
+import fetch from "../function/fetchProvider.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
+import ProviderTransport, { providerErrorCode, readProviderJSON } from "./ProviderTransport.mjs";
 
 export default class WAQI {
-    constructor(parameters, token) {
+    constructor(parameters, token, transport = new ProviderTransport()) {
+        this.#requests = transport;
         this.Name = "WAQI";
         this.Version = "1.4.3";
-        Console.log(`🟧 ${this.Name} v${this.Version}`);
+        Console.info(`🟧 ${this.Name} v${this.Version}`);
         this.headers = { Accept: "application/json" };
         this.token = token;
         this.version = parameters.version;
@@ -14,6 +18,20 @@ export default class WAQI {
         this.latitude = parameters.latitude;
         this.longitude = parameters.longitude;
         this.country = parameters.country;
+    }
+
+    #requests;
+
+    #Fetch(request) {
+        return this.#requests.fetch(typeof $loon === "string" ? { ...request, timeout: request.timeout ?? 5000 } : request, {
+            fetcher: fetch,
+            includeJSON: true,
+            validate: body => {
+                if (request.url.includes("/mapq/")) return body?.status !== "error" && Array.isArray(body?.d) && body.d.length > 0;
+                if (request.url.includes("/mapq2/")) return body?.status === "ok" && Array.isArray(body?.data?.stations) && body.data.stations.length > 0;
+                return body?.status === "ok" && Boolean(body?.data?.city);
+            },
+        });
     }
 
     #Configs = {
@@ -56,7 +74,7 @@ export default class WAQI {
         };
         let airQuality;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (mapqVersion) {
                 case "mapq":
                     switch (body?.status) {
@@ -121,7 +139,7 @@ export default class WAQI {
                     break;
             }
         } catch (error) {
-            Console.error(`Nearest: ${error}`);
+            Console.error(`Nearest: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
             Console.info("✅ Nearest");
@@ -137,7 +155,12 @@ export default class WAQI {
         };
         let token;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#requests
+                .fetch(request, {
+                    fetcher: fetch,
+                    validate: value => value?.rxs?.status === "ok" && value.rxs.obs?.[0]?.status === "ok" && typeof value.rxs.obs[0].msg?.token === "string" && value.rxs.obs[0].msg.token.trim().length > 0,
+                })
+                .then(response => readProviderJSON(response));
             switch (body?.status) {
                 case "error":
                     throw JSON.stringify({ status: body?.status, reason: body?.data });
@@ -160,7 +183,7 @@ export default class WAQI {
                     break;
             }
         } catch (error) {
-            Console.error(`Token: ${error}`);
+            Console.error(`Token: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`token: ${token}`);
             Console.info("✅ Token");
@@ -169,15 +192,20 @@ export default class WAQI {
     }
 
     async AQI(stationId = Number(), token = this.token) {
-        Console.info("☑️ AQI", `stationId: ${stationId}`, `token: ${token}`);
+        Console.info("☑️ AQI", `stationId: ${stationId}`);
         const request = {
             url: `https://api.waqi.info/api/feed/@${stationId}/aqi.json`,
             headers: this.headers,
-            body: `token=${token}&id=${stationId}`,
+            body: `token=${encodeURIComponent(token)}&id=${encodeURIComponent(stationId)}`,
         };
         let airQuality;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#requests
+                .fetch(request, {
+                    fetcher: fetch,
+                    validate: value => value?.rxs?.status === "ok" && value.rxs.obs?.[0]?.status === "ok" && Boolean(value.rxs.obs[0].msg?.city) && value.rxs.obs[0].msg.aqi !== null && String(value.rxs.obs[0].msg.aqi).trim() !== "" && Number.isFinite(Number(value.rxs.obs[0].msg.aqi)),
+                })
+                .then(response => readProviderJSON(response));
             switch (body?.status) {
                 case "error":
                     throw JSON.stringify({ status: body?.status, reason: body?.data });
@@ -220,7 +248,7 @@ export default class WAQI {
                     break;
             }
         } catch (error) {
-            Console.error(`AQI: ${error}`);
+            Console.error(`AQI: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
             Console.info("✅ AQI");
@@ -237,7 +265,7 @@ export default class WAQI {
         if (stationId) request.url = `https://api2.waqi.info/feed/@${stationId}/?token=${token}`;
         let airQuality;
         try {
-            const body = await fetch(request).then(response => JSON.parse(response?.body ?? "{}"));
+            const body = await this.#Fetch(request).then(response => readProviderJSON(response));
             switch (body?.status) {
                 case "ok": {
                     const timeStamp = (Date.now() / 1000) | 0;
@@ -266,7 +294,7 @@ export default class WAQI {
                     throw JSON.stringify({ status: body?.status, reason: body?.data });
             }
         } catch (error) {
-            Console.error(`AQI2: ${error}`);
+            Console.error(`AQI2: ${providerErrorCode(error)}`);
         } finally {
             //Console.debug(`airQuality: ${JSON.stringify(airQuality, null, 2)}`);
             Console.info("✅ AQI2");

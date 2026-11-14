@@ -48,7 +48,7 @@ jobs:
           token: ${{ secrets.GIST_TOKEN }}
           gist_id: 862db28df04be7523476d10b61b128f2
           gist_description: " iRingo: 🌤 WeatherKit β"
-          file_path: dist/iRingo.WeatherKit.dev.plugin
+          file_path: dist/iRingo.WeatherKit.dev.lpx
       - name: Deploy Quantumult X Snippet
         uses: exuanbo/actions-deploy-gist@main
         with:
