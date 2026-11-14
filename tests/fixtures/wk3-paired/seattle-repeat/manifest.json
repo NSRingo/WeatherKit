@@ -106,12 +106,24 @@
     "method": "Only vtable-validated Metadata latitude/longitude floats and same-length coordinate URL digits replaced. No re-encoding."
   },
   "sha256": {
-    "apple.json": "3df2e72858dcf0a192d81d3a08d7e8f853c655a4f7615a5d196bad7867cb010c",
-    "apple.bin": "93ef12a168e6a154f0ce6a6c30aa6e06297bd6cc6b8874e7489ff2dccaf74d36"
+    "apple.json": "e961c5e04f369cfd933b7b7c1065f87b918ffdaa8c01c55869226fc9925cd06a",
+    "apple.bin": "3614704af05dcb1c420ed4725bb8378f964e8df2b71150592389ae031e7d9ca1"
   },
   "schema_source": {
     "weatherkit_dev": "cd9d7927094aff79906fe3430f339f39970ca46e",
     "protocol_tag": "v2.0.5",
     "protocol_commit": "c87c1dcd851ea9293141bcfb32fde1b2cca564b9"
-  }
+  },
+  "additional_redactions": [
+    {
+      "kind": "coordinate-url",
+      "offset": 13744,
+      "bytes": 75
+    },
+    {
+      "kind": "weather-alert-token",
+      "offset": 864,
+      "bytes": 22
+    }
+  ]
 }

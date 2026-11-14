@@ -34,3 +34,7 @@ equal, reason), decoded JSON and summary counts. Pollutants are keyed by species
 because the two formats return them in opposite orders. Float32 equivalence is used
 only for schema float fields, never timestamps; UUIDs and omitted defaults have
 explicit comparison rules. Integer mismatches are checked against direct vtable reads.
+
+Additional audit: the Seattle attribution URL coordinates and alert tokens are
+redacted in JSON and in-place in the binary. Each manifest records the modified
+string byte ranges and updated SHA-256 hashes.
