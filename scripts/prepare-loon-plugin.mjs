@@ -1,21 +1,13 @@
 // Copyright 2026 hhhoratioxu. SPDX-License-Identifier: Apache-2.0
-// Finalize native parameter types after the shared arguments generator.
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
+let plugin = await readFile(new URL("../dist/iRingo.WeatherKit.lpx", import.meta.url), "utf8");
+assert.doesNotMatch(plugin, /RequestCache|ProviderFallback|Region\.Fallback/);
+const defaults = new Map([...plugin.matchAll(/^([^=\n]+?)\s*=\s*(?:input|select),("(?:\\.|[^"\\])*")/gm)].map(([, key, value]) => [key.trim(), JSON.parse(value)]));
+const original = JSON.parse(await readFile(new URL("../tests/fixtures/upstream-intent.json", import.meta.url), "utf8")).originalArgumentDefaults;
+assert.equal(defaults.size, 13);
+assert.equal(defaults.get("WeatherAlerts.Language"), "Auto");
+for (const [key, value] of Object.entries(original)) assert.equal(defaults.get(key), value);
 
-const file = new URL("../dist/iRingo.WeatherKit.lpx", import.meta.url);
-let plugin = await readFile(file, "utf8");
-for (const key of ["RequestCache.TTL", "RequestCache.ForecastTTL", "RequestCache.MinutelyTTL", "RequestCache.AlertsTTL", "RequestCache.BudgetMs", "RequestCache.CooldownSeconds"]) {
-    const line = plugin.split("\n").find(line => line.startsWith(`${key} = input,`));
-    assert.ok(line, `Missing Loon input: ${key}`);
-    plugin = plugin.replace(line, line.replace(/(input,"[^"]*",)/, "$1type=string,"));
-}
-for (const key of ["RequestCache.Diagnostics", "ProviderFallback.Enabled"]) {
-    const declaration = `${key} = switch,false,type=boolean,`;
-    plugin = plugin.replace(`${key} = switch,false,`, declaration);
-    assert.ok(plugin.includes(declaration), `Missing typed switch: ${key}`);
-}
-const region = plugin.split("\n").find(line => line.startsWith("Region.Fallback = select,"));
-assert.ok(region, "Missing Loon region selector");
-plugin = plugin.replace(region, region.replace(",tag=", ",type=string,tag="));
-await writeFile(file, plugin);
+if (!/^#!loon_version = /m.test(plugin)) plugin = plugin.replace(/^(#!system_version = .+)$/m, "$1\n#!loon_version = 3.5.1(983)");
+await writeFile(new URL("../dist/iRingo.WeatherKit.lpx", import.meta.url), plugin);

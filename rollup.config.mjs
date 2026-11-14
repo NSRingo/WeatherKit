@@ -56,7 +56,7 @@ export default [
             ...(name === "scale" ? [{
                 name: "weatherkit-third-party-licenses",
                 generateBundle() {
-                    this.emitFile({ type: "asset", fileName: "LICENSE.txt", source: `${readFileSync(new URL("./LICENSE", import.meta.url), "utf8")}\n\n@noble/hashes 1.8.0\n${readFileSync(new URL("./node_modules/@noble/hashes/LICENSE", import.meta.url), "utf8")}\n\nProvider region data: Natural Earth, public domain; see docs/provider-regions-source.json.\n` });
+                    this.emitFile({ type: "asset", fileName: "LICENSE.txt", source: readFileSync(new URL("./LICENSE", import.meta.url), "utf8") });
                 },
             }] : []),
         ],

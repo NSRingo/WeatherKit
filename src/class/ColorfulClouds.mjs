@@ -1,15 +1,15 @@
-// Modified by hhhoratioxu, 2026-10-19: bounded request coalescing and short-lived response caching.
+// WeatherKit provider processing.
 import { Console } from "@nsnanocat/util";
 import fetch from "../function/fetchProvider.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
 import AirQuality from "./AirQuality.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
-import ProviderRequestCache, { providerErrorCode, readProviderJSON } from "./ProviderRequestCache.mjs";
+import ProviderTransport, { providerErrorCode, readProviderJSON } from "./ProviderTransport.mjs";
 import Weather from "./Weather.mjs";
 
 export default class ColorfulClouds {
-    constructor(parameters, token, requestCache = new ProviderRequestCache()) {
-        this.#requests = requestCache;
+    constructor(parameters, token, transport = new ProviderTransport()) {
+        this.#requests = transport;
         this.Name = "ColorfulClouds";
         this.Version = "4.3.0";
         Console.info(`🟧 ${this.Name} v${this.Version}`);
@@ -29,9 +29,6 @@ export default class ColorfulClouds {
         this.weatherKitLanguage = String(parameters.weatherKitLanguage ?? parameters.language ?? "").trim() || "zh-CN";
     }
 
-    #cache = {
-        alert: {},
-    };
     #requests;
 
     #Fetch(request, kind) {
@@ -39,15 +36,25 @@ export default class ColorfulClouds {
         return this.#requests.fetch(typeof $loon === "string" ? { ...request, timeout: request.timeout ?? 5000 } : request, {
             fetcher: fetch,
             includeJSON: true,
-            partition: [this.Name, this.version, this.language, this.country],
-            product,
-            group: [this.latitude, this.longitude, this.country],
-            kind: kind ?? (product === "minutely" ? "minutely" : /hourly|daily/.test(product) ? "forecast" : product === "location" ? "alerts" : "current"),
-            maximumTTLSeconds: product === "minutely" ? 30 : 300,
             validate: body => {
                 if (product === "location") return !body?.error && Array.isArray(body?.alerts);
                 const result = body?.result;
-                return body?.status === "ok" && result?.[product]?.status === "ok" && (product !== "realtime" || kind !== "alerts" || (result.alert?.status === "ok" && Array.isArray(result.alert.content)));
+                if (body?.status !== "ok" || result?.[product]?.status !== "ok") return false;
+                if (product === "minutely") {
+                    const { precipitation_2h: minutes, probability, description } = result.minutely;
+                    return (
+                        Number.isFinite(body.server_time) &&
+                        Array.isArray(minutes) &&
+                        minutes.length > 0 &&
+                        minutes.length <= 8192 &&
+                        minutes.every(value => Number.isFinite(value) && value >= 0) &&
+                        Array.isArray(probability) &&
+                        probability.length >= Math.ceil(Math.min(85, minutes.length) / 30) &&
+                        probability.every(value => Number.isFinite(value) && value >= 0 && value <= 1) &&
+                        (description === undefined || typeof description === "string")
+                    );
+                }
+                return product !== "realtime" || kind !== "alerts" || (result.alert?.status === "ok" && Array.isArray(result.alert.content));
             },
         });
     }
@@ -230,8 +237,6 @@ export default class ColorfulClouds {
 
     async #RealTime(kind = "current") {
         Console.info("☑️ RealTime");
-        this.#cache.alert = {};
-
         const request = {
             url: `${this.endpoint}/realtime?lang=${this.language}&alert=true`,
             headers: this.headers,
@@ -247,14 +252,6 @@ export default class ColorfulClouds {
                         case "error":
                         case undefined:
                             throw Error(JSON.stringify({ status: body?.result?.realtime?.status, reason: body?.result?.realtime }));
-                    }
-                    switch (body?.result?.alert?.status) {
-                        case "ok":
-                            this.#cache.alert = body.result.alert;
-                            break;
-                        case "error":
-                        case undefined:
-                            break;
                     }
                     Console.info("✅ RealTime");
                     return body;
@@ -314,7 +311,7 @@ export default class ColorfulClouds {
                                 condition: [],
                                 forecastEnd: 0,
                                 forecastStart: minuteStemp,
-                                minutes: body?.result?.minutely?.precipitation_2h?.map((precipitationIntensity, index) => {
+                                minutes: body.result.minutely.precipitation_2h.slice(0, 85).map((precipitationIntensity, index) => {
                                     const minute = {
                                         perceivedPrecipitationIntensity: 0,
                                         precipitationChance: 0,
@@ -357,8 +354,8 @@ export default class ColorfulClouds {
     }
 
     /**
-     * 从彩云实况缓存读取 v2.6 预警，并标准化为 WeatherAlerts.mergeAlerts 可消费的来源结构。
-     * Read Caiyun v2.6 alerts from the realtime cache and normalize them for WeatherAlerts.mergeAlerts.
+     * 拉取彩云 v2.6 预警，并标准化为 WeatherAlerts.mergeAlerts 可消费的来源结构。
+     * Fetch Caiyun v2.6 alerts and normalize them for WeatherAlerts.mergeAlerts.
      * @link https://docs.caiyunapp.com/weather-api/v2/v2.6/5-alert.html
      * @returns {Promise<{metadata: object, detailsUrl: string, alerts: Array<object>, areaName: string, source: string}>} WeatherKit 顶级预警对象 / Top-level WeatherKit alert object.
      */
@@ -376,9 +373,10 @@ export default class ColorfulClouds {
         };
         let weatherAlerts = failedWeatherAlerts;
         try {
-            await this.#RealTime("alerts");
-            if (!Array.isArray(this.#cache.alert?.content)) throw Error(JSON.stringify(this.#cache.alert));
-            weatherAlerts = { ...failedWeatherAlerts, ...this.#CreateWeatherAlerts(this.#cache.alert) };
+            const response = await this.#RealTime("alerts");
+            const alert = response?.result?.alert;
+            if (!Array.isArray(alert?.content)) throw Error("Unavailable provider alerts");
+            weatherAlerts = { ...failedWeatherAlerts, ...this.#CreateWeatherAlerts(alert) };
             if (!weatherAlerts.metadata?.temporarilyUnavailable || weatherAlerts !== failedWeatherAlerts) weatherAlerts.metadata = { ...weatherAlerts.metadata, temporarilyUnavailable: false };
         } catch (error) {
             Console.error(`WeatherAlert: ${providerErrorCode(error)}`);
@@ -780,8 +778,8 @@ export default class ColorfulClouds {
     async CurrentWeather() {
         Console.info("☑️ CurrentWeather");
         const realtime = await this.#RealTime();
-        if (!realtime.result) {
-            Console.error("CurrentWeather", "无法获取realtime数");
+        if (!realtime.result || !Number.isFinite(realtime.result.realtime?.temperature)) {
+            Console.error("CurrentWeather", "无法获取有效的实时气温");
             return {
                 metadata: this.#Metadata(undefined, undefined, true),
             };

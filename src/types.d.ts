@@ -1,17 +1,5 @@
-// Modified by hhhoratioxu, 2026-10-19: provider response cache settings.
+// WeatherKit settings.
 export interface Settings {
-    ProviderFallback?: { Enabled?: boolean | string };
-    RequestCache?: {
-        /** Successful provider JSON cache lifetime in seconds, 0 disables completed-response caching; maximum 300. */
-        TTL?: number | string;
-        ForecastTTL?: number | string;
-        MinutelyTTL?: number | string;
-        AlertsTTL?: number | string;
-        BudgetMs?: number | string;
-        CooldownSeconds?: number | string;
-        Diagnostics?: boolean | string;
-    };
-    Region?: { Fallback?: "Auto" | "Locale" | "CN" | "HK" | "MO" | "TW" };
     DataSets?: {
         /**
          * [数据集] 替换地区
@@ -71,6 +59,8 @@ export interface Settings {
     };
     WeatherAlerts?: {
         Provider?: "WeatherKit" | "QWeatherWeb" | "QWeather" | "ColorfulClouds";
+        /** Source-native alert text preference; missing/Auto preserves existing behavior. No machine translation. */
+        Language?: "Auto" | "zh-Hans" | "en";
     };
     NextHour?: {
         /**

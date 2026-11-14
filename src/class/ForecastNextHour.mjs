@@ -184,68 +184,39 @@ export default class ForecastNextHour {
 
     static Summary(minutes = []) {
         Console.info("☑️ Summary");
-        const Summaries = [];
-        const Summary = {
-            condition: "CLEAR",
-            startTime: 0,
-            precipitationChance: 0,
-            precipitationIntensity: 0,
-            //beginCondition: "",
-            //endCondition: "",
-            maxCondition: "",
-            clear: true,
-        };
-        const Length = Math.min(71, minutes.length);
-        for (let i = 0; i < Length; i++) {
+        const summaries = [];
+        let current;
+        const length = Math.min(71, minutes.length);
+        for (let i = 0; i < length; i++) {
             const minute = minutes[i];
-            const previousMinute = minutes[i - 1];
-            switch (i) {
-                case 0: // 第一个
-                    Summary.startTime = minute.startTime;
-                    Summary.condition = minute.summaryCondition; // condition 只关心降水类型，不关心具体强弱描述
-                    Summary.precipitationChance = minute.precipitationChance;
-                    Summary.precipitationIntensity = minute.precipitationIntensity;
-                    //Summary.beginCondition = minute.condition;
-                    //Summary.endCondition = "";
-                    Summary.maxCondition = minute.condition;
-                    Summary.clear = minute.clear;
-                    break;
-                case Length - 1: // 最后一个
-                    Summary.endTime = 0; // ⚠️空值必须写零！
-                    //Summary.endCondition = minute.condition;
-                    Summary.clear = minute.clear;
-                    Console.debug(`Summaries[${i}]`, JSON.stringify({ ...minute, ...Summary }, null, 2));
-                    Summaries.push({ ...Summary });
-                    break;
-                default: // 中间
-                    if (minute.summaryCondition !== previousMinute.summaryCondition) {
-                        // 结束当前summary
-                        Summary.endTime = minute.startTime;
-                        //Summary.endCondition = previousMinute.condition;
-                        Console.debug(`Summaries[${i}]`, JSON.stringify({ ...previousMinute, ...Summary }, null, 2));
-                        Summaries.push({ ...Summary });
-
-                        // 开始新的summary
-                        Summary.startTime = minute.startTime;
-                        Summary.condition = minute.summaryCondition; // condition 只关心降水类型，不关心具体强弱描述
-                        Summary.precipitationChance = minute.precipitationChance;
-                        Summary.precipitationIntensity = minute.precipitationIntensity;
-                        //Summary.beginCondition = minute.condition;
-                        //Summary.endCondition = ""; // 重置
-                        Summary.maxCondition = minute.condition; // 重置
-                        Summary.clear = minute.clear;
-                    } else {
-                        // 条件相同，更新最大值
-                        Summary.precipitationChance = Math.max(Summary.precipitationChance, minute.precipitationChance);
-                        Summary.precipitationIntensity = Math.max(Summary.precipitationIntensity, minute.precipitationIntensity);
-                        if (Summary.precipitationIntensity === minute.precipitationIntensity) Summary.maxCondition = minute.condition;
-                    }
-                    break;
+            if (!current || minute.summaryCondition !== current.condition) {
+                if (current) {
+                    current.endTime = minute.startTime;
+                    summaries.push(current);
+                }
+                current = {
+                    condition: minute.summaryCondition,
+                    startTime: minute.startTime,
+                    precipitationChance: minute.precipitationChance,
+                    precipitationIntensity: minute.precipitationIntensity,
+                    maxCondition: minute.condition,
+                    clear: minute.clear,
+                };
+            } else {
+                current.precipitationChance = Math.max(current.precipitationChance, minute.precipitationChance);
+                current.precipitationIntensity = Math.max(current.precipitationIntensity, minute.precipitationIntensity);
+                if (current.precipitationIntensity === minute.precipitationIntensity) current.maxCondition = minute.condition;
             }
         }
-        Console.debug(`Summaries: ${JSON.stringify(Summaries, null, 2)}`);
+        if (current) {
+            // The last sample is processed like every other sample. Zero keeps
+            // the existing open-ended WK2 summary/condition convention.
+            current.endTime = 0;
+            summaries.push(current);
+        }
+        if (Console.logLevel === "DEBUG" || Console.logLevel === "ALL") Console.debug(`Summaries: ${JSON.stringify(summaries, null, 2)}`);
         Console.info("✅ Summary");
-        return Summaries;
+        return summaries;
     }
 
     static Condition(summaries = []) {

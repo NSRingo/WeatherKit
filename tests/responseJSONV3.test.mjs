@@ -267,15 +267,30 @@ test("undefined provider values do not erase available Apple fields", async t =>
 });
 
 test("unserializable values and malformed Unicode reject one product without discarding healthy replacements", async () => {
-    settings({ DataSets: "weatherAlerts,currentWeather" });
+    settings({ DataSets: "weatherAlerts,currentWeather", "WeatherAlerts.Provider": "QWeather" });
     const body = { weatherAlerts: { metadata: metadata(), alerts: [{ description: "Apple warning" }] }, currentWeather: current() };
-    for (const invalid of ["bad\ud800", 1n, [undefined], [null], [1e100]]) {
+    for (const invalid of ["bad\ud800", 1n, [undefined]]) {
         const injectors = { weatherAlerts: async input => ({ ...input, futureProviderField: invalid }), currentWeather: async input => ({ ...input, temperature: 23 }) };
         const updated = JSON.parse((await ResponseJSONV3(request("weatherAlerts,currentWeather"), response(body), injectors)).body);
         assert.deepEqual(updated.weatherAlerts, body.weatherAlerts);
         assert.equal(updated.currentWeather.temperature, 23);
     }
     assert.doesNotThrow(() => validateWeatherJSONV3({ description: "雨 🌧️" }));
+});
+
+test("unknown JSON arrays retain null and finite double values without native field coercion", async () => {
+    settings({ DataSets: "currentWeather" });
+    for (const values of [[null], [1e100]]) {
+        const original = { currentWeather: { ...current(), futureProviderField: values } };
+        const result = await ResponseJSONV3(request(), response(original), { currentWeather: async input => ({ ...input, temperature: 23 }) });
+        const actual = JSON.parse(result.body).currentWeather;
+        assert.equal(actual.temperature, 23);
+        assert.deepEqual(actual.futureProviderField, values);
+    }
+});
+
+test("known native vectors still reject null entries and invalid float values", () => {
+    for (const invalid of [[null], [undefined], [1e100]]) assert.throws(() => validateWeatherJSONV3({ hours: invalid }, "forecastHourly"));
 });
 
 test("a null replacement product keeps the complete original response", async () => {

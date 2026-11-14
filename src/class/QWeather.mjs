@@ -1,18 +1,18 @@
-// Modified by hhhoratioxu, 2026-10-19: bounded request coalescing and short-lived response caching.
+// WeatherKit provider processing.
 import { Lodash as _, Console, time } from "@nsnanocat/util";
 import AirQuality from "../class/AirQuality.mjs";
 import fetch from "../function/fetchProvider.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
 import utf8Length from "../function/utf8Length.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
-import ProviderRequestCache, { providerErrorCode, readProviderJSON } from "./ProviderRequestCache.mjs";
+import ProviderTransport, { ProviderRequestError, providerErrorCode, readProviderJSON } from "./ProviderTransport.mjs";
 import Weather from "./Weather.mjs";
 
 export default class QWeather {
     static #MaximumWeatherAlertPageSize = 2 * 1024 * 1024;
 
-    constructor(parameters, token, host = "devapi.qweather.com", requestCache = new ProviderRequestCache()) {
-        this.#requests = requestCache;
+    constructor(parameters, token, host = "devapi.qweather.com", transport = new ProviderTransport()) {
+        this.#requests = transport;
         this.Name = "QWeather";
         this.Version = "5.3.1";
         Console.info(`🟧 ${this.Name} v${this.Version}`);
@@ -38,18 +38,22 @@ export default class QWeather {
         return this.#requests.fetch(typeof $loon === "string" ? { ...request, timeout: request.timeout ?? 5000 } : request, {
             fetcher: fetch,
             includeJSON: true,
-            partition: [this.Name, this.version, this.language, this.country],
-            product: path,
-            group: [this.latitude, this.longitude, this.country],
-            kind: /weatheralert/.test(path) ? "alerts" : /minutely/.test(path) ? "minutely" : /\/weather\/\d+[hd]$/.test(path) ? "forecast" : "current",
-            maximumTTLSeconds: path.includes("/minutely/") ? 30 : 300,
             validate: body => {
                 if (body?.error) return false;
                 if (path.startsWith("/weatheralert/")) return Boolean(body?.metadata) && Array.isArray(body?.alerts);
                 if (path.startsWith("/airquality/")) return Array.isArray(body?.pollutants) && Array.isArray(body?.indexes) && body.indexes.some(index => typeof index?.code === "string" && index.aqi !== null && String(index.aqi).trim() !== "" && Number.isFinite(Number(index.aqi)));
                 if (body?.code !== "200") return false;
                 if (path.startsWith("/geo/")) return Array.isArray(body.location) && body.location.length > 0;
-                if (path.includes("/minutely/")) return Array.isArray(body.minutely) && body.minutely.length > 0;
+                if (path.includes("/minutely/"))
+                    return (
+                        typeof body.updateTime === "string" &&
+                        Number.isFinite(Date.parse(body.updateTime)) &&
+                        (body.summary === undefined || typeof body.summary === "string") &&
+                        Array.isArray(body.minutely) &&
+                        body.minutely.length > 0 &&
+                        body.minutely.length <= 8192 &&
+                        body.minutely.every(row => row && typeof row.fxTime === "string" && Number.isFinite(Date.parse(row.fxTime)) && (typeof row.precip === "number" || (typeof row.precip === "string" && row.precip.trim() !== "")) && Number.isFinite(Number(row.precip)) && Number(row.precip) >= 0)
+                    );
                 if (path.endsWith("/historical/air")) return Array.isArray(body.airHourly) && body.airHourly.length > 0;
                 if (path.endsWith("/weather/now")) return body.now?.temp !== undefined && body.now.temp !== null && String(body.now.temp).trim() !== "" && Number.isFinite(Number(body.now.temp));
                 if (path.endsWith("/now")) return Boolean(body.now && typeof body.now === "object");
@@ -283,36 +287,55 @@ export default class QWeather {
         },
     };
 
-    static async GetLocationsGrid(qweatherCache, setCache, runtime = new ProviderRequestCache()) {
+    static #ValidLocationsGrid(data) {
+        if (!data || !Number.isFinite(data.gridSize) || data.gridSize <= 0 || !data.grid || typeof data.grid !== "object" || Array.isArray(data.grid)) return false;
+        // Application validation bounds, independent of native HTTP buffers.
+        let cells = 0,
+            locations = 0;
+        for (const key of Object.keys(data.grid)) {
+            if (++cells > 8192 || !/^-?\d+,-?\d+$/.test(key) || !Array.isArray(data.grid[key])) return false;
+            for (const location of data.grid[key]) {
+                if (++locations > 32768 || !location || !((typeof location.id === "string" && location.id.trim()) || Number.isFinite(location.id)) || !Number.isFinite(location.latitude) || Math.abs(location.latitude) > 90 || !Number.isFinite(location.longitude) || Math.abs(location.longitude) > 180) return false;
+            }
+        }
+        return locations > 0;
+    }
+
+    static async GetLocationsGrid(qweatherCache, setCache, runtime = new ProviderTransport()) {
         Console.info("☑️ GetLocationsGrid");
         const locationsGrid = qweatherCache?.locationsGrid;
+        const usable = QWeather.#ValidLocationsGrid(locationsGrid?.data);
+        const now = Date.now();
         // cache within 30 days
-        if (locationsGrid?.lastUpdated && locationsGrid.lastUpdated + 30 * 24 * 60 * 60 * 1000 > Date.now()) {
+        if (usable && Number.isFinite(locationsGrid.lastUpdated) && now >= locationsGrid.lastUpdated && now - locationsGrid.lastUpdated < 30 * 24 * 60 * 60 * 1000) {
             Console.info("✅ GetLocationsGrid", "Cache found!");
             return locationsGrid.data;
         } else {
             Console.info("⚠️ GetLocationsGrid", "Cache not found or stale, fetching...");
+            const etag = typeof locationsGrid?.etag === "string" && locationsGrid.etag.trim() && locationsGrid.etag.length <= 1024 ? locationsGrid.etag : undefined;
+            const revalidate = usable && Boolean(etag);
             const response = await runtime.fetch(
                 {
-                    headers: locationsGrid?.etag ? { "If-None-Match": locationsGrid?.etag } : undefined,
+                    headers: revalidate ? { "If-None-Match": etag } : undefined,
                     url: "https://raw.githubusercontent.com/NSRingo/QWeather-Location-Grid/refs/heads/main/data/qweather-china-city-list-grid.json",
                 },
-                { fetcher: fetch, cacheable: false, format: "text", allowNotModified: true, validate: () => true, maximumResponseCharacters: 2 * 1024 * 1024 },
+                { fetcher: fetch, includeJSON: true, allowNotModified: revalidate, validate: QWeather.#ValidLocationsGrid, maximumResponseCharacters: 2 * 1024 * 1024 },
             );
-
-            if (response.status === 304) {
+            const notModified = Number(response.statusCode ?? response.status) === 304;
+            if (notModified && !revalidate) throw new ProviderRequestError("invalid");
+            const data = notModified ? locationsGrid.data : readProviderJSON(response);
+            const returnedETag = Object.entries(response.headers ?? {}).find(([key]) => key.toLowerCase() === "etag")?.[1];
+            const nextETag = typeof returnedETag === "string" && returnedETag.trim() && returnedETag.length <= 1024 ? returnedETag : notModified ? etag : undefined;
+            if (notModified) {
                 Console.info("✅ GetLocationsGrid", "Cache not modified");
-                setCache({ ...qweatherCache, locationsGrid: { ...locationsGrid, lastUpdated: Date.now() } });
-                return locationsGrid.data;
             }
-
-            const newLocationsGrid = readProviderJSON(response);
-            setCache({
-                ...qweatherCache,
-                locationsGrid: { etag: response.headers.ETag, lastUpdated: Date.now(), data: newLocationsGrid },
-            });
+            try {
+                if (typeof setCache === "function") setCache({ ...qweatherCache, locationsGrid: { ...locationsGrid, etag: nextETag, lastUpdated: Date.now(), data } });
+            } catch {
+                /* Optional storage must not discard a validated response. */
+            }
             Console.info("✅ GetLocationsGrid");
-            return newLocationsGrid;
+            return data;
         }
     }
 
@@ -509,7 +532,7 @@ export default class QWeather {
      * @param {Record<string, string | string[] | undefined>} requestHeaders 原请求头 / Original request headers.
      * @returns {Promise<{alerts: Array<object>, areaName: string, source: string}>} 来源集合 / Source collection.
      */
-    static async FetchWeatherAlertPage(identifier, language = "zh-CN", requestHeaders = {}, runtime = new ProviderRequestCache()) {
+    static async FetchWeatherAlertPage(identifier, language = "zh-CN", requestHeaders = {}, runtime = new ProviderTransport()) {
         const sourceUrl = QWeather.BuildWeatherAlertPageURL(identifier, language);
         const normalizedHeaders = Object.fromEntries(Object.entries(requestHeaders).map(([key, value]) => [key.toLowerCase(), value]));
         const sourceHeaders = { Accept: "text/html,application/xhtml+xml", "Accept-Language": normalizedHeaders["accept-language"] ?? language, Referer: "https://www.qweather.com/" };
@@ -520,12 +543,7 @@ export default class QWeather {
             response = await runtime.fetch(
                 { url: sourceUrl.toString(), headers: sourceHeaders, "auto-cookie": false },
                 {
-                    partition: ["QWeatherWeb", language],
                     includeJSON: true,
-                    product: "weather-alert-page.v1",
-                    kind: "alerts",
-                    maximumTTLSeconds: 30,
-                    group: [identifier],
                     validate: body => body?.pageValid === true && Array.isArray(body.alerts) && typeof body.areaName === "string",
                     fetcher: async request => {
                         const source = await fetch(request);
@@ -838,8 +856,9 @@ export default class QWeather {
                         condition: [],
                         forecastEnd: 0,
                         forecastStart: minuteStemp,
-                        minutes: body?.minutely
-                            ?.map(minutely => {
+                        minutes: body.minutely
+                            .slice(0, 17)
+                            .map(minutely => {
                                 const minute = {
                                     perceivedPrecipitationIntensity: 0,
                                     precipitationChance: 0,
@@ -923,7 +942,7 @@ export default class QWeather {
                                 // perceivedPrecipitationIntensity: "", // Not given
                                 precipitationAmount: Number.parseFloat(hourly?.precip),
                                 precipitationChance: Number.parseInt(hourly?.pop, 10),
-                                precipitationIntensity: Number.parseInt(hourly?.precip, 10),
+                                precipitationIntensity: Number.parseFloat(hourly?.precip),
                                 // precipitationType: "", // Not given
                                 pressure: Number.parseFloat(hourly?.pressure),
                                 // pressureTrend: "", // Not given

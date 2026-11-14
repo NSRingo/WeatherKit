@@ -130,35 +130,34 @@ test("Stash weather-alert requests declare the required request type", async () 
 });
 
 test("Rewrite templates stay aligned with fixed Rewrite modules", async () => {
-	const fixedTemplates = ["loon.rewrite.handlebars", "stash.rewrite.handlebars"];
-	for (const filename of rewriteTemplates) {
+    const fixedTemplates = ["loon.rewrite.handlebars", "stash.rewrite.handlebars"];
+    for (const filename of rewriteTemplates) {
         const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
         assert.ok(content.includes("(Rewrite)"), filename);
         assert.ok(content.includes(weatherAlertsPagePattern), filename);
         assert.ok(content.includes(weatherAlertsCoordinatePattern), filename);
         assert.ok(!content.includes(mergedWeatherAlertsIdentifierPattern), filename);
-		assert.doesNotMatch(content, /www\.qweather\.com/);
-		assert.doesNotMatch(content, /party=qweather/);
-		assert.match(content, /weatherkit\.apple\.com/);
-		assert.doesNotMatch(content, /weatherkit\.nanocat\.cloud/);
-	}
+        assert.doesNotMatch(content, /www\.qweather\.com/);
+        assert.doesNotMatch(content, /party=qweather/);
+        assert.match(content, /weatherkit\.apple\.com/);
+        assert.doesNotMatch(content, /weatherkit\.nanocat\.cloud/);
+    }
 
+    const surge = await readFile(new URL("../template/surge.rewrite.handlebars", import.meta.url), "utf8");
+    assert.ok(surge.includes("#!arguments = {{{arguments}}}"));
+    assert.ok(surge.includes("#!arguments-desc = {{{argumentsDesc}}}"));
+    assert.ok(surge.includes("https://\\{{{endpoint}}}/api/v1/weatherAlerts?$1"));
 
-	const surge = await readFile(new URL("../template/surge.rewrite.handlebars", import.meta.url), "utf8");
-	assert.ok(surge.includes("#!arguments = {{{arguments}}}"));
-	assert.ok(surge.includes("#!arguments-desc = {{{argumentsDesc}}}"));
-	assert.ok(surge.includes("https://\\{{{endpoint}}}/api/v1/weatherAlerts?$1"));
+    const shadowrocket = await readFile(new URL("../template/shadowrocket.rewrite.handlebars", import.meta.url), "utf8");
+    assert.ok(shadowrocket.includes("#!arguments = endpoint:weatherkit.pages.dev"));
+    assert.ok(shadowrocket.includes("#!arguments-desc = endpoint: [重写] 服务端点\\n"));
+    assert.ok(shadowrocket.includes("https://\\{{{endpoint}}}/api/v1/weatherAlerts?$1"));
 
-	const shadowrocket = await readFile(new URL("../template/shadowrocket.rewrite.handlebars", import.meta.url), "utf8");
-	assert.ok(shadowrocket.includes("#!arguments = endpoint:weatherkit.pages.dev"));
-	assert.ok(shadowrocket.includes("#!arguments-desc = endpoint: [重写] 服务端点\\n"));
-	assert.ok(shadowrocket.includes("https://\\{{{endpoint}}}/api/v1/weatherAlerts?$1"));
-
-	for (const filename of fixedTemplates) {
-		const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
-		assert.ok(content.includes("https://weatherkit.pages.dev/api/v1/weatherAlerts?$1"), filename);
-		assert.doesNotMatch(content, /\{\{\{endpoint\}\}\}/, filename);
-	}
+    for (const filename of fixedTemplates) {
+        const content = await readFile(new URL(`../template/${filename}`, import.meta.url), "utf8");
+        assert.ok(content.includes("https://weatherkit.pages.dev/api/v1/weatherAlerts?$1"), filename);
+        assert.doesNotMatch(content, /\{\{\{endpoint\}\}\}/, filename);
+    }
 
     const loon = await readFile(new URL("../template/loon.rewrite.handlebars", import.meta.url), "utf8");
     assert.match(loon, /^\[Rewrite\]$/m);
@@ -177,11 +176,11 @@ test("Loon Rewrite modules use the legacy Rewrite section", async () => {
 });
 
 test("Rewrite builder outputs use Rewrite names", async () => {
-	const content = await readFile(new URL("../arguments-builder.rewrite.config.ts", import.meta.url), "utf8");
-	assert.match(content, /iRingo\.WeatherKit\.Rewrite\.(?:sgmodule|lpx|srmodule|stoverride|yaml)/);
-	assert.match(content, /key: "endpoint"[\s\S]*defaultValue: "weatherkit\.pages\.dev"/);
-	assert.match(content, /weather\.nanocat\.cloud", label: "Worker 版；需要代理"/);
-	assert.doesNotMatch(content, /Workers/);
+    const content = await readFile(new URL("../arguments-builder.rewrite.config.ts", import.meta.url), "utf8");
+    assert.match(content, /iRingo\.WeatherKit\.Rewrite\.(?:sgmodule|lpx|srmodule|stoverride|yaml)/);
+    assert.match(content, /key: "endpoint"[\s\S]*defaultValue: "weatherkit\.pages\.dev"/);
+    assert.match(content, /weather\.nanocat\.cloud", label: "Worker 版；需要代理"/);
+    assert.doesNotMatch(content, /Workers/);
     assert.doesNotMatch(content, /\.workers\.handlebars/);
 });
 
@@ -269,7 +268,7 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
     ]);
 
     assert.match(full, /key: "WeatherAlerts\.Provider"[\s\S]*defaultValue: "QWeatherWeb"[\s\S]*key: "WeatherKit"[\s\S]*key: "QWeatherWeb"[\s\S]*key: "QWeather"[\s\S]*key: "ColorfulClouds"/);
-    assert.match(full, /export const weatherAlerts = \[weatherAlertsProvider\]/);
+    assert.match(full, /export const weatherAlerts = \[weatherAlertsProvider, weatherAlertsLanguage\]/);
     assert.match(full, /export const airQuality = \[airQualityCurrentPollutantsProvider\]/);
     assert.match(full, /export const dataSets: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"\]/);
     const releaseDataSets = full.slice(full.indexOf("export const dataSets:"), full.indexOf("export const dataSetsFull:"));
@@ -286,7 +285,10 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
         assert.match(releaseDataSets, new RegExp(`key: "${key}", label: "${label}"`));
     }
     assert.doesNotMatch(releaseDataSets, /locationInfo|trendComparison|weatherChange/);
-    assert.match(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "news", "weatherAlerts", "weatherChange", "trendComparison", "locationInfo"\][\s\S]*key: "weatherChange", label: "天气变化"[\s\S]*key: "trendComparison", label: "历史对比"/);
+    assert.match(
+        full,
+        /export const dataSetsFull: Arg\[\] = \[[\s\S]*defaultValue: \["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "news", "weatherAlerts", "weatherChange", "trendComparison", "locationInfo"\][\s\S]*key: "weatherChange", label: "天气变化"[\s\S]*key: "trendComparison", label: "历史对比"/,
+    );
     assert.doesNotMatch(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*\.\.\.dataSets\[0\]/);
     assert.match(full, /key: "Weather\.Replace"[\s\S]*defaultValue: "CN"[\s\S]*type: "string"/);
     assert.match(full, /args: \[\.\.\.dataSetsFull/);
@@ -294,17 +296,23 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
     assert.match(release, /import \{[^}]*airQuality[^}]*\} from "\.\/arguments-builder\.full\.config"/);
     assert.match(release, /args: \[\.\.\.dataSets,[^\]]*\.\.\.weatherAlerts,[^\]]*\.\.\.airQuality/);
     assert.match(dev, /import \{[^}]*airQualityFull[^}]*dataSetsFull[^}]*weatherFull[^}]*\} from "\.\/arguments-builder\.full\.config"/);
-    assert.match(dev, /args: \[\.\.\.dataSetsFull, \.\.\.weatherFull, \.\.\.weatherAlerts, \.\.\.nextHourFull, \.\.\.airQualityFull, \.\.\.calculateFull, \.\.\.api, \.\.\.storage, \.\.\.logLevel, \.\.\.requestCache\]/);
-    assert.match(database, /WeatherAlerts: \{ Provider: "QWeatherWeb" \}/);
+    assert.match(dev, /args: \[\.\.\.dataSetsFull, \.\.\.weatherFull, \.\.\.weatherAlerts, \.\.\.nextHourFull, \.\.\.airQualityFull, \.\.\.calculateFull, \.\.\.api, \.\.\.storage, \.\.\.logLevel\]/);
+    assert.match(database, /WeatherAlerts: \{ Provider: "QWeatherWeb", Language: "Auto" \}/);
     assert.match(types, /WeatherAlerts\?: \{[\s\S]*Provider\?: "WeatherKit" \| "QWeatherWeb" \| "QWeather" \| "ColorfulClouds"/);
     assert.match(boxjs, /@iRingo\.WeatherKit\.Settings\.WeatherAlerts\.Provider[\s\S]*"val":\s*"QWeatherWeb"[\s\S]*"key":\s*"WeatherKit"/);
     const boxjsSettings = JSON.parse(boxjs);
+    const alertLanguage = boxjsSettings.find(({ id }) => id === "@iRingo.WeatherKit.Settings.WeatherAlerts.Language");
+    assert.equal(alertLanguage.val, "Auto");
+    assert.deepEqual(alertLanguage.items.map(({ key }) => key), ["Auto", "zh-Hans", "en"]);
     const dataSetsSetting = boxjsSettings.find(({ id }) => id === "@iRingo.WeatherKit.Settings.DataSets");
     const weatherReplaceSetting = boxjsSettings.find(({ id }) => id === "@iRingo.WeatherKit.Settings.Weather.Replace");
     assert.equal(dataSetsSetting.desc, "选择需要解析并处理的数据集；未选择的数据槽始终保持原样透传，不作修改。");
     assert.equal(weatherReplaceSetting.type, "text");
     assert.equal(weatherReplaceSetting.val, "CN");
-    assert.equal(boxjsSettings.some(({ id }) => id === "@iRingo.WeatherKit.Settings.Storage"), false);
+    assert.equal(
+        boxjsSettings.some(({ id }) => id === "@iRingo.WeatherKit.Settings.Storage"),
+        false,
+    );
     assert.equal(
         boxjsSettings.some(({ type, val }) => type === "text" && Array.isArray(val)),
         false,

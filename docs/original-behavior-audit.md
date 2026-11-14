@@ -1,5 +1,7 @@
 # 原版 WeatherKit 的用途、参数与 Fork 行为核对
 
+历史记录说明：下文保存 2026-11-05 的行为核对。2026-11-14 已移除其中所述附加缓存、合并、冷却、统计、地区回退与备用查询；保留原有 12 项默认值，新增默认 Auto 的预警正文语言选项。当前处理与验证以 [后续修复](verified-followup-2026-11-14.md) 为准，旧描述不代表这些已移除功能仍可启用。
+
 核对日期：2026-11-05。基线为 NSRingo/WeatherKit 的 c40e8f8、v3.3.2 正式 Loon 文件及[官方配置指南](https://NSRingo.github.io/guide/Weather/weather-kit)。下载的原版插件为 5740 字节，SHA-256 为 e994f11d8eb987b81bda0c682e95287d4ee166cabf8a5563d2fa8aa4bdfe3e24。
 
 ## 原版具体做什么

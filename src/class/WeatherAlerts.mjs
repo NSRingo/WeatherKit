@@ -1,4 +1,5 @@
 import { Console } from "@nsnanocat/util";
+import { knownWeatherAlertExpiry, UNKNOWN_WEATHER_ALERT_EXPIRY } from "../function/weatherAlertExpiry.mjs";
 
 /**
  * 从来源页面提取的预警记录。
@@ -122,13 +123,14 @@ export default class WeatherAlerts {
     static #FillAlert(appleAlert, sourceAlert, appleAlertIndex, sourceAlertIndex) {
         let before;
         if (WeatherAlerts.#IsDebug()) before = WeatherAlerts.#WeatherAlertDebugSnapshot(appleAlert, appleAlertIndex);
-        const sourceExpireTime = sourceAlert.expireTime === "9999-12-31T23:59:59Z" ? undefined : sourceAlert.expireTime;
+        const sourceExpireTime = knownWeatherAlertExpiry(sourceAlert.expireTime);
+        const sourceEndTime = knownWeatherAlertExpiry(sourceAlert.eventEndTime);
         WeatherAlerts.#FillText(appleAlert, "areaId", sourceAlert.areaId);
         WeatherAlerts.#FillText(appleAlert, "areaName", sourceAlert.areaName);
         WeatherAlerts.#FillTime(appleAlert, "effectiveTime", sourceAlert.effectiveTime ?? sourceAlert.issuedTime);
         WeatherAlerts.#FillTime(appleAlert, "eventOnsetTime", sourceAlert.eventOnsetTime ?? sourceAlert.effectiveTime ?? sourceAlert.issuedTime ?? appleAlert.effectiveTime ?? appleAlert.issuedTime);
-        WeatherAlerts.#FillTime(appleAlert, "eventEndTime", sourceAlert.eventEndTime ?? sourceExpireTime ?? appleAlert.expireTime);
-        WeatherAlerts.#FillTime(appleAlert, "expireTime", sourceExpireTime ?? sourceAlert.eventEndTime);
+        WeatherAlerts.#FillTime(appleAlert, "eventEndTime", sourceEndTime ?? sourceExpireTime ?? (knownWeatherAlertExpiry(appleAlert.expireTime) || undefined));
+        WeatherAlerts.#FillTime(appleAlert, "expireTime", sourceExpireTime ?? sourceEndTime);
         WeatherAlerts.#FillTime(appleAlert, "issuedTime", sourceAlert.issuedTime ?? sourceAlert.effectiveTime);
         WeatherAlerts.#FillDescription(appleAlert, sourceAlert);
         WeatherAlerts.#FillText(appleAlert, "source", sourceAlert.source);
@@ -366,9 +368,10 @@ export default class WeatherAlerts {
             const areaId = alert.areaId || contextAreaId;
             const areaName = alert.areaName || extracted.areaName;
             const effectiveTime = alert.effectiveTime ?? alert.issuedTime;
-            const expireTime = alert.expireTime ?? "9999-12-31T23:59:59Z";
+            const sourceExpireTime = knownWeatherAlertExpiry(alert.expireTime);
+            const expireTime = sourceExpireTime ?? UNKNOWN_WEATHER_ALERT_EXPIRY;
             const eventOnsetTime = alert.eventOnsetTime ?? effectiveTime;
-            const eventEndTime = alert.eventEndTime ?? (alert.expireTime ? expireTime : undefined);
+            const eventEndTime = knownWeatherAlertExpiry(alert.eventEndTime) ?? sourceExpireTime;
             const source = alert.source || extracted.source || "";
             const importance = alert.importance || WeatherAlerts.#ImportanceFromSeverity(alert.severity);
             const phenomenon = alert.phenomenon;

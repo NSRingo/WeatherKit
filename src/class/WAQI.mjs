@@ -1,13 +1,13 @@
-// Modified by hhhoratioxu, 2026-10-19: cache weather data only; token endpoints remain uncached.
+// WeatherKit provider processing.
 import { Console } from "@nsnanocat/util";
 import AirQuality from "../class/AirQuality.mjs";
 import fetch from "../function/fetchProvider.mjs";
 import providerNameToLogo from "../function/providerNameToLogo.mjs";
-import ProviderRequestCache, { providerErrorCode, readProviderJSON } from "./ProviderRequestCache.mjs";
+import ProviderTransport, { providerErrorCode, readProviderJSON } from "./ProviderTransport.mjs";
 
 export default class WAQI {
-    constructor(parameters, token, requestCache = new ProviderRequestCache()) {
-        this.#requests = requestCache;
+    constructor(parameters, token, transport = new ProviderTransport()) {
+        this.#requests = transport;
         this.Name = "WAQI";
         this.Version = "1.4.3";
         Console.info(`🟧 ${this.Name} v${this.Version}`);
@@ -26,9 +26,6 @@ export default class WAQI {
         return this.#requests.fetch(typeof $loon === "string" ? { ...request, timeout: request.timeout ?? 5000 } : request, {
             fetcher: fetch,
             includeJSON: true,
-            partition: [this.Name, this.version, this.language, this.country],
-            group: [this.latitude, this.longitude, this.country],
-            product: "air-quality",
             validate: body => {
                 if (request.url.includes("/mapq/")) return body?.status !== "error" && Array.isArray(body?.d) && body.d.length > 0;
                 if (request.url.includes("/mapq2/")) return body?.status === "ok" && Array.isArray(body?.data?.stations) && body.data.stations.length > 0;
@@ -161,9 +158,6 @@ export default class WAQI {
             const body = await this.#requests
                 .fetch(request, {
                     fetcher: fetch,
-                    cacheable: false,
-                    partition: [this.Name, this.version, this.language, this.country],
-                    product: "token",
                     validate: value => value?.rxs?.status === "ok" && value.rxs.obs?.[0]?.status === "ok" && typeof value.rxs.obs[0].msg?.token === "string" && value.rxs.obs[0].msg.token.trim().length > 0,
                 })
                 .then(response => readProviderJSON(response));
@@ -209,9 +203,6 @@ export default class WAQI {
             const body = await this.#requests
                 .fetch(request, {
                     fetcher: fetch,
-                    cacheable: false,
-                    partition: [this.Name, this.version, this.language, this.country],
-                    product: "authenticated-air-quality",
                     validate: value => value?.rxs?.status === "ok" && value.rxs.obs?.[0]?.status === "ok" && Boolean(value.rxs.obs[0].msg?.city) && value.rxs.obs[0].msg.aqi !== null && String(value.rxs.obs[0].msg.aqi).trim() !== "" && Number.isFinite(Number(value.rxs.obs[0].msg.aqi)),
                 })
                 .then(response => readProviderJSON(response));

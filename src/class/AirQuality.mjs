@@ -106,17 +106,18 @@ export default class AirQuality {
     }
 
     static CompareCategoryIndexes(todayCategoryIndex, yesterdayCategoryIndex) {
-        Console.info("☑️ CompareCategoryIndexes", `todayCategoryIndex: ${todayCategoryIndex}`, `yesterdayCategoryIndex: ${yesterdayCategoryIndex}`);
+        Console.info("☑️ CompareCategoryIndexes");
 
         const { UNKNOWN, SAME, WORSE, BETTER } = AirQuality.Config.CompareCategoryIndexes;
-        const today = Number(todayCategoryIndex);
-        const yesterday = Number(yesterdayCategoryIndex);
-
-        // -1、0 和 null 都表示“无可用等级”，不能参与好转/恶化比较。
-        if (![today, yesterday].every(categoryIndex => Number.isFinite(categoryIndex) && categoryIndex > 0)) {
+        // Input-validation direction: Patrick Yan, PR #108 at 24c3f9311f051a9df9465238ee85b4a5f2c4f9c2, Apache-2.0.
+        // Preserve numeric strings; booleans, objects and fractional categories are not valid levels.
+        const validCategory = value => (typeof value === "number" || (typeof value === "string" && value.trim() !== "")) && Number.isInteger(Number(value)) && Number(value) > 0;
+        if (![todayCategoryIndex, yesterdayCategoryIndex].every(validCategory)) {
             Console.error("CompareCategoryIndexes", "categoryIndex无效");
             return UNKNOWN;
         } else {
+            const today = Number(todayCategoryIndex);
+            const yesterday = Number(yesterdayCategoryIndex);
             const diff = today - yesterday;
             if (diff === 0) {
                 Console.info("✅ CompareCategoryIndexes");

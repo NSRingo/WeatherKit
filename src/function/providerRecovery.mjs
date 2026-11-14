@@ -1,4 +1,5 @@
 // Copyright 2026 hhhoratioxu. SPDX-License-Identifier: Apache-2.0
+import { knownWeatherAlertExpiry } from "./weatherAlertExpiry.mjs";
 export function providerProductAvailable(value) {
     return Boolean(value && typeof value === "object" && value.metadata && value.metadata.temporarilyUnavailable !== true);
 }
@@ -19,8 +20,8 @@ export function cloneWeatherProduct(value, seen = new Map(), depth = 0) {
 
 export function activeProviderAlerts(alerts, now = Date.now()) {
     return (Array.isArray(alerts) ? alerts : []).filter(alert => {
-        const value = alert?.expireTime ?? alert?.eventEndTime;
-        if (!value || value === "9999-12-31T23:59:59Z") return true;
+        const value = knownWeatherAlertExpiry(alert?.expireTime) ?? knownWeatherAlertExpiry(alert?.eventEndTime);
+        if (!value) return true;
         const timestamp = typeof value === "number" ? (value < 1e12 ? value * 1000 : value) : Date.parse(value);
         return Number.isFinite(timestamp) && timestamp > now;
     });

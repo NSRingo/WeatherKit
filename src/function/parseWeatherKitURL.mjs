@@ -1,8 +1,7 @@
-// Modified by hhhoratioxu, 2026-10-19: optional conservative region resolution.
-import resolveWeatherRegion from "./resolveWeatherRegion.mjs";
+// Parse only the request country and locale; no stored or geographic inference.
 import { Console } from "@nsnanocat/util";
 
-export default function parseWeatherKitURL(url = new URL($request.url), regionOptions) {
+export default function parseWeatherKitURL(url = new URL($request.url)) {
     Console.info("☑️ parseWeatherKitURL");
     const result = {
         version: undefined,
@@ -55,14 +54,6 @@ export default function parseWeatherKitURL(url = new URL($request.url), regionOp
             break;
         }
     }
-    if (regionOptions && result.latitude !== undefined && result.longitude !== undefined)
-        result.country = resolveWeatherRegion({
-            latitude: result.latitude,
-            longitude: result.longitude,
-            explicitCountry: url.searchParams.get("country"),
-            localeCountry: url.pathname === "/api/v1/weatherAlerts" ? (/^[A-Z]{2}$/i.test(result.language?.split("-").at(-1) ?? "") && result.language?.includes("-") ? result.language.split("-").at(-1) : undefined) : result.country,
-            ...regionOptions,
-        });
     Console.info("✅ parseWeatherKitURL", `🟧version: ${result.version} 🟧language: ${result.language} 🟧country: ${result.country}`, "coordinates: redacted");
     return result;
 }

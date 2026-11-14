@@ -36,15 +36,22 @@ export function readLoonRules(plugin) {
     const v3Format = v3Script.match(/\$\{response\.header\['Content-Type'\]\} ~= \/((?:\\.|[^/])*)\/i/);
     assert.ok(v3Guard && v3Agent && v3Format);
     assert.ok(v3Script.includes('${request.method} == "GET"') && v3Script.includes("${response.status} == 200"));
-    const v3AgentRegex = new RegExp(v3Agent[1]), v3FormatRegex = new RegExp(v3Format[1], "i");
+    const v3AgentRegex = new RegExp(v3Agent[1]),
+        v3FormatRegex = new RegExp(v3Format[1], "i");
     scripts.push({ stage: "http-response", regex: new RegExp(v3Guard[1]), line: v3Script, accepts: ({ method = "GET", status = 200, contentType, userAgent } = {}) => method === "GET" && status === 200 && v3FormatRegex.test(contentType ?? "") && v3AgentRegex.test(userAgent ?? "") });
     const declared = lines.filter(line => /^[\w.]+ = (input|select|switch),/.test(line)).map(line => line.split(" = ")[0]);
     // Template declarations are generated later; actual imports must bind every parameter.
-    if (declared.length) assert.deepEqual([...v3Script.matchAll(/\$\{([\w.]+)\}/g)].map(match => match[1]).filter(name => !["url", "request.method", "response.status"].includes(name)), declared);
+    if (declared.length)
+        assert.deepEqual(
+            [...v3Script.matchAll(/\$\{([\w.]+)\}/g)].map(match => match[1]).filter(name => !["url", "request.method", "response.status"].includes(name)),
+            declared,
+        );
     return {
         jq,
         scripts,
-        negotiatesJSON(url, method = "GET", userAgent = "") { return method === "GET" && transportRegex.test(url) && appAgentRegex.test(userAgent); },
+        negotiatesJSON(url, method = "GET", userAgent = "") {
+            return method === "GET" && transportRegex.test(url) && appAgentRegex.test(userAgent);
+        },
         normalizeScale(url, method = "GET") {
             return ["GET", "HEAD", "OPTIONS"].includes(method) ? url.replace(regex, (_match, prefix) => prefix) : url;
         },
@@ -62,17 +69,25 @@ export default function verifyLoonRewrites(plugin) {
         scenarios = [];
     assert.equal(rules.scripts.length, 5);
     const v3URL = "https://weatherkit.apple.com/api/v3/weather/en-GB/53.38/-1.47?dataSets=airQuality";
-    const appAgent = "WeatherKit_Weather_iOS_Version 27.3 (Build fixture)", context = { userAgent: appAgent, contentType: "application/json" };
+    const appAgent = "WeatherKit_Weather_iOS_Version 27.3 (Build fixture)",
+        context = { userAgent: appAgent, contentType: "application/json" };
     assert.ok(rules.negotiatesJSON(v3URL, "GET", appAgent));
     const macAgent = "WeatherKit_Weather_macOS_Version 27.3 (Build fixture)";
     assert.ok(rules.negotiatesJSON(v3URL, "GET", macAgent));
     assert.equal(rules.matchingScripts(v3URL, "http-response", { ...context, userAgent: macAgent }).length, 1);
     scenarios.push("iOS and macOS main Weather app fixtures select the same guarded v3 transport");
-    for (const [url, method] of [[v3URL, "POST"], [v3URL.replace("https:", "http:"), "GET"], [v3URL.replace("weatherkit.apple.com", "example.com"), "GET"], [v3URL.replace("/v3/", "/v2/"), "GET"]]) assert.equal(rules.negotiatesJSON(url, method, appAgent), false);
+    for (const [url, method] of [
+        [v3URL, "POST"],
+        [v3URL.replace("https:", "http:"), "GET"],
+        [v3URL.replace("weatherkit.apple.com", "example.com"), "GET"],
+        [v3URL.replace("/v3/", "/v2/"), "GET"],
+    ])
+        assert.equal(rules.negotiatesJSON(url, method, appAgent), false);
     scenarios.push("native v3 JSON negotiation changes only HTTPS Apple weather GET requests");
     const [v3] = rules.matchingScripts(v3URL, "http-response", context);
     assert.ok(v3?.line.includes("requires_body=true"));
-    assert.ok(v3.line.includes("${DataSets}") && v3.line.includes("${Region.Fallback}"));
+    assert.ok(v3.line.includes("${DataSets}"));
+    assert.doesNotMatch(v3.line, /RequestCache|Region\.Fallback|ProviderFallback/);
     assert.doesNotMatch(v3.line, /binary_body_mode=true/);
     assert.equal(rules.matchingScripts(v3URL, "http-response", context).length, 1);
     assert.match(rules.matchingScripts(v3URL.replace("/v3/", "/v2/"), "http-response")[0].line, /binary-body-mode=1/);

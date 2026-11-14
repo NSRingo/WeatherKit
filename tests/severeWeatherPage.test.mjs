@@ -150,22 +150,21 @@ test("WeatherAlerts standardization stays provider-agnostic", async () => {
     assert.doesNotMatch(source, /\bqWeather\b|\bQWeather\b/);
 });
 
-test("response WeatherAlert injection only selects and merges provider slot objects", async () => {
+test("response WeatherAlert injection selects provider slot objects", async () => {
     for (const path of ["../src/process/Response.mjs", "../src/process/Response.dev.mjs"]) {
         const source = await readFile(new URL(path, import.meta.url), "utf8");
         const injectWeatherAlerts = source.match(/async function InjectWeatherAlerts\([\s\S]*?(?=\n\/\*\*)/)?.[0] ?? "";
 
         assert.match(source, /case "weatherAlerts": \{[\s\S]*body\.weatherAlerts = await InjectWeatherAlerts\(body\.weatherAlerts, Settings, enviroments\)/);
-        assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.colorfulClouds\.WeatherAlert\(\)/);
-        assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.qWeather\.WeatherAlert\(\)/);
-        assert.match(injectWeatherAlerts, /newWeatherAlerts = await enviroments\.qWeather\.WeatherAlertWeb\(weatherAlerts\?\.detailsUrl\)/);
-        assert.match(injectWeatherAlerts, /if \(providerProductAvailable\(newWeatherAlerts\)\) \{[\s\S]*weatherAlerts\.metadata = \{ \.\.\.weatherAlerts\?\.metadata, \.\.\.newWeatherAlerts\.metadata \}/);
+        assert.match(injectWeatherAlerts, /newWeatherAlerts = await \(enviroments\.weatherAlertsColorfulClouds \?\? enviroments\.colorfulClouds\)\.WeatherAlert\(\)/);
+        assert.match(injectWeatherAlerts, /newWeatherAlerts = await \(enviroments\.weatherAlertsQWeather \?\? enviroments\.qWeather\)\.WeatherAlert\(\)/);
+        assert.match(injectWeatherAlerts, /newWeatherAlerts = await \(enviroments\.weatherAlertsQWeather \?\? enviroments\.qWeather\)\.WeatherAlertWeb\(weatherAlerts\?\.detailsUrl\)/);
         assert.doesNotMatch(injectWeatherAlerts, /QWeather\.(?:ParseWeatherAlertPageURL|BuildAppleAlertDetailsURL|FetchWeatherAlertPage)|attributionUrl|Console\.debug/);
     }
 });
 
 test("response provider logos are finalized inside Inject methods", async () => {
-    const injectMethods = ["InjectCurrentWeather", "InjectForecastDaily", "InjectForecastHourly", "InjectForecastNextHour", "InjectWeatherAlerts"];
+    const injectMethods = ["InjectCurrentWeather", "InjectForecastDaily", "InjectForecastHourly", "InjectForecastNextHour"];
     for (const path of ["../src/process/Response.mjs", "../src/process/Response.dev.mjs"]) {
         const source = await readFile(new URL(path, import.meta.url), "utf8");
         const topLevel = source.slice(0, source.indexOf("async function InjectCurrentWeather"));
@@ -206,7 +205,7 @@ test("QWeather HTML extraction is separated from WeatherAlert construction", asy
     assert.equal(alerts[0].description, "雷暴橙色预警");
     assert.equal(alerts[0].effectiveTime, "2026-07-31T03:00:00.000Z");
     assert.equal(alerts[0].eventOnsetTime, "2026-07-31T03:00:00.000Z");
-    assert.equal(alerts[0].expireTime, "9999-12-31T23:59:59Z");
+    assert.equal(alerts[0].expireTime, "9999-12-31T00:00:00Z");
     assert.equal(alerts[0].eventSource, "CN");
     assert.equal(alerts[0].importance, "high");
     assert.equal(alerts[0].reportedAt, "2026-07-31T03:00:00.000Z");
@@ -540,7 +539,7 @@ test("updated Chinese headlines replace generic FlatBuffer titles", () => {
     assert.equal(appleAlerts[1].description, "暴雨橙色预警");
 });
 
-test("ColorfulClouds reuses its realtime cache and standardizes v2.6 alerts", async () => {
+test("ColorfulClouds fetches each realtime product independently and standardizes v2.6 alerts", async () => {
     const originalFetch = globalThis.fetch;
     let sourceRequest;
     let requestCount = 0;
@@ -568,7 +567,7 @@ test("ColorfulClouds reuses its realtime cache and standardizes v2.6 alerts", as
 
             assert.equal(sourceRequest.url.toString(), `https://api.caiyunapp.com/v2.6/test-token/116.3176,39.976/realtime?lang=${colorfulCloudsLanguage}&alert=true`);
             assert.equal(sourceRequest.headers.get("Referer"), "https://caiyunapp.com/");
-            assert.equal(requestCount, index + 1);
+            assert.equal(requestCount, (index + 1) * 2);
         }
 
         assert.equal(extracted.source, "国家预警信息发布中心");
@@ -600,13 +599,11 @@ test("ColorfulClouds reuses its realtime cache and standardizes v2.6 alerts", as
     }
 });
 
-test("only ColorfulClouds realtime requests and caches v2.6 alerts", async () => {
+test("only ColorfulClouds realtime requests v2.6 alerts", async () => {
     const source = await readFile(new URL("../src/class/ColorfulClouds.mjs", import.meta.url), "utf8");
 
     assert.match(source, /\/realtime\?[^\n]*alert=true/);
     for (const endpoint of ["minutely", "hourly", "daily"]) assert.doesNotMatch(source, new RegExp(`/${endpoint}\\?[^\\n]*alert=true`), endpoint);
-    assert.match(source, /switch \(body\?\.result\?\.realtime\?\.status\)[\s\S]*switch \(body\?\.result\?\.alert\?\.status\) \{\s*case "ok":\s*this\.#cache\.alert = body\.result\.alert;/);
-    assert.doesNotMatch(source, /result\?\.alert\?\.status === "ok"/);
 });
 
 test("ColorfulClouds v2.6 alert codes map event names and severities", async () => {
@@ -856,12 +853,13 @@ test("Pages routes coordinate WeatherAlert identifiers through QWeather API for 
     }
 });
 
-test("Pages returns an empty Apple-compatible array for native WeatherAlert identifiers", async () => {
+test("Pages forwards native WeatherAlert identifiers to Apple", async () => {
     const originalFetch = globalThis.fetch;
     let fetchCount = 0;
+    const originalAlerts = [{ id: "35889ee6-fa82-5f9f-8e49-fad78c4f383a", description: "Original Apple warning" }];
     globalThis.fetch = async () => {
         fetchCount++;
-        return new Response("[]", { headers: { "Content-Type": "application/json" } });
+        return new Response(JSON.stringify(originalAlerts), { headers: { "Content-Type": "application/json" } });
     };
 
     try {
@@ -870,8 +868,8 @@ test("Pages returns an empty Apple-compatible array for native WeatherAlert iden
             env: {},
         });
         assert.equal(response.status, 200);
-        assert.deepEqual(await response.json(), []);
-        assert.equal(fetchCount, 0);
+        assert.deepEqual(await response.json(), originalAlerts);
+        assert.equal(fetchCount, 1);
     } finally {
         globalThis.fetch = originalFetch;
     }
@@ -1052,7 +1050,7 @@ test("the request scripts route coordinate identifiers through configured Colorf
     }
 });
 
-test("the request scripts return an empty Apple-compatible array for coordinate identifiers when WeatherKit is selected", async () => {
+test("the request scripts pass coordinate identifiers through when WeatherKit is selected", async () => {
     const originalArgument = globalThis.$argument;
     const originalFetch = globalThis.fetch;
     let fetchCount = 0;
@@ -1074,8 +1072,7 @@ test("the request scripts return an empty Apple-compatible array for coordinate 
                 headers: {},
             });
 
-            assert.equal($response.status, 200);
-            assert.deepEqual(JSON.parse($response.body), []);
+            assert.equal($response, undefined);
         }
         assert.equal(fetchCount, 0);
     } finally {
@@ -1084,15 +1081,14 @@ test("the request scripts return an empty Apple-compatible array for coordinate 
     }
 });
 
-test("the request scripts return an empty Apple-compatible array for non-QWeather identifiers", async () => {
+test("the request scripts pass native Apple identifiers through", async () => {
     for (const handler of [processRequest, processRequestDev]) {
         const { $response } = await handler({
             method: "GET",
             url: "https://weatherkit.apple.com/api/v1/weatherAlerts?lang=zh-CN&ids=35889ee6-fa82-5f9f-8e49-fad78c4f383a",
             headers: {},
         });
-        assert.equal($response.status, 200);
-        assert.deepEqual(JSON.parse($response.body), []);
+        assert.equal($response, undefined);
     }
 });
 

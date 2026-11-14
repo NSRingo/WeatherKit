@@ -1,4 +1,4 @@
-// Modified by hhhoratioxu, 2026-10-19: expose bounded provider cache lifetime.
+// WeatherKit user settings; preserve original parameters.
 import { defineConfig } from "@iringo/arguments-builder";
 
 type Arg = {
@@ -49,32 +49,6 @@ export const output = {
         scope: "@iRingo.WeatherKit.Settings",
     },
 };
-
-export const requestCache: Arg[] = [
-    { key: "RequestCache.TTL", name: "[请求缓存] 实况与空气质量（秒）", defaultValue: "60", type: "string", description: "0 禁用所有已完成响应缓存，仍合并在途请求。最大 300 秒。" },
-    { key: "RequestCache.ForecastTTL", name: "[请求缓存] 小时与每日预报（秒）", defaultValue: "180", type: "string", description: "变化较慢的预报缓存，最大 300 秒。" },
-    { key: "RequestCache.MinutelyTTL", name: "[请求缓存] 分钟降雨（秒）", defaultValue: "15", type: "string", description: "分钟降雨缓存，最大 30 秒。" },
-    { key: "RequestCache.AlertsTTL", name: "[请求缓存] 天气预警（秒）", defaultValue: "15", type: "string", description: "JSON 与网页预警缓存，最大 30 秒；不使用过期预警。" },
-    { key: "RequestCache.BudgetMs", name: "[弱网] 网络发起预算（毫秒）", defaultValue: "8000", type: "string", description: "1000–15000 毫秒。队列与后续请求共享预算；已发出的请求仍等待原生回调，不取消请求或提前完成。" },
-    { key: "RequestCache.CooldownSeconds", name: "[弱网] 失败冷却（秒）", defaultValue: "30", type: "string", description: "相同接口连续失败两次后冷却；鉴权错误与限流立即冷却。最大 120 秒；0 禁用。" },
-    { key: "RequestCache.Diagnostics", name: "[诊断] 输出运行统计", defaultValue: false, type: "boolean", description: "每次执行汇总缓存、请求、耗时与回退原因，不包含令牌、原始地址或坐标。" },
-    {
-        key: "Region.Fallback",
-        name: "[地区] 缺少 country 时",
-        defaultValue: "Auto",
-        type: "string",
-        options: [
-            { key: "Auto", label: "自动保守判断" },
-            { key: "Locale", label: "沿用语言区域" },
-            { key: "CN", label: "中国大陆" },
-            { key: "HK", label: "香港" },
-            { key: "MO", label: "澳门" },
-            { key: "TW", label: "台湾" },
-        ],
-        description: "明确的 country 参数始终优先；自动模式使用同坐标确认记录与离线多边形，边界不确定时沿用语言区域。",
-    },
-    { key: "ProviderFallback.Enabled", name: "[数据源] 允许备用查询", defaultValue: false, type: "boolean", description: "默认仅使用选定来源，失败保留 Apple 数据。开启后，原数据也不可用且已配置另一来源专用凭据时，才尝试一次备用查询。" },
-];
 
 export const dataSets: Arg[] = [
     {
@@ -154,7 +128,20 @@ const weatherAlertsProvider: Arg = {
     description: "使用选定的数据源处理天气预警数据。",
 };
 
-export const weatherAlerts = [weatherAlertsProvider];
+const weatherAlertsLanguage: Arg = {
+    key: "WeatherAlerts.Language",
+    name: "[天气预警] 正文语言偏好",
+    defaultValue: "Auto",
+    type: "string",
+    options: [
+        { key: "Auto", label: "自动（沿用请求语言）" },
+        { key: "zh-Hans", label: "简体中文（来源支持时）" },
+        { key: "en", label: "English（来源支持时）" },
+    ],
+    description: "仅向所选来源请求预警语言，不使用第三方翻译。来源不支持或返回其他语言时保留原文、签发单位与出处；Apple 原始标题和页面标签可能仍随系统语言。",
+};
+
+export const weatherAlerts = [weatherAlertsProvider, weatherAlertsLanguage];
 
 const nextHourProvider: Arg = {
     key: "NextHour.Provider",
@@ -408,5 +395,5 @@ export const logLevel: Arg[] = [
 
 export default defineConfig({
     output,
-    args: [...dataSetsFull, ...weatherFull, ...weatherAlerts, ...nextHourFull, ...airQualityFull, ...calculateFull, ...api, ...storage, ...logLevel, ...requestCache],
+    args: [...dataSetsFull, ...weatherFull, ...weatherAlerts, ...nextHourFull, ...airQualityFull, ...calculateFull, ...api, ...storage, ...logLevel],
 });
