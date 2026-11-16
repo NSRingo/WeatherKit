@@ -200,10 +200,17 @@ function encodeWeatherAlerts(builder, data) {
             builder,
             alert.responses.map(response => enumValue(WK3.ResponseType, response)),
         );
+        const eventTextsOffset = alert.eventTexts?.length
+            ? WK3.WeatherAlertSummary.createEventTextsVector(
+                  builder,
+                  alert.eventTexts.map(eventText => WK3.EventText.createEventText(builder, stringOffset(eventText.language), stringOffset(eventText.message))),
+              )
+            : 0;
         return WK3.WeatherAlertSummary.createWeatherAlertSummary(
             builder,
             createUuidOffset(builder, alert.id),
             stringOffset(alert.areaId),
+            stringOffset(alert.areaName),
             stringOffset(alert.attributionUrl),
             stringOffset(alert.countryCode),
             stringOffset(alert.description),
@@ -223,6 +230,8 @@ function encodeWeatherAlerts(builder, data) {
             enumValue(WK3.Certainty, alert.certainty),
             enumValue(WK3.ImportanceType, alert.importance),
             responsesOffset,
+            stringOffset(alert.area),
+            eventTextsOffset,
         );
     });
     const alertsOffset = WK3.WeatherAlertCollectionData.createAlertsVector(builder, alertsOffsets);
@@ -241,9 +250,10 @@ function decodeWeatherAlerts(data) {
     const alerts = [];
     for (let i = 0; i < WeatherAlertCollectionData.alertsLength(); i++) {
         const alert = WeatherAlertCollectionData.alerts(i);
-        checkFields(alert, 22);
+        checkFields(alert, 24);
         const summary = {
             areaId: alert.areaId(),
+            areaName: alert.areaName(),
             attributionUrl: alert.attributionUrl(),
             certainty: enumName(WK3.Certainty, alert.certainty()),
             countryCode: alert.countryCode(),
@@ -264,8 +274,11 @@ function decodeWeatherAlerts(data) {
             source: alert.source(),
             token: alert.token(),
             urgency: enumName(WK3.Urgency, alert.urgency()),
+            area: alert.area(),
+            eventTexts: [],
         };
         for (let j = 0; j < alert.responsesLength(); j++) summary.responses.push(enumName(WK3.ResponseType, alert.responses(j)));
+        for (let j = 0; j < alert.eventTextsLength(); j++) summary.eventTexts.push({ language: alert.eventTexts(j).language(), message: alert.eventTexts(j).message() });
         alerts.push(summary);
     }
     return {

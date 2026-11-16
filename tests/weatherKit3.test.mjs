@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import test, { beforeEach } from "node:test";
 import { readFileSync } from "node:fs";
-import { Builder, ByteBuffer } from "flatbuffers";
+import test, { beforeEach } from "node:test";
 import { WK3 } from "@nsringo/weatherkit";
+import { Builder, ByteBuffer } from "flatbuffers";
 
 globalThis.$environment = { "surge-version": "test" };
 globalThis.$persistentStore = { read: () => null, write: () => true };
@@ -143,7 +143,7 @@ test("missing AQ can use the existing provider fill without touching other roots
 
 test("unsupported provider enums or out-of-range scalars do not replace AQ", async t => {
     mockProvider(t);
-    for (const patch of [{ primaryPollutant: "UNVERIFIED" }, { index: 40000 }, { index: NaN }]) {
+    for (const patch of [{ primaryPollutant: "UNVERIFIED" }, { index: 40000 }, { index: Number.NaN }]) {
         t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", async () => ({ ...structuredClone(replacement), ...patch }));
         assert.deepEqual((await response()).body, fixture);
     }
@@ -255,7 +255,7 @@ function buildWK3Alerts(builder, detailsUrl = "https://www.qweather.com/severe-w
         ),
     );
     const responses = WK3.WeatherAlertSummary.createResponsesVector(builder, [7]);
-    const alert = WK3.WeatherAlertSummary.createWeatherAlertSummary(builder, id, builder.createString("101010100"), 0, builder.createString("CN"), builder.createString("大风蓝色预警"), 0, 2000000000, 2000003600, 2000000000, 2000000000, 2000003600, 0, 0, 4, 10, 0, 0, 2, 2, 2, responses);
+    const alert = WK3.WeatherAlertSummary.createWeatherAlertSummary(builder, id, builder.createString("101010100"), 0, 0, builder.createString("CN"), builder.createString("大风蓝色预警"), 0, 2000000000, 2000003600, 2000000000, 2000000000, 2000003600, 0, 0, 4, 10, 0, 0, 2, 2, 2, responses, 0, 0);
     const alerts = WK3.WeatherAlertCollectionData.createAlertsVector(builder, [alert]);
     return WK3.WeatherAlertCollectionData.createWeatherAlertCollectionData(builder, buildWK3AlertsMetadata(builder), builder.createString(detailsUrl), alerts);
 }
