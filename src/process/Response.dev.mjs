@@ -125,13 +125,13 @@ export async function Response($request, $response) {
                                                     await replaceWeather("airQuality", product => InjectAirQuality(product, Settings, Caches, enviroments));
                                                     break;
                                                 case "currentWeather":
-                                                    if (body.currentWeather?.metadata) await replaceWeather("currentWeather", product => InjectCurrentWeather(product, Settings, enviroments));
+                                                    await replaceWeather("currentWeather", product => InjectCurrentWeather(product, Settings, enviroments));
                                                     break;
                                                 case "forecastDaily":
-                                                    if (body.forecastDaily?.metadata) await replaceWeather("forecastDaily", product => InjectForecastDaily(product, Settings, enviroments));
+                                                    await replaceWeather("forecastDaily", product => InjectForecastDaily(product, Settings, enviroments));
                                                     break;
                                                 case "forecastHourly":
-                                                    if (body.forecastHourly?.metadata) await replaceWeather("forecastHourly", product => InjectForecastHourly(product, Settings, enviroments));
+                                                    await replaceWeather("forecastHourly", product => InjectForecastHourly(product, Settings, enviroments));
                                                     break;
                                                 case "forecastNextHour":
                                                     await replaceWeather("forecastNextHour", product => InjectForecastNextHour(product, Settings, enviroments));
@@ -324,11 +324,11 @@ export async function Response($request, $response) {
                                                     break;
                                                 }
                                                 case "forecastDaily": {
-                                                    if (body.forecastDaily) await replaceWeather("forecastDaily", InjectForecastDaily);
+                                                    await replaceWeather("forecastDaily", InjectForecastDaily);
                                                     break;
                                                 }
                                                 case "forecastHourly": {
-                                                    if (body.forecastHourly) await replaceWeather("forecastHourly", InjectForecastHourly);
+                                                    await replaceWeather("forecastHourly", InjectForecastHourly);
                                                     break;
                                                 }
                                                 case "airQuality": {
