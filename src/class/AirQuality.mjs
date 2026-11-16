@@ -1857,7 +1857,7 @@ export default class AirQuality {
                 categories: {
                     significantIndex: 3, // 轻度污染
                     ranges: [
-                        { categoryIndex: 1, indexes: [1, 50] }, // 优
+                        { categoryIndex: 1, indexes: [0, 50] }, // 优
                         { categoryIndex: 2, indexes: [51, 100] }, // 良
                         { categoryIndex: 3, indexes: [101, 150] }, // 轻度污染
                         { categoryIndex: 4, indexes: [151, 200] }, // 中度污染
