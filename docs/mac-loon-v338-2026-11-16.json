@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-16",
+  "timezone": "Asia/Shanghai",
+  "classification": "user-triggered native Mac Loon observation, not a controlled A/B memory benchmark",
+  "environment": {
+    "macOS": "27.3",
+    "macOSBuild": "26C5035r",
+    "loonVersion": "0.5.0",
+    "loonBuild": "1011"
+  },
+  "testedInstallation": {
+    "distribution": "Fork WeatherKit v3.3.8",
+    "previousVersion": "v3.3.7",
+    "releaseCommit": "5b42ae44395c702240a40c45704e3b2687bc402f",
+    "sourceCommit": "47149b6b29c8f2e5af67f50da378404fc9a806ff",
+    "prBaseline": "82c91bd71aca3b08e471f40645418471e37bbb2b",
+    "responseJSONV3SourceSHA256": "ceeae765f64aef06374a4a576798ffcb48ed48570e280ee858c08c0ee2965627",
+    "pluginSHA256": "4fe382f16acae16594ccea4640ac5074c6eb05834de08ee648f9d800c86a3ae4",
+    "scriptCacheSHA256": {
+      "response.bundle.js": "3c5634eae7a3de39df53eac29d636bf8876b3d261436ef65b9dc7d6c4abde146",
+      "scale.bundle.js": "5896bada8857312ebf5a70b7519452d21c8fbd6131e0df882d8d5f83b813016f",
+      "request.bundle.js": "484509dc16aac6e09a6a60bb027377854ae898f4bba4f8006120504fab1bc4d4"
+    },
+    "pluginAndThreeCachesMatchRelease": true,
+    "parameterDeclarations": 13,
+    "prArtifactsSeparatelyInstalled": false,
+    "executionFileIdentity": "Virtual filenames; execution-time source bytes could not be independently hashed."
+  },
+  "scriptRecords": [
+    {
+      "id": 456,
+      "scriptTag": "🌤 WeatherKit.api.v3.weather.json.response",
+      "isFinished": 1,
+      "isException": 0,
+      "startTime": 1794805462904,
+      "endTime": 1794805463788,
+      "elapsedMs": 884,
+      "startMemory": "",
+      "endMemory": "",
+      "requestingCount": 0,
+      "requestedCount": 0,
+      "startUTC": "2026-11-16T05:04:22.904+00:00",
+      "endUTC": "2026-11-16T05:04:23.788+00:00",
+      "logBytes": 68,
+      "logSHA256": "d0711c647f50530ff9f504ce55352b169d96dcd715d666c8368059e66d509cfc",
+      "logExceptionKeywordFound": false
+    },
+    {
+      "id": 457,
+      "scriptTag": "🌤 WeatherKit.api.v3.weather.json.response",
+      "isFinished": 1,
+      "isException": 0,
+      "startTime": 1794805464479,
+      "endTime": 1794805464491,
+      "elapsedMs": 12,
+      "startMemory": "",
+      "endMemory": "",
+      "requestingCount": 0,
+      "requestedCount": 0,
+      "startUTC": "2026-11-16T05:04:24.479+00:00",
+      "endUTC": "2026-11-16T05:04:24.491+00:00",
+      "logBytes": 68,
+      "logSHA256": "09ea5f027bd25bc774c068a938f44bf2c6f0caef1cc1d84531a14eb4c0f3836f",
+      "logExceptionKeywordFound": false
+    }
+  ],
+  "completed": 2,
+  "exceptions": 0,
+  "requestCounterInterpretation": "Native Loon record values only; not independently verified supplier HTTP request counts.",
+  "savedPairedHTTPSessions": 0,
+  "nativeConsumerCache": {
+    "windowStartUTC": "2026-11-16T05:04:20.904000+00:00",
+    "windowEndUTC": "2026-11-16T05:04:29.491000+00:00",
+    "products": [
+      {
+        "product": "currentWeather",
+        "rows": 2,
+        "modelBytesTotal": 1000,
+        "modelBytesMin": 475,
+        "modelBytesMax": 525,
+        "modifiedFirstUTC": "2026-11-16T05:04:23.814033+00:00",
+        "modifiedLastUTC": "2026-11-16T05:04:24.519215+00:00"
+      },
+      {
+        "product": "airQuality",
+        "rows": 2,
+        "modelBytesTotal": 802,
+        "modelBytesMin": 355,
+        "modelBytesMax": 447,
+        "modifiedFirstUTC": "2026-11-16T05:04:23.813627+00:00",
+        "modifiedLastUTC": "2026-11-16T05:04:24.518626+00:00"
+      },
+      {
+        "product": "periodForecasts",
+        "rows": 2,
+        "modelBytesTotal": 59696,
+        "modelBytesMin": 29373,
+        "modelBytesMax": 30323,
+        "modifiedFirstUTC": "2026-11-16T05:04:23.838311+00:00",
+        "modifiedLastUTC": "2026-11-16T05:04:24.552910+00:00"
+      },
+      {
+        "product": "nextHourForecast",
+        "rows": 2,
+        "modelBytesTotal": 5874,
+        "modelBytesMin": 2760,
+        "modelBytesMax": 3114,
+        "modifiedFirstUTC": "2026-11-16T05:04:23.813827+00:00",
+        "modifiedLastUTC": "2026-11-16T05:04:24.552718+00:00"
+      },
+      {
+        "product": "weatherAlerts",
+        "rows": 2,
+        "modelBytesTotal": 1390,
+        "modelBytesMin": 309,
+        "modelBytesMax": 1081,
+        "modifiedFirstUTC": "2026-11-16T05:04:23.838095+00:00",
+        "modifiedLastUTC": "2026-11-16T05:04:24.553639+00:00"
+      },
+      {
+        "product": "weatherComparisons",
+        "rows": 2,
+        "modelBytesTotal": 386,
+        "modelBytesMin": 193,
+        "modelBytesMax": 193,
+        "modifiedFirstUTC": "2026-11-16T05:04:23.840034+00:00",
+        "modifiedLastUTC": "2026-11-16T05:04:24.553387+00:00"
+      },
+      {
+        "product": "metadata",
+        "rows": 4,
+        "modelBytesTotal": 687,
+        "modelBytesMin": 131,
+        "modelBytesMax": 219,
+        "modifiedFirstUTC": "2026-11-16T05:04:23.815210+00:00",
+        "modifiedLastUTC": "2026-11-16T05:04:24.552252+00:00"
+      },
+      {
+        "product": "hourForecast",
+        "rows": 548,
+        "modelBytesTotal": 89872,
+        "modelBytesMin": 164,
+        "modelBytesMax": 164,
+        "modifiedFirstUTC": "2026-11-16T05:04:23.816580+00:00",
+        "modifiedLastUTC": "2026-11-16T05:04:24.552190+00:00"
+      },
+      {
+        "product": "dayForecast",
+        "rows": 22,
+        "modelBytesTotal": 17946,
+        "modelBytesMin": 756,
+        "modelBytesMax": 1046,
+        "modifiedFirstUTC": "2026-11-16T05:04:23.814170+00:00",
+        "modifiedLastUTC": "2026-11-16T05:04:24.518212+00:00"
+      }
+    ],
+    "scope": "timestamps and model sizes only; no coordinates, IDs or model contents exported; temporal correlation is not a paired HTTP capture"
+  },
+  "hostRSSSnapshots": {
+    "unit": "KiB",
+    "miBConversion": "KiB / 1024",
+    "beforeUTC": "2026-11-16T04:56:05.369638+00:00",
+    "afterUTC": "2026-11-16T05:05:35.227598+00:00",
+    "processes": [
+      {
+        "process": "Loon",
+        "samePID": true,
+        "beforeRSSKiB": 233376,
+        "afterRSSKiB": 250368,
+        "deltaRSSKiB": 16992,
+        "beforeRSSMiB": 227.90625,
+        "afterRSSMiB": 244.5
+      },
+      {
+        "process": "com.loon.Loon.LoonTunnelExtension",
+        "samePID": true,
+        "beforeRSSKiB": 88688,
+        "afterRSSKiB": 89792,
+        "deltaRSSKiB": 1104,
+        "beforeRSSMiB": 86.609375,
+        "afterRSSMiB": 87.6875
+      }
+    ],
+    "interpretation": "Whole-process snapshots with other plugins and traffic present. Not per-script heap, a peak, an isolated delta, leak evidence or an A/B result."
+  },
+  "configurationChecks": {
+    "originalConfigFilesChecked": 3,
+    "allThreeByteIdentical": true,
+    "savedPluginArgumentValuesIndividuallyVerified": false,
+    "endLoonConnectionState": "Connected",
+    "continuousVPNMonitoring": false
+  },
+  "ui": {
+    "automationTimedOut": true,
+    "userConfirmedSinglePluginUpdateAndWeatherOpen": true,
+    "visibleWeatherProductsIndependentlyVerified": false
+  },
+  "nativeMemory": {
+    "scriptStartAndEndFields": "empty strings in both records, not zero bytes",
+    "nativeAllocationMeasured": false,
+    "nativePeakMeasured": false,
+    "residentMemoryReductionEstablished": false,
+    "controlledOldNewComparison": false,
+    "allSupplierFailureBranchConfirmed": false
+  },
+  "limits": [
+    "Two native executions only; no speedup ratio inferred from them.",
+    "Native cache modified times correlate with the execution window; there is no paired HTTP body capture or product-content/source-attribution verdict.",
+    "Node/V8 18.5% allocation and 16.5% CPU figures remain offline-only.",
+    "No complete UI, other-region, source-failure, Surge, iOS/watchOS, network-switching, long-duration or power acceptance."
+  ],
+  "privacy": "No credentials, precise coordinates, location IDs, request IDs/URLs/headers, model bodies, raw logs, preferences, private backups or machine paths exported."
+}

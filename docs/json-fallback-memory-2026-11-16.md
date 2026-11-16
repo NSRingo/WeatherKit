@@ -25,3 +25,7 @@
 原有来源、13 项设置、12 项默认值、超时边界、预警、AQ、降水、periodic、304/ETag 和失败保留保持。旧轮设备及用户反馈不作为本次内存的重复真机验收；本次未操作客户端或 VPN。
 
 完整 238 个原始样本与所有对照见 [量测 JSON](json-fallback-memory-2026-11-16.json)。复现：`node --expose-gc scripts/measure-json-memory.mjs BASELINE_BUNDLE CANDIDATE_BUNDLE OUTPUT_JSON`，可将候选指向本 PR 的 `dist/response.loon.bundle.js`。
+
+## 后续 Mac Loon 原生观测
+
+同日发布 v3.3.8 后，用户单独更新插件并打开 Apple 天气，取得两次主天气原生脚本完成记录（884 ms、12 ms，异常标记均为 0）及同窗口的原生模型缓存更新。每脚本 startMemory/endMemory 均为空；宿主 RSS 只是未隔离的前后快照，未进行旧／新版原生 A/B，也未确认触发本文供应商全部失败的夹具路径。因此本文 18.5%／16.5% 仍是离线量测，不能当作真机内存／CPU 降幅。完整数据和限制见 [本轮 Mac Loon 记录](mac-loon-v338-2026-11-16.md) 及其 JSON。
