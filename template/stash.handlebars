@@ -47,6 +47,12 @@ http:
       require-body: true
       binary-mode: true
       argument:
+    - match: ^https?:\/\/weatherkit\.apple\.com\/api\/v3\/weather\/
+      name: WeatherKit.api.v3.weather.response
+      type: response
+      require-body: true
+      binary-mode: true
+      argument:
 
 script-providers:
   WeatherKit.api.v1.availability.response:
@@ -59,5 +65,8 @@ script-providers:
     url: https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/request.bundle.js
     interval: 86400
   WeatherKit.api.v2.weather.response:
+    url: https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
+    interval: 86400
+  WeatherKit.api.v3.weather.response:
     url: https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js
     interval: 86400

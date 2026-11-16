@@ -1,5 +1,6 @@
 ### 🆕 New Features
   * 新增 WK3（v3 接口）全产品 FlatBuffer 处理：当前天气、逐日与逐小时预报、下一小时降水、气象预警、空气质量统一经协议包完整 Schema/Codec 编解码，替换、补齐与原始数据保留语义与 WK2 对齐。 @hhh2210
+  * Surge、Loon、Quantumult X、Stash 与 Egern 正式版模块新增 `api.v3.weather` 响应规则，与 v2 拆分匹配。
   * v3 响应新增被动 JSON 处理：仅在响应实际为 `application/json` 时进入 JSON 分支，直接复用既有产品注入函数，不修改请求 Accept；FlatBuffer 路径行为不变。
   * WK3 分钟降水支持 `STOP_START` 条件条目与摘要 condition 枚举向量写入；WK3 预警集合补全 metadata 读写。
   * Surge 模块排除 Apple Relay 配置的 QUIC 拦截。

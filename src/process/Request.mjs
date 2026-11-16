@@ -113,7 +113,8 @@ export async function Request($request) {
                                     }
                                     break;
                                 }
-                                case url.pathname.startsWith("/api/v2/weather/"): {
+                                case url.pathname.startsWith("/api/v2/weather/"):
+                                case url.pathname.startsWith("/api/v3/weather/"): {
                                     // 解决 macOS 天气 app 如果使用国际版 Maps 时，country 丢失不显示未来一小时降水的问题
                                     switch (true) {
                                         case $request.headers["User-Agent"]?.startsWith("WeatherKit_Weather_macOS_Version"):

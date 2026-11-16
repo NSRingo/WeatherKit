@@ -8,13 +8,14 @@ globalThis.$environment = { "surge-version": "test" };
 globalThis.$persistentStore = { read: () => null, write: () => true };
 globalThis.$argument = { LogLevel: "OFF", Storage: "Argument" };
 
-const [{ default: WeatherKit3 }, { default: ColorfulClouds }, { default: QWeather }, { default: MatchEnum }, { Response }, { Response: ResponseDev }, { Request: RequestDev }, { Storage }] = await Promise.all([
+const [{ default: WeatherKit3 }, { default: ColorfulClouds }, { default: QWeather }, { default: MatchEnum }, { Response }, { Response: ResponseDev }, { Request }, { Request: RequestDev }, { Storage }] = await Promise.all([
     import("../src/class/WeatherKit3.mjs"),
     import("../src/class/ColorfulClouds.mjs"),
     import("../src/class/QWeather.mjs"),
     import("../src/class/MatchEnum.mjs"),
     import("../src/process/Response.mjs"),
     import("../src/process/Response.dev.mjs"),
+    import("../src/process/Request.mjs"),
     import("../src/process/Request.dev.mjs"),
     import("@nsnanocat/util"),
 ]);
@@ -177,9 +178,12 @@ test("Surge entry returns a top-level Uint8Array response and preserves input on
     }
 });
 
-test("formal response still leaves v3 untouched", async t => {
-    t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", async () => assert.fail("formal v3 must remain untouched"));
-    assert.deepEqual((await response(fixture, Response)).body, fixture);
+test("formal response handles v3 with the same business rules as dev", async t => {
+    mockProvider(t);
+    const output = (await response(fixture, Response)).body;
+    const aq = WK3.Weather.getRootAsWeather(new ByteBuffer(output)).airQuality();
+    assert.equal(aq.index(), 175);
+    assert.match(aq.metadata().providerName(), /Replacement/);
 });
 
 test("dev v3 requests reuse the macOS country fix and retain requested dataSets", async t => {
@@ -187,12 +191,14 @@ test("dev v3 requests reuse the macOS country fix and retain requested dataSets"
     t.mock.method(Storage, "getItem", function (key, ...args) {
         return key === "@iRingo.Location.Caches" ? { pep: { gcc: "CN" } } : getItem.call(this, key, ...args);
     });
-    const request = { method: "GET", headers: { "User-Agent": "WeatherKit_Weather_macOS_Version 27" }, url: "https://weatherkit.apple.com/api/v3/weather/en-US/31.25/121.5?dataSets=airQuality,forecastNextHour,futureProduct" };
-    const { $request } = await RequestDev(request);
-    const url = new URL($request.url);
-    assert.equal(url.searchParams.get("country"), "CN");
-    assert.equal(url.searchParams.get("dataSets"), "airQuality,forecastNextHour,futureProduct");
-    assert.equal(url.pathname, "/api/v3/weather/en-US/31.25/121.5");
+    const request = () => ({ method: "GET", headers: { "User-Agent": "WeatherKit_Weather_macOS_Version 27" }, url: "https://weatherkit.apple.com/api/v3/weather/en-US/31.25/121.5?dataSets=airQuality,forecastNextHour,futureProduct" });
+    for (const handler of [Request, RequestDev]) {
+        const { $request } = await handler(request());
+        const url = new URL($request.url);
+        assert.equal(url.searchParams.get("country"), "CN");
+        assert.equal(url.searchParams.get("dataSets"), "airQuality,forecastNextHour,futureProduct");
+        assert.equal(url.pathname, "/api/v3/weather/en-US/31.25/121.5");
+    }
 });
 
 test("debug enum comparisons use the selected protocol table", () => {

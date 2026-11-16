@@ -25,6 +25,7 @@ http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/airQualityScale\/ scri
 http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=[^&#]*-[0-9]{9}(?:&|$) script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/request.bundle.js, tag=🌤 WeatherKit.api.v1.weatherAlerts.html.request, argument={{{scriptParams}}}
 http-request ^https?:\/\/weatherkit\.apple\.com\/api\/v1\/weatherAlerts\?[^#]*&ids=-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?(?:&|$) script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/request.bundle.js, tag=🌤 WeatherKit.api.v1.weatherAlerts.api.request, argument={{{scriptParams}}}
 http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v2\/weather\/ requires-body=1, binary-body-mode=1, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js, tag=🌤 WeatherKit.api.v2.weather.response, argument={{{scriptParams}}}
+http-response ^https?:\/\/weatherkit\.apple\.com\/api\/v3\/weather\/ requires-body=1, binary-body-mode=1, script-path=https://github.com/NSRingo/WeatherKit/releases/download/v{{@package 'version'}}/response.bundle.js, tag=🌤 WeatherKit.api.v3.weather.response, argument={{{scriptParams}}}
 
 [MITM]
 hostname = weatherkit.apple.com

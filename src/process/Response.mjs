@@ -2,11 +2,14 @@ import { Console, Storage } from "@nsnanocat/util";
 import * as flatbuffers from "flatbuffers";
 import AirQuality from "../class/AirQuality.mjs";
 import ColorfulClouds from "../class/ColorfulClouds.mjs";
+import ForecastNextHour from "../class/ForecastNextHour.mjs";
+import MatchEnum from "../class/MatchEnum.mjs";
 import QWeather from "../class/QWeather.mjs";
 import WAQI from "../class/WAQI.mjs";
 import Weather from "../class/Weather.mjs";
 import WeatherAlerts from "../class/WeatherAlerts.mjs";
 import WeatherKit2 from "../class/WeatherKit2.mjs";
+import WeatherKit3 from "../class/WeatherKit3.mjs";
 import database from "../function/database.mjs";
 import mergeWeatherKitAvailability from "../function/mergeWeatherKitAvailability.mjs";
 import parseWeatherKitURL from "../function/parseWeatherKitURL.mjs";
@@ -25,7 +28,7 @@ export async function Response($request, $response) {
     Console.info(`FORMAT: ${FORMAT}`);
     /**
      * 设置
-     * @type {{Settings: import('../types').Settings}}
+     * @type {{Settings: import('./types').Settings}}
      */
     const { Settings, Caches, Configs } = setENV("iRingo", "WeatherKit", database);
     Console.logLevel = Settings.LogLevel;
@@ -38,11 +41,15 @@ export async function Response($request, $response) {
         case "application/x-www-form-urlencoded":
         case "text/plain":
         default:
+            //Console.debug(`body: ${body}`);
             break;
         case "application/x-mpegURL":
         case "application/x-mpegurl":
         case "application/vnd.apple.mpegurl":
         case "audio/mpegurl":
+            //body = M3U8.parse($response.body);
+            //Console.debug(`body: ${JSON.stringify(body)}`);
+            //$response.body = M3U8.stringify(body);
             break;
         case "text/xml":
         case "text/html":
@@ -50,27 +57,126 @@ export async function Response($request, $response) {
         case "application/xml":
         case "application/plist":
         case "application/x-plist":
+            //body = XML.parse($response.body);
+            //Console.debug(`body: ${JSON.stringify(body)}`);
+            //$response.body = XML.stringify(body);
             break;
         case "text/vtt":
         case "application/vtt":
+            //body = VTT.parse($response.body);
+            //Console.debug(`body: ${JSON.stringify(body)}`);
+            //$response.body = VTT.stringify(body);
             break;
         case "text/json":
-        case "application/json":
-            body = JSON.parse($response.body);
+        case "application/json": {
+            // v3 天气的 JSON 可能因 binary-body-mode 以 bodyBytes 到达；仅 200 且可解析时处理，否则原样透传。
+            // v3 weather JSON may arrive as bodyBytes under binary-body-mode; process only 200 and parseable bodies, else pass through.
+            const isWeatherKit3JSON = url.hostname === "weatherkit.apple.com" && url.pathname.startsWith("/api/v3/weather/");
+            let rawText;
+            let skipDefaultWrite = false;
+            if (isWeatherKit3JSON) {
+                if ($response.status !== 200) break;
+                // JSON 最多 4 MiB；超限、非对象或解析失败均原样透传 / JSON is capped at 4 MiB; oversize, non-object or parse failures pass through untouched.
+                rawText = $response.bodyBytes ? new TextDecoder("utf-8", { fatal: true }).decode(new Uint8Array($response.bodyBytes)) : $response.body;
+                if ((typeof rawText === "string" ? rawText.length : 0) > 4 * 1024 * 1024) break;
+                try {
+                    body = JSON.parse(rawText);
+                } catch {
+                    break;
+                }
+                if (!body || typeof body !== "object" || Array.isArray(body)) break;
+            } else body = JSON.parse($response.body);
             switch (url.hostname) {
                 case "weatherkit.apple.com":
                     // 路径判断
                     switch (url.pathname) {
                         default:
-                            if (url.pathname.startsWith("/api/v1/availability/")) {
+                            if (url.pathname.startsWith("/api/v3/weather/")) {
+                                Console.info("🟪 WeatherKit.api.v3.weather (JSON)");
+                                const parameters = parseWeatherKitURL(url);
+                                const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet) && ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"].includes(dataSet));
+                                let changed = false;
+                                if (dataSets.length > 0) {
+                                    // REST JSON 表示沿用标量形状，供应商按标量产出 / REST JSON uses scalar shapes, so providers produce scalars.
+                                    const providerParameters = { ...parameters, version: "v2", weatherKitLanguage: body.weatherAlerts?.metadata?.language };
+                                    const enviroments = {
+                                        colorfulClouds: new ColorfulClouds(providerParameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
+                                        qWeather: new QWeather(providerParameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host),
+                                        waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
+                                        country: parameters.country,
+                                    };
+                                    const replaceWeather = async (name, inject) => {
+                                        const original = body[name];
+                                        try {
+                                            const result = await inject(original === undefined ? undefined : JSON.parse(JSON.stringify(original)));
+                                            if (result?.metadata && result.metadata.temporarilyUnavailable !== true) {
+                                                body[name] = result;
+                                                changed = true;
+                                            }
+                                        } catch (error) {
+                                            Console.warn("WeatherKit.api.v3.weather", `preserved ${name}: ${error?.name ?? "Error"}`);
+                                        }
+                                    };
+                                    await Promise.all(
+                                        dataSets.map(async dataSet => {
+                                            switch (dataSet) {
+                                                case "airQuality":
+                                                    // 物理缺失时按既有补齐语义注入 / Backfill when physically missing, as in the binary path.
+                                                    await replaceWeather("airQuality", product => InjectAirQuality(product, Settings, Caches, enviroments));
+                                                    break;
+                                                case "currentWeather":
+                                                    if (body.currentWeather?.metadata) await replaceWeather("currentWeather", product => InjectCurrentWeather(product, Settings, enviroments));
+                                                    break;
+                                                case "forecastDaily":
+                                                    if (body.forecastDaily?.metadata) await replaceWeather("forecastDaily", product => InjectForecastDaily(product, Settings, enviroments));
+                                                    break;
+                                                case "forecastHourly":
+                                                    if (body.forecastHourly?.metadata) await replaceWeather("forecastHourly", product => InjectForecastHourly(product, Settings, enviroments));
+                                                    break;
+                                                case "forecastNextHour":
+                                                    // Apple 已提供分钟降水时保留原始产品；物理缺失才注入。
+                                                    // Keep Apple's own product when present; inject only when physically missing.
+                                                    if (!body.forecastNextHour) await replaceWeather("forecastNextHour", product => InjectForecastNextHour(product, Settings, enviroments));
+                                                    break;
+                                                case "weatherAlerts":
+                                                    // WK3 不新增预警集合；仅在已有集合上合并。
+                                                    // WK3 never adds an alert collection; merge only onto an existing one.
+                                                    if (body.weatherAlerts) await replaceWeather("weatherAlerts", product => InjectWeatherAlerts(product, Settings, enviroments));
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                        }),
+                                    );
+                                }
+                                skipDefaultWrite = true;
+                                let text;
+                                try {
+                                    text = JSON.stringify(body);
+                                } catch {
+                                    // 不可序列化的结果保留原包（控制流，不是数值防御）/ Unserializable results keep the original package (control flow, not value defense).
+                                    break;
+                                }
+                                // 仅在实际改写时重写并清理缓存验证头 / Rewrite and revalidate headers only when actually changed.
+                                if (changed) {
+                                    // 改写后移除旧正文长度、编码与缓存验证头；bodyBytes 旧载荷一并移除。
+                                    // After rewriting, drop stale length/encoding/cache-validation headers and any old bodyBytes payload.
+                                    for (const key of Object.keys($response.headers ?? {})) if (["content-length", "content-encoding", "etag", "last-modified", "content-md5", "digest", "cache-control"].includes(key.toLowerCase())) delete $response.headers[key];
+                                    $response.headers["Cache-Control"] = "no-store";
+                                    $response.bodyBytes = undefined;
+                                    $response.body = text;
+                                }
+                            } else if (url.pathname.startsWith("/api/v1/availability/")) {
+                                Console.debug(`body: ${JSON.stringify(body)}`);
                                 body = mergeWeatherKitAvailability(body, Configs?.Availability?.v2);
                             }
                             break;
                     }
                     break;
             }
-            $response.body = JSON.stringify(body);
+            if (!skipDefaultWrite) $response.body = JSON.stringify(body);
             break;
+        }
         case "application/vnd.apple.flatbuffer":
         case "application/protobuf":
         case "application/x-protobuf":
@@ -78,7 +184,9 @@ export async function Response($request, $response) {
         case "application/grpc":
         case "application/grpc+proto":
         case "application/octet-stream": {
+            //Console.debug(`$response: ${JSON.stringify($response, null, 2)}`);
             let rawBody = $response.bodyBytes ? new Uint8Array($response.bodyBytes) : ($response.body ?? new Uint8Array());
+            //Console.debug(`isBuffer? ${ArrayBuffer.isView(rawBody)}: ${JSON.stringify(rawBody)}`);
             switch (FORMAT) {
                 case "application/vnd.apple.flatbuffer": {
                     // 解析FlatBuffer
@@ -87,53 +195,194 @@ export async function Response($request, $response) {
                     switch (url.hostname) {
                         case "weatherkit.apple.com":
                             // 路径判断
-                            if (url.pathname.startsWith("/api/v2/weather/")) {
-                                const parameters = parseWeatherKitURL(url);
-                                const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet));
-                                const rootNames = dataSets.map(dataSet => Configs.DataSets[dataSet] ?? dataSet);
-                                body = WeatherKit2.decode(ByteBuffer, rootNames);
-                                const providerParameters = { ...parameters, weatherKitLanguage: body.weatherAlerts?.metadata?.language };
-                                const enviroments = {
-                                    colorfulClouds: new ColorfulClouds(providerParameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
-                                    qWeather: new QWeather(providerParameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host),
-                                    waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
-                                    country: parameters.country,
-                                };
+                            switch (true) {
+                                case url.pathname.startsWith("/api/v2/weather/"): {
+                                    Console.info("🟦 WeatherKit.api.v2.weather");
+                                    const parameters = parseWeatherKitURL(url);
+                                    const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet));
+                                    const rootNames = dataSets.map(dataSet => Configs.DataSets[dataSet] ?? dataSet);
+                                    body = WeatherKit2.decode(ByteBuffer, rootNames);
+                                    const providerParameters = { ...parameters, weatherKitLanguage: body.weatherAlerts?.metadata?.language };
+                                    const matchEnum = new MatchEnum(body, parameters.version);
+                                    if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+                                        await matchEnum.init();
+                                    }
+                                    const enviroments = {
+                                        colorfulClouds: new ColorfulClouds(providerParameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
+                                        qWeather: new QWeather(providerParameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host),
+                                        waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
+                                        country: parameters.country,
+                                    };
 
-                                await Promise.all(
-                                    dataSets.map(async dataSet => {
-                                        switch (dataSet) {
-                                            case "airQuality": {
-                                                body.airQuality = await InjectAirQuality(body.airQuality, Settings, Caches, enviroments);
-                                                break;
+                                    await Promise.all(
+                                        dataSets.map(async dataSet => {
+                                            switch (dataSet) {
+                                                case "airQuality": {
+                                                    if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+                                                        matchEnum.airQuality();
+                                                    }
+                                                    body.airQuality = await InjectAirQuality(body.airQuality, Settings, Caches, enviroments);
+                                                    break;
+                                                }
+                                                case "currentWeather": {
+                                                    if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+                                                        matchEnum.weatherCondition();
+                                                        matchEnum.pressureTrend();
+                                                    }
+                                                    body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
+                                                    break;
+                                                }
+                                                case "forecastDaily": {
+                                                    body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
+                                                    break;
+                                                }
+                                                case "forecastHourly": {
+                                                    body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
+                                                    break;
+                                                }
+                                                case "forecastNextHour": {
+                                                    Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
+                                                    if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+                                                        matchEnum.conditionType();
+                                                        matchEnum.forecastToken();
+                                                    }
+                                                    body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
+                                                    break;
+                                                }
+                                                case "news": {
+                                                    if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+                                                        matchEnum.placementType();
+                                                    }
+                                                    Console.debug(`body.news: ${JSON.stringify(body?.news, null, 2)}`);
+                                                    break;
+                                                }
+                                                case "weatherAlerts": {
+                                                    if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+                                                        matchEnum.severity();
+                                                        matchEnum.significanceType();
+                                                        matchEnum.urgency();
+                                                        matchEnum.certainty();
+                                                        matchEnum.importanceType();
+                                                        matchEnum.responseType();
+                                                    }
+                                                    body.weatherAlerts = await InjectWeatherAlerts(body.weatherAlerts, Settings, enviroments);
+                                                    Console.debug(`body.weatherAlerts: ${JSON.stringify(body?.weatherAlerts, null, 2)}`);
+                                                    break;
+                                                }
+                                                case "locationInfo": {
+                                                    Console.debug(`body.locationInfo: ${JSON.stringify(body?.locationInfo, null, 2)}`);
+                                                    break;
+                                                }
+                                                default:
+                                                    break;
                                             }
-                                            case "currentWeather": {
-                                                body.currentWeather = await InjectCurrentWeather(body.currentWeather, Settings, enviroments);
-                                                break;
-                                            }
-                                            case "forecastDaily": {
-                                                body.forecastDaily = await InjectForecastDaily(body.forecastDaily, Settings, enviroments);
-                                                break;
-                                            }
-                                            case "forecastHourly": {
-                                                body.forecastHourly = await InjectForecastHourly(body.forecastHourly, Settings, enviroments);
-                                                break;
-                                            }
-                                            case "forecastNextHour": {
-                                                body.forecastNextHour = await InjectForecastNextHour(body.forecastNextHour, Settings, enviroments);
-                                                break;
-                                            }
-                                            case "weatherAlerts": {
-                                                body.weatherAlerts = await InjectWeatherAlerts(body.weatherAlerts, Settings, enviroments);
-                                                break;
-                                            }
-                                            default:
-                                                break;
+                                        }),
+                                    );
+                                    rawBody = WeatherKit2.encode(ByteBuffer, body);
+                                    break;
+                                }
+                                case url.pathname.startsWith("/api/v3/weather/"): {
+                                    Console.info("🟪 WeatherKit.api.v3.weather");
+                                    const parameters = parseWeatherKitURL(url);
+                                    // 仅解码选中的可注入产品，其余根产品保持原始 arena / Only selected injectable products are decoded; all other roots retain their original arenas.
+                                    const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet) && ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"].includes(dataSet));
+                                    if (dataSets.length === 0) break;
+                                    const rootNames = dataSets.map(dataSet => Configs.DataSets[dataSet] ?? dataSet);
+                                    const { json, failures } = WeatherKit3.decodeWithReport(ByteBuffer, rootNames);
+                                    body = json;
+                                    // 读取或解码失败的产品保留原始 arena，不参与注入与重写。
+                                    // Products that fail to read or decode keep their original arenas and are neither injected nor rewritten.
+                                    const failed = new Set(failures.map(failure => failure.name));
+                                    const providerParameters = { ...parameters, weatherKitLanguage: body.weatherAlerts?.metadata?.language };
+                                    const matchEnum = new MatchEnum(body, parameters.version);
+                                    if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+                                        await matchEnum.init();
+                                    }
+                                    const enviroments = {
+                                        colorfulClouds: new ColorfulClouds(providerParameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
+                                        qWeather: new QWeather(providerParameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host),
+                                        waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
+                                        country: parameters.country,
+                                    };
+                                    const patch = {};
+                                    const replaceWeather = async (name, inject) => {
+                                        const original = body[name];
+                                        try {
+                                            const copy = original ? JSON.parse(JSON.stringify(original)) : undefined;
+                                            const result = await inject(copy, Settings, enviroments);
+                                            if (result?.metadata && result.metadata.temporarilyUnavailable !== true && JSON.stringify(result) !== JSON.stringify(original)) patch[name] = result;
+                                        } catch (error) {
+                                            Console.warn("WeatherKit.api.v3.weather", `preserved ${name}: ${error?.name ?? "Error"}`);
                                         }
-                                    }),
-                                );
-                                rawBody = WeatherKit2.encode(ByteBuffer, body);
-                                break;
+                                    };
+
+                                    await Promise.all(
+                                        dataSets.map(async dataSet => {
+                                            if (failed.has(dataSet)) {
+                                                Console.warn(`WeatherKit.api.v3.weather`, `skip failed dataSet: ${dataSet}`);
+                                                return;
+                                            }
+                                            switch (dataSet) {
+                                                case "currentWeather": {
+                                                    await replaceWeather("currentWeather", InjectCurrentWeather);
+                                                    break;
+                                                }
+                                                case "forecastDaily": {
+                                                    if (body.forecastDaily) await replaceWeather("forecastDaily", InjectForecastDaily);
+                                                    break;
+                                                }
+                                                case "forecastHourly": {
+                                                    if (body.forecastHourly) await replaceWeather("forecastHourly", InjectForecastHourly);
+                                                    break;
+                                                }
+                                                case "airQuality": {
+                                                    if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+                                                        matchEnum.airQuality();
+                                                    }
+                                                    patch.airQuality = await InjectAirQuality(body.airQuality, Settings, Caches, enviroments);
+                                                    break;
+                                                }
+                                                case "forecastNextHour": {
+                                                    Console.debug(`body.forecastNextHour: ${JSON.stringify(body?.forecastNextHour, null, 2)}`);
+                                                    if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+                                                        matchEnum.conditionType();
+                                                        matchEnum.forecastToken();
+                                                    }
+                                                    // Apple 已提供分钟降水时保留原始 arena；物理缺失才注入。
+                                                    // Keep Apple's own arena when present; inject only when the product is physically missing.
+                                                    if (!body.forecastNextHour) {
+                                                        const forecastNextHour = await InjectForecastNextHour(undefined, Settings, enviroments);
+                                                        if (forecastNextHour?.metadata) patch.forecastNextHour = forecastNextHour;
+                                                    }
+                                                    break;
+                                                }
+                                                case "weatherAlerts": {
+                                                    if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
+                                                        matchEnum.severity();
+                                                        matchEnum.significanceType();
+                                                        matchEnum.urgency();
+                                                        matchEnum.certainty();
+                                                        matchEnum.importanceType();
+                                                        matchEnum.responseType();
+                                                    }
+                                                    // WK3 不新增预警集合；仅在合并后有实际变化时重写。
+                                                    // WK3 never adds an alert collection; rewrite only when merging actually changed it.
+                                                    if (body.weatherAlerts) {
+                                                        const before = JSON.stringify(body.weatherAlerts);
+                                                        const weatherAlerts = await InjectWeatherAlerts(body.weatherAlerts, Settings, enviroments);
+                                                        Console.debug(`body.weatherAlerts: ${JSON.stringify(weatherAlerts, null, 2)}`);
+                                                        if (JSON.stringify(weatherAlerts) !== before) patch.weatherAlerts = weatherAlerts;
+                                                    }
+                                                    break;
+                                                }
+                                                default:
+                                                    break;
+                                            }
+                                        }),
+                                    );
+                                    if (Object.keys(patch).length > 0) rawBody = WeatherKit3.encode(ByteBuffer, patch);
+                                    break;
+                                }
                             }
                             break;
                     }
@@ -160,7 +409,7 @@ export async function Response($request, $response) {
 /**
  * 注入当前天气数据
  * @param {any} currentWeather - 当前天气数据对象
- * @param {import('../types').Settings} Settings - 设置对象
+ * @param {import('./types').Settings} Settings - 设置对象
  * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 注入后的当前天气数据
  */
@@ -189,6 +438,7 @@ async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
         newCurrentWeather.metadata = { ...currentWeather?.metadata, ...newCurrentWeather.metadata };
         currentWeather = { ...currentWeather, ...newCurrentWeather };
         currentWeather.metadata.providerLogo ||= providerNameToLogo(currentWeather.metadata.providerName);
+        //Console.debug(`currentWeather: ${JSON.stringify(currentWeather, null, 2)}`);
     }
     Console.info("✅ InjectCurrentWeather");
     return currentWeather;
@@ -197,7 +447,7 @@ async function InjectCurrentWeather(currentWeather, Settings, enviroments) {
 /**
  * 注入每日天气预报数据
  * @param {any} forecastDaily - 每日预报数据对象
- * @param {import('../types').Settings} Settings - 设置对象
+ * @param {import('./types').Settings} Settings - 设置对象
  * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 注入后的每日预报数据
  */
@@ -220,6 +470,7 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
         case "ColorfulClouds": {
             const dailysteps = forecastDaily?.days?.length || 11;
             const begin = forecastDaily?.days?.[0]?.forecastStart;
+            //Console.debug(`dailysteps: ${dailysteps}, begin: ${begin}`);
             newForecastDaily = await enviroments.colorfulClouds.Daily(dailysteps, begin);
             break;
         }
@@ -228,6 +479,7 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
         forecastDaily.metadata = { ...forecastDaily?.metadata, ...newForecastDaily.metadata };
         Weather.mergeForecast(forecastDaily?.days, newForecastDaily?.days);
         forecastDaily.metadata.providerLogo ||= providerNameToLogo(forecastDaily.metadata.providerName);
+        //Console.debug(`forecastDaily: ${JSON.stringify(forecastDaily, null, 2)}`);
     }
     Console.info("✅ InjectForecastDaily");
     return forecastDaily;
@@ -236,7 +488,7 @@ async function InjectForecastDaily(forecastDaily, Settings, enviroments) {
 /**
  * 注入小时天气预报数据
  * @param {any} forecastHourly - 小时预报数据对象
- * @param {import('../types').Settings} Settings - 设置对象
+ * @param {import('./types').Settings} Settings - 设置对象
  * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 注入后的小时预报数据
  */
@@ -259,6 +511,7 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
         case "ColorfulClouds": {
             const hourlysteps = forecastHourly?.hours?.length || 273;
             const begin = forecastHourly?.hours?.[0]?.forecastStart;
+            //Console.debug(`hourlysteps: ${hourlysteps}, begin: ${begin}`);
             newForecastHourly = await enviroments.colorfulClouds.ForecastHourly(hourlysteps, begin);
             break;
         }
@@ -267,6 +520,7 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
         forecastHourly.metadata = { ...forecastHourly?.metadata, ...newForecastHourly.metadata };
         forecastHourly.hours = Weather.mergeForecast(forecastHourly?.hours, newForecastHourly?.hours);
         forecastHourly.metadata.providerLogo ||= providerNameToLogo(forecastHourly.metadata.providerName);
+        //Console.debug(`forecastHourly: ${JSON.stringify(forecastHourly, null, 2)}`);
     }
     Console.info("✅ InjectForecastHourly");
     return forecastHourly;
@@ -275,7 +529,7 @@ async function InjectForecastHourly(forecastHourly, Settings, enviroments) {
 /**
  * 注入下一小时天气预报数据
  * @param {any} forecastNextHour - 下一小时预报数据对象
- * @param {import('../types').Settings} Settings - 设置对象
+ * @param {import('./types').Settings} Settings - 设置对象
  * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 注入后的下一小时预报数据
  */
@@ -305,6 +559,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
         newForecastNextHour.metadata = { ...forecastNextHour?.metadata, ...newForecastNextHour.metadata };
         forecastNextHour = { ...forecastNextHour, ...newForecastNextHour };
         forecastNextHour.metadata.providerLogo ||= providerNameToLogo(forecastNextHour.metadata.providerName);
+        Console.debug(`forecastNextHour: ${JSON.stringify(forecastNextHour, null, 2)}`);
     }
     Console.info("✅ InjectForecastNextHour");
     return forecastNextHour;
@@ -313,7 +568,7 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
 /**
  * 补全预警数据
  * @param {any} weatherAlerts - 预警集合数据对象
- * @param {import('../types').Settings} Settings - 设置对象
+ * @param {import('./types').Settings} Settings - 设置对象
  * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 补全后的预警集合数据
  */
@@ -352,7 +607,7 @@ async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
 /**
  * 注入并合并空气质量数据（污染物、指数、昨日对比）
  * @param {any} airQuality - WeatherKit 原始空气质量对象
- * @param {import('../types').Settings} Settings - 设置对象
+ * @param {import('./types').Settings} Settings - 设置对象
  * @param {any} Caches - 缓存对象
  * @param {any} enviroments - 各数据源实例与定位信息
  * @returns {Promise<any>} 合并后的空气质量对象
@@ -430,7 +685,7 @@ async function InjectPollutants(Settings, enviroments) {
 /**
  * 注入空气质量数据
  * @param {any} airQuality - 空气质量数据对象
- * @param {import('../types').Settings} Settings - 设置对象
+ * @param {import('./types').Settings} Settings - 设置对象
  * @param {any} enviroments - 环境变量
  * @returns {Promise<any>} 注入后的空气质量数据
  */
