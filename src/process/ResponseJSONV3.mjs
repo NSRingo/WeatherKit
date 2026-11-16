@@ -332,6 +332,7 @@ export default async function ResponseJSONV3(request, response, injectors) {
     const fallbackResponse = modified ? encodeV3Response(body, response) : response;
     const transport = new ProviderTransport();
     const environment = v3Environment(createProviderEnvironment({ ...regionParameters, weatherKitLanguage: body.weatherAlerts?.metadata?.language }, Settings, transport));
+    let replaced = false;
 
     await Promise.all(
         eligible.map(async name => {
@@ -343,14 +344,15 @@ export default async function ResponseJSONV3(request, response, injectors) {
                 if (!weatherProductsEqual(value, original)) {
                     // AQI and warning injectors can also add numeric metadata fields.
                     body[name] = validateWeatherJSONV3(adaptV3ProviderProduct(value, name), name);
-                    modified = true;
+                    replaced = true;
                 }
             } catch {
                 body[name] = original;
             }
         }),
     );
-    if (!modified) return response;
+    // No replacement needs no second serialization of the same Apple fallback.
+    if (!replaced) return fallbackResponse;
     return encodeV3Response(body, fallbackResponse);
 }
 

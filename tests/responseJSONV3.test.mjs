@@ -298,3 +298,39 @@ test("a null replacement product keeps the complete original response", async ()
     const original = response({ currentWeather: current() });
     assert.strictEqual(await ResponseJSONV3(request(), original, { currentWeather: async () => null }), original);
 });
+
+for (const first of ["currentWeather", "forecastHourly"]) {
+    test(`normalized Apple fallback waits for all failed products (${first} first)`, async () => {
+        settings({ DataSets: "currentWeather,forecastHourly" });
+        const apple = {
+            currentWeather: { ...current(), conditionCode: ["CLOUDY"] },
+            forecastHourly: { metadata: metadata(), hours: [{ forecastStart: 1794787200, conditionCode: ["RAIN"], precipitationAmountByType: [{ expected: 0.4, precipitationType: ["RAIN"] }] }] },
+            forecastPeriodic: { metadata: {}, forecasts: [{ periods: [{ conditionCode: ["RAIN"] }] }] },
+            futureProduct: { conditionCode: ["OPAQUE"], values: [null, 1e100] },
+        };
+        const input = response(apple), before = structuredClone(input), pending = {};
+        input.bodyBytes = new Uint8Array([1, 2, 3]);
+        let completed = false;
+        const result = ResponseJSONV3(request("currentWeather,forecastHourly"), input, Object.fromEntries(["currentWeather", "forecastHourly"].map(name => [name, () => new Promise((resolve, reject) => { pending[name] = { resolve, reject }; })])));
+        result.then(() => { completed = true; });
+        await new Promise(resolve => setImmediate(resolve));
+        assert.deepEqual(Object.keys(pending).sort(), ["currentWeather", "forecastHourly"]);
+        pending[first].resolve(undefined);
+        await new Promise(resolve => setImmediate(resolve));
+        assert.equal(completed, false);
+        pending[first === "currentWeather" ? "forecastHourly" : "currentWeather"].reject(new Error("fixture source failed"));
+        const output = await result, body = JSON.parse(output.body);
+        assert.equal(body.currentWeather.conditionCode, "CLOUDY");
+        assert.equal(body.forecastHourly.hours[0].precipitationAmount, 0.4);
+        assert.equal(body.forecastPeriodic.forecasts[0].periods[0].conditionCode, "RAIN");
+        assert.deepEqual(body.futureProduct, apple.futureProduct);
+        assert.equal(output.bodyBytes, undefined);
+        assert.equal(output.headers.ETag, undefined);
+        assert.equal(output.headers["cOnTeNt-LeNgTh"], undefined);
+        assert.equal(output.headers["Cache-Control"], "no-store");
+        assert.equal(output.headers["X-Apple"], "retain");
+        assert.equal(input.body, before.body);
+        assert.deepEqual(input.headers, before.headers);
+        assert.deepEqual(input.bodyBytes, new Uint8Array([1, 2, 3]));
+    });
+}
