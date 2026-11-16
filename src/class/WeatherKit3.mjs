@@ -1,6 +1,6 @@
 import { FlatBufferRootProcessor, inspectTable } from "@nsnanocat/flatbuffer-root";
 import { WK3 } from "@nsringo/weatherkit";
-import { createUuidOffset, decodeUuid } from "./WeatherKit2.mjs";
+import { createUuidOffset, decodeUuid } from "../function/uuid.mjs";
 
 /**
  * 使用 Weather 根模型和产品 codec 配置通用根表处理器。
