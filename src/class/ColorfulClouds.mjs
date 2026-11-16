@@ -1,8 +1,8 @@
-import { Console, fetch, Lodash as _ } from "@nsnanocat/util";
-import Weather from "./Weather.mjs";
+import { Lodash as _, Console, fetch } from "@nsnanocat/util";
+import providerNameToLogo from "../function/providerNameToLogo.mjs";
 import AirQuality from "./AirQuality.mjs";
 import ForecastNextHour from "./ForecastNextHour.mjs";
-import providerNameToLogo from "../function/providerNameToLogo.mjs";
+import Weather from "./Weather.mjs";
 
 export default class ColorfulClouds {
     constructor(parameters, token) {
@@ -519,7 +519,7 @@ export default class ColorfulClouds {
                                     daytimeForecast: {
                                         forecastStart: timeStamp + 8 * 3600, // 8 hours
                                         forecastEnd: timeStamp + 8 * 3600 + 12 * 3600, // 8 + 12 hours
-                                        cloudCover: body?.result?.daily?.cloudrate?.[i]?.avg,
+                                        cloudCover: Math.round(body?.result?.daily?.cloudrate?.[i]?.avg * 100),
                                         // cloudCoverHighAltPct: 0, // Not given
                                         // cloudCoverLowAltPct: 0, // Not given
                                         // cloudCoverMidAltPct: 0, // Not given
@@ -543,7 +543,7 @@ export default class ColorfulClouds {
                                     overnightForecast: {
                                         forecastStart: timeStamp + 20 * 3600, // 20 hours
                                         forecastEnd: timeStamp + 20 * 3600 + 12 * 3600, // 20 + 12 hours
-                                        cloudCover: body?.result?.daily?.cloudrate?.[i]?.avg,
+                                        cloudCover: Math.round(body?.result?.daily?.cloudrate?.[i]?.avg * 100),
                                         // cloudCoverHighAltPct: 0, // Not given
                                         // cloudCoverLowAltPct: 0, // Not given
                                         // cloudCoverMidAltPct: 0, // Not given
@@ -839,7 +839,7 @@ export default class ColorfulClouds {
         return {
             metadata: this.#Metadata(hourly.result.server_time, hourly.location),
             hours: Array.from({ length: hourly.result.hourly.skycon.length }, (_, i) => ({
-                cloudCover: hourly.result.hourly.cloudrate[i].value,
+                cloudCover: Math.round(hourly.result.hourly.cloudrate[i].value * 100),
                 // cloudCoverHighAltPct: 0, // Not given
                 // cloudCoverLowAltPct: 0, // Not given
                 // cloudCoverMidAltPct: 0, // Not given

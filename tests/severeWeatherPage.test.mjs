@@ -285,7 +285,7 @@ test("QWeather Alert API is standardized by QWeather class", async () => {
     const originalFetch = globalThis.fetch;
     let sourceRequest;
     globalThis.fetch = async (input, init) => {
-        const requestUrl = typeof input === "string" ? input : input?.url ?? input;
+        const requestUrl = typeof input === "string" ? input : (input?.url ?? input);
         sourceRequest = { url: new URL(requestUrl), headers: new Headers(init?.headers ?? input?.headers ?? {}) };
         return new Response(JSON.stringify(qWeatherAlertAPI), { headers: { "Content-Type": "application/json" } });
     };
@@ -326,12 +326,7 @@ test("QWeather Alert API is standardized by QWeather class", async () => {
         assert.equal(extracted.alerts[0].reportedAt, "2026-08-02T09:48:00.000Z");
         assert.equal(extracted.alerts[0].message, "南京市气象台2026年08月02日17时44分继续发布高温橙色预警信号：预计明天全市大部分地区的日最高气温可达37℃以上，请注意防暑降温。");
         assert.equal(extracted.alerts[0].standard, "");
-        assert.deepEqual(extracted.alerts[0].guidelines, [
-            "有关部门和单位按照职责落实防暑降温保障措施；",
-            "尽量避免在高温时段进行户外活动；",
-            "对老、弱、病、幼人群提供防暑降温指导；",
-            "高温条件下作业人员应当缩短连续工作时间。",
-        ]);
+        assert.deepEqual(extracted.alerts[0].guidelines, ["有关部门和单位按照职责落实防暑降温保障措施；", "尽量避免在高温时段进行户外活动；", "对老、弱、病、幼人群提供防暑降温指导；", "高温条件下作业人员应当缩短连续工作时间。"]);
     } finally {
         globalThis.fetch = originalFetch;
     }
@@ -386,11 +381,56 @@ test("QWeather event codes map to CAP phenomena", async () => {
 test("all documented QWeather event codes map to CAP categories", async () => {
     const originalFetch = globalThis.fetch;
     const documentedCodeRanges = [
-        [1001, 1069], [1071, 1082], [1084, 1089], [1201, 1219], [1221, 1221], [1241, 1251], [1271, 1274], [1601, 1610], [1701, 1710], [1801, 1805],
-        [2001, 2007], [2029, 2033], [2050, 2054], [2070, 2085], [2100, 2109], [2111, 2111], [2120, 2135], [2150, 2150], [2152, 2168], [2190, 2193],
-        [2200, 2205], [2207, 2221], [2300, 2309], [2311, 2328], [2330, 2333], [2341, 2341], [2343, 2343], [2345, 2346], [2348, 2400], [2409, 2409],
-        [2411, 2426], [2501, 2502], [2521, 2532], [2550, 2554], [2581, 2581], [2601, 2620], [2641, 2641], [2713, 2713], [2722, 2723], [2743, 2743],
-        [2749, 2749], [2751, 2753], [2755, 2756], [2791, 2797], [2801, 2804], [2839, 2853], [2873, 2874], [3101, 3107], [3131, 3148], [9999, 9999],
+        [1001, 1069],
+        [1071, 1082],
+        [1084, 1089],
+        [1201, 1219],
+        [1221, 1221],
+        [1241, 1251],
+        [1271, 1274],
+        [1601, 1610],
+        [1701, 1710],
+        [1801, 1805],
+        [2001, 2007],
+        [2029, 2033],
+        [2050, 2054],
+        [2070, 2085],
+        [2100, 2109],
+        [2111, 2111],
+        [2120, 2135],
+        [2150, 2150],
+        [2152, 2168],
+        [2190, 2193],
+        [2200, 2205],
+        [2207, 2221],
+        [2300, 2309],
+        [2311, 2328],
+        [2330, 2333],
+        [2341, 2341],
+        [2343, 2343],
+        [2345, 2346],
+        [2348, 2400],
+        [2409, 2409],
+        [2411, 2426],
+        [2501, 2502],
+        [2521, 2532],
+        [2550, 2554],
+        [2581, 2581],
+        [2601, 2620],
+        [2641, 2641],
+        [2713, 2713],
+        [2722, 2723],
+        [2743, 2743],
+        [2749, 2749],
+        [2751, 2753],
+        [2755, 2756],
+        [2791, 2797],
+        [2801, 2804],
+        [2839, 2853],
+        [2873, 2874],
+        [3101, 3107],
+        [3131, 3148],
+        [9999, 9999],
     ];
     const documentedCodes = documentedCodeRanges.flatMap(([start, end]) => Array.from({ length: end - start + 1 }, (_, index) => String(start + index)));
     const categories = new Set(["Geo", "Met", "Safety", "Security", "Rescue", "Fire", "Health", "Env", "Transport", "Infra", "CBRNE", "Other"]);
@@ -506,7 +546,7 @@ test("ColorfulClouds reuses its realtime cache and standardizes v2.6 alerts", as
     let requestCount = 0;
     globalThis.fetch = async (input, init) => {
         requestCount++;
-        const requestUrl = typeof input === "string" ? input : input?.url ?? input;
+        const requestUrl = typeof input === "string" ? input : (input?.url ?? input);
         sourceRequest = { url: new URL(requestUrl), headers: new Headers(init?.headers ?? input?.headers ?? {}) };
         return new Response(JSON.stringify(colorfulCloudsRealtimeAPI), { headers: { "Content-Type": "application/json" } });
     };
@@ -626,7 +666,7 @@ test("ColorfulClouds v3 CAP alerts remain available through WeatherAlertV3CAP", 
     const originalFetch = globalThis.fetch;
     let sourceRequest;
     globalThis.fetch = async (input, init) => {
-        const requestUrl = typeof input === "string" ? input : input?.url ?? input;
+        const requestUrl = typeof input === "string" ? input : (input?.url ?? input);
         sourceRequest = { url: new URL(requestUrl), headers: new Headers(init?.headers ?? input?.headers ?? {}) };
         return new Response(JSON.stringify(colorfulCloudsCAPAlertAPI), { headers: { "Content-Type": "application/json" } });
     };
@@ -711,9 +751,7 @@ test("ColorfulClouds v3 CAP categories remain mapped to phenomena", async () => 
 });
 
 test("QWeather source extraction falls back to the English attribution label", () => {
-    const englishHtml = sourceHtml
-        .replace("建邺区气象台发布雷暴橙色预警信号。", "Thunderstorm orange warning.")
-        .replace("预警数据来源：国家预警信息发布中心", "Warning data source: National Early Warning Center");
+    const englishHtml = sourceHtml.replace("建邺区气象台发布雷暴橙色预警信号。", "Thunderstorm orange warning.").replace("预警数据来源：国家预警信息发布中心", "Warning data source: National Early Warning Center");
     assert.equal(QWeather.ExtractWeatherAlertPage(englishHtml).source, "National Early Warning Center");
 });
 
