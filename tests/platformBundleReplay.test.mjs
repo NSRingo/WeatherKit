@@ -35,6 +35,15 @@ const realtimePayload = {
                 so2: 5,
                 co: 0.5,
             },
+            cloudrate: 0.25,
+            skycon: "CLEAR_DAY",
+            humidity: 0.65,
+            precipitation: { local: { intensity: 0 } },
+            pressure: 101300,
+            temperature: 27,
+            apparent_temperature: 28,
+            visibility: 10,
+            wind: { direction: 90, speed: 3 },
         },
     },
     location: [31.25, 121.5],
@@ -129,4 +138,36 @@ test("release bundle keeps the WK2 path byte-identical without injections", { sk
     globalThis.$argument.DataSets = [];
     const output = await replay(releaseBundle, "release-v2");
     assert.deepEqual(output.body, wk2Empty);
+});
+
+test("dev bundles process a naturally-JSON WK3 response and never negotiate Accept", { skip: !bundlesExist && "dist bundles not built" }, async () => {
+    const original = { currentWeather: { metadata: { providerName: "Apple", temporarilyUnavailable: false }, temperature: 20, conditionCode: "RAIN", retainedField: 42 }, unknown: { conditionCode: "untouched" } };
+    replayGlobals({
+        url: "https://weatherkit.apple.com/api/v3/weather/zh-Hans/22.54/114.06?country=CN&dataSets=currentWeather",
+        body: new Uint8Array(),
+        withProviders: true,
+    });
+    globalThis.$request.headers = { "User-Agent": "WeatherKit_Weather_macOS_Version_27.3", accept: "application/vnd.apple.flatbuffer" };
+    const requestBundle = new URL("../dist/request.dev.bundle.js", import.meta.url);
+    const negotiated = await new Promise((resolve, reject) => {
+        globalThis.$done = resolve;
+        import(`${requestBundle.href}?replay=wk3-json-passive`).catch(reject);
+    });
+    assert.equal(negotiated.headers.Accept, undefined, "request bundle must not negotiate JSON");
+    assert.equal(negotiated.headers.accept, "application/vnd.apple.flatbuffer");
+    globalThis.$request = negotiated;
+    globalThis.$response = { status: 200, headers: { "Content-Type": "application/json", ETag: "old" }, body: JSON.stringify(original) };
+    const output = await new Promise((resolve, reject) => {
+        globalThis.$done = resolve;
+        import(`${devBundle.href}?replay=wk3-json-response`).catch(reject);
+    });
+    assert.equal(typeof output.body, "string", "JSON response keeps a text body");
+    const body = JSON.parse(output.body);
+    assert.equal(body.currentWeather.temperature, 27);
+    assert.equal(body.currentWeather.conditionCode, "CLEAR");
+    assert.equal(body.currentWeather.metadata.providerName, "彩云天气");
+    assert.equal(body.currentWeather.retainedField, 42);
+    assert.deepEqual(body.unknown, original.unknown);
+    assert.equal(output.headers.ETag, undefined);
+    assert.equal(output.headers["Cache-Control"], "no-store");
 });
