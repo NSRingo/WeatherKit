@@ -121,13 +121,16 @@ test("dev bundle passes WK3 through untouched when AQ is not requested", { skip:
     assert.deepEqual(output.body, fixture);
 });
 
-test("release bundle leaves v3 traffic byte-identical", { skip: !bundlesExist && "dist bundles not built" }, async () => {
+test("release bundle processes WK3 with the same business rules as dev", { skip: !bundlesExist && "dist bundles not built" }, async () => {
     replayGlobals({
         url: "https://weatherkit.apple.com/api/v3/weather/en-US/31.25/121.5?country=CN&dataSets=airQuality,currentWeather",
         body: fixture.slice(),
+        withProviders: true,
     });
     const output = await replay(releaseBundle, "release-v3");
-    assert.deepEqual(output.body, fixture);
+    const aq = WK3.Weather.getRootAsWeather(new ByteBuffer(output.body)).airQuality();
+    assert.equal(aq.index(), 87);
+    assert.match(aq.metadata().providerName(), /彩云天气/);
 });
 
 test("release bundle keeps the WK2 path byte-identical without injections", { skip: !bundlesExist && "dist bundles not built" }, async () => {

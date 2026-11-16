@@ -15,6 +15,7 @@
   * 更新 `@nsringo/weatherkit` 至 `2.1.0`：提供完整 WK3 Schema/Codec（经 macOS 27.3 真机布局与成对样本验证），入口为 `Common`/`WK2`/`WK3` 命名空间。 @hhh2210
   * 更新 `@nsnanocat/flatbuffer-root` 至 `1.1.0`：新增 `decodeWithReport` 分类报告与 `inspectTable`，slot 读写或解码失败隔离处理并保留原始数据。
   * 更新 `@nsnanocat/util` 至 `2.7.5`，使 `PersistentStore` 与未设置 `Storage` 时保持一致。
+  * `Storage` 选项仅可通过 `$argument` 设置（BoxJs 不再显示），默认值为 `Argument`：配置优先级 database -> PersistentStore (BoxJs) -> $argument；不支持 $argument 的平台不受此选项影响。
 
 ### ‼️ Breaking Changes
   * none

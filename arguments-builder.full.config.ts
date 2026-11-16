@@ -349,7 +349,7 @@ export const storage: Arg[] = [
     {
         key: "Storage",
         name: "[储存] 配置类型",
-        defaultValue: "PersistentStore",
+        defaultValue: "Argument",
         type: "string",
         exclude: ["boxjs"],
         options: [
@@ -357,7 +357,7 @@ export const storage: Arg[] = [
             { key: "PersistentStore", label: "优先使用来自 BoxJs 等，由 $persistentStore 提供的配置，其次使用 $argument，最后使用 database.mjs 的默认配置" },
             { key: "database", label: "只使用由作者的 database.mjs 文件提供的默认配置，其他任何自定义配置不再起作用" },
         ],
-        description: "默认使用 PersistentStore，配置优先级为 database -> $argument -> PersistentStore (BoxJs)；选择 Argument 时为 database -> PersistentStore (BoxJs) -> $argument。",
+        description: "仅可通过 $argument 设置。默认使用 Argument，配置优先级为 database -> PersistentStore (BoxJs) -> $argument；选择 PersistentStore 时为 database -> $argument -> PersistentStore (BoxJs)。",
     },
 ];
 

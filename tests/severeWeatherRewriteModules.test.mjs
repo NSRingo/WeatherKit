@@ -293,7 +293,7 @@ test("WeatherAlert provider settings expose web and user API choices", async () 
     );
     assert.doesNotMatch(full, /export const dataSetsFull: Arg\[\] = \[[\s\S]*\.\.\.dataSets\[0\]/);
     assert.match(full, /key: "Weather\.Replace"[\s\S]*defaultValue: "CN"[\s\S]*type: "string"/);
-    assert.match(full, /key: "Storage"[\s\S]*defaultValue: "PersistentStore"[\s\S]*exclude: \["boxjs"\]/);
+    assert.match(full, /key: "Storage"[\s\S]*defaultValue: "Argument"[\s\S]*exclude: \["boxjs"\]/);
     assert.match(full, /args: \[\.\.\.dataSetsFull/);
     assert.match(release, /import \{[^}]*dataSets[^}]*weatherAlerts[^}]*\} from "\.\/arguments-builder\.full\.config"/);
     assert.match(release, /import \{[^}]*airQuality[^}]*\} from "\.\/arguments-builder\.full\.config"/);
