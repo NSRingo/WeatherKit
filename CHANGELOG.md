@@ -3,7 +3,7 @@
   * Surge、Loon、Quantumult X、Stash 与 Egern 正式版模块新增 `api.v3.weather` 响应规则，与 v2 拆分匹配。
   * v3 响应新增被动 JSON 处理：仅在响应实际为 `application/json` 时进入 JSON 分支，直接复用既有产品注入函数，不修改请求 Accept；FlatBuffer 路径行为不变。
   * WK3 分钟降水支持 `STOP_START` 条件条目与摘要 condition 枚举向量写入；WK3 预警集合补全 metadata 读写。
-  * Surge 模块排除 Apple Relay 配置的 QUIC 拦截。
+  * 各平台模块的 QUIC 拦截规则排除 Apple Relay（`mask-api.icloud.com`）；Quantumult X 不支持复合规则语法，维持原样。
 
 ### 🛠️ Bug Fixes
   * 修复彩云云量分数未换算为百分比即取整的问题。 @hhh2210
