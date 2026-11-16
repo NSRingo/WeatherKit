@@ -58,7 +58,7 @@ function child(bytes, slot) {
 function mockProvider(t) {
     t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", async () => structuredClone(replacement));
     t.mock.method(ColorfulClouds.prototype, "YesterdayAirQuality", async () => ({ ...structuredClone(replacement), index: 25, categoryIndex: 1, isSignificant: false }));
-    t.mock.method(ColorfulClouds.prototype, "Minutely", async () => assert.fail("WK3 nextHour must remain opaque"));
+    t.mock.method(ColorfulClouds.prototype, "Minutely", async () => assert.fail("opaque nextHour slot must not reach the provider"));
     t.mock.method(ColorfulClouds.prototype, "CurrentWeather", async () => assert.fail("WK3 currentWeather must remain opaque"));
     t.mock.method(QWeather.prototype, "WeatherAlertWeb", async () => assert.fail("invalid alerts slot must not trigger alert injection"));
 }
@@ -242,6 +242,16 @@ function buildWK3(entries) {
     return builder.asUint8Array().slice();
 }
 
+function buildWK3NextHour(builder) {
+    return WK3.Codec.encode("NextHourForecastData", builder, {
+        metadata: { providerName: "WeatherKit", sourceType: "MODELED", reportedTime: 1000000000, temporarilyUnavailable: false },
+        forecastStart: 1000000000,
+        forecastEnd: 1000000060,
+        minutes: [{ startTime: 1000000000, precipitationChance: 0, precipitationIntensity: 0, perceivedPrecipitationIntensity: 0 }],
+        summary: [],
+        condition: [],
+    });
+}
 function buildWK3AirQuality(builder) {
     const metadata = WK3.Metadata.createMetadata(builder, 0, 2000000100, builder.createString("zh-CN"), 31.25, 121.5, 0, builder.createString("Synthetic"), 2000000000, 2000000000, false, 3);
     const pollutants = WK3.AirQuality.createPollutantsVector(builder, [WK3.Pollutant.createPollutant(builder, 9, 12.5, 2)]);
@@ -300,6 +310,16 @@ test("WK3 injects a physically missing nextHour product into slot 5", async t =>
     assert.equal(summaryTable.bb.readUint32(vectorStart), 1);
     assert.equal(summaryTable.bb.readUint8(vectorStart + 4), 2);
     assert.equal(weather.airQuality().index(), 175);
+});
+
+test("WK3 keeps an existing Apple nextHour product and never calls the provider, same as WK2", async t => {
+    globalThis.$argument.DataSets = ["forecastNextHour"];
+    t.mock.method(ColorfulClouds.prototype, "Minutely", async () => assert.fail("existing nextHour must short-circuit before any provider call"));
+    const bytes = buildWK3([[5, buildWK3NextHour]]);
+    const output = (await response(bytes)).body;
+    const nextHour = WK3.Weather.getRootAsWeather(new ByteBuffer(output)).forecastNextHour();
+    assert.equal(nextHour.forecastStart(), 1000000000);
+    assert.equal(nextHour.minutesLength(), 1);
 });
 
 test("WK3 merges weather alerts in slot 9 and rewrites detailsUrl when changed", async t => {

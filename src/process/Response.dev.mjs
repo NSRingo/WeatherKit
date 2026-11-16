@@ -134,14 +134,10 @@ export async function Response($request, $response) {
                                                     if (body.forecastHourly?.metadata) await replaceWeather("forecastHourly", product => InjectForecastHourly(product, Settings, enviroments));
                                                     break;
                                                 case "forecastNextHour":
-                                                    // Apple 已提供分钟降水时保留原始产品；物理缺失才注入。
-                                                    // Keep Apple's own product when present; inject only when physically missing.
-                                                    if (!body.forecastNextHour) await replaceWeather("forecastNextHour", product => InjectForecastNextHour(product, Settings, enviroments));
+                                                    await replaceWeather("forecastNextHour", product => InjectForecastNextHour(product, Settings, enviroments));
                                                     break;
                                                 case "weatherAlerts":
-                                                    // WK3 不新增预警集合；仅在已有集合上合并。
-                                                    // WK3 never adds an alert collection; merge only onto an existing one.
-                                                    if (body.weatherAlerts) await replaceWeather("weatherAlerts", product => InjectWeatherAlerts(product, Settings, enviroments));
+                                                    await replaceWeather("weatherAlerts", product => InjectWeatherAlerts(product, Settings, enviroments));
                                                     break;
                                                 default:
                                                     break;
@@ -348,12 +344,7 @@ export async function Response($request, $response) {
                                                         matchEnum.conditionType();
                                                         matchEnum.forecastToken();
                                                     }
-                                                    // Apple 已提供分钟降水时保留原始 arena；物理缺失才注入。
-                                                    // Keep Apple's own arena when present; inject only when the product is physically missing.
-                                                    if (!body.forecastNextHour) {
-                                                        const forecastNextHour = await InjectForecastNextHour(undefined, Settings, enviroments);
-                                                        if (forecastNextHour?.metadata) patch.forecastNextHour = forecastNextHour;
-                                                    }
+                                                    await replaceWeather("forecastNextHour", InjectForecastNextHour);
                                                     break;
                                                 }
                                                 case "weatherAlerts": {
@@ -365,14 +356,7 @@ export async function Response($request, $response) {
                                                         matchEnum.importanceType();
                                                         matchEnum.responseType();
                                                     }
-                                                    // WK3 不新增预警集合；仅在合并后有实际变化时重写。
-                                                    // WK3 never adds an alert collection; rewrite only when merging actually changed it.
-                                                    if (body.weatherAlerts) {
-                                                        const before = JSON.stringify(body.weatherAlerts);
-                                                        const weatherAlerts = await InjectWeatherAlerts(body.weatherAlerts, Settings, enviroments);
-                                                        Console.debug(`body.weatherAlerts: ${JSON.stringify(weatherAlerts, null, 2)}`);
-                                                        if (JSON.stringify(weatherAlerts) !== before) patch.weatherAlerts = weatherAlerts;
-                                                    }
+                                                    await replaceWeather("weatherAlerts", InjectWeatherAlerts);
                                                     break;
                                                 }
                                                 default:
@@ -574,6 +558,8 @@ async function InjectForecastNextHour(forecastNextHour, Settings, enviroments) {
  */
 async function InjectWeatherAlerts(weatherAlerts, Settings, enviroments) {
     Console.info("☑️ InjectWeatherAlerts");
+    // 仅在已有集合上合并；无集合时不创建，直接返回 / Merge only onto an existing collection; never create one.
+    if (!weatherAlerts) return weatherAlerts;
     const isNationalWarningCenter = ["国家预警信息发布中心", "國家預警信息發布中心", "National Early Warning Center"].includes(weatherAlerts?.metadata?.providerName);
     let newWeatherAlerts;
     switch (Settings?.WeatherAlerts?.Provider) {
