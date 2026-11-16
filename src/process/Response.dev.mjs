@@ -67,14 +67,110 @@ export async function Response($request, $response) {
             //$response.body = VTT.stringify(body);
             break;
         case "text/json":
-        case "application/json":
-            body = JSON.parse($response.body);
+        case "application/json": {
+            // v3 天气的 JSON 可能因 binary-body-mode 以 bodyBytes 到达；仅 200 且可解析时处理，否则原样透传。
+            // v3 weather JSON may arrive as bodyBytes under binary-body-mode; process only 200 and parseable bodies, else pass through.
+            const isWeatherKit3JSON = url.hostname === "weatherkit.apple.com" && url.pathname.startsWith("/api/v3/weather/");
+            let rawText;
+            let skipDefaultWrite = false;
+            if (isWeatherKit3JSON) {
+                if ($response.status !== 200) break;
+                // JSON 最多 4 MiB；超限、非对象或解析失败均原样透传 / JSON is capped at 4 MiB; oversize, non-object or parse failures pass through untouched.
+                rawText = $response.bodyBytes ? new TextDecoder("utf-8", { fatal: true }).decode(new Uint8Array($response.bodyBytes)) : $response.body;
+                if ((typeof rawText === "string" ? rawText.length : 0) > 4 * 1024 * 1024) break;
+                try {
+                    body = JSON.parse(rawText);
+                } catch {
+                    break;
+                }
+                if (!body || typeof body !== "object" || Array.isArray(body)) break;
+            } else body = JSON.parse($response.body);
             switch (url.hostname) {
                 case "weatherkit.apple.com":
                     // 路径判断
                     switch (url.pathname) {
                         default:
-                            if (url.pathname.startsWith("/api/v1/availability/")) {
+                            if (url.pathname.startsWith("/api/v3/weather/")) {
+                                Console.info("🟪 WeatherKit.api.v3.weather (JSON)");
+                                const parameters = parseWeatherKitURL(url);
+                                const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet) && ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"].includes(dataSet));
+                                let changed = false;
+                                if (dataSets.length > 0) {
+                                    const providerParameters = { ...parameters, weatherKitLanguage: body.weatherAlerts?.metadata?.language };
+                                    const enviroments = {
+                                        colorfulClouds: new ColorfulClouds(providerParameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
+                                        qWeather: new QWeather(providerParameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host),
+                                        waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
+                                        country: parameters.country,
+                                    };
+                                    const replace = async (name, inject) => {
+                                        const original = body[name];
+                                        try {
+                                            const result = await inject(original === undefined ? undefined : JSON.parse(JSON.stringify(original)));
+                                            if (result?.metadata && result.metadata.temporarilyUnavailable !== true) {
+                                                // AQ 算法对标准未定义分项的 -1 哨兵不写入无符号 JSON 字段 / The -1 sentinel for undefined AQ sub-indexes is not written to unsigned JSON fields.
+                                                if (name === "airQuality")
+                                                    for (const pollutant of result.pollutants ?? []) {
+                                                        if (pollutant.index === -1) delete pollutant.index;
+                                                        if (pollutant.categoryIndex === -1) delete pollutant.categoryIndex;
+                                                    }
+                                                body[name] = result;
+                                                changed = true;
+                                            }
+                                        } catch (error) {
+                                            Console.warn("WeatherKit.api.v3.weather", `preserved ${name}: ${error?.name ?? "Error"}`);
+                                        }
+                                    };
+                                    await Promise.all(
+                                        dataSets.map(async dataSet => {
+                                            switch (dataSet) {
+                                                case "airQuality":
+                                                    // 物理缺失时按既有补齐语义注入 / Backfill when physically missing, as in the binary path.
+                                                    await replace("airQuality", product => InjectAirQuality(product, Settings, Caches, enviroments));
+                                                    break;
+                                                case "currentWeather":
+                                                    if (body.currentWeather?.metadata) await replace("currentWeather", product => InjectCurrentWeather(product, Settings, enviroments));
+                                                    break;
+                                                case "forecastDaily":
+                                                    if (body.forecastDaily?.metadata) await replace("forecastDaily", product => InjectForecastDaily(product, Settings, enviroments));
+                                                    break;
+                                                case "forecastHourly":
+                                                    if (body.forecastHourly?.metadata) await replace("forecastHourly", product => InjectForecastHourly(product, Settings, enviroments));
+                                                    break;
+                                                case "forecastNextHour":
+                                                    // Apple 已提供分钟降水时保留原始产品；物理缺失才注入。
+                                                    // Keep Apple's own product when present; inject only when physically missing.
+                                                    if (!body.forecastNextHour) await replace("forecastNextHour", product => InjectForecastNextHour(product, Settings, enviroments));
+                                                    break;
+                                                case "weatherAlerts":
+                                                    // WK3 不新增预警集合；仅在已有集合上合并。
+                                                    // WK3 never adds an alert collection; merge only onto an existing one.
+                                                    if (body.weatherAlerts) await replace("weatherAlerts", product => InjectWeatherAlerts(product, Settings, enviroments));
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                        }),
+                                    );
+                                }
+                                skipDefaultWrite = true;
+                                let text;
+                                try {
+                                    text = JSON.stringify(body);
+                                } catch {
+                                    // 不可序列化的结果保留原包（控制流，不是数值防御）/ Unserializable results keep the original package (control flow, not value defense).
+                                    break;
+                                }
+                                // 仅在实际改写时重写并清理缓存验证头 / Rewrite and revalidate headers only when actually changed.
+                                if (changed) {
+                                    // 改写后移除旧正文长度、编码与缓存验证头；bodyBytes 旧载荷一并移除。
+                                    // After rewriting, drop stale length/encoding/cache-validation headers and any old bodyBytes payload.
+                                    for (const key of Object.keys($response.headers ?? {})) if (["content-length", "content-encoding", "etag", "last-modified", "content-md5", "digest", "cache-control"].includes(key.toLowerCase())) delete $response.headers[key];
+                                    $response.headers["Cache-Control"] = "no-store";
+                                    delete $response.bodyBytes;
+                                    $response.body = text;
+                                }
+                            } else if (url.pathname.startsWith("/api/v1/availability/")) {
                                 Console.debug(`body: ${JSON.stringify(body)}`);
                                 body = mergeWeatherKitAvailability(body, Configs?.Availability?.v2);
                             }
@@ -82,8 +178,9 @@ export async function Response($request, $response) {
                     }
                     break;
             }
-            $response.body = JSON.stringify(body);
+            if (!skipDefaultWrite) $response.body = JSON.stringify(body);
             break;
+        }
         case "application/vnd.apple.flatbuffer":
         case "application/protobuf":
         case "application/x-protobuf":
