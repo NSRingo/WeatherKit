@@ -2,6 +2,7 @@ import { Console, Storage } from "@nsnanocat/util";
 import * as flatbuffers from "flatbuffers";
 import AirQuality from "../class/AirQuality.mjs";
 import ColorfulClouds from "../class/ColorfulClouds.mjs";
+import ForecastNextHour from "../class/ForecastNextHour.mjs";
 import MatchEnum from "../class/MatchEnum.mjs";
 import QWeather from "../class/QWeather.mjs";
 import WAQI from "../class/WAQI.mjs";
@@ -96,14 +97,15 @@ export async function Response($request, $response) {
                                 const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet) && ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"].includes(dataSet));
                                 let changed = false;
                                 if (dataSets.length > 0) {
-                                    const providerParameters = { ...parameters, weatherKitLanguage: body.weatherAlerts?.metadata?.language };
+                                    // REST JSON 表示沿用标量形状，供应商按标量产出 / REST JSON uses scalar shapes, so providers produce scalars.
+                                    const providerParameters = { ...parameters, version: "v2", weatherKitLanguage: body.weatherAlerts?.metadata?.language };
                                     const enviroments = {
                                         colorfulClouds: new ColorfulClouds(providerParameters, Settings?.API?.ColorfulClouds?.Token || "Y2FpeXVuX25vdGlmeQ=="),
                                         qWeather: new QWeather(providerParameters, Settings?.API?.QWeather?.Token || "bdd98ec1d87747f3a2e8b1741a5af796", Settings?.API?.QWeather?.Host),
                                         waqi: new WAQI(parameters, Settings?.API?.WAQI?.Token),
                                         country: parameters.country,
                                     };
-                                    const replace = async (name, inject) => {
+                                    const replaceWeather = async (name, inject) => {
                                         const original = body[name];
                                         try {
                                             const result = await inject(original === undefined ? undefined : JSON.parse(JSON.stringify(original)));
@@ -120,26 +122,26 @@ export async function Response($request, $response) {
                                             switch (dataSet) {
                                                 case "airQuality":
                                                     // 物理缺失时按既有补齐语义注入 / Backfill when physically missing, as in the binary path.
-                                                    await replace("airQuality", product => InjectAirQuality(product, Settings, Caches, enviroments));
+                                                    await replaceWeather("airQuality", product => InjectAirQuality(product, Settings, Caches, enviroments));
                                                     break;
                                                 case "currentWeather":
-                                                    if (body.currentWeather?.metadata) await replace("currentWeather", product => InjectCurrentWeather(product, Settings, enviroments));
+                                                    if (body.currentWeather?.metadata) await replaceWeather("currentWeather", product => InjectCurrentWeather(product, Settings, enviroments));
                                                     break;
                                                 case "forecastDaily":
-                                                    if (body.forecastDaily?.metadata) await replace("forecastDaily", product => InjectForecastDaily(product, Settings, enviroments));
+                                                    if (body.forecastDaily?.metadata) await replaceWeather("forecastDaily", product => InjectForecastDaily(product, Settings, enviroments));
                                                     break;
                                                 case "forecastHourly":
-                                                    if (body.forecastHourly?.metadata) await replace("forecastHourly", product => InjectForecastHourly(product, Settings, enviroments));
+                                                    if (body.forecastHourly?.metadata) await replaceWeather("forecastHourly", product => InjectForecastHourly(product, Settings, enviroments));
                                                     break;
                                                 case "forecastNextHour":
                                                     // Apple 已提供分钟降水时保留原始产品；物理缺失才注入。
                                                     // Keep Apple's own product when present; inject only when physically missing.
-                                                    if (!body.forecastNextHour) await replace("forecastNextHour", product => InjectForecastNextHour(product, Settings, enviroments));
+                                                    if (!body.forecastNextHour) await replaceWeather("forecastNextHour", product => InjectForecastNextHour(product, Settings, enviroments));
                                                     break;
                                                 case "weatherAlerts":
                                                     // WK3 不新增预警集合；仅在已有集合上合并。
                                                     // WK3 never adds an alert collection; merge only onto an existing one.
-                                                    if (body.weatherAlerts) await replace("weatherAlerts", product => InjectWeatherAlerts(product, Settings, enviroments));
+                                                    if (body.weatherAlerts) await replaceWeather("weatherAlerts", product => InjectWeatherAlerts(product, Settings, enviroments));
                                                     break;
                                                 default:
                                                     break;
@@ -161,7 +163,7 @@ export async function Response($request, $response) {
                                     // After rewriting, drop stale length/encoding/cache-validation headers and any old bodyBytes payload.
                                     for (const key of Object.keys($response.headers ?? {})) if (["content-length", "content-encoding", "etag", "last-modified", "content-md5", "digest", "cache-control"].includes(key.toLowerCase())) delete $response.headers[key];
                                     $response.headers["Cache-Control"] = "no-store";
-                                    delete $response.bodyBytes;
+                                    $response.bodyBytes = undefined;
                                     $response.body = text;
                                 }
                             } else if (url.pathname.startsWith("/api/v1/availability/")) {
@@ -282,9 +284,8 @@ export async function Response($request, $response) {
                                 case url.pathname.startsWith("/api/v3/weather/"): {
                                     Console.info("🟪 WeatherKit.api.v3.weather");
                                     const parameters = parseWeatherKitURL(url);
-                                    // WK3 仅注册了这三个产品的 codec，其余产品保持原始 arena。
-                                    // Only these three products have registered WK3 codecs; other products keep their original arenas.
-                                    const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet) && ["airQuality", "forecastNextHour", "weatherAlerts"].includes(dataSet));
+                                    // 仅解码选中的可注入产品，其余根产品保持原始 arena / Only selected injectable products are decoded; all other roots retain their original arenas.
+                                    const dataSets = parameters.dataSets.filter(dataSet => Settings.DataSets.includes(dataSet) && ["airQuality", "currentWeather", "forecastDaily", "forecastHourly", "forecastNextHour", "weatherAlerts"].includes(dataSet));
                                     if (dataSets.length === 0) break;
                                     const rootNames = dataSets.map(dataSet => Configs.DataSets[dataSet] ?? dataSet);
                                     const { json, failures } = WeatherKit3.decodeWithReport(ByteBuffer, rootNames);
@@ -304,6 +305,16 @@ export async function Response($request, $response) {
                                         country: parameters.country,
                                     };
                                     const patch = {};
+                                    const replaceWeather = async (name, inject) => {
+                                        const original = body[name];
+                                        try {
+                                            const copy = original ? JSON.parse(JSON.stringify(original)) : undefined;
+                                            const result = await inject(copy, Settings, enviroments);
+                                            if (result?.metadata && result.metadata.temporarilyUnavailable !== true && JSON.stringify(result) !== JSON.stringify(original)) patch[name] = result;
+                                        } catch (error) {
+                                            Console.warn("WeatherKit.api.v3.weather", `preserved ${name}: ${error?.name ?? "Error"}`);
+                                        }
+                                    };
 
                                     await Promise.all(
                                         dataSets.map(async dataSet => {
@@ -312,6 +323,18 @@ export async function Response($request, $response) {
                                                 return;
                                             }
                                             switch (dataSet) {
+                                                case "currentWeather": {
+                                                    await replaceWeather("currentWeather", InjectCurrentWeather);
+                                                    break;
+                                                }
+                                                case "forecastDaily": {
+                                                    if (body.forecastDaily) await replaceWeather("forecastDaily", InjectForecastDaily);
+                                                    break;
+                                                }
+                                                case "forecastHourly": {
+                                                    if (body.forecastHourly) await replaceWeather("forecastHourly", InjectForecastHourly);
+                                                    break;
+                                                }
                                                 case "airQuality": {
                                                     if (Settings?.LogLevel === "DEBUG" || Settings?.LogLevel === "ALL") {
                                                         matchEnum.airQuality();

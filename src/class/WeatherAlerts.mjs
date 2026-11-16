@@ -224,8 +224,16 @@ export default class WeatherAlerts {
             "mergeAlerts",
             `appleAlertCount: ${to.length}`,
             `sourceAlertCount: ${from.length}`,
-            `appleAlerts: ${JSON.stringify(to.map((alert, index) => WeatherAlerts.#WeatherAlertDebugSnapshot(alert, index)), null, 2)}`,
-            `sourceAlerts: ${JSON.stringify(from.map((alert, index) => WeatherAlerts.#WeatherAlertDebugSnapshot(alert, index)), null, 2)}`,
+            `appleAlerts: ${JSON.stringify(
+                to.map((alert, index) => WeatherAlerts.#WeatherAlertDebugSnapshot(alert, index)),
+                null,
+                2,
+            )}`,
+            `sourceAlerts: ${JSON.stringify(
+                from.map((alert, index) => WeatherAlerts.#WeatherAlertDebugSnapshot(alert, index)),
+                null,
+                2,
+            )}`,
         );
     }
 
@@ -252,13 +260,7 @@ export default class WeatherAlerts {
     static #LogMergeAlertPatch(before, appleAlert, appleAlertIndex, sourceAlertIndex) {
         if (!WeatherAlerts.#IsDebug()) return;
         const after = WeatherAlerts.#WeatherAlertDebugSnapshot(appleAlert, appleAlertIndex);
-        Console.debug(
-            "mergeAlerts",
-            `appleAlertIndex: ${appleAlertIndex}`,
-            `sourceAlertIndex: ${sourceAlertIndex}`,
-            `changed: ${JSON.stringify(WeatherAlerts.#WeatherAlertDebugChanges(before, after), null, 2)}`,
-            `after: ${JSON.stringify(after, null, 2)}`,
-        );
+        Console.debug("mergeAlerts", `appleAlertIndex: ${appleAlertIndex}`, `sourceAlertIndex: ${sourceAlertIndex}`, `changed: ${JSON.stringify(WeatherAlerts.#WeatherAlertDebugChanges(before, after), null, 2)}`, `after: ${JSON.stringify(after, null, 2)}`);
     }
 
     static #SourceAlertCandidates(appleAlert, sourceAlerts, usedSourceAlertIndexes) {
@@ -411,7 +413,11 @@ export default class WeatherAlerts {
      * @returns {"high" | "normal" | "low"} Apple WeatherAlert importance.
      */
     static #ImportanceFromSeverity(severity) {
-        switch (String(severity ?? "").trim().toLowerCase()) {
+        switch (
+            String(severity ?? "")
+                .trim()
+                .toLowerCase()
+        ) {
             case "extreme":
             case "severe":
                 return "high";
@@ -438,7 +444,7 @@ export default class WeatherAlerts {
             const response = WeatherAlerts.#ResponseFromGuideline(guideline);
             if (response && !inferredResponses.includes(response)) inferredResponses.push(response);
         }
-        return inferredResponses.length ? inferredResponses : (guidelines?.length ? ["monitor"] : []);
+        return inferredResponses.length ? inferredResponses : guidelines?.length ? ["monitor"] : [];
     }
 
     /**
@@ -463,7 +469,9 @@ export default class WeatherAlerts {
      * @returns {string | null} 动作 token / Action token.
      */
     static #ResponseFromGuideline(guideline) {
-        const text = String(guideline ?? "").trim().toLowerCase();
+        const text = String(guideline ?? "")
+            .trim()
+            .toLowerCase();
         if (!text) return null;
         const compact = text.replace(/\s+/g, "");
 
@@ -501,7 +509,10 @@ export default class WeatherAlerts {
     }
 
     static #NormalizeFlatBufferWeatherAlertEnum(value) {
-        return String(value ?? "").trim().replace(/[_\s-]+/g, "").toLowerCase();
+        return String(value ?? "")
+            .trim()
+            .replace(/[_\s-]+/g, "")
+            .toLowerCase();
     }
 
     static #FlatBufferWeatherAlertCertainty(value) {
@@ -647,7 +658,7 @@ export default class WeatherAlerts {
     static #TrimWeatherAlertTitle(title) {
         return String(title ?? "")
             .trim()
-            .replace(/\s*[\[【][^\]】]+[\]】]\s*$/u, "")
+            .replace(/\s*[[【][^\]】]+[\]】]\s*$/u, "")
             .replace(/\s*[。．.]+\s*$/gu, "")
             .replace(/预警信号$/u, "预警")
             .replace(/預警信號$/u, "預警");

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Console } from "@nsnanocat/util";
 import { FlatBufferRootProcessor } from "@nsnanocat/flatbuffer-root";
+import { Console } from "@nsnanocat/util";
 import { Builder, ByteBuffer } from "flatbuffers";
 
 class Leaf {

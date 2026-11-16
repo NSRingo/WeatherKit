@@ -143,7 +143,7 @@ test("missing AQ can use the existing provider fill without touching other roots
 
 test("unsupported provider enums or out-of-range scalars do not replace AQ", async t => {
     mockProvider(t);
-    for (const patch of [{ primaryPollutant: "UNVERIFIED" }, { index: 40000 }, { index: Number.NaN }]) {
+    for (const patch of [{ primaryPollutant: "UNVERIFIED" }, { index: 65536 }, { index: Number.NaN }]) {
         t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", async () => ({ ...structuredClone(replacement), ...patch }));
         assert.deepEqual((await response()).body, fixture);
     }
@@ -357,33 +357,16 @@ test("WK3 skips a failed AQ slot but still merges alerts", async t => {
     assert.equal(weather.weatherAlerts().alerts(0).source(), "中央气象台");
 });
 
-test("WK3 drops condition entries with unverified enums when injecting nextHour", async t => {
-    t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", async () => structuredClone(replacement));
-    t.mock.method(ColorfulClouds.prototype, "YesterdayAirQuality", async () => ({ ...structuredClone(replacement), index: 25, categoryIndex: 1 }));
+test("WK3 含未知枚举的注入产品在包级 codec 处整产品拒收", async t => {
     t.mock.method(ColorfulClouds.prototype, "Minutely", async () => ({
         ...structuredClone(nextHourReplacement),
-        condition: [
-            {
-                startTime: 2000000000,
-                endTime: 2000000060,
-                forecastToken: "STOP_START",
-                beginCondition: "RAIN",
-                endCondition: "RAIN",
-                parameters: [
-                    { type: "FIRST_AT", date: 2000000060 },
-                    { type: "SECOND_AT", date: 2000000180 },
-                ],
-            },
-            { startTime: 2000000060, endTime: 2000000180, forecastToken: "NOT_A_TOKEN", beginCondition: "RAIN", endCondition: "RAIN", parameters: [] },
-        ],
+        condition: [{ startTime: 2000000060, endTime: 2000000180, forecastToken: "NOT_A_TOKEN", beginCondition: "RAIN", endCondition: "RAIN", parameters: [] }],
     }));
     const output = (await response(buildWK3([[0, buildWK3AirQuality]]))).body;
     const nextHour = WK3.Weather.getRootAsWeather(new ByteBuffer(output)).forecastNextHour();
-    // STOP_START=5 与 SNOW 等偏移推导成员可写；未命名 token 整条跳过。
-    // STOP_START=5 and shift-derived members like SNOW are writable; unnamed tokens are dropped.
-    assert.equal(nextHour.conditionLength(), 1);
-    assert.equal(nextHour.condition(0).forecastToken(), 5); // STOP_START
-    assert.equal(nextHour.condition(0).parameters(1).type(), 2); // SECOND_AT
+    // 未知枚举由包级 codec 严格拒收：整个产品保留原始 arena（物理缺失即不写入），不降级为部分写入。
+    // Unknown enums are rejected by the package codec: the product keeps its original arena, never partially written.
+    assert.equal(nextHour, null);
 });
 
 test("Summary generates condition shape by target version at creation", async () => {
@@ -398,7 +381,7 @@ test("Summary generates condition shape by target version at creation", async ()
     assert.deepEqual(ForecastNextHour.Summary(minutes, "v3")[0].condition, ["RAIN"]);
 });
 
-test("WK3 rejects multi-element summary condition arrays on injection", async t => {
+test("WK3 writes multi-element UInt8 summary condition vectors", async t => {
     t.mock.method(ColorfulClouds.prototype, "CurrentAirQuality", async () => structuredClone(replacement));
     t.mock.method(ColorfulClouds.prototype, "YesterdayAirQuality", async () => ({ ...structuredClone(replacement), index: 25, categoryIndex: 1 }));
     t.mock.method(ColorfulClouds.prototype, "Minutely", async () => ({
@@ -407,7 +390,8 @@ test("WK3 rejects multi-element summary condition arrays on injection", async t 
     }));
     const output = (await response(buildWK3([[0, buildWK3AirQuality]]))).body;
     const weather = WK3.Weather.getRootAsWeather(new ByteBuffer(output));
-    // 多元素向量的元素宽度未验证：注入被隔离，其余产品不受影响 / Multi-element vectors are unverified: injection is isolated while other products proceed
-    assert.equal(weather.forecastNextHour(), null);
+    const summary = weather.forecastNextHour().summary(0);
+    assert.equal(summary.conditionLength(), 2);
+    assert.deepEqual([summary.condition(0), summary.condition(1)], [2, 3]);
     assert.equal(weather.airQuality().index(), 175);
 });

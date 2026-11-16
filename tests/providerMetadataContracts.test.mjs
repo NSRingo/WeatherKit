@@ -24,7 +24,13 @@ globalThis.$httpClient = {
     },
 };
 
-const [{ default: ColorfulClouds }, { default: QWeather }, { default: WeatherKit2 }, { default: providerNameToLogo }, { Console }] = await Promise.all([import("../src/class/ColorfulClouds.mjs"), import("../src/class/QWeather.mjs"), import("../src/class/WeatherKit2.mjs"), import("../src/function/providerNameToLogo.mjs"), import("@nsnanocat/util")]);
+const [{ default: ColorfulClouds }, { default: QWeather }, { default: WeatherKit2 }, { default: providerNameToLogo }, { Console }] = await Promise.all([
+    import("../src/class/ColorfulClouds.mjs"),
+    import("../src/class/QWeather.mjs"),
+    import("../src/class/WeatherKit2.mjs"),
+    import("../src/function/providerNameToLogo.mjs"),
+    import("@nsnanocat/util"),
+]);
 Console.logLevel = "OFF";
 
 const parameters = {
